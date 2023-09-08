@@ -9,7 +9,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::must_pay_two;
+use crate::helpers::must_pay_one_or_two;
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
@@ -57,7 +57,7 @@ pub fn handle_instantiate(
     .into();
 
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
-    let (initial0, initial1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+    let (initial0, initial1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
     let create_position_msg = create_position(
         deps.storage,

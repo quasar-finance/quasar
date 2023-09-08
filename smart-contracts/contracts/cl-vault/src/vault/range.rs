@@ -62,15 +62,15 @@ pub fn execute_update_range(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    lower_price: String,
-    upper_price: String,
+    lower_price: Decimal,
+    upper_price: Decimal,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
     let storage = deps.storage;
     let querier = deps.querier;
 
-    let lower_tick = price_to_tick(storage, Decimal256::from_str(lower_price.as_str())?)?;
-    let upper_tick = price_to_tick(storage, Decimal256::from_str(upper_price.as_str())?)?;
+    let lower_tick = price_to_tick(storage, Decimal256::from(lower_price))?;
+    let upper_tick = price_to_tick(storage, Decimal256::from(upper_price))?;
 
     execute_update_range_ticks(
         storage,
@@ -147,7 +147,7 @@ pub fn handle_withdraw_position_reply(
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-
+    debug!(deps, "withdraw_response", msg);
     // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
     // todo: Test that one-sided withdraw wouldn't error here (it shouldn't)
     let amount0: Uint128 = msg.amount0.parse()?;
@@ -270,7 +270,7 @@ pub fn handle_initial_create_position_reply(
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 pub fn do_swap_deposit_merge(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
@@ -308,7 +308,6 @@ pub fn do_swap_deposit_merge(
     // @notice: this actually works if this function (do_swap_deposit_merge) is called by
     // handle_initial_create_position_reply, double check if implementing it somewhere else
     let (balance0, balance1) = refunded_amounts;
-    debug!(deps, "oh no", "before_spot_price");
 
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
@@ -361,7 +360,6 @@ pub fn do_swap_deposit_merge(
             .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
-    debug!(deps, "hereaa", "before_spot_price");
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
@@ -465,7 +463,7 @@ fn handle_swap_success(
     Ok(Response::new()
         .add_submessage(SubMsg::reply_always(
             create_position_msg,
-            Replies::RangeInitialCreatePosition.into(),
+            Replies::RangeIterationCreatePosition.into(),
         ))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "create_position2")
@@ -691,8 +689,8 @@ mod tests {
             deps.as_mut(),
             env,
             info,
-            lower_price.to_string(),
-            upper_price.to_string(),
+            lower_price,
+            upper_price,
             max_slippage,
         )
         .unwrap();

@@ -8,7 +8,7 @@ mod test {
         osmosis::{
             concentratedliquidity::{
                 poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-                v1beta1::{Pool, PoolsRequest},
+                v1beta1::{Pool, PoolsRequest, PositionByIdRequest},
             },
             poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
         },
@@ -16,14 +16,14 @@ mod test {
     use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
     use crate::{
-        msg::{ExecuteMsg, ModifyRangeMsg},
-        test_tube::{default_init, initialize::initialize::init_test_contract},
+        msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
+        test_tube::initialize::initialize::init_test_contract, query::PositionResponse,
     };
 
     use prost::Message;
 
-    #[test]
-    #[ignore]
+    // #[test]
+    // #[ignore]
     fn move_range_works() {
         let (app, contract, cl_pool_id, admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -87,13 +87,27 @@ mod test {
 
         println!("{:?}", pool);
 
-        let _result = wasm
+        let before_position: PositionResponse = wasm
+            .query(
+                contract.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+
+
+        //  liquidity: "444754394944564241997324" }), asset0: Some(Coin { denom: "uatom", amount: "9766" }), asset1: Some(Coin { denom: "uosmo", amount: "100001" }
+        println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: before_position.position_ids[0]}).unwrap());
+
+
+        let result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
-                        lower_price: Decimal::from_str("400").unwrap().to_string(),
-                        upper_price: Decimal::from_str("1466").unwrap().to_string(),
+                        lower_price: Decimal::from_str("400").unwrap(),
+                        upper_price: Decimal::from_str("1466").unwrap(),
                         max_slippage: Decimal::permille(5),
                     },
                 )),
@@ -101,6 +115,17 @@ mod test {
                 &admin,
             )
             .unwrap();
+
+            let after_position: PositionResponse = wasm
+            .query(
+                contract.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+            // liquidity: "136802306715768225461536" }), asset0: Some(Coin { denom: "uatom", amount: "3026" }), asset1: Some(Coin { denom: "uosmo", amount: "99994" }
+            println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: after_position.position_ids[0]}).unwrap());
     }
 
     #[test]
@@ -173,8 +198,8 @@ mod test {
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
-                        lower_price: Decimal::from_str("20.71").unwrap().to_string(),
-                        upper_price: Decimal::from_str("45").unwrap().to_string(),
+                        lower_price: Decimal::from_str("20.71").unwrap(),
+                        upper_price: Decimal::from_str("45").unwrap(),
                         max_slippage: Decimal::permille(5),
                     },
                 )),

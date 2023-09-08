@@ -26,6 +26,9 @@ pub enum ContractError {
     #[error("Position Not Found")]
     PositionNotFound,
 
+    #[error("Sent the wrong amount of denoms")]
+    IncorrectAmountFunds,
+
     #[error("Modify range state item not found")]
     ModifyRangeStateNotFound,
 
@@ -55,9 +58,6 @@ pub enum ContractError {
 
     #[error("{0}")]
     OverflowError(#[from] OverflowError),
-
-    #[error("{0}")]
-    CwDexError(#[from] CwDexError),
 
     #[error("{0}")]
     ConversionOverflowError(#[from] ConversionOverflowError),
