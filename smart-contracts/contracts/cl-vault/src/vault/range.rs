@@ -387,7 +387,7 @@ pub fn do_swap_deposit_merge(
     )?;
 
     Ok(Response::new()
-        .add_submessage(SubMsg::reply_always(swap_msg, Replies::Swap.into()))
+        .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "swap")
         .add_attribute("token_in", format!("{:?}{:?}", swap_amount, token_in_denom))

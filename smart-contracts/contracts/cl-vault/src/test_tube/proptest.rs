@@ -173,12 +173,12 @@ mod tests {
         println!("Update range new lower_tick: {} and new upper_tick: {}", lower_tick, upper_tick);
 
         let lower_tick_as_decimal = {
-            let tick = Uint128::new(lower_tick as u128); // Assuming Uint128::new takes u128
+            let tick = Uint128::new(lower_tick as u128);
             let atomics = tick * Uint128::new(10u128.pow(18)); // Multiply by 10^18
             Decimal::new(atomics)
         };
         let upper_tick_as_decimal = {
-            let tick = Uint128::new(upper_tick as u128); // Assuming Uint128::new takes u128
+            let tick = Uint128::new(upper_tick as u128);
             let atomics = tick * Uint128::new(10u128.pow(18)); // Multiply by 10^18
             Decimal::new(atomics)
         };
