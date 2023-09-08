@@ -17,7 +17,8 @@ mod test {
 
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
-        test_tube::initialize::initialize::init_test_contract, query::PositionResponse,
+        query::PositionResponse,
+        test_tube::initialize::initialize::init_test_contract,
     };
 
     use prost::Message;
@@ -96,10 +97,14 @@ mod test {
             )
             .unwrap();
 
-
         //  liquidity: "444754394944564241997324" }), asset0: Some(Coin { denom: "uatom", amount: "9766" }), asset1: Some(Coin { denom: "uosmo", amount: "100001" }
-        println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: before_position.position_ids[0]}).unwrap());
-
+        println!(
+            "{:?}",
+            cl.query_position_by_id(&PositionByIdRequest {
+                position_id: before_position.position_ids[0]
+            })
+            .unwrap()
+        );
 
         let result = wasm
             .execute(
@@ -116,7 +121,7 @@ mod test {
             )
             .unwrap();
 
-            let after_position: PositionResponse = wasm
+        let after_position: PositionResponse = wasm
             .query(
                 contract.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
@@ -124,8 +129,14 @@ mod test {
                 )),
             )
             .unwrap();
-            // liquidity: "136802306715768225461536" }), asset0: Some(Coin { denom: "uatom", amount: "3026" }), asset1: Some(Coin { denom: "uosmo", amount: "99994" }
-            println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: after_position.position_ids[0]}).unwrap());
+        // liquidity: "136802306715768225461536" }), asset0: Some(Coin { denom: "uatom", amount: "3026" }), asset1: Some(Coin { denom: "uosmo", amount: "99994" }
+        println!(
+            "{:?}",
+            cl.query_position_by_id(&PositionByIdRequest {
+                position_id: after_position.position_ids[0]
+            })
+            .unwrap()
+        );
     }
 
     #[test]

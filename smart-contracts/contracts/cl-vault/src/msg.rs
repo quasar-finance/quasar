@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal};
+use cosmwasm_std::Decimal;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
