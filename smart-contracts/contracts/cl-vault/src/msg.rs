@@ -64,7 +64,7 @@ pub struct MergePositionMsg {
 #[cw_serde]
 pub enum ExtensionQueryMsg {
     /// Metadata surrounding the vault
-    Metadata,
+    Metadata {},
     /// Queries related to the lockup extension.
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
