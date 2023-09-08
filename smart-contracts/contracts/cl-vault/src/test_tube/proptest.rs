@@ -3,12 +3,15 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
     use cosmwasm_std::{Addr, Coin, Uint128, Decimal};
-    use osmosis_std::types::{osmosis::concentratedliquidity::{poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePositionResponse}, cosmos::base::v1beta1};
+    use osmosis_std::types::{
+        osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+        cosmos::base::v1beta1,
+    };
     use osmosis_test_tube::{Account, Module, OsmosisTestApp, SigningAccount, Wasm};
 
     use crate::{
-        msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg, ExtensionExecuteMsg, ModifyRangeMsg},
-        query::UserBalanceResponse,
+        msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg, ModifyRangeMsg},
+        query::{UserBalanceResponse, TotalAssetsResponse},
         test_tube::initialize::initialize::init_test_contract,
     };
 
@@ -34,29 +37,29 @@ mod tests {
         accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
          // TODO: get user DENOM_BASE balance
-        let balance_asset0 = 1000;
-        let amount0 = (balance_asset0 as f64 * (percentage / 100.0)).round() as u128;
+        let balance_asset0 = get_user_denom_balance(wasm, account, DENOM_BASE);
+        let amount0 = (balance_asset0.u128() as f64 * (percentage / 100.0)).round() as u128;
 
          // TODO: get user DENOM_QUOTE balance
-        let balance_asset1 = 1000;
-        let amount1 = (balance_asset1 as f64 * (percentage / 100.0)).round() as u128;
+        let balance_asset1 = get_user_denom_balance(wasm, account, DENOM_QUOTE);
+        let amount1 = (balance_asset1.u128() as f64 * (percentage / 100.0)).round() as u128;
 
-        // TODO: Get current pool position to know asset0 and asset1 as /osmosis.concentratedliquidity.v1beta1.FullPositionBreakdown
-        let (pos_asset0, pos_asset1) = (1000u128, 1000u128);
+        // Get current pool position to know asset0 and asset1 as /osmosis.concentratedliquidity.v1beta1.FullPositionBreakdown
+        let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address);
 
         // Calculate the ratio between pos_asset0 and pos_asset1
-        let ratio = pos_asset0 as f64 / pos_asset1 as f64;
+        let ratio = pos_assets.token0.amount.u128() as f64 / pos_assets.token1.amount.u128() as f64;
 
         // Calculate the adjusted amounts to deposit
         let adjusted_amount0: u128;
         let adjusted_amount1: u128;
         if ratio > 1.0 {
-            // If ratio is greater than 1, then asset0 has a higher amount. 
+            // If ratio is greater than 1, then asset0 has a higher amount.
             // So, adjust amount1 according to the ratio.
             adjusted_amount0 = amount0;
             adjusted_amount1 = (amount0 as f64 / ratio).round() as u128;
         } else {
-            // If ratio is less than or equal to 1, then asset1 has a higher or equal amount. 
+            // If ratio is less than or equal to 1, then asset1 has a higher or equal amount.
             // So, adjust amount0 according to the ratio.
             adjusted_amount1 = amount1;
             adjusted_amount0 = (amount1 as f64 * ratio).round() as u128;
@@ -65,6 +68,7 @@ mod tests {
         // TODO: Evaluate if checking that balance is not zero, as maybe a before iteration make him deposit the 100%,
         // or evaluate capping the max percentage to 90 to run indfinitely till max iterations
 
+        println!("Deposit amounts: {}, {}", adjusted_amount0, adjusted_amount1);
         // Execute deposit and get liquidity_created from emitted events
         let deposit = wasm.execute(
             contract_address.as_str(),
@@ -93,9 +97,10 @@ mod tests {
         percentage: f64,
         accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
-        let balance = 1000; // TODO: get user shares balance
-        let amount = (balance as f64 * (percentage / 100.0)).round() as u128;
+        let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
+        let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
+        println!("Withdraw amount: {}", amount);
         // Execute deposit and get liquidity_created from emitted events
         let withdraw = wasm.execute(
             contract_address.as_str(),
@@ -119,10 +124,11 @@ mod tests {
         percentage: f64,
         cl_pool_id: u64,
     ) {
-        let balance = 1000; // TODO: get user asset0 balance
-        let amount = (balance as f64 * (percentage / 100.0)).round() as u128;
+        let balance = get_user_denom_balance(wasm, account, DENOM_BASE);
+        let amount = (balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accorindlgy to amount_u128
+        println!("Swap amount: {}", amount);
 
         // TODO: Implement swap strategy
     }
@@ -133,7 +139,7 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount
     ) {
-        let (current_lower_tick, current_upper_tick) = (1i64, 100i64); // TODO: get current ticks
+        let (current_lower_tick, current_upper_tick) = get_position_ticks(wasm, contract_address);
 
         // Create new range ticks based on previous ticks by percentage variation
         // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
@@ -142,6 +148,7 @@ mod tests {
         let lower_tick = (current_lower_tick as f64 * (1.0 + percentage_factor)).round() as i64;
         let upper_tick = (current_upper_tick as f64 * (1.0 + percentage_factor)).round() as i64;
 
+        println!("Update range new lower_tick: {} new upper_tick: {}", lower_tick, upper_tick);
         // Execute deposit and get liquidity_created from emitted events
         let update_range = wasm.execute(
             contract_address.as_str(),
@@ -155,6 +162,56 @@ mod tests {
         ).unwrap();
     }
 
+    // GETTERS
+
+    fn get_user_denom_balance(
+        wasm: &Wasm<OsmosisTestApp>,
+        account: &SigningAccount,
+        denom: &str
+    ) -> Uint128 {
+        Uint128::new(1_000)
+    }
+
+    fn get_user_shares_balance(
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_address: &Addr,
+        account: &SigningAccount,
+    ) -> UserBalanceResponse {
+        wasm
+            .query(
+            contract_address.as_str(),
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                crate::msg::UserBalanceQueryMsg::UserSharesBalance {
+                    user: account.address(),
+                },
+            )),
+        )
+        .unwrap()
+    }
+
+    fn get_position_assets(
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_address: &Addr,
+    ) -> TotalAssetsResponse {
+        wasm
+            .query(
+            contract_address.as_str(),
+            &QueryMsg::TotalAssets {},
+        )
+        .unwrap()
+    }
+
+    fn get_position_ticks(
+        wasm: &Wasm<OsmosisTestApp>,
+        contract_address: &Addr,
+    ) -> (i64, i64) {
+        // TODO query_position will return a Vec of position_ids
+
+        // TODO Use those to take the latest one? or what?
+
+        (1000, 1000)
+    }
+
     // ASSERT METHODS
 
     fn assert_deposit_withdraw(
@@ -165,16 +222,8 @@ mod tests {
     ) {
         // TODO: multi-query foreach user created previously
         for account in accounts {
-            let shares: UserBalanceResponse = wasm
-                .query(
-                    contract_address.as_str(),
-                    &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                        crate::msg::UserBalanceQueryMsg::UserLockedBalance {
-                            user: account.address(),
-                        },
-                    )),
-                )
-                .unwrap();
+            let shares = get_user_shares_balance(wasm, contract_address, account);
+
             // Check that the current account iterated shares balance is the same we expect from Hashmap
             //assert_eq!(shares.balance, accounts_shares_balance.get(&account.address()));
         }
@@ -217,9 +266,9 @@ mod tests {
         }
     }
 
-    // get_account_index generates a list of random numbers between 0 and the ACCOUNTS_NUMBER-1 to use as accounts[account_index as usize]
+    // get_account_index generates a list of random numbers between 0 and the ACCOUNTS_NUMBER to use as accounts[account_index as usize]
     prop_compose! {
-        fn get_account_index_list()(list in prop::collection::vec(0..(ACCOUNTS_NUMBER-1), ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<u64> {
+        fn get_account_index_list()(list in prop::collection::vec(0..ACCOUNTS_NUMBER, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<u64> {
             list
         }
     }
@@ -277,7 +326,7 @@ mod tests {
                 ], ACCOUNTS_NUMBER)
                 .unwrap();
 
-            // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
+                // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
                 println!("Making first deposit for account: {}", i);
 

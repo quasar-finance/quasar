@@ -666,7 +666,7 @@ mod tests {
 
         RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        assert_eq!(super::get_range_admin(deps.as_ref()).unwrap(), info.sender);
+        assert_eq!(super::_get_range_admin(deps.as_ref()).unwrap(), info.sender);
     }
 
     #[test]

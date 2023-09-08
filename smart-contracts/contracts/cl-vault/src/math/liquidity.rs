@@ -86,7 +86,7 @@ mod tests {
         let current_sqrt_p = Decimal::from_atomics(70710678118654752440_u128, 18).unwrap();
         let sqrt_p_high = Decimal::from_atomics(74161984870956629487_u128, 18).unwrap();
 
-        let result = liquidity0(amount0_desired, current_sqrt_p, sqrt_p_high).unwrap();
+        let result = _liquidity0(amount0_desired, current_sqrt_p, sqrt_p_high).unwrap();
         // TODO our amount is slightly different 10 digits behind the comma, do we care about that?
         assert_eq!(result.to_string(), "1519437308.014768571720923239")
     }
@@ -97,7 +97,7 @@ mod tests {
         let current_sqrt_p = Decimal::from_atomics(70710678118654752440_u128, 18).unwrap();
         let sqrt_p_low = Decimal::from_atomics(67416615162732695594_u128, 18).unwrap();
 
-        let result = liquidity1(amount1_desired, current_sqrt_p, sqrt_p_low).unwrap();
+        let result = _liquidity1(amount1_desired, current_sqrt_p, sqrt_p_low).unwrap();
         assert_eq!(result.to_string(), "1517882343.751510418088349649");
     }
 
@@ -107,7 +107,7 @@ mod tests {
         let max_sqrt_price_low = Decimal::raw(300000000000000000000000000000000_u128);
         let amount0_desired: Decimal = Decimal::from_ratio(1000000_u128, 1_u128);
         // we only care about overflows here
-        let _ = liquidity0(amount0_desired, max_sqrt_price, max_sqrt_price_low).unwrap();
+        let _ = _liquidity0(amount0_desired, max_sqrt_price, max_sqrt_price_low).unwrap();
     }
 
     #[test]
@@ -116,6 +116,6 @@ mod tests {
         let max_sqrt_price_low = Decimal::raw(1000000000000000000000000000000000000_u128);
         let amount0_desired: Decimal = Decimal::from_ratio(1000000_u128, 1_u128);
         // we only care about overflows here
-        let _ = liquidity1(amount0_desired, max_sqrt_price, max_sqrt_price_low).unwrap();
+        let _ = _liquidity1(amount0_desired, max_sqrt_price, max_sqrt_price_low).unwrap();
     }
 }
