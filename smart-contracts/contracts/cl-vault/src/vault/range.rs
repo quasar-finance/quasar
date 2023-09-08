@@ -17,9 +17,12 @@ use osmosis_std::types::{
     },
 };
 
-use crate::{msg::{ExecuteMsg, MergePositionMsg}, debug};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
+use crate::{
+    debug,
+    msg::{ExecuteMsg, MergePositionMsg},
+};
 use crate::{
     helpers::get_spot_price,
     math::tick::price_to_tick,
@@ -56,15 +59,15 @@ pub fn execute_update_range(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    lower_price: String,
-    upper_price: String,
+    lower_price: Decimal,
+    upper_price: Decimal,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
     let storage = deps.storage;
     let querier = deps.querier;
 
-    let lower_tick = price_to_tick(storage, Decimal256::from_str(lower_price.as_str())?)?;
-    let upper_tick = price_to_tick(storage, Decimal256::from_str(upper_price.as_str())?)?;
+    let lower_tick = price_to_tick(storage, Decimal256::from(lower_price))?;
+    let upper_tick = price_to_tick(storage, Decimal256::from(upper_price))?;
 
     execute_update_range_ticks(
         storage,
@@ -139,7 +142,7 @@ pub fn handle_withdraw_position_reply(
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-
+    debug!(deps, "withdraw_response", msg);
     // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
     let amount0: Uint128 = msg.amount0.parse()?;
     let amount1: Uint128 = msg.amount1.parse()?;
@@ -162,10 +165,7 @@ pub fn handle_withdraw_position_reply(
 
     // // Save current remainders at state
     // CURRENT_REMAINDERS.save(deps.storage, &remainders)?;
-    CURRENT_BALANCE.save(
-        deps.storage,
-        &(amount0, amount1),
-    )?;
+    CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 
     let mut tokens_provided = vec![];
     if !amount0.is_zero() {
@@ -234,12 +234,13 @@ pub fn handle_initial_create_position_reply(
             .checked_sub(Uint128::from_str(&create_position_message.amount1)?)?,
     );
 
-    do_swap_deposit_merge(deps,
+    do_swap_deposit_merge(
+        deps,
         env,
         target_lower_tick,
         target_upper_tick,
         refunded_amounts,
-        create_position_message.position_id
+        create_position_message.position_id,
     )
 }
 
@@ -247,12 +248,12 @@ pub fn handle_initial_create_position_reply(
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 pub fn do_swap_deposit_merge(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
     refunded_amounts: (Uint128, Uint128),
-    position_id: u64
+    position_id: u64,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?;
     if swap_deposit_merge_state.is_some() {
@@ -280,15 +281,13 @@ pub fn do_swap_deposit_merge(
     // @notice: this actually works if this function (do_swap_deposit_merge) is called by
     // handle_initial_create_position_reply, double check if implementing it somewhere else
     let (balance0, balance1) = refunded_amounts;
-    debug!(deps, "oh no", "before_spot_price");
 
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
         (
             get_single_sided_deposit_0_to_1_swap_amount(
-                deps.storage,
-                &deps.querier,
+                deps.branch(),
                 balance0,
                 target_lower_tick,
                 target_upper_tick,
@@ -311,12 +310,10 @@ pub fn do_swap_deposit_merge(
         // this means we can save the position id of the first create_position
         POSITION.save(deps.storage, &Position { position_id })?;
         return Ok(Response::new()
-        .add_attribute("action", "swap_deposit_merge")
-        .add_attribute("method", "no_swap")
-        .add_attribute("new_position", position_id.to_string())
-    )
+            .add_attribute("action", "swap_deposit_merge")
+            .add_attribute("method", "no_swap")
+            .add_attribute("new_position", position_id.to_string()));
     };
-    debug!(deps, "hereaa", "before_spot_price");
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
@@ -420,7 +417,7 @@ fn handle_swap_success(
     Ok(Response::new()
         .add_submessage(SubMsg::reply_always(
             create_position_msg,
-            Replies::RangeInitialCreatePosition.into(),
+            Replies::RangeIterationCreatePosition.into(),
         ))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "create_position2")
@@ -683,8 +680,8 @@ mod tests {
             deps.as_mut(),
             env,
             info,
-            lower_price.to_string(),
-            upper_price.to_string(),
+            lower_price,
+            upper_price,
             max_slippage,
         )
         .unwrap();

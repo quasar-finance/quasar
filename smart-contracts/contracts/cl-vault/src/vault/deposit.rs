@@ -14,8 +14,9 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
-    helpers::must_pay_two,
+    helpers::must_pay_one_or_two,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -48,7 +49,7 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -98,6 +99,7 @@ pub fn handle_deposit_create_position_reply(
     let resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    debug!(deps, "resp_create_deposit_pos", resp);
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
@@ -190,7 +192,10 @@ pub fn handle_deposit_create_position_reply(
         attr("receiver", current_deposit.sender.as_str()),
     ];
 
-    // Fungify our positions together and mint the user shares to the cl-vault
+    // clear out the current deposit since it is no longer needed
+    CURRENT_DEPOSIT.remove(deps.storage);
+
+    // Merge our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
         .add_submessage(merge_submsg)
         .add_attribute(
