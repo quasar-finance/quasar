@@ -265,11 +265,9 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps,
-        SubMsgResponse, Uint256, WasmMsg,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
-    
-    
+
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{

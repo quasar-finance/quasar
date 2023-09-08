@@ -5,7 +5,8 @@ use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128, DepsMut, coin,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
+    Storage, Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -15,21 +16,23 @@ pub(crate) fn must_pay_one_or_two(
     info: &MessageInfo,
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
-    if info.funds.len() != 2 && info.funds.len() != 1{
-        return Err(ContractError::IncorrectAmountFunds ).into();
+    if info.funds.len() != 2 && info.funds.len() != 1 {
+        return Err(ContractError::IncorrectAmountFunds).into();
     }
 
     let token0 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.0).unwrap_or(coin(0, denoms.0));
+        .find(|coin| coin.denom == denoms.0)
+        .unwrap_or(coin(0, denoms.0));
 
     let token1 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.1).unwrap_or(coin(0, denoms.1));
+        .find(|coin| coin.denom == denoms.1)
+        .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
 }
@@ -259,7 +262,8 @@ mod tests {
             sender: Addr::unchecked("sender"),
             funds: vec![expected1, expected0, coin(200, "uqsr")],
         };
-        let _err = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err =
+            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     #[test]
