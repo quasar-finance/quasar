@@ -41,18 +41,26 @@ mod tests {
         accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
          // TODO: get user DENOM_BASE balance
-        let balance_asset0 = get_user_denom_balance(wasm, bank, account, DENOM_BASE);
-        let amount0 = (balance_asset0.balance.unwrap().amount as f64 * (percentage / 100.0)).round() as u128;
+        let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
+        let balance0_str = balance_asset0.balance.unwrap().amount;
+        let balance0_f64: f64 = balance0_str.parse().expect("Failed to parse balance to f64");
+        let amount0 = (balance0_f64 * (percentage / 100.0)).round() as u128;
 
          // TODO: get user DENOM_QUOTE balance
-        let balance_asset1 = get_user_denom_balance(wasm, bank, account, DENOM_QUOTE);
-        let amount1 = (balance_asset1.balance.unwrap().amount as f64 * (percentage / 100.0)).round() as u128;
+        let balance_asset1 = get_user_denom_balance(bank, account, DENOM_QUOTE);
+        let balance1_str = balance_asset1.balance.unwrap().amount;
+        let balance1_f64: f64 = balance1_str.parse().expect("Failed to parse balance to f64");
+        let amount1 = (balance1_f64 * (percentage / 100.0)).round() as u128;
 
-        // Get current pool position to know asset0 and asset1 as /osmosis.concentratedliquidity.v1beta1.FullPositionBreakdown
+        println!("Balance amounts: {}, {}", balance0_str, balance1_str);
+
+        // Get current pool position to know token0 and token1 amounts
         let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address);
+        println!("Position assets: {:#?}", pos_assets);
 
         // Calculate the ratio between pos_asset0 and pos_asset1
         let ratio = pos_assets.token0.amount.u128() as f64 / pos_assets.token1.amount.u128() as f64;
+        println!("Ratio: {}", ratio);
 
         // Calculate the adjusted amounts to deposit
         let adjusted_amount0: u128;
@@ -129,8 +137,10 @@ mod tests {
         percentage: f64,
         cl_pool_id: u64,
     ) {
-        let balance_response = get_user_denom_balance(wasm, bank, account, DENOM_BASE);
-        let amount = (balance_response.balance.unwrap().amount as f64 * (percentage / 100.0)).round() as u128;
+        let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
+        let balance_str = balance_response.balance.unwrap().amount;
+        let balance_f64: f64 = balance_str.parse().expect("Failed to parse balance to f64");
+        let amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
         println!("Swap amount: {}", amount);
@@ -171,7 +181,6 @@ mod tests {
     // GETTERS
 
     fn get_user_denom_balance(
-        wasm: &Wasm<OsmosisTestApp>,
         bank: &Bank<OsmosisTestApp>,
         account: &SigningAccount,
         denom: &str
@@ -237,7 +246,10 @@ mod tests {
             )
             .unwrap().position.unwrap().position;
 
-        (position.lower_tick, position.upper_tick)
+        match position {
+            Some(position) => (position.lower_tick, position.upper_tick),
+            None => panic!("Position not found"),
+        }
     }
 
     // ASSERT METHODS
