@@ -12,7 +12,7 @@ pub type ContractResult<T> = Result<T, ContractError>;
 
 /// AutocompoundingVault errors
 #[allow(missing_docs)]
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
