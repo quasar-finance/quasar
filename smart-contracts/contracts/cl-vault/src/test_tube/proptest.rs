@@ -40,13 +40,13 @@ mod tests {
         percentage: f64,
         accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
-         // TODO: get user DENOM_BASE balance
+         // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance0_str = balance_asset0.balance.unwrap().amount;
         let balance0_f64: f64 = balance0_str.parse().expect("Failed to parse balance to f64");
         let amount0 = (balance0_f64 * (percentage / 100.0)).round() as u128;
 
-         // TODO: get user DENOM_QUOTE balance
+         // Get user DENOM_QUOTE balance
         let balance_asset1 = get_user_denom_balance(bank, account, DENOM_QUOTE);
         let balance1_str = balance_asset1.balance.unwrap().amount;
         let balance1_f64: f64 = balance1_str.parse().expect("Failed to parse balance to f64");
@@ -70,9 +70,6 @@ mod tests {
             // If ratio is less than or equal to 1, adjust amount0 according to the ratio
             ((amount1 as f64 * ratio).round() as u128, amount1)
         };
-
-        // TODO: Evaluate if checking that balance is not zero, as maybe a before iteration make him deposit the 100%,
-        // or evaluate capping the max percentage to 90 to run indfinitely till max iterations
 
         // Initialize an empty Vec<Coin> and push only non zero amount coins
         let mut coins_to_deposit = Vec::new();
@@ -242,7 +239,9 @@ mod tests {
         let position_response: PositionResponse = wasm
             .query(
                 contract_address.as_str(),
-                &QueryMsg::TotalAssets {},
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
             )
             .unwrap();
 
@@ -290,6 +289,8 @@ mod tests {
 
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
+        // TODO: evaluate if lower_tick and upper_tick are too much arbitrary rn
+        // TODO: 
         fn get_initial_range()(lower_tick in 0i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
@@ -378,7 +379,7 @@ mod tests {
                 ], ACCOUNTS_NUMBER)
                 .unwrap();
 
-                // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
+            // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
                 println!("Making first deposit for account: {}", i);
 

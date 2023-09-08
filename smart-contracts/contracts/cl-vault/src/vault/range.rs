@@ -63,15 +63,11 @@ pub fn execute_update_range(
     upper_price: Decimal,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    let storage = deps.storage;
-    let querier = deps.querier;
-
-    let lower_tick = price_to_tick(storage, Decimal256::from(lower_price))?;
-    let upper_tick = price_to_tick(storage, Decimal256::from(upper_price))?;
+    let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
+    let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
 
     execute_update_range_ticks(
-        storage,
-        &querier,
+        deps,
         env,
         info,
         lower_tick.try_into().unwrap(),
@@ -86,20 +82,19 @@ pub fn execute_update_range(
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
 pub fn execute_update_range_ticks(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     lower_tick: i64,
     upper_tick: i64,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    assert_range_admin(storage, &info.sender)?;
+    assert_range_admin(deps.storage, &info.sender)?;
 
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(storage, querier, &env)?;
+    let position_breakdown = get_position(deps.storage, &deps.querier, &env)?;
     let position = position_breakdown.position.unwrap();
 
     let withdraw_msg = MsgWithdrawPosition {
@@ -111,7 +106,7 @@ pub fn execute_update_range_ticks(
     };
 
     MODIFY_RANGE_STATE.save(
-        storage,
+        deps.storage,
         // todo: should ModifyRangeState be an enum?
         &Some(ModifyRangeState {
             lower_tick,

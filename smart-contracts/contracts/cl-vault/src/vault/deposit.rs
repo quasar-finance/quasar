@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
@@ -96,14 +96,14 @@ pub fn handle_deposit_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
-    let resp: MsgCreatePositionResponse = data.try_into()?;
+    let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    debug!(deps, "resp_create_deposit_pos", resp);
+    debug!(deps, "create_deposit_position_resp", create_deposit_position_resp);
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    let user_created_liquidity = Decimal::raw(resp.liquidity_created.parse()?);
+    let user_created_liquidity = Decimal::raw(create_deposit_position_resp.liquidity_created.parse()?);
 
     let existing_position = get_position(deps.storage, &deps.querier, &env)?
         .position
@@ -112,7 +112,7 @@ pub fn handle_deposit_create_position_reply(
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
     let existing_liquidity = Decimal::from_str(existing_position.liquidity.as_str())?;
 
-    let total_vault_shares: Uint128 = BankQuerier::new(&deps.querier)
+    let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
@@ -120,7 +120,7 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
-    // TODOSN: Document this
+    // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {
@@ -133,8 +133,7 @@ pub fn handle_deposit_create_position_reply(
                 existing_liquidity.denominator(),
                 existing_liquidity.numerator(),
             )
-            .try_into()
-            .unwrap()
+            .try_into()?
     };
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
@@ -147,6 +146,7 @@ pub fn handle_deposit_create_position_reply(
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
+
     // save the shares in the user map
     SHARES.update(
         deps.storage,
@@ -167,12 +167,12 @@ pub fn handle_deposit_create_position_reply(
     // TODOSN: Document the following refund_bank_msg purpose
     let bank_msg = refund_bank_msg(
         current_deposit.clone(),
-        &resp,
+        &create_deposit_position_resp,
         pool_config.token0,
         pool_config.token1,
     )?;
 
-    let position_ids = vec![existing_position.position_id, resp.position_id];
+    let position_ids = vec![existing_position.position_id, create_deposit_position_resp.position_id];
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids,
@@ -200,7 +200,7 @@ pub fn handle_deposit_create_position_reply(
         .add_submessage(merge_submsg)
         .add_attribute(
             "position_ids",
-            format!("{},{}", existing_position.position_id, resp.position_id),
+            format!("{},{}", existing_position.position_id, create_deposit_position_resp.position_id),
         )
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
