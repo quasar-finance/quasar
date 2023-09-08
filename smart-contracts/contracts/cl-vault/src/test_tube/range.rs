@@ -128,8 +128,8 @@ mod test {
             println!("{:?}", cl.query_position_by_id(&PositionByIdRequest{position_id: after_position.position_ids[0]}).unwrap());
     }
 
-    // #[test]
-    // #[ignore]
+    #[test]
+    #[ignore]
     fn move_range_same_single_side_works() {
         let (app, contract, cl_pool_id, admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",

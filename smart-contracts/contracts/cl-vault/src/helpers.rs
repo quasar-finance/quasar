@@ -135,22 +135,24 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     deps: DepsMut,
     token0_balance: Uint128,
     lower_tick: i64,
+    current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
     let spot_price = Decimal256::from(get_spot_price(deps.storage, &deps.querier)?);
     let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-
-    let pool_metadata_constant: Uint128 = spot_price
+    let pool_metadata_constant_times_spot_price: Decimal256 = current_price
+        .sqrt()
         .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt())?
-        .to_uint_floor() // todo: this is big, so should be safe, right?
-        .try_into()?;
+        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
+        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
+        .checked_mul(spot_price)?;
 
-    let swap_amount = token0_balance.checked_multiply_ratio(
-        pool_metadata_constant,
-        pool_metadata_constant.checked_add(Uint128::one())?,
-    )?;
+    let denominator = Decimal256::one()
+        .checked_add(Decimal256::one().checked_div(pool_metadata_constant_times_spot_price)?)?;
+
+    let swap_amount = token0_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
 
     Ok(swap_amount)
 }
@@ -160,19 +162,23 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     querier: &QuerierWrapper,
     token1_balance: Uint128,
     lower_tick: i64,
+    current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
     let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
     let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant: Uint128 = spot_price
+    let pool_metadata_constant_over_spot_price: Decimal256 = current_price
+        .sqrt()
         .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt())?
-        .to_uint_floor() // todo: this is big, so should be safe, right?
-        .try_into()?;
+        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
+        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
+        .checked_div(spot_price)?;
 
-    let swap_amount =
-        token1_balance.checked_div(pool_metadata_constant.checked_add(Uint128::one())?)?;
+    let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
+
+    let swap_amount = token1_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
 
     Ok(swap_amount)
 }
@@ -196,6 +202,17 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
         Err(ContractError::Unauthorized {})
     } else {
         Ok(caller.clone())
+    }
+}
+
+pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
+    let remainder = amount % multiple;
+    if remainder == 0 {
+        amount
+    } else if amount < 0 {
+        amount - remainder
+    } else {
+        amount + multiple - remainder
     }
 }
 
@@ -263,5 +280,32 @@ mod tests {
         };
         let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
         assert_eq!((coin(200, "uatom"), coin(0, "uosmo")), res)
+    }
+
+    #[test]
+    fn test_round_up_to_nearest_multiple() {
+        assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
+        assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(12, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(13, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(14, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(15, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(16, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(17, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(18, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(19, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(20, 5), 20);
+        // does it also work for negative inputs?
+        assert_eq!(round_up_to_nearest_multiple(-10, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-11, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-12, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-13, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-14, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-15, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-16, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-17, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
     }
 }
