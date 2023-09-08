@@ -63,31 +63,40 @@ mod tests {
         println!("Ratio: {}", ratio);
 
         // Calculate the adjusted amounts to deposit
-        let adjusted_amount0: u128;
-        let adjusted_amount1: u128;
-        if ratio > 1.0 {
-            // If ratio is greater than 1, then asset0 has a higher amount.
-            // So, adjust amount1 according to the ratio.
-            adjusted_amount0 = amount0;
-            adjusted_amount1 = (amount0 as f64 / ratio).round() as u128;
+        let (adjusted_amount0, adjusted_amount1) = if ratio > 1.0 {
+            // If ratio is greater than 1, adjust amount1 according to the ratio
+            (amount0, (amount0 as f64 / ratio).round() as u128)
         } else {
-            // If ratio is less than or equal to 1, then asset1 has a higher or equal amount.
-            // So, adjust amount0 according to the ratio.
-            adjusted_amount1 = amount1;
-            adjusted_amount0 = (amount1 as f64 * ratio).round() as u128;
-        }
+            // If ratio is less than or equal to 1, adjust amount0 according to the ratio
+            ((amount1 as f64 * ratio).round() as u128, amount1)
+        };
 
         // TODO: Evaluate if checking that balance is not zero, as maybe a before iteration make him deposit the 100%,
         // or evaluate capping the max percentage to 90 to run indfinitely till max iterations
 
-        println!("Deposit amounts: {}, {}", adjusted_amount0, adjusted_amount1);
-        // Execute deposit and get liquidity_created from emitted events
-        let deposit = wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-            &[Coin::new(adjusted_amount0, DENOM_BASE), Coin::new(adjusted_amount1, DENOM_QUOTE)],
-            &account,
-        ).unwrap();
+        // Initialize an empty Vec<Coin> and push only non zero amount coins
+        let mut coins_to_deposit = Vec::new();
+        if adjusted_amount0 > 0 {
+            coins_to_deposit.push(Coin::new(adjusted_amount0, DENOM_BASE));
+        }
+        if adjusted_amount1 > 0 {
+            coins_to_deposit.push(Coin::new(adjusted_amount1, DENOM_QUOTE));
+        }
+
+        // Check if coins_to_deposit is not empty before proceeding
+        if coins_to_deposit.is_empty() {
+            // Handle the case where no coins are to be deposited
+            println!("No coins to deposit!");
+        } else {
+            println!("Deposit amounts: {:#?}", coins_to_deposit);
+            // Execute deposit and get liquidity_created from emitted events
+            let deposit = wasm.execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
+                &coins_to_deposit,
+                &account,
+            ).unwrap();
+        }
         /*
         // TODO: Get liquidity_created value from deposit response
         let deposit_resp: MsgCreatePositionResponse = deposit.data.try_into();
