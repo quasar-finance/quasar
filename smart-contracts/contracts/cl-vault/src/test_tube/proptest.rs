@@ -178,8 +178,8 @@ mod tests {
         let update_range = wasm.execute(
             contract_address.as_str(),
             &ModifyRangeMsg {
-                lower_price: lower_tick.to_string(),
-                upper_price: upper_tick.to_string(),
+                lower_price: Decimal::new(Uint128::new(lower_tick as u128)),
+                upper_price: Decimal::new(Uint128::new(upper_tick as u128)),
                 max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
             },
             &[],
@@ -336,6 +336,7 @@ mod tests {
             // Creating test var utils
             let mut accounts_shares_balance: HashMap<String, Uint128> = HashMap::new();
 
+            println!("Initial ticks: {}, {}", initial_lower_tick, initial_upper_tick);
             // Creating test core
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -389,25 +390,21 @@ mod tests {
                 match actions[i] {
                     Action::Deposit => {
                         println!("Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
-
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
                         println!("Withdraw logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
-
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Swap => {
                         println!("Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
-
                         swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
                         println!("UpdateRange logic here with percentage: {}", percentages[i]);
-
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
                         //assert_update_range(); // todo!()
                     },
