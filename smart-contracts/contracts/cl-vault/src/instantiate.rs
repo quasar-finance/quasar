@@ -14,7 +14,7 @@ use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
     PoolConfig, Position, ADMIN_ADDRESS, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
-    VAULT_DENOM,
+    VAULT_DENOM, METADATA, Metadata,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -44,6 +44,8 @@ pub fn handle_instantiate(
             token1: pool.token1.clone(),
         },
     )?;
+
+    METADATA.save(deps.storage, &Metadata{ thesis: msg.thesis, name: msg.name })?;
 
     let admin = deps.api.addr_validate(&msg.admin)?;
 
