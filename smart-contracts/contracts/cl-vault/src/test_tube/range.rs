@@ -106,7 +106,7 @@ mod test {
             .unwrap()
         );
 
-        let result = wasm
+        let _result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(

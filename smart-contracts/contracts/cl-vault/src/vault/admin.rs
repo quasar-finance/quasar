@@ -154,7 +154,7 @@ mod tests {
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &Rewards::from_coins(rewards.clone()))
+            .save(deps.as_mut().storage, &Rewards::from_coins(rewards))
             .unwrap();
 
         RANGE_ADMIN

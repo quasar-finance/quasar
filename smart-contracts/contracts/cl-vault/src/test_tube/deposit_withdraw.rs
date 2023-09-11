@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Coin, Decimal, Uint128};
+    use cosmwasm_std::{Coin};
 
     use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
-        msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
+        msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::UserBalanceResponse,
         test_tube::default_init,
     };

@@ -40,7 +40,7 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        accounts_shares_balance: &HashMap<String, Uint128>,
+        _accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
@@ -93,12 +93,12 @@ mod tests {
         } else {
             println!("Deposit amounts: {:#?}", coins_to_deposit);
             // Execute deposit and get liquidity_created from emitted events
-            let deposit = wasm
+            let _deposit = wasm
                 .execute(
                     contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
                     &coins_to_deposit,
-                    &account,
+                    account,
                 )
                 .unwrap();
         }
@@ -121,14 +121,14 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        accounts_shares_balance: &HashMap<String, Uint128>,
+        _accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
         println!("Withdraw amount: {}", amount);
         // Execute deposit and get liquidity_created from emitted events
-        let withdraw = wasm
+        let _withdraw = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
@@ -136,7 +136,7 @@ mod tests {
                     amount: Uint128::new(amount),
                 }, // Nice to have: Make recipient random
                 &[],
-                &account,
+                account,
             )
             .unwrap();
 
@@ -149,12 +149,12 @@ mod tests {
     }
 
     fn swap(
-        wasm: &Wasm<OsmosisTestApp>,
+        _wasm: &Wasm<OsmosisTestApp>,
         bank: &Bank<OsmosisTestApp>,
-        contract_address: &Addr,
+        _contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        cl_pool_id: u64,
+        _cl_pool_id: u64,
     ) {
         let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance_str = balance_response.balance.unwrap().amount;
@@ -208,7 +208,7 @@ mod tests {
         );
 
         // Execute deposit and get liquidity_created from emitted events
-        let update_range = wasm
+        let _update_range = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
@@ -219,7 +219,7 @@ mod tests {
                     },
                 )),
                 &[],
-                &admin_account,
+                admin_account,
             )
             .unwrap();
     }
@@ -299,11 +299,11 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
         accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: &HashMap<String, Uint128>,
+        _accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         // TODO: multi-query foreach user created previously
         for account in accounts {
-            let shares = get_user_shares_balance(wasm, contract_address, account);
+            let _shares = get_user_shares_balance(wasm, contract_address, account);
 
             // Check that the current account iterated shares balance is the same we expect from Hashmap
             //assert_eq!(shares.balance, accounts_shares_balance.get(&account.address()));
@@ -367,7 +367,7 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test var utils
-            let mut accounts_shares_balance: HashMap<String, Uint128> = HashMap::new();
+            let accounts_shares_balance: HashMap<String, Uint128> = HashMap::new();
 
             println!("Initial ticks: {}, {}", initial_lower_tick, initial_upper_tick);
             // Creating test core
