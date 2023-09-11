@@ -145,12 +145,17 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant_times_spot_price: Decimal256 = current_price
-        .sqrt()
-        .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
-        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
-        .checked_mul(spot_price)?;
+
+    let cur_price_sqrt = current_price.sqrt();
+    let lower_price_sqrt = lower_price.sqrt();
+    let upper_price_sqrt = upper_price.sqrt();
+
+    let pool_metadata_constant: Decimal256 = cur_price_sqrt
+        .checked_mul(lower_price_sqrt)?
+        .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
+        .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
+
+    let pool_metadata_constant_times_spot_price = pool_metadata_constant.checked_mul(spot_price)?;
 
     let denominator = Decimal256::one()
         .checked_add(Decimal256::one().checked_div(pool_metadata_constant_times_spot_price)?)?;
@@ -172,12 +177,17 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant_over_spot_price: Decimal256 = current_price
-        .sqrt()
-        .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
-        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
-        .checked_div(spot_price)?;
+
+    let cur_price_sqrt = current_price.sqrt();
+    let lower_price_sqrt = lower_price.sqrt();
+    let upper_price_sqrt = upper_price.sqrt();
+
+    let pool_metadata_constant: Decimal256 = cur_price_sqrt
+    .checked_mul(lower_price_sqrt)?
+    .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
+    .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
+
+    let pool_metadata_constant_over_spot_price: Decimal256 = pool_metadata_constant.checked_div(spot_price)?;
 
     let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
 

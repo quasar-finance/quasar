@@ -55,21 +55,24 @@ within the range, we can simplify by substituting $P_c$ for $P_{uc}$ and $P_{lc}
 Where $P_c$ is the current price, $P_u$ is the upper price, and $P_l$ is the lower price.
 
 token0:
-$$L=\frac{\Delta x\sqrt{P_{c}}\sqrt{P_l}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
+$$L=\frac{\Delta x\sqrt{P_{c}}\sqrt{P_u}}{\sqrt{P_{u}}-\sqrt{P_c}}$$
 token1:
-$$L=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_{c}}}$$
+$$L=\frac{\Delta y}{\sqrt{P_c}-\sqrt{P_{l}}}$$
 
 By setting these two liquidity formulas equal to each other, we are implicitly stating that the amount of token0 awe are depositiing, will match up correctly with the amount of token1 we are depositing. That gives us this equation:
 
-$$\frac{\Delta x\sqrt{P_{c}}\sqrt{P_l}}{\sqrt{P_{c}}-\sqrt{P_l}}=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_{c}}}$$
+$$\frac{\Delta x\sqrt{P_{c}}\sqrt{P_u}}{\sqrt{P_{u}}-\sqrt{P_c}}=\frac{\Delta y}{\sqrt{P_c}-\sqrt{P_{l}}}$$
 
 which we can rearrange and solve for $\Delta y$:
 
-$$\Delta y=\Delta x\sqrt{P_{c}}\sqrt{P_l}\frac{\sqrt{P_u}-\sqrt{P_{c}}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
+$$\Delta y=\Delta x(\sqrt{P_{c}}-\sqrt{P_l})
+\frac{\sqrt{P_u}\sqrt{P_{c}}}{\sqrt{P_{l}}-\sqrt{P_c}}$$
 
 lets define a pool metadata variable $K$:
 
-$$K=\sqrt{P_c}\sqrt{P_l}\frac{\sqrt{P_u}-\sqrt{P_{c}}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
+$$K=(\sqrt{P_{c}}-\sqrt{P_l})
+\frac{\sqrt{P_u}\sqrt{P_{c}}}{\sqrt{P_{l}}-\sqrt{P_c}}$$
+
 which gives us
 $$\Delta y=\Delta xK$$
 
