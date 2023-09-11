@@ -65,13 +65,17 @@ $$\frac{\Delta x\sqrt{P_{c}}\sqrt{P_u}}{\sqrt{P_{u}}-\sqrt{P_c}}=\frac{\Delta y}
 
 which we can rearrange and solve for $\Delta y$:
 
-$$\Delta y=\Delta x(\sqrt{P_{c}}-\sqrt{P_l})
-\frac{\sqrt{P_u}\sqrt{P_{c}}}{\sqrt{P_{l}}-\sqrt{P_c}}$$
+$$
+\Delta y=\Delta x(\sqrt{P_{c}}-\sqrt{P_l})
+\frac{\sqrt{P_u}\sqrt{P_{c}}}{\sqrt{P_{l}}-\sqrt{P_c}}
+$$
 
 lets define a pool metadata variable $K$:
 
-$$K=(\sqrt{P_{c}}-\sqrt{P_l})
-\frac{\sqrt{P_u}\sqrt{P_{c}}}{\sqrt{P_{l}}-\sqrt{P_c}}$$
+$$
+K=(\sqrt{P_{c}}-\sqrt{P_l})
+\frac{\sqrt{P_u}\sqrt{P_{c}}}{\sqrt{P_{l}}-\sqrt{P_c}}
+$$
 
 which gives us
 $$\Delta y=\Delta xK$$
@@ -80,11 +84,11 @@ Now that we have a relationship between what an even deposit would contain (in t
 
 We can use the spot price formula to get the spot price of the pool:
 
-$$P_s=\frac{y}{x}$$
+$$P_c=\frac{y}{x}$$
 
 which we can rearrange to get the amount of y tokens we need in terms of x tokens:
 
-$$y=xP_s$$
+$$y=xP_c$$
 
 We now introduce two new variables: $x'$ and $x''$, where $x'$ is the amount of x tokens we will NOT swap, and $x''$ is the amount of x tokens we WILL swap. Of course, implicitly this means we have
 
@@ -96,17 +100,17 @@ We are now looking to swap such that the following relationship is satisfied:
 
 $$\Delta x=\frac{\Delta y}{K}$$
 
-We will replace $\Delta x$ with the amount of tokens we are NOT swapping ($x'$). But how do we replace $\Delta y$? We know that $\Delta y$ is just $\Delta x$ over the spot price, so we can replace $\Delta y$ with $\frac{\Delta x}{P_s}$: and we know that in order to get to $\Delta y$ from $\Delta x$, we will need to swap these tokens. Ah! but we already have a variable that tells us how many tokens we will swap: $x''$. So we can replace $\Delta x$ with $x''$:
+We will replace $\Delta x$ with the amount of tokens we are NOT swapping ($x'$). But how do we replace $\Delta y$? We know that $\Delta y$ is just $\Delta x$ multiplied by the spot price, so we can replace $\Delta y$ with $\Delta xP_c$: and we know that in order to get to $\Delta y$ from $\Delta x$, we will need to swap these tokens. Ah! but we already have a variable that tells us how many tokens we will swap: $x''$. So we can replace $\Delta x$ with $x''$:
 
-$$x'=\frac{x''}{P_sK}$$
+$$x'=\frac{x''P_c}{K}$$
 
 We are interested in finding the exact amount of tokens to swap, so let's substitute and solve for $x''$ in terms of x:
 
-$$x-x''=\frac{x''}{P_sK}$$
+$$x-x''=\frac{x''P_c}{K}$$
 
 After some clever algebra, one can verify that we get:
 
-$$x''=\frac{x}{1+\frac{1}{P_sK}}$$
+$$x''=\frac{x}{1+\frac{P_c}{K}}$$
 
 Where $x''$ is the amount of tokens we will swap. and $x$ is the total amount of tokens we have.
 
@@ -120,7 +124,7 @@ $$y'=y-y''$$
 
 The inverse spot price for x in terms of y is:
 
-$$x=\frac{y}{P_s}$$
+$$x=\frac{y}{P_c}$$
 
 We are now looking to swap such that the following relationship is satisfied:
 
@@ -128,19 +132,23 @@ $$\Delta y=\Delta xK$$
 
 Where K is the same as above.
 
-We will replace $\Delta y$ with the amount of tokens we are NOT swapping ($y'$). But how do we replace $\Delta x$? We know that $\Delta x$ is just some amount of y tokens multiplied by the spot price, so we can replace $\Delta x$ with $\hat{y}P_s$. Multiplying by the spot price is equivalent to saying, swapping these tokens, but how do we know how many $\hat{y}$ tokens we need to swap?, Ah! but we already have a variable that tells us how many tokens we will swap: $y''$. So we can replace $\hat{y}$ with $y''$:
+We will replace $\Delta y$ with the amount of tokens we are NOT swapping ($y'$). But how do we replace $\Delta x$? We know that $\Delta x$ is just some amount of y tokens over by the spot price, so we can replace $\Delta x$ with $\frac{\Delta{y}}{P_c}$. This is equivalent to saying, swap these tokens, but how do we know how many $\Delta{y}$ tokens we need to swap?, Ah! but we already have a variable that tells us how many tokens we will swap: $y''$. So we can replace $\Delta{y}$ with $y''$:
 
-$$y'=\frac{y''K}{P_s}$$
+$$y'=\frac{y''K}{P_c}$$
 
 substituting and solving for the amount of tokens to swap given our total amount of y tokens gives us:
 
-$$y-y''=\frac{y''K}{P_s}$$
+$$y-y''=\frac{y''K}{P_c}$$
 
 After some clever algebra, it is trivial for one to verify that we get:
 
-$$y''=\frac{y}{1+\frac{K}{P_s}}$$
+$$y''=\frac{y}{1+\frac{K}{P_c}}$$
 
 Where $y''$ is the amount of tokens we will swap. and $y$ is the total amount of tokens we have.
+
+and let us not forget that
+
+$$K=\sqrt{P_c}\sqrt{P_l}\frac{\sqrt{P_u}-\sqrt{P_{c}}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
 
 ### Further/Future optimizations
 
