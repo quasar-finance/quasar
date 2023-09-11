@@ -1,36 +1,38 @@
 use std::str::FromStr;
 
+use crate::debug;
 use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
+    Storage, Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
-pub(crate) fn must_pay_two(
+pub(crate) fn must_pay_one_or_two(
     info: &MessageInfo,
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
-    if info.funds.len() != 2 {
-        return Err(cw_utils::PaymentError::MultipleDenoms {}.into());
+    if info.funds.len() != 2 && info.funds.len() != 1 {
+        return Err(ContractError::IncorrectAmountFunds).into();
     }
 
     let token0 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.0 && coin.amount > Uint128::zero())
-        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.0))?;
+        .find(|coin| coin.denom == denoms.0)
+        .unwrap_or(coin(0, denoms.0));
 
     let token1 = info
         .funds
         .clone()
         .into_iter()
-        .find(|coin| coin.denom == denoms.1 && coin.amount > Uint128::zero())
-        .ok_or(cw_utils::PaymentError::MissingDenom(denoms.1))?;
+        .find(|coin| coin.denom == denoms.1)
+        .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
 }
@@ -133,25 +135,27 @@ pub fn get_spot_price(
 
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     token0_balance: Uint128,
     lower_tick: i64,
+    current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
+    let spot_price = Decimal256::from(get_spot_price(deps.storage, &deps.querier)?);
     let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant: Uint128 = spot_price
+    let pool_metadata_constant_times_spot_price: Decimal256 = current_price
+        .sqrt()
         .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt())?
-        .to_uint_floor() // todo: this is big, so should be safe, right?
-        .try_into()?;
+        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
+        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
+        .checked_mul(spot_price)?;
 
-    let swap_amount = token0_balance.checked_multiply_ratio(
-        pool_metadata_constant,
-        pool_metadata_constant.checked_add(Uint128::one())?,
-    )?;
+    let denominator = Decimal256::one()
+        .checked_add(Decimal256::one().checked_div(pool_metadata_constant_times_spot_price)?)?;
+
+    let swap_amount = token0_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
 
     Ok(swap_amount)
 }
@@ -161,19 +165,23 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     querier: &QuerierWrapper,
     token1_balance: Uint128,
     lower_tick: i64,
+    current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
     let spot_price = Decimal256::from(get_spot_price(storage, querier)?);
     let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
-    let pool_metadata_constant: Uint128 = spot_price
+    let pool_metadata_constant_over_spot_price: Decimal256 = current_price
+        .sqrt()
         .checked_mul(lower_price.sqrt())?
-        .checked_mul(upper_price.sqrt())?
-        .to_uint_floor() // todo: this is big, so should be safe, right?
-        .try_into()?;
+        .checked_mul(upper_price.sqrt().checked_sub(current_price.sqrt())?)?
+        .checked_div(current_price.sqrt().checked_sub(lower_price.sqrt())?)?
+        .checked_div(spot_price)?;
 
-    let swap_amount =
-        token1_balance.checked_div(pool_metadata_constant.checked_add(Uint128::one())?)?;
+    let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
+
+    let swap_amount = token1_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
 
     Ok(swap_amount)
 }
@@ -200,6 +208,17 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
     }
 }
 
+pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
+    let remainder = amount % multiple;
+    if remainder == 0 {
+        amount
+    } else if amount < 0 {
+        amount - remainder
+    } else {
+        amount + multiple - remainder
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -208,7 +227,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn must_pay_two_works_ordered() {
+    fn must_pay_one_or_two_works_ordered() {
         let expected0 = coin(100, "uatom");
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
@@ -216,13 +235,13 @@ mod tests {
             funds: vec![expected0.clone(), expected1.clone()],
         };
         let (token0, token1) =
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
         assert_eq!(expected0, token0);
         assert_eq!(expected1, token1);
     }
 
     #[test]
-    fn must_pay_two_works_unordered() {
+    fn must_pay_one_or_two_works_unordered() {
         let expected0 = coin(100, "uatom");
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
@@ -230,28 +249,67 @@ mod tests {
             funds: vec![expected1.clone(), expected0.clone()],
         };
         let (token0, token1) =
-            must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
         assert_eq!(expected0, token0);
         assert_eq!(expected1, token1);
     }
 
     #[test]
-    fn must_pay_two_rejects_three() {
+    fn must_pay_one_or_two_rejects_three() {
         let expected0 = coin(100, "uatom");
         let expected1 = coin(200, "uosmo");
         let info = MessageInfo {
             sender: Addr::unchecked("sender"),
             funds: vec![expected1, expected0, coin(200, "uqsr")],
         };
-        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let _err =
+            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
     }
 
     #[test]
-    fn must_pay_two_rejects_one() {
+    fn must_pay_one_or_two_accepts_second_token() {
         let info = MessageInfo {
             sender: Addr::unchecked("sender"),
-            funds: vec![coin(200, "uqsr")],
+            funds: vec![coin(200, "uosmo")],
         };
-        let _err = must_pay_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
+        let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!((coin(0, "uatom"), coin(200, "uosmo")), res)
+    }
+
+    #[test]
+    fn must_pay_one_or_two_accepts_first_token() {
+        let info = MessageInfo {
+            sender: Addr::unchecked("sender"),
+            funds: vec![coin(200, "uatom")],
+        };
+        let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
+        assert_eq!((coin(200, "uatom"), coin(0, "uosmo")), res)
+    }
+
+    #[test]
+    fn test_round_up_to_nearest_multiple() {
+        assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
+        assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(12, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(13, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(14, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(15, 5), 15);
+        assert_eq!(round_up_to_nearest_multiple(16, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(17, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(18, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(19, 5), 20);
+        assert_eq!(round_up_to_nearest_multiple(20, 5), 20);
+        // does it also work for negative inputs?
+        assert_eq!(round_up_to_nearest_multiple(-10, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-11, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-12, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-13, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-14, 5), -10);
+        assert_eq!(round_up_to_nearest_multiple(-15, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-16, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-17, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
+        assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
     }
 }

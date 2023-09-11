@@ -34,8 +34,8 @@ pub fn execute_withdraw(
     // let shares = must_pay(&info, vault_denom.as_str())?;
 
     // get the amount from SHARES state
-    let locked_amount = SHARES.load(deps.storage, info.sender.clone())?;
-    let left_over = locked_amount
+    let user_shares = SHARES.load(deps.storage, info.sender.clone())?;
+    let left_over = user_shares
         .checked_sub(amount)
         .map_err(|_| ContractError::InsufficientFunds)?;
     SHARES.save(deps.storage, info.sender, &left_over)?;

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
@@ -14,8 +14,9 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
-    helpers::must_pay_two,
+    helpers::must_pay_one_or_two,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -25,7 +26,7 @@ use crate::{
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
-pub(crate) fn execute_any_deposit(
+pub(crate) fn _execute_any_deposit(
     _deps: DepsMut,
     _env: Env,
     _info: &MessageInfo,
@@ -48,7 +49,7 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_two(&info, (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -95,13 +96,14 @@ pub fn handle_deposit_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
-    let resp: MsgCreatePositionResponse = data.try_into()?;
+    let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    debug!(deps, "create_deposit_position_resp", create_deposit_position_resp);
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    let user_created_liquidity = Decimal::raw(resp.liquidity_created.parse()?);
+    let user_created_liquidity = Decimal::raw(create_deposit_position_resp.liquidity_created.parse()?);
 
     let existing_position = get_position(deps.storage, &deps.querier, &env)?
         .position
@@ -110,7 +112,7 @@ pub fn handle_deposit_create_position_reply(
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
     let existing_liquidity = Decimal::from_str(existing_position.liquidity.as_str())?;
 
-    let total_vault_shares: Uint128 = BankQuerier::new(&deps.querier)
+    let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
         .unwrap()
@@ -118,7 +120,7 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
-    // TODOSN: Document this
+    // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         existing_liquidity.to_uint_floor().try_into().unwrap()
     } else {
@@ -131,8 +133,7 @@ pub fn handle_deposit_create_position_reply(
                 existing_liquidity.denominator(),
                 existing_liquidity.numerator(),
             )
-            .try_into()
-            .unwrap()
+            .try_into()?
     };
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
@@ -145,6 +146,7 @@ pub fn handle_deposit_create_position_reply(
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
+
     // save the shares in the user map
     SHARES.update(
         deps.storage,
@@ -165,12 +167,12 @@ pub fn handle_deposit_create_position_reply(
     // TODOSN: Document the following refund_bank_msg purpose
     let bank_msg = refund_bank_msg(
         current_deposit.clone(),
-        &resp,
+        &create_deposit_position_resp,
         pool_config.token0,
         pool_config.token1,
     )?;
 
-    let position_ids = vec![existing_position.position_id, resp.position_id];
+    let position_ids = vec![existing_position.position_id, create_deposit_position_resp.position_id];
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids,
@@ -190,12 +192,15 @@ pub fn handle_deposit_create_position_reply(
         attr("receiver", current_deposit.sender.as_str()),
     ];
 
-    // Fungify our positions together and mint the user shares to the cl-vault
+    // clear out the current deposit since it is no longer needed
+    CURRENT_DEPOSIT.remove(deps.storage);
+
+    // Merge our positions together and mint the user shares to the cl-vault
     let mut response = Response::new()
         .add_submessage(merge_submsg)
         .add_attribute(
             "position_ids",
-            format!("{},{}", existing_position.position_id, resp.position_id),
+            format!("{},{}", existing_position.position_id, create_deposit_position_resp.position_id),
         )
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
@@ -259,22 +264,21 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        from_binary,
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest,
-        SubMsgResponse, Uint256, WasmMsg,
+        to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
-    use cosmwasm_std::{Binary, ContractResult as CwContractResult};
-    use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
+
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest,
-            PositionByIdResponse,
+            FullPositionBreakdown, Position as OsmoPosition,
         },
     };
 
-    use crate::state::{PoolConfig, Position};
+    use crate::{
+        state::{PoolConfig, Position},
+        test_helpers::QuasarQuerier,
+    };
 
     use super::*;
 
@@ -507,103 +511,44 @@ mod tests {
         assert!(response.is_none());
     }
 
-    pub struct QuasarQuerier {
-        position: FullPositionBreakdown,
-    }
-
-    impl QuasarQuerier {
-        pub fn new(position: FullPositionBreakdown) -> QuasarQuerier {
-            QuasarQuerier { position }
-        }
-    }
-
-    impl Querier for QuasarQuerier {
-        fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
-            let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
-            match request {
-                QueryRequest::Stargate { path, data } => {
-                    println!("{}", path.as_str());
-                    println!("{}", PositionByIdRequest::TYPE_URL);
-                    match path.as_str() {
-                        "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
-                            let position_by_id_request: PositionByIdRequest =
-                                prost::Message::decode(data.as_slice()).unwrap();
-                            let position_id = position_by_id_request.position_id;
-                            if position_id == self.position.position.clone().unwrap().position_id {
-                                QuerierResult::Ok(CwContractResult::Ok(
-                                    to_binary(&PositionByIdResponse {
-                                        position: Some(self.position.clone()),
-                                    })
-                                    .unwrap(),
-                                ))
-                            } else {
-                                QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                    kind: format!("position id not found: {position_id:?}"),
-                                })
-                            }
-                        }
-                        "/cosmos.bank.v1beta1.Query/SupplyOf" => {
-                            let query_supply_of_request: QuerySupplyOfRequest =
-                                prost::Message::decode(data.as_slice()).unwrap();
-                            let denom = query_supply_of_request.denom;
-                            QuerierResult::Ok(CwContractResult::Ok(
-                                to_binary(&QuerySupplyOfResponse {
-                                    amount: Some(OsmoCoin {
-                                        denom,
-                                        amount: 100.to_string(),
-                                    }),
-                                })
-                                .unwrap(),
-                            ))
-                        }
-                        &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                            kind: format!("Unmocked stargate query path: {path:?}"),
-                        }),
-                    }
-                }
-                _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                    kind: format!("Unmocked query type: {request:?}"),
-                }),
-            }
-            // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
-        }
-    }
-
     fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
         OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
-            querier: QuasarQuerier::new(FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id: 1,
-                    address: MOCK_CONTRACT_ADDR.to_string(),
-                    pool_id: 1,
-                    lower_tick: 100,
-                    upper_tick: 1000,
-                    join_time: None,
-                    liquidity: "1000000.2".to_string(),
-                }),
-                asset0: Some(OsmoCoin {
-                    denom: "token0".to_string(),
-                    amount: "1000000".to_string(),
-                }),
-                asset1: Some(OsmoCoin {
-                    denom: "token1".to_string(),
-                    amount: "1000000".to_string(),
-                }),
-                claimable_spread_rewards: vec![
-                    OsmoCoin {
+            querier: QuasarQuerier::new(
+                FullPositionBreakdown {
+                    position: Some(OsmoPosition {
+                        position_id: 1,
+                        address: MOCK_CONTRACT_ADDR.to_string(),
+                        pool_id: 1,
+                        lower_tick: 100,
+                        upper_tick: 1000,
+                        join_time: None,
+                        liquidity: "1000000.2".to_string(),
+                    }),
+                    asset0: Some(OsmoCoin {
                         denom: "token0".to_string(),
-                        amount: "100".to_string(),
-                    },
-                    OsmoCoin {
+                        amount: "1000000".to_string(),
+                    }),
+                    asset1: Some(OsmoCoin {
                         denom: "token1".to_string(),
-                        amount: "100".to_string(),
-                    },
-                ],
-                claimable_incentives: vec![],
-                forfeited_incentives: vec![],
-            }),
+                        amount: "1000000".to_string(),
+                    }),
+                    claimable_spread_rewards: vec![
+                        OsmoCoin {
+                            denom: "token0".to_string(),
+                            amount: "100".to_string(),
+                        },
+                        OsmoCoin {
+                            denom: "token1".to_string(),
+                            amount: "100".to_string(),
+                        },
+                    ],
+                    claimable_incentives: vec![],
+                    forfeited_incentives: vec![],
+                },
+                500,
+            ),
             custom_query_type: PhantomData,
         }
     }

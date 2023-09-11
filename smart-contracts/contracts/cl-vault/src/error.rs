@@ -12,7 +12,7 @@ pub type ContractResult<T> = Result<T, ContractError>;
 
 /// AutocompoundingVault errors
 #[allow(missing_docs)]
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -25,6 +25,9 @@ pub enum ContractError {
 
     #[error("Position Not Found")]
     PositionNotFound,
+
+    #[error("Sent the wrong amount of denoms")]
+    IncorrectAmountFunds,
 
     #[error("Modify range state item not found")]
     ModifyRangeStateNotFound,
@@ -57,10 +60,10 @@ pub enum ContractError {
     OverflowError(#[from] OverflowError),
 
     #[error("{0}")]
-    CwDexError(#[from] CwDexError),
+    ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
-    ConversionOverflowError(#[from] ConversionOverflowError),
+    DecodeError(#[from] prost::DecodeError),
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),

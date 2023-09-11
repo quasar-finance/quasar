@@ -1,10 +1,15 @@
 #[cfg(test)]
 pub mod initialize {
+    use std::str::FromStr;
+
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
+    };
+    use osmosis_std::types::osmosis::poolmanager::v1beta1::{
+        MsgSwapExactAmountIn, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
     use osmosis_test_tube::{
@@ -14,7 +19,7 @@ pub mod initialize {
         },
         Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, Wasm,
     };
-    use osmosis_test_tube::{SigningAccount, TokenFactory};
+    use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
 
     use crate::msg::{ClQueryMsg, ExtensionQueryMsg, InstantiateMsg, QueryMsg};
     use crate::query::PoolResponse;
@@ -24,26 +29,26 @@ pub mod initialize {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000_000_000, "uatom"),
+                Coin::new(1_000_000_000_000_000_000, "uosmo"),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
                 denom0: "uatom".to_string(),
                 denom1: "uosmo".to_string(),
-                tick_spacing: 1,
-                spread_factor: "100000000000000".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
             },
-            0,
-            100,
+            -2000,
+            2000,
             vec![
                 v1beta1::Coin {
                     denom: "uatom".to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: "1000000000000".to_string(),
                 },
                 v1beta1::Coin {
                     denom: "uosmo".to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: "1000000000000".to_string(),
                 },
             ],
             Uint128::zero(),
@@ -58,7 +63,7 @@ pub mod initialize {
     pub fn init_test_contract(
         filename: &str,
         admin_balance: &[Coin],
-        _pool: MsgCreateConcentratedPool,
+        pool: MsgCreateConcentratedPool,
         lower_tick: i64,
         upper_tick: i64,
         tokens_provided: Vec<v1beta1::Coin>,
@@ -93,10 +98,10 @@ pub mod initialize {
                 description: "Create concentrated uosmo:usdc pool, so that we can trade it"
                     .to_string(),
                 pool_records: vec![PoolRecord {
-                    denom0: "uatom".to_string(),
-                    denom1: "uosmo".to_string(),
-                    tick_spacing: 1,
-                    spread_factor: "0".to_string(),
+                    denom0: pool.denom0,
+                    denom1: pool.denom1,
+                    tick_spacing: pool.tick_spacing,
+                    spread_factor: pool.spread_factor,
                 }],
             },
             admin.address(),
@@ -106,7 +111,7 @@ pub mod initialize {
         .unwrap();
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         // create a basic position on the pool
         let initial_position = MsgCreatePosition {
@@ -120,6 +125,25 @@ pub mod initialize {
         };
         let _position = cl.create_position(initial_position, &admin).unwrap();
 
+        // move the tick to the initial position, if we don't do this, the position the contract is instantiated
+        let pm = PoolManager::new(&app);
+        pm.swap_exact_amount_in(
+            MsgSwapExactAmountIn {
+                sender: admin.address(),
+                routes: vec![SwapAmountInRoute {
+                    pool_id: pool.id,
+                    token_out_denom: pool.token0,
+                }],
+                token_in: Some(v1beta1::Coin {
+                    denom: pool.token1,
+                    amount: "10000".to_string(),
+                }),
+                token_out_min_amount: "1".to_string(),
+            },
+            &admin,
+        )
+        .unwrap();
+
         let instantiate_msg = InstantiateMsg {
             admin: admin.address(),
             pool_id: pool.id,
@@ -130,8 +154,8 @@ pub mod initialize {
             },
             vault_token_subdenom: "utestvault".to_string(),
             range_admin: admin.address(),
-            initial_lower_tick: 1,
-            initial_upper_tick: 100,
+            initial_lower_tick: lower_tick,
+            initial_upper_tick: upper_tick,
             thesis: "provide big swap efficiency".to_string(),
             name: "good contract".to_string(),
         };
@@ -141,7 +165,7 @@ pub mod initialize {
                 &instantiate_msg,
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                &[coin(100, "uatom"), coin(100, "uosmo")],
+                &[coin(100000, "uatom"), coin(100000, "uosmo")],
                 &admin,
             )
             .unwrap();

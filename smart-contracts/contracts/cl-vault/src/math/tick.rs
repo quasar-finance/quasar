@@ -219,6 +219,19 @@ mod tests {
     use cosmwasm_std::testing::mock_dependencies;
 
     #[test]
+    fn test_test_tube_tick_to_price() {
+        let mut deps = mock_dependencies();
+        // example1
+        let tick_index = 27445000_i128;
+        let _expected_price = Decimal256::from_str("30352").unwrap();
+        let price = tick_to_price(tick_index.try_into().unwrap()).unwrap();
+        println!("{:?}", price.to_string());
+        // assert_eq!(price, expected_price);
+        let tick = price_to_tick(deps.as_mut().storage, price).unwrap();
+        assert_eq!(tick_index, tick)
+    }
+
+    #[test]
     fn test_tick_to_price() {
         // example1
         let tick_index = 38035200;

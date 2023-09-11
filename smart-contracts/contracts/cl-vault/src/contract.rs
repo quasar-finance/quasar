@@ -104,9 +104,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Metadata => Ok(to_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
-                crate::msg::UserBalanceQueryMsg::UserLockedBalance { user } => {
+                crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)
                 }
                 crate::msg::UserBalanceQueryMsg::UserRewards { user } => {

@@ -1,7 +1,9 @@
+use crate::error::ContractResult;
 use crate::helpers::assert_admin;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
+use crate::rewards::Rewards;
+use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{DepsMut, MessageInfo, Response};
+use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_update(
@@ -19,7 +21,32 @@ pub(crate) fn execute_update(
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
         }
+        AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
+            execute_claim_strategist_rewards(deps, info)
+        }
     }
+}
+
+pub fn execute_claim_strategist_rewards(
+    deps: DepsMut,
+    info: MessageInfo,
+) -> ContractResult<Response> {
+    let range_admin = RANGE_ADMIN.load(deps.storage)?;
+    if info.sender != range_admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // get the currently attained rewards
+    let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
+    // empty the saved rewards
+    STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
+
+    Ok(Response::new()
+        .add_attribute("rewards", format!("{:?}", rewards.into_coins()))
+        .add_message(BankMsg::Send {
+            to_address: range_admin.to_string(),
+            amount: rewards.into_coins(),
+        }))
 }
 
 /// Updates the admin of the contract.
@@ -93,8 +120,55 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
-        Addr, Decimal, Uint128,
+        Addr, CosmosMsg, Decimal, Uint128,
     };
+
+    #[test]
+    fn test_execute_claim_strategist_rewards_success() {
+        let range_admin = Addr::unchecked("bob");
+        let mut deps = mock_dependencies();
+        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &Rewards::from_coins(rewards.clone()))
+            .unwrap();
+
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &range_admin)
+            .unwrap();
+
+        let response =
+            execute_claim_strategist_rewards(deps.as_mut(), mock_info(range_admin.as_str(), &[]))
+                .unwrap();
+        assert_eq!(
+            CosmosMsg::Bank(BankMsg::Send {
+                to_address: range_admin.to_string(),
+                amount: rewards
+            }),
+            response.messages[0].msg
+        )
+    }
+
+    #[test]
+    fn test_execute_claim_strategist_rewards_not_admin() {
+        let range_admin = Addr::unchecked("bob");
+        let mut deps = mock_dependencies();
+        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &Rewards::from_coins(rewards.clone()))
+            .unwrap();
+
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &range_admin)
+            .unwrap();
+
+        let err =
+            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[]))
+                .unwrap_err();
+        assert_eq!(
+            ContractError::Unauthorized {},
+            err
+        )
+    }
 
     #[test]
     fn test_execute_update_admin_success() {
