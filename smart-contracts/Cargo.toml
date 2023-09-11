@@ -11,6 +11,7 @@ members = [
   "contracts/multihop-router",
   "packages/intergamm-bindings",
   "packages/quasar-types",
+  "contracts/airdrop",
 ]
 
 [workspace.dependencies]
