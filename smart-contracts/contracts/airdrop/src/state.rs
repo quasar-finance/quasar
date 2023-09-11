@@ -6,8 +6,8 @@ use cw_storage_plus::{Item, Map};
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const AIRDROP_ID: Item<Uint128> = Item::new("airdrop_id");
 pub const AIRDROP_CONFIGS: Map<Uint128, AirdropConfig> = Map::new("airdrop_configs");
-pub const USER_INFO: Map<&Addr, Vec<UserInfo>> = Map::new("user_info");
-pub const AIRDROP_INFO: Map<&Uint128, AirdropInfo> = Map::new("airdrop_info");
+pub const USER_INFO: Map<Addr, Vec<UserInfo>> = Map::new("user_info");
+pub const AIRDROP_INFO: Map<Uint128, Map<Addr, AirdropInfo>> = Map::new("airdrop_info");
 
 //----------------------------------------------------------------------------------------
 // Storage types
@@ -53,8 +53,6 @@ pub struct UserInfo {
 
 #[cw_serde]
 pub struct AirdropInfo {
-    /// user address
-    pub user_address: Addr,
     /// total claimable amount for the user
     pub claimable_amount: Uint128,
     /// boolean value indicating if the user has withdrawn the remaining tokens
