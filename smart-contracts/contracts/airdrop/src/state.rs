@@ -1,10 +1,11 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
 use cw_asset::AssetInfo;
 use cw_storage_plus::{Item, Map};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
-pub const AIRDROP_CONFIG: Item<AirdropConfig> = Item::new("config");
+pub const CONFIG: Item<Config> = Item::new("config");
+pub const AIRDROP_ID: Item<Uint128> = Item::new("airdrop_id");
+pub const AIRDROP_CONFIGS: Map<Uint128, AirdropConfig> = Map::new("airdrop_configs");
 pub const USER_INFO: Map<&Addr, Vec<UserInfo>> = Map::new("user_info");
 pub const AIRDROP_INFO: Map<&Uint128, AirdropInfo> = Map::new("airdrop_info");
 
@@ -12,8 +13,7 @@ pub const AIRDROP_INFO: Map<&Uint128, AirdropInfo> = Map::new("airdrop_info");
 // Storage types
 //----------------------------------------------------------------------------------------
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct Config {
     /// Account who can update config
     pub owner: Addr,
@@ -21,8 +21,7 @@ pub struct Config {
     pub quasar_funding_address: Addr,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct AirdropConfig {
     /// each airdrop contains a unique airdrop ID
     pub airdrop_id: Uint128,
@@ -42,7 +41,7 @@ pub struct AirdropConfig {
     pub unclaimed_tokens: Uint128,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct UserInfo {
     /// airdrop id users info is attached to
     pub airdrop_id: Uint128,
@@ -52,6 +51,7 @@ pub struct UserInfo {
     pub claimed_flag: bool,
 }
 
+#[cw_serde]
 pub struct AirdropInfo {
     /// user address
     pub user_address: Addr,
@@ -70,4 +70,3 @@ impl Default for UserInfo {
         }
     }
 }
-
