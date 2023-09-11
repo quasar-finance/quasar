@@ -1,21 +1,23 @@
 #[cfg(test)]
 mod tests {
-    use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceResponse, QueryBalanceRequest};
+    use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128, Uint256};
+    use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
+    use osmosis_std::types::{
+        cosmos::base::v1beta1,
+        osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+    };
+    use osmosis_test_tube::{
+        Account, Bank, ConcentratedLiquidity, Module, OsmosisTestApp, SigningAccount, Wasm,
+    };
     use proptest::prelude::*;
     use std::collections::HashMap;
-    use cosmwasm_std::{Addr, Coin, Uint128, Decimal, Decimal256, Uint256};
-    use osmosis_std::types::{
-        osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-        cosmos::base::v1beta1,
-    };
-    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
-    use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, OsmosisTestApp, SigningAccount, Wasm};
 
     use crate::math::tick::tick_to_price;
     use crate::query::PositionResponse;
     use crate::{
-        msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg, ModifyRangeMsg},
-        query::{UserBalanceResponse, TotalAssetsResponse},
+        msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
+        query::{TotalAssetsResponse, UserBalanceResponse},
         test_tube::initialize::initialize::init_test_contract,
     };
 
@@ -43,16 +45,20 @@ mod tests {
         percentage: f64,
         accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
-         // Get user DENOM_BASE balance
+        // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance0_str = balance_asset0.balance.unwrap().amount;
-        let balance0_f64: f64 = balance0_str.parse().expect("Failed to parse balance to f64");
+        let balance0_f64: f64 = balance0_str
+            .parse()
+            .expect("Failed to parse balance to f64");
         let amount0 = (balance0_f64 * (percentage / 100.0)).round() as u128;
 
-         // Get user DENOM_QUOTE balance
+        // Get user DENOM_QUOTE balance
         let balance_asset1 = get_user_denom_balance(bank, account, DENOM_QUOTE);
         let balance1_str = balance_asset1.balance.unwrap().amount;
-        let balance1_f64: f64 = balance1_str.parse().expect("Failed to parse balance to f64");
+        let balance1_f64: f64 = balance1_str
+            .parse()
+            .expect("Failed to parse balance to f64");
         let amount1 = (balance1_f64 * (percentage / 100.0)).round() as u128;
 
         println!("Balance amounts: {}, {}", balance0_str, balance1_str);
@@ -90,12 +96,14 @@ mod tests {
         } else {
             println!("Deposit amounts: {:#?}", coins_to_deposit);
             // Execute deposit and get liquidity_created from emitted events
-            let deposit = wasm.execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                &coins_to_deposit,
-                &account,
-            ).unwrap();
+            let deposit = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
+                    &coins_to_deposit,
+                    &account,
+                )
+                .unwrap();
         }
         /*
         // TODO: Get liquidity_created value from deposit response
@@ -123,12 +131,17 @@ mod tests {
 
         println!("Withdraw amount: {}", amount);
         // Execute deposit and get liquidity_created from emitted events
-        let withdraw = wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::Redeem { recipient: None, amount: Uint128::new(amount) }, // Nice to have: Make recipient random
-            &[],
-            &account,
-        ).unwrap();
+        let withdraw = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::Redeem {
+                    recipient: None,
+                    amount: Uint128::new(amount),
+                }, // Nice to have: Make recipient random
+                &[],
+                &account,
+            )
+            .unwrap();
 
         // TODO: Update map to keep track of user shares amount and make further assertions
         /*let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&0u128);
@@ -162,15 +175,22 @@ mod tests {
         cl: &ConcentratedLiquidity<OsmosisTestApp>,
         contract_address: &Addr,
         percentage: f64,
-        admin_account: &SigningAccount
+        admin_account: &SigningAccount,
     ) {
-        let (current_lower_tick, current_upper_tick) = get_position_ticks(wasm, cl, contract_address);
-        println!("current_lower_tick: {} and current_upper_tick: {}", current_lower_tick, current_upper_tick);
+        let (current_lower_tick, current_upper_tick) =
+            get_position_ticks(wasm, cl, contract_address);
+        println!(
+            "current_lower_tick: {} and current_upper_tick: {}",
+            current_lower_tick, current_upper_tick
+        );
         let (current_lower_price, current_upper_price) = (
             tick_to_price(current_lower_tick).unwrap(),
-            tick_to_price(current_upper_tick).unwrap()
+            tick_to_price(current_upper_tick).unwrap(),
         );
-        println!("current_lower_price: {} and current_upper_price: {}", current_lower_price, current_upper_price);
+        println!(
+            "current_lower_price: {} and current_upper_price: {}",
+            current_lower_price, current_upper_price
+        );
 
         let clp_u128: Uint128 = current_lower_price.atomics().try_into().unwrap();
         let cup_u128: Uint128 = current_upper_price.atomics().try_into().unwrap();
@@ -182,21 +202,26 @@ mod tests {
         let percentage_factor = percentage / 100.0;
         let new_lower_price = (clp_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
         let new_upper_price = (cup_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
-        println!("new_lower_price: {} and new_upper_price: {}", new_lower_price, new_upper_price);
+        println!(
+            "new_lower_price: {} and new_upper_price: {}",
+            new_lower_price, new_upper_price
+        );
 
         // Execute deposit and get liquidity_created from emitted events
-        let update_range = wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
-                    lower_price: Decimal::new(Uint128::new(new_lower_price)),
-                    upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                    max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
-                }
-            )) ,
-            &[],
-            &admin_account,
-        ).unwrap();
+        let update_range = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::new(Uint128::new(new_lower_price)),
+                        upper_price: Decimal::new(Uint128::new(new_upper_price)),
+                        max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                    },
+                )),
+                &[],
+                &admin_account,
+            )
+            .unwrap();
     }
 
     // GETTERS
@@ -204,16 +229,13 @@ mod tests {
     fn get_user_denom_balance(
         bank: &Bank<OsmosisTestApp>,
         account: &SigningAccount,
-        denom: &str
+        denom: &str,
     ) -> QueryBalanceResponse {
-        bank
-            .query_balance(
-                &QueryBalanceRequest {
-                    address: account.address(),
-                    denom: denom.to_string()
-                }
-            )
-            .unwrap()
+        bank.query_balance(&QueryBalanceRequest {
+            address: account.address(),
+            denom: denom.to_string(),
+        })
+        .unwrap()
     }
 
     fn get_user_shares_balance(
@@ -221,8 +243,7 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
     ) -> UserBalanceResponse {
-        wasm
-            .query(
+        wasm.query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance {
@@ -237,12 +258,8 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
     ) -> TotalAssetsResponse {
-        wasm
-            .query(
-            contract_address.as_str(),
-            &QueryMsg::TotalAssets {},
-        )
-        .unwrap()
+        wasm.query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap()
     }
 
     fn get_position_ticks(
@@ -262,12 +279,13 @@ mod tests {
 
         // TODO Use those to take the latest one? or what?
         let position = cl
-            .query_position_by_id(
-                &PositionByIdRequest {
-                    position_id: position_response.position_ids[0]
-                }
-            )
-            .unwrap().position.unwrap().position;
+            .query_position_by_id(&PositionByIdRequest {
+                position_id: position_response.position_ids[0],
+            })
+            .unwrap()
+            .position
+            .unwrap()
+            .position;
 
         match position {
             Some(position) => (position.lower_tick, position.upper_tick),
@@ -288,7 +306,10 @@ mod tests {
             let shares = get_user_shares_balance(wasm, contract_address, account);
 
             // Check that the current account iterated shares balance is the same we expect from Hashmap
-            assert_eq!(shares.balance, accounts_shares_balance.get(&account.address()).unwrap());
+            assert_eq!(
+                shares.balance,
+                accounts_shares_balance.get(&account.address()).unwrap()
+            );
         }
     }
 
@@ -342,7 +363,6 @@ mod tests {
     // TESTS
 
     proptest! {
-        /// Main test function
         #[test]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),

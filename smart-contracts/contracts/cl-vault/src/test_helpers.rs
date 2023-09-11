@@ -12,6 +12,8 @@ use osmosis_std::types::{
         FullPositionBreakdown, PositionByIdRequest, PositionByIdResponse,
     },
 };
+
+use crate::math::tick::tick_to_price;
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
@@ -92,7 +94,7 @@ impl Querier for QuasarQuerier {
                     "/osmosis.poolmanager.v1beta1.Query/SpotPrice" => {
                         QuerierResult::Ok(CwContractResult::Ok(
                             to_binary(&SpotPriceResponse {
-                                spot_price: "1.5".to_string(),
+                                spot_price: tick_to_price(self.current_tick).unwrap().to_string(),
                             })
                             .unwrap(),
                         ))

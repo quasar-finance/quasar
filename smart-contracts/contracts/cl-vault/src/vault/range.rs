@@ -66,8 +66,6 @@ pub fn execute_update_range(
     upper_price: Decimal,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    debug!(deps, "lower_price", lower_price);
-    debug!(deps, "upper_price", upper_price);
     let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
     let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
 
@@ -144,12 +142,10 @@ pub fn handle_withdraw_position_reply(
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    debug!(deps, "withdraw_response", msg);
     // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
     // todo: Test that one-sided withdraw wouldn't error here (it shouldn't)
     let amount0: Uint128 = msg.amount0.parse()?;
     let amount1: Uint128 = msg.amount1.parse()?;
-    debug!(deps, "amounts", vec![amount0, amount1]);
 
     CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 
@@ -173,9 +169,8 @@ pub fn handle_withdraw_position_reply(
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
     // we can fix this by going straight into a swap-deposit-merge before creating any positions
 
-    // todo: Check if needs LTE or just LT
-    if (amount0.is_zero() && modify_range_state.lower_tick < pool_details.current_tick)
-        || (amount1.is_zero() && modify_range_state.upper_tick > pool_details.current_tick)
+    if (amount0.is_zero() && modify_range_state.lower_tick <= pool_details.current_tick)
+        || (amount1.is_zero() && modify_range_state.upper_tick >= pool_details.current_tick)
     {
         do_swap_deposit_merge(
             deps,
@@ -233,8 +228,6 @@ pub fn handle_initial_create_position_reply(
 ) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
-    debug!(deps, "create_pos_response", create_position_message);
-
     // target range for our imminent swap
     // taking from response message is important because they may differ from the ones in our request
     let target_lower_tick = create_position_message.lower_tick;
@@ -277,8 +270,6 @@ pub fn do_swap_deposit_merge(
     }
 
     let (balance0, balance1) = refunded_amounts;
-    debug!(deps, "balance0", balance0);
-    debug!(deps, "balance1", balance1);
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -321,8 +312,7 @@ pub fn do_swap_deposit_merge(
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
-                    deps.storage,
-                    &deps.querier,
+                    deps.branch(),
                     balance1,
                     target_lower_tick,
                     pool_details.current_tick,
@@ -347,9 +337,6 @@ pub fn do_swap_deposit_merge(
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
 
-    debug!(deps, "swap_amount", format!("{:?}", swap_amount));
-    debug!(deps, "swap_direction", format!("{:?}", swap_direction));
-
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
@@ -364,9 +351,6 @@ pub fn do_swap_deposit_merge(
             balance1.checked_sub(swap_amount)?,
         ),
     };
-    debug!(deps, "token_in_denom", format!("{:?}", token_in_denom));
-    debug!(deps, "token_out_ideal_amount", format!("{:?}", token_out_ideal_amount));
-    debug!(deps, "left_over_amount", format!("{:?}", left_over_amount));
 
     CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
 
@@ -374,7 +358,6 @@ pub fn do_swap_deposit_merge(
         vault_config.swap_max_slippage.numerator(),
         vault_config.swap_max_slippage.denominator(),
     )?;
-    debug!(deps, "token_out_min_amount", format!("{:?}", token_out_min_amount));
 
     let swap_msg = swap(
         deps,
@@ -417,8 +400,6 @@ fn handle_swap_success(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let _modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-    debug!(deps, "swap_direction", swap_direction);
-    debug!(deps, "left_over_amount", left_over_amount);
 
     // get post swap balances to create positions with
     let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
@@ -431,8 +412,6 @@ fn handle_swap_success(
             left_over_amount,
         ),
     };
-    debug!(deps, "balance0", balance0);
-    debug!(deps, "balance1", balance1);
 
     // Create the position after swapped the leftovers based on swap direction
     let mut coins_to_send = vec![];
@@ -457,8 +436,6 @@ fn handle_swap_success(
         Uint128::zero(),
         Uint128::zero(),
     )?;
-
-    debug!(deps, "create_position_msg", create_position_msg);
 
     // TODO evaluate st change _always to _on_success
     Ok(Response::new()

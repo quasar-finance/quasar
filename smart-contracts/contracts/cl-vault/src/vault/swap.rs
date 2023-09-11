@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{DepsMut, Coin, CosmosMsg, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::poolmanager::v1beta1::SwapAmountInRoute,
 };
@@ -133,7 +133,9 @@ mod tests {
         let token_in_denom = "token0".to_string();
         let token_out_min_amount = Uint128::new(100);
 
-        POOL_CONFIG.save(deps_mut.storage, &mock_pool_config()).unwrap();
+        POOL_CONFIG
+            .save(deps_mut.storage, &mock_pool_config())
+            .unwrap();
 
         let result = super::swap(
             deps_mut,
@@ -177,7 +179,9 @@ mod tests {
         let token_in_denom = "token3".to_string();
         let token_out_min_amount = Uint128::new(100);
 
-        POOL_CONFIG.save(deps_mut.storage, &mock_pool_config()).unwrap();
+        POOL_CONFIG
+            .save(deps_mut.storage, &mock_pool_config())
+            .unwrap();
 
         let err = super::swap(
             deps_mut,

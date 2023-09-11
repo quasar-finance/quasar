@@ -58,8 +58,6 @@ pub(crate) fn execute_exact_deposit(
 
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
-    debug!(deps, "token0", token0);
-    debug!(deps, "token1", token1);
 
     let mut coins_to_send = vec![];
     if !token0.amount.is_zero() {
@@ -77,7 +75,6 @@ pub(crate) fn execute_exact_deposit(
         Uint128::zero(),
         Uint128::zero(),
     )?;
-    debug!(deps, "deposit_create_position_msg", create_position_msg);
 
     CURRENT_DEPOSIT.save(
         deps.storage,
@@ -88,7 +85,6 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    debug!(deps, "before reply", "lol");
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             create_position_msg,
@@ -110,10 +106,6 @@ pub fn handle_deposit_create_position_reply(
     let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    debug!(
-        deps,
-        "create_deposit_position_resp", create_deposit_position_resp
-    );
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
