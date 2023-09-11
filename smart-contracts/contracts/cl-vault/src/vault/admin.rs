@@ -162,12 +162,8 @@ mod tests {
             .unwrap();
 
         let err =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[]))
-                .unwrap_err();
-        assert_eq!(
-            ContractError::Unauthorized {},
-            err
-        )
+            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
+        assert_eq!(ContractError::Unauthorized {}, err)
     }
 
     #[test]

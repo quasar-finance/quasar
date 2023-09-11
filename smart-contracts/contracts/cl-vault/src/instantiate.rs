@@ -13,8 +13,8 @@ use crate::helpers::must_pay_one_or_two;
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
-    PoolConfig, Position, ADMIN_ADDRESS, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
-    VAULT_DENOM, METADATA, Metadata,
+    Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
+    VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -45,7 +45,13 @@ pub fn handle_instantiate(
         },
     )?;
 
-    METADATA.save(deps.storage, &Metadata{ thesis: msg.thesis, name: msg.name })?;
+    METADATA.save(
+        deps.storage,
+        &Metadata {
+            thesis: msg.thesis,
+            name: msg.name,
+        },
+    )?;
 
     let admin = deps.api.addr_validate(&msg.admin)?;
 

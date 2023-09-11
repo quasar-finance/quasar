@@ -99,11 +99,15 @@ pub fn handle_deposit_create_position_reply(
     let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    debug!(deps, "create_deposit_position_resp", create_deposit_position_resp);
+    debug!(
+        deps,
+        "create_deposit_position_resp", create_deposit_position_resp
+    );
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    let user_created_liquidity = Decimal::raw(create_deposit_position_resp.liquidity_created.parse()?);
+    let user_created_liquidity =
+        Decimal::raw(create_deposit_position_resp.liquidity_created.parse()?);
 
     let existing_position = get_position(deps.storage, &deps.querier, &env)?
         .position
@@ -172,7 +176,10 @@ pub fn handle_deposit_create_position_reply(
         pool_config.token1,
     )?;
 
-    let position_ids = vec![existing_position.position_id, create_deposit_position_resp.position_id];
+    let position_ids = vec![
+        existing_position.position_id,
+        create_deposit_position_resp.position_id,
+    ];
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids,
@@ -200,7 +207,10 @@ pub fn handle_deposit_create_position_reply(
         .add_submessage(merge_submsg)
         .add_attribute(
             "position_ids",
-            format!("{},{}", existing_position.position_id, create_deposit_position_resp.position_id),
+            format!(
+                "{},{}",
+                existing_position.position_id, create_deposit_position_resp.position_id
+            ),
         )
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
