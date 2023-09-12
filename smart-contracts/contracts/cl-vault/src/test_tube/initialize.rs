@@ -136,7 +136,7 @@ pub mod initialize {
                 }],
                 token_in: Some(v1beta1::Coin {
                     denom: pool.token1,
-                    amount: "10000".to_string(),
+                    amount: "1000000000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
             },

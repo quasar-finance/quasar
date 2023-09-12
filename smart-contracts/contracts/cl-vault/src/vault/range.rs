@@ -255,7 +255,7 @@ pub fn handle_initial_create_position_reply(
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 pub fn do_swap_deposit_merge(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
@@ -294,7 +294,6 @@ pub fn do_swap_deposit_merge(
                 balance0
             } else {
                 get_single_sided_deposit_0_to_1_swap_amount(
-                    deps.branch(),
                     balance0,
                     target_lower_tick,
                     pool_details.current_tick,
@@ -309,7 +308,6 @@ pub fn do_swap_deposit_merge(
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
-                    deps.branch(),
                     balance1,
                     target_lower_tick,
                     pool_details.current_tick,

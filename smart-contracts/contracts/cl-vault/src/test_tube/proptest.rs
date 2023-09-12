@@ -13,7 +13,7 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
 
-    use crate::math::tick::_tick_to_price;
+    use crate::math::tick::tick_to_price;
     use crate::query::PositionResponse;
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
@@ -184,8 +184,8 @@ mod tests {
             current_lower_tick, current_upper_tick
         );
         let (current_lower_price, current_upper_price) = (
-            _tick_to_price(current_lower_tick).unwrap(),
-            _tick_to_price(current_upper_tick).unwrap(),
+            tick_to_price(current_lower_tick).unwrap(),
+            tick_to_price(current_upper_tick).unwrap(),
         );
         println!(
             "current_lower_price: {} and current_upper_price: {}",
