@@ -177,6 +177,9 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
+        let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address); // TOOD: remove this is just for debug
+        println!("Position assets: {:#?}", pos_assets);
+
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
         println!(
