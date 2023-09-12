@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128, Uint256};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
     use osmosis_std::types::{
@@ -13,6 +13,7 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
 
+    use crate::math::tick::tick_to_price;
     use crate::query::PositionResponse;
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
@@ -20,11 +21,13 @@ mod tests {
         test_tube::initialize::initialize::init_test_contract,
     };
 
-    const ITERATIONS_NUMBER: usize = 100;
+    const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
+    //const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
+    //const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -162,7 +165,7 @@ mod tests {
         let amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
-        println!("Swap amount: {}", amount);
+        println!("Deposit swap amount: {}", amount);
 
         // TODO: Implement swap strategy
     }
@@ -177,34 +180,31 @@ mod tests {
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
         println!(
-            "Current lower_tick: {} and upper_tick: {}",
+            "current_lower_tick: {} and current_upper_tick: {}",
             current_lower_tick, current_upper_tick
         );
+        let (current_lower_price, current_upper_price) = (
+            tick_to_price(current_lower_tick).unwrap(),
+            tick_to_price(current_upper_tick).unwrap(),
+        );
+        println!(
+            "current_lower_price: {} and current_upper_price: {}",
+            current_lower_price, current_upper_price
+        );
+
+        let clp_u128: Uint128 = current_lower_price.atomics().try_into().unwrap();
+        let cup_u128: Uint128 = current_upper_price.atomics().try_into().unwrap();
+        println!("clp_u128: {} and cup_u128: {}", clp_u128, cup_u128);
 
         // Create new range ticks based on previous ticks by percentage variation
         // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
         // TODO: 2. Creating them in a range of min/max accepted by Osmosis CL module
         let percentage_factor = percentage / 100.0;
-        let lower_tick = (current_lower_tick as f64 * (1.0 + percentage_factor)).round() as i64;
-        let upper_tick = (current_upper_tick as f64 * (1.0 + percentage_factor)).round() as i64;
+        let new_lower_price = (clp_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
+        let new_upper_price = (cup_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
         println!(
-            "Update range new lower_tick: {} and new upper_tick: {}",
-            lower_tick, upper_tick
-        );
-
-        let lower_tick_as_decimal = {
-            let tick = Uint128::new(lower_tick as u128);
-            let atomics = tick * Uint128::new(10u128.pow(18)); // Multiply by 10^18
-            Decimal::new(atomics)
-        };
-        let upper_tick_as_decimal = {
-            let tick = Uint128::new(upper_tick as u128);
-            let atomics = tick * Uint128::new(10u128.pow(18)); // Multiply by 10^18
-            Decimal::new(atomics)
-        };
-        println!(
-            "Converted: {} and {}",
-            lower_tick_as_decimal, upper_tick_as_decimal
+            "new_lower_price: {} and new_upper_price: {}",
+            new_lower_price, new_upper_price
         );
 
         // Execute deposit and get liquidity_created from emitted events
@@ -213,8 +213,8 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
-                        lower_price: lower_tick_as_decimal,
-                        upper_price: upper_tick_as_decimal,
+                        lower_price: Decimal::new(Uint128::new(new_lower_price)),
+                        upper_price: Decimal::new(Uint128::new(new_upper_price)),
                         max_slippage: Decimal::new(Uint128::new(5)), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                     },
                 )),
@@ -306,10 +306,14 @@ mod tests {
             let _shares = get_user_shares_balance(wasm, contract_address, account);
 
             // Check that the current account iterated shares balance is the same we expect from Hashmap
-            //assert_eq!(shares.balance, accounts_shares_balance.get(&account.address()));
+            assert_eq!(
+                shares.balance,
+                accounts_shares_balance.get(&account.address()).unwrap()
+            );
         }
     }
 
+    /*
     fn assert_swap() {
         todo!()
     }
@@ -317,6 +321,7 @@ mod tests {
     fn assert_update_range() {
         todo!()
     }
+    */
 
     // COMPOSE STRATEGY
 
@@ -358,7 +363,6 @@ mod tests {
     // TESTS
 
     proptest! {
-        /// Main test function
         #[test]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
@@ -420,6 +424,7 @@ mod tests {
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {
+                println!("ITERATIONS_NUMBER {}", i);
                 match actions[i] {
                     Action::Deposit => {
                         println!(">>> CASE <<< Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);

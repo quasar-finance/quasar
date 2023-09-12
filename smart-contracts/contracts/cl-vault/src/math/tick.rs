@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, Storage};
+use cosmwasm_std::{Decimal, Decimal256, Storage, Uint128};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -116,10 +116,14 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
     let ticks_filled_by_current_spacing =
         price_in_this_exponent / geo_spacing.additive_increment_per_tick;
 
-    let tick_index = geo_spacing.initial_tick as i128
-        + ticks_filled_by_current_spacing
-            .to_string()
-            .parse::<i128>()?;
+    // TODO: Optimize this type conversion
+    let ticks_filled_uint_floor = ticks_filled_by_current_spacing.to_uint_floor();
+    let ticks_filled_int: i128 = Uint128::try_from(ticks_filled_uint_floor)?
+        .u128()
+        .try_into()
+        .unwrap();
+
+    let tick_index = geo_spacing.initial_tick as i128 + ticks_filled_int;
 
     Ok(tick_index)
 }
@@ -450,6 +454,21 @@ mod tests {
 
         // example18: (won't work)... Decimal256 cannot be negative
         assert!(Decimal256::from_str("-1").is_err());
+
+        price = Decimal256::from_str("4.169478164938714112").unwrap();
+        expected_tick_index = 3169478;
+        tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+
+        price = Decimal256::from_str("2.101924006248355072").unwrap();
+        expected_tick_index = 1101924;
+        tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
+
+        price = Decimal256::from_str("0.007406").unwrap();
+        expected_tick_index = -20594000;
+        tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
+        assert_eq!(tick_index, expected_tick_index);
 
         // example19
         price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap() + Decimal256::one();

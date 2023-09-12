@@ -114,4 +114,7 @@ pub enum ContractError {
 
     #[error("Cannot handle negative powers in uints")]
     CannotHandleNegativePowersInUint {},
+
+    #[error("Invalid current tick and deposit token combination")]
+    InvalidCurrentTick {},
 }
