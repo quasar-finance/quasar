@@ -1,5 +1,4 @@
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128};
-use cosmwasm_std::entry_point;
+use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response, Uint128};
 use cw2::set_contract_version;
 
 use crate::error::AirdropErrors;

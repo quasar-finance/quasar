@@ -16,23 +16,24 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Admin(AdminExecuteMsg),
 
-    ClaimAirdrop{
-        airdrop_id: Uint128,
-    },
+    ClaimAirdrop { airdrop_id: Uint128 },
 }
 
 #[cw_serde]
 pub enum AdminExecuteMsg {
     AddAirdropConfig(AirdropConfig),
+
     UpdateAirdropConfig {
         airdrop_id: Uint128,
         airdrop_config: AirdropConfig,
     },
+
     AddUsers {
         airdrop_id: Uint128,
         users: Vec<Addr>,
         amounts: Vec<AssetInfo>,
     },
+
     AddUser {
         airdrop_id: Uint128,
         user: Addr,
@@ -45,7 +46,7 @@ pub enum AdminExecuteMsg {
     },
 
     RemoveUsers {
-        airdrop_id : Uint128,
-        users : Vec<Addr>,
+        airdrop_id: Uint128,
+        users: Vec<Addr>,
     },
 }
