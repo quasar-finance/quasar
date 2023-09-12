@@ -232,7 +232,7 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{coin, testing::mock_dependencies, Addr, Querier};
+    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         FullPositionBreakdown, Position,
     };
@@ -398,7 +398,7 @@ mod tests {
 
         // Test case 3: current tick is the highest
         current_tick = 2000;
-        let querier3 = QuasarQuerier::new(position.clone(), current_tick);
+        let querier3 = QuasarQuerier::new(position, current_tick);
         let qw3 = QuerierWrapper::new(&querier3);
         let mut deps_mut3 = deps.as_mut();
         deps_mut3.querier = qw3;
@@ -484,7 +484,7 @@ mod tests {
 
         // Test case 3: current tick is the lowest
         current_tick = 100;
-        let querier3 = QuasarQuerier::new(position.clone(), current_tick);
+        let querier3 = QuasarQuerier::new(position, current_tick);
         let qw3 = QuerierWrapper::new(&querier3);
         let mut deps_mut3 = deps.as_mut();
         deps_mut3.querier = qw3;

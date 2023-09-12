@@ -176,16 +176,14 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 mod tests {
     use cosmwasm_std::{
         coin,
-        testing::{mock_dependencies, mock_env, mock_dependencies_with_balances, MockQuerier},
-        Binary, Decimal, SubMsgResponse, Uint128, QuerierWrapper,
+        testing::{mock_dependencies, mock_env},
     };
 
     use crate::{
-        state::{Position, VaultConfig},
+        state::{Position},
         test_helpers::QuasarQuerier,
     };
     use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
         osmosis::concentratedliquidity::v1beta1::{
             FullPositionBreakdown, Position as OsmoPosition,
         },
@@ -197,7 +195,7 @@ mod tests {
     fn test_claim_rewards() {
         let position_id = 2;
         let mut deps = mock_dependencies();
-        let qq = QuasarQuerier::new(
+        let _qq = QuasarQuerier::new(
             FullPositionBreakdown {
                 position: Some(OsmoPosition {
                     position_id,

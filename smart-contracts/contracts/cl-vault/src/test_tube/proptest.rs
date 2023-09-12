@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128, Uint256};
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
     use osmosis_std::types::{
