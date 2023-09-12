@@ -326,33 +326,6 @@ mod tests {
         assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
     }
 
-    #[test]
-    fn test_round_up_to_nearest_multiple() {
-        assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
-        assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(12, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(13, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(14, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(15, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(16, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(17, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(18, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(19, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(20, 5), 20);
-        // does it also work for negative inputs?
-        assert_eq!(round_up_to_nearest_multiple(-10, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-11, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-12, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-13, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-14, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-15, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-16, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-17, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
-    }
-
     fn test_get_single_sided_deposit_0_to_1_swap_amount() {
         // Common setup
         let mut deps = mock_dependencies();
