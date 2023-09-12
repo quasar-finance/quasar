@@ -1,12 +1,10 @@
 use std::str::FromStr;
 
-
-
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
-    Storage, Uint128,
+    coin, Addr, Coin, Decimal, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper, Storage,
+    Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 

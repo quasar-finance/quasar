@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Coin};
+    use cosmwasm_std::Coin;
 
     use osmosis_test_tube::{Account, Module, Wasm};
 
