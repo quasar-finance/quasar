@@ -326,6 +326,7 @@ mod tests {
         assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
     }
 
+    #[test]
     fn test_get_single_sided_deposit_0_to_1_swap_amount() {
         // Common setup
         let mut deps = mock_dependencies();
