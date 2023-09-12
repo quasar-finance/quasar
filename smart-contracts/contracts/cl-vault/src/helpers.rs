@@ -306,6 +306,10 @@ mod tests {
         let token0expected_swap_amount = Uint128::from(1000000u128);
         // let expected_out_amount = 5000000000u128;
 
+        // these are multiplied by 2 because we multiplied by 2 above
+        // let liquidity0_needed = 1519437308.014768571720923239 * 2
+        // let liquidity1_needed = 1517882343.751510418088349649 * 2
+
         let lower_tick = price_to_tick(
             deps.as_mut().storage,
             Decimal256::from_str(lowSqrtP).unwrap().pow(2),
