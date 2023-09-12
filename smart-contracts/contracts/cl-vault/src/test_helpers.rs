@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
+use cosmwasm_std::testing::BankQuerier;
 use cosmwasm_std::{
     from_binary, to_binary, Binary, ContractResult as CwContractResult, Empty, Querier,
-    QuerierResult, QueryRequest,
+    QuerierResult, QueryRequest, Coin,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
@@ -17,6 +20,7 @@ use crate::math::tick::tick_to_price;
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
+    bank: BankQuerier
 }
 
 impl QuasarQuerier {
@@ -24,6 +28,15 @@ impl QuasarQuerier {
         QuasarQuerier {
             position,
             current_tick,
+            bank: BankQuerier::new(&[]),
+        }
+    }
+
+    pub fn new_with_balances(position: FullPositionBreakdown, current_tick: i64, balances: &[(&str, &[Coin])]) -> QuasarQuerier {
+        QuasarQuerier {
+            position,
+            current_tick,
+            bank: BankQuerier::new(balances),
         }
     }
 }
