@@ -42,10 +42,10 @@ pub fn execute_claim_strategist_rewards(
     STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
 
     Ok(Response::new()
-        .add_attribute("rewards", format!("{:?}", rewards.into_coins()))
+        .add_attribute("rewards", format!("{:?}", rewards.coins()))
         .add_message(BankMsg::Send {
             to_address: range_admin.to_string(),
-            amount: rewards.into_coins(),
+            amount: rewards.coins(),
         }))
 }
 
@@ -154,7 +154,7 @@ mod tests {
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &Rewards::from_coins(rewards.clone()))
+            .save(deps.as_mut().storage, &Rewards::from_coins(rewards))
             .unwrap();
 
         RANGE_ADMIN
@@ -162,12 +162,8 @@ mod tests {
             .unwrap();
 
         let err =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[]))
-                .unwrap_err();
-        assert_eq!(
-            ContractError::Unauthorized {},
-            err
-        )
+            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
+        assert_eq!(ContractError::Unauthorized {}, err)
     }
 
     #[test]

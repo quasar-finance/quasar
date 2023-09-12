@@ -14,7 +14,6 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    debug,
     error::ContractResult,
     helpers::must_pay_one_or_two,
     msg::{ExecuteMsg, MergePositionMsg},
@@ -48,9 +47,6 @@ pub(crate) fn execute_exact_deposit(
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
-    let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
-
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
         .position_by_id(position_id)?
@@ -59,12 +55,22 @@ pub(crate) fn execute_exact_deposit(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
+    let pool = POOL_CONFIG.load(deps.storage)?;
+    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
+
+    let mut coins_to_send = vec![];
+    if !token0.amount.is_zero() {
+        coins_to_send.push(token0.clone());
+    }
+    if !token1.amount.is_zero() {
+        coins_to_send.push(token1.clone());
+    }
     let create_position_msg = create_position(
         deps.storage,
         &env,
         position.lower_tick,
         position.upper_tick,
-        vec![token0.clone(), token1.clone()],
+        coins_to_send,
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -79,7 +85,7 @@ pub(crate) fn execute_exact_deposit(
     )?;
 
     Ok(Response::new()
-        .add_submessage(SubMsg::reply_always(
+        .add_submessage(SubMsg::reply_on_success(
             create_position_msg,
             Replies::DepositCreatePosition as u64,
         ))
@@ -99,10 +105,6 @@ pub fn handle_deposit_create_position_reply(
     let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    debug!(
-        deps,
-        "create_deposit_position_resp", create_deposit_position_resp
-    );
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
@@ -126,7 +128,7 @@ pub fn handle_deposit_create_position_reply(
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
-        existing_liquidity.to_uint_floor().try_into().unwrap()
+        existing_liquidity.to_uint_floor()
     } else {
         total_vault_shares
             .multiply_ratio(

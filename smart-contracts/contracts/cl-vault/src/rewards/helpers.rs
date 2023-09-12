@@ -19,7 +19,9 @@ impl Rewards {
                 .iter()
                 .map(|c| {
                     coin(
-                        c.amount.multiply_ratio(ratio.numerator(), ratio.denominator()).u128(),
+                        c.amount
+                            .multiply_ratio(ratio.numerator(), ratio.denominator())
+                            .u128(),
                         c.denom.clone(),
                     )
                 })
@@ -45,7 +47,7 @@ impl Rewards {
 
     /// add rewards to self and mutate self
     pub fn add(mut self, rewards: Rewards) -> ContractResult<Self> {
-        self.merge(rewards.into_coins())?;
+        self.merge(rewards.coins())?;
         Ok(self)
     }
 
@@ -62,10 +64,7 @@ impl Rewards {
     }
 
     /// substract a percentage from self, mutate self and return the subtracted rewards
-    pub fn sub_ratio(
-        &mut self,
-        ratio: Decimal
-    ) -> ContractResult<Rewards> {
+    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<Rewards> {
         let to_sub = self.ratio(ratio);
 
         // actually subtract the funds
@@ -90,7 +89,7 @@ impl Rewards {
     }
 
     pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
-        let rewards = self.into_coins();
+        let rewards = self.coins();
         self.0.clear();
 
         Ok(BankMsg::Send {
@@ -110,7 +109,7 @@ impl Rewards {
             .collect()
     }
 
-    pub fn into_coins(&self) -> Vec<Coin> {
+    pub fn coins(&self) -> Vec<Coin> {
         self.0.clone()
     }
 
@@ -121,6 +120,8 @@ impl Rewards {
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Uint128;
+
     use super::*;
 
     #[test]
