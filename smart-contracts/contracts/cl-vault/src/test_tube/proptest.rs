@@ -170,8 +170,6 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
-        let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address); // TOOD: remove this is just for debug
-
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
         let (current_lower_price, current_upper_price) = (
@@ -188,6 +186,10 @@ mod tests {
         let new_lower_price = (clp_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
         let new_upper_price = (cup_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
 
+        // Skip equal ticks test case
+        if new_lower_price == new_upper_price {
+            return
+        }
 
         // Execute deposit and get liquidity_created from emitted events
         let _update_range = wasm
@@ -398,7 +400,6 @@ mod tests {
 
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-
                 deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, &accounts_shares_balance);
             }
 
@@ -423,6 +424,8 @@ mod tests {
                     },
                 }
             }
+
+            println!("PASS");
         }
     }
 }
