@@ -20,7 +20,7 @@ use crate::{
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{create_position, get_position},
-    ContractError, debug,
+    ContractError,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -108,7 +108,6 @@ pub fn handle_deposit_create_position_reply(
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    debug!(deps, "liq", create_deposit_position_resp.liquidity_created);
     let user_created_liquidity =
         Decimal256::new(Uint256::from_str(create_deposit_position_resp.liquidity_created.as_str())?);
 
@@ -117,7 +116,6 @@ pub fn handle_deposit_create_position_reply(
         .ok_or(ContractError::PositionNotFound)?;
 
     // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
-    debug!(deps, "existing_liq", existing_position.liquidity);
     let existing_liquidity = Decimal256::from_str(existing_position.liquidity.as_str())?;
 
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
