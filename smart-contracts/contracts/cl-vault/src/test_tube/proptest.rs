@@ -299,11 +299,11 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
         accounts: &Vec<SigningAccount>,
-        _accounts_shares_balance: &HashMap<String, Uint128>,
+        accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         // TODO: multi-query foreach user created previously
         for account in accounts {
-            let _shares = get_user_shares_balance(wasm, contract_address, account);
+            let shares = get_user_shares_balance(wasm, contract_address, account);
 
             // Check that the current account iterated shares balance is the same we expect from Hashmap
             assert_eq!(

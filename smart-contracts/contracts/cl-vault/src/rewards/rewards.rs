@@ -19,7 +19,9 @@ impl Rewards {
                 .iter()
                 .map(|c| {
                     coin(
-                        c.amount.multiply_ratio(ratio.numerator(), ratio.denominator()).u128(),
+                        c.amount
+                            .multiply_ratio(ratio.numerator(), ratio.denominator())
+                            .u128(),
                         c.denom.clone(),
                     )
                 })
@@ -62,10 +64,7 @@ impl Rewards {
     }
 
     /// substract a percentage from self, mutate self and return the subtracted rewards
-    pub fn sub_ratio(
-        &mut self,
-        ratio: Decimal
-    ) -> ContractResult<Rewards> {
+    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<Rewards> {
         let to_sub = self.ratio(ratio);
 
         // actually subtract the funds
@@ -121,6 +120,8 @@ impl Rewards {
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Uint128;
+
     use super::*;
 
     #[test]
