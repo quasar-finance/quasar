@@ -1,12 +1,11 @@
 use std::str::FromStr;
 
-use crate::debug;
 use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
-    Storage, Uint128,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage,
+    Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -17,7 +16,7 @@ pub(crate) fn must_pay_one_or_two(
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
     if info.funds.len() != 2 && info.funds.len() != 1 {
-        return Err(ContractError::IncorrectAmountFunds).into();
+        return Err(ContractError::IncorrectAmountFunds);
     }
 
     let token0 = info
@@ -228,7 +227,9 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{coin, Addr};
+    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
+
+    use crate::math::tick::price_to_tick;
 
     use super::*;
 
@@ -290,6 +291,52 @@ mod tests {
         };
         let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
         assert_eq!((coin(200, "uatom"), coin(0, "uosmo")), res)
+    }
+
+    // this test taken from osmosis/x/concentrated-liquidity/math/math-test.go
+    #[test]
+    fn test_0_to_1_swap() {
+        let mut deps = mock_dependencies();
+
+        let lowSqrtP = "4545"; // not sure why 4545  - thats what SHmosmosis uses, but try 4500 and you'll see same outcome
+        let currSqrtP = "5000";
+        let highSqrtP = "5500";
+        // multiplying this by 2 (?) so that we can roughly compare to the go test
+        let token0amt = 2000000u128;
+        let token0expected_swap_amount = Uint128::from(1000000u128);
+        // let expected_out_amount = 5000000000u128;
+
+        let lower_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(lowSqrtP).unwrap().pow(2),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+        let curr_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(currSqrtP).unwrap().pow(2),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+        let upper_tick: i64 = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(highSqrtP).unwrap().pow(2),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+        let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
+            token0amt.into(),
+            lower_tick,
+            curr_tick,
+            upper_tick,
+        )
+        .unwrap();
+
+        assert_eq!(swap_amount, token0expected_swap_amount);
     }
 
     #[test]
