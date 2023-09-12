@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_binary, to_binary, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response,
-    StdError, SubMsg, SubMsgResult, Uint128,
+    coin, from_binary, to_binary, CosmosMsg, DepsMut, Env, MessageInfo, Response,
+    StdError, SubMsg, SubMsgResult, Uint128, Decimal256,
 };
 use cw_utils::parse_execute_response_data;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
@@ -61,7 +61,7 @@ pub fn execute_merge(
 
             // save the position as an ongoing withdraw
             // create a withdraw msg to dispatch
-            let liquidity_amount = Decimal::from_str(p.liquidity.as_str())?;
+            let liquidity_amount = Decimal256::from_str(p.liquidity.as_str())?;
 
             Ok(MsgWithdrawPosition {
                 position_id,

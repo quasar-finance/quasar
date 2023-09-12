@@ -381,8 +381,8 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(1_000_000_000_000, "uatom"),
-                    Coin::new(1_000_000_000_000, "uosmo"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uatom"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -396,11 +396,11 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: "uatom".to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: "100000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: "uosmo".to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: "100000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),

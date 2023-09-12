@@ -48,7 +48,7 @@ pub fn get_spot_price(
     let pm_querier = PoolmanagerQuerier::new(querier);
     let spot_price =
         pm_querier.spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?;
-
+    
     Ok(Decimal::from_str(&spot_price.spot_price)?)
 }
 
@@ -139,6 +139,11 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
+    // TODO error here if this condition holds
+    // if current_tick < lower_tick {
+    //     return ;
+    // }
+
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
@@ -166,7 +171,7 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
         .multiply_ratio(denominator.denominator(), denominator.numerator())
         .try_into()?;
 
-    Ok(token0_balance - swap_amount)
+    Ok(swap_amount)
 }
 
 pub fn get_single_sided_deposit_1_to_0_swap_amount(
@@ -197,7 +202,7 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
         .multiply_ratio(denominator.denominator(), denominator.numerator())
         .try_into()?;
 
-    Ok(token1_balance - swap_amount)
+    Ok(swap_amount)
 }
 
 pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, ContractError> {
