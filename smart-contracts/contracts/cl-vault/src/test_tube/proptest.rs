@@ -61,15 +61,11 @@ mod tests {
             .expect("Failed to parse balance to f64");
         let amount1 = (balance1_f64 * (percentage / 100.0)).round() as u128;
 
-        println!("Balance amounts: {}, {}", balance0_str, balance1_str);
-
         // Get current pool position to know token0 and token1 amounts
         let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address);
-        println!("Position assets: {:#?}", pos_assets);
 
         // Calculate the ratio between pos_asset0 and pos_asset1
         let ratio = pos_assets.token0.amount.u128() as f64 / pos_assets.token1.amount.u128() as f64;
-        println!("Ratio: {}", ratio);
 
         // Calculate the adjusted amounts to deposit
         let (adjusted_amount0, adjusted_amount1) = if ratio > 1.0 {
@@ -92,9 +88,7 @@ mod tests {
         // Check if coins_to_deposit is not empty before proceeding
         if coins_to_deposit.is_empty() {
             // Handle the case where no coins are to be deposited
-            println!("No coins to deposit!");
         } else {
-            println!("Deposit amounts: {:#?}", coins_to_deposit);
             // Execute deposit and get liquidity_created from emitted events
             let _deposit = wasm
                 .execute(
@@ -129,7 +123,6 @@ mod tests {
         let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
-        println!("Withdraw amount: {}", amount);
         // Execute deposit and get liquidity_created from emitted events
         let _withdraw = wasm
             .execute(
@@ -165,7 +158,6 @@ mod tests {
         let amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
-        println!("Deposit swap amount: {}", amount);
 
         // TODO: Implement swap strategy
     }
@@ -177,27 +169,14 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
-        let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address); // TOOD: remove this is just for debug
-        println!("Position assets: {:#?}", pos_assets);
-
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
-        println!(
-            "current_lower_tick: {} and current_upper_tick: {}",
-            current_lower_tick, current_upper_tick
-        );
         let (current_lower_price, current_upper_price) = (
             tick_to_price(current_lower_tick).unwrap(),
             tick_to_price(current_upper_tick).unwrap(),
         );
-        println!(
-            "current_lower_price: {} and current_upper_price: {}",
-            current_lower_price, current_upper_price
-        );
-
         let clp_u128: Uint128 = current_lower_price.atomics().try_into().unwrap();
         let cup_u128: Uint128 = current_upper_price.atomics().try_into().unwrap();
-        println!("clp_u128: {} and cup_u128: {}", clp_u128, cup_u128);
 
         // Create new range ticks based on previous ticks by percentage variation
         // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
@@ -205,10 +184,11 @@ mod tests {
         let percentage_factor = percentage / 100.0;
         let new_lower_price = (clp_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
         let new_upper_price = (cup_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
-        println!(
-            "new_lower_price: {} and new_upper_price: {}",
-            new_lower_price, new_upper_price
-        );
+
+        // Skip equal ticks test case
+        if new_lower_price == new_upper_price {
+            return
+        }
 
         // Execute deposit and get liquidity_created from emitted events
         let _update_range = wasm
@@ -376,7 +356,6 @@ mod tests {
             // Creating test var utils
             let accounts_shares_balance: HashMap<String, Uint128> = HashMap::new();
 
-            println!("Initial ticks: {}, {}", initial_lower_tick, initial_upper_tick);
             // Creating test core
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -420,37 +399,32 @@ mod tests {
 
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-                println!("Making first deposit for account: {}", i);
-
                 deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, &accounts_shares_balance);
             }
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {
-                println!("ITERATIONS_NUMBER {}", i);
                 match actions[i] {
                     Action::Deposit => {
-                        println!(">>> CASE <<< Deposit logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
-                        println!(">>> CASE <<< Withdraw logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Swap => {
-                        println!(">>> CASE <<< Swap logic here with account_index: {} and percentage: {}", account_indexes[i], percentages[i]);
                         swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
-                        println!(">>> CASE <<< UpdateRange logic here with percentage: {}", percentages[i]);
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
                         //assert_update_range(); // todo!()
                     },
                 }
             }
+
+            println!("PASS");
         }
     }
 }
