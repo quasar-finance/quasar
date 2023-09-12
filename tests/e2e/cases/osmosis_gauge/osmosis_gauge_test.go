@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	osmosisPool1Path        = "../_utils/sample_pool1.json"
+	osmosisPool1Path        = "../_utils/pools/high_liquidity/balancer_pool1.json"
 	userFunds         int64 = int64(100_000_000_000)
 	ibcTransferAmount int64 = int64(10_000_000_000)
 )
@@ -138,5 +138,5 @@ func (s *OsmosisGauge) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
-	s.CreatePoolsOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz)
+	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 }

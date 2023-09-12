@@ -3,11 +3,16 @@ package app
 import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/quasarlabs/quasarnode/app/keepers"
+	v0 "github.com/quasarlabs/quasarnode/app/upgrades/v0"
 
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
@@ -34,6 +39,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
+	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -94,8 +101,8 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
+	"github.com/quasarlabs/quasarnode/app/openapiconsole"
 	"github.com/spf13/cast"
-    "github.com/quasarlabs/quasarnode/app/openapiconsole"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -123,6 +130,14 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+
+	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
+	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
+	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
+	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
+	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
+	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
+	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -226,6 +241,10 @@ var (
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 		wasm.AppModuleBasic{},
 		qtransfer.AppModuleBasic{},
+		tfmodule.AppModuleBasic{},
+
+		qvestingmodule.AppModuleBasic{},
+		authzmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -239,10 +258,11 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:            nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
-		wasm.ModuleName: {authtypes.Burner},
+		wasm.ModuleName:    {authtypes.Burner},
+		tftypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	}
 
-	Upgrades = []upgrades.Upgrade{}
+	Upgrades = []upgrades.Upgrade{v0.Upgrade}
 )
 
 var (
@@ -264,6 +284,7 @@ func init() {
 // capabilities aren't needed for testing.
 type App struct {
 	*baseapp.BaseApp
+	keepers.AppKeepers
 
 	cdc               *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -275,47 +296,6 @@ type App struct {
 	keys    map[string]*sdk.KVStoreKey
 	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
-
-	// keepers
-	AccountKeeper    authkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
-	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    stakingkeeper.Keeper
-	SlashingKeeper   slashingkeeper.Keeper
-	MintKeeper       mintkeeper.Keeper
-	DistrKeeper      distrkeeper.Keeper
-	GovKeeper        govkeeper.Keeper
-	CrisisKeeper     crisiskeeper.Keeper
-	UpgradeKeeper    upgradekeeper.Keeper
-	ParamsKeeper     paramskeeper.Keeper
-	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
-	FeeGrantKeeper   feegrantkeeper.Keeper
-	WasmKeeper       wasm.Keeper
-
-	// make scoped keepers public for test purposes
-	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
-	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
-	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
-	ScopedIntergammKeeper     capabilitykeeper.ScopedKeeper
-	scopedQOracleKeeper       capabilitykeeper.ScopedKeeper
-	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
-
-	QTransferKeeper qtransferkeeper.Keeper
-	EpochsKeeper    *epochsmodulekeeper.Keeper
-	QOsmosisKeeper  qosmokeeper.Keeper
-	QOracleKeeper   qoraclemodulekeeper.Keeper
-
-	ICAControllerKeeper icacontrollerkeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
-	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
-	// transfer module
-	RawIcs20TransferAppModule transfer.AppModule
-	TransferStack             *qtransfer.IBCMiddleware
-	Ics20WasmHooks            *qtransfer.WasmHooks
-	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
 	// mm is the module manager
 	mm *module.Manager
@@ -373,6 +353,10 @@ func New(
 		icahosttypes.StoreKey,
 		wasm.StoreKey,
 		qtransfertypes.StoreKey,
+		tftypes.StoreKey,
+
+		qvestingmoduletypes.StoreKey, // TODO delete this if unused
+		authzkeeper.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
@@ -385,6 +369,7 @@ func New(
 	)
 
 	app := &App{
+		AppKeepers:        keepers.AppKeepers{},
 		BaseApp:           bApp,
 		cdc:               cdc,
 		appCodec:          appCodec,
@@ -556,11 +541,42 @@ func New(
 	)
 	qtranserModule := qtransfer.NewAppModule(app.QTransferKeeper)
 
+	app.QVestingKeeper = *qvestingmodulekeeper.NewKeeper(
+		appCodec,
+		keys[qvestingmoduletypes.StoreKey],
+		keys[qvestingmoduletypes.MemStoreKey],
+		app.GetSubspace(qvestingmoduletypes.ModuleName),
+
+		app.AccountKeeper,
+		app.BankKeeper,
+	)
+
+	qvestingModule := qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// Authz
+	app.AuthzKeeper = authzkeeper.NewKeeper(
+		app.keys[authzkeeper.StoreKey],
+		appCodec,
+		bApp.MsgServiceRouter(),
+	)
+
 	// Set epoch hooks
 	app.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
 			app.QOsmosisKeeper.EpochHooks(),
 		),
+	)
+
+	/// Token factory Module
+	app.TfKeeper = tfkeeper.NewKeeper(keys[tftypes.StoreKey],
+		app.GetSubspace(tftypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
+	)
+	tfModule := tfmodule.NewAppModule(app.TfKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
 	)
 
 	// create the wasm callback plugin
@@ -577,7 +593,11 @@ func New(
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
 	}
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(app.QOracleKeeper, &bankkeeper.BaseKeeper{}, callback), wasmOpts...)
+	// AUDIT CHECK IS THIS TYPE ASSERTION FOR TYPE CASTING INTERFACE TO STRUCT SAFE?
+	tmpBankBaseKeeper := app.BankKeeper.(bankkeeper.BaseKeeper)
+
+	wasmOpts = append(wasmOpts, owasm.RegisterCustomPlugins(app.QOracleKeeper, &tmpBankBaseKeeper, callback)...)
+	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &app.TfKeeper)...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
@@ -688,6 +708,11 @@ func New(
 		qoracleModule,
 		qtranserModule,
 		icaModule,
+
+		tfModule,
+
+		qvestingModule,
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -719,6 +744,11 @@ func New(
 		paramstypes.ModuleName,
 		authtypes.ModuleName,
 		wasm.ModuleName,
+
+		tftypes.ModuleName,
+
+		qvestingmoduletypes.ModuleName,
+		authztypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
@@ -744,6 +774,11 @@ func New(
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		wasm.ModuleName,
+
+		tftypes.ModuleName,
+
+		qvestingmoduletypes.ModuleName,
+		authztypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -779,6 +814,10 @@ func New(
 		// wasm after ibc transfer
 		wasm.ModuleName,
 		qtransfertypes.ModuleName,
+		tftypes.ModuleName,
+
+		qvestingmoduletypes.ModuleName,
+		authztypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -787,7 +826,18 @@ func New(
 	app.mm.RegisterServices(app.configurator)
 
 	app.setupUpgradeHandlers()
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+	if upgradeInfo.Name == v0.UpgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := v0.Upgrade.StoreUpgrades
 
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
+
+	// app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	app.sm = module.NewSimulationManager(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
@@ -805,6 +855,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		app.RawIcs20TransferAppModule,
 		epochsModule,
+		//qvestingModule, TODO fix or remove
 		// TODO fix qoracle testing for sim
 		// qoracleModule,
 		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
@@ -859,7 +910,7 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedWasmKeeper = scopedWasmKeeper
-	app.scopedQOracleKeeper = scopedQOsmosisKeeper
+	app.ScopedQOracleKeeper = scopedQOsmosisKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
 	// app.ScopedIntergammKeeper = scopedIntergammKeeper
@@ -877,7 +928,7 @@ func (app *App) setupUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				app.BaseApp,
-				// TODO pass the keepers necessary for the upgrades
+				&app.AppKeepers,
 			),
 		)
 	}
@@ -1056,6 +1107,10 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	// paramsKeeper.Subspace(intergammmoduletypes.ModuleName)
 	paramsKeeper.Subspace(wasm.ModuleName)
 	paramsKeeper.Subspace(qtransfertypes.ModuleName)
+	paramsKeeper.Subspace(tftypes.ModuleName)
+
+	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
+	paramsKeeper.Subspace(authztypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

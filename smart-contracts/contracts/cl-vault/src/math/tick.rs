@@ -10,11 +10,11 @@ use crate::{
 const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
 const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
 const EXPONENT_AT_PRICE_ONE: i64 = -6;
-const _MIN_INITIALIZED_TICK: i64 = -108000000;
-const _MAX_TICK: i128 = 342000000;
+const MIN_INITIALIZED_TICK: i64 = -108000000;
+const MAX_TICK: i128 = 342000000;
 
 // TODO: exponent_at_current_price_one is fixed at -6? We assume exp is always neg?
-pub fn _tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
+pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     if tick_index == 0 {
         return Ok(Decimal256::one());
     }
@@ -25,11 +25,11 @@ pub fn _tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
         .parse::<i64>()?;
 
     // Check that the tick index is between min and max value
-    if tick_index < _MIN_INITIALIZED_TICK {
+    if tick_index < MIN_INITIALIZED_TICK {
         return Err(ContractError::TickIndexMinError {});
     }
 
-    if tick_index > _MAX_TICK as i64 {
+    if tick_index > MAX_TICK as i64 {
         return Err(ContractError::TickIndexMaxError {});
     }
 
@@ -228,7 +228,7 @@ mod tests {
         // example1
         let tick_index = 27445000_i128;
         let _expected_price = Decimal256::from_str("30352").unwrap();
-        let price = _tick_to_price(tick_index.try_into().unwrap()).unwrap();
+        let price = tick_to_price(tick_index.try_into().unwrap()).unwrap();
         println!("{:?}", price.to_string());
         // assert_eq!(price, expected_price);
         let tick = price_to_tick(deps.as_mut().storage, price).unwrap();
@@ -240,111 +240,111 @@ mod tests {
         // example1
         let tick_index = 38035200;
         let expected_price = Decimal256::from_str("30352").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example2
         let tick_index = 38035300;
         let expected_price = Decimal256::from_str("30353").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example3
         let tick_index = -44821000;
         let expected_price = Decimal256::from_str("0.000011790").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example4
         let tick_index = -44820900;
         let expected_price = Decimal256::from_str("0.000011791").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example5
         let tick_index = -12104000;
         let expected_price = Decimal256::from_str("0.068960").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example6
         let tick_index = -12103900;
         let expected_price = Decimal256::from_str("0.068961").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example7
-        let tick_index = _MAX_TICK as i64 - 100;
+        let tick_index = MAX_TICK as i64 - 100;
         let expected_price =
             Decimal256::from_str("99999000000000000000000000000000000000").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example8
-        let tick_index = _MAX_TICK as i64;
+        let tick_index = MAX_TICK as i64;
         let expected_price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example9
         let tick_index = -20594000;
         let expected_price = Decimal256::from_str("0.007406").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example10
         let tick_index = -20593900;
         let expected_price = Decimal256::from_str("0.0074061").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example11
         let tick_index = -29204000;
         let expected_price = Decimal256::from_str("0.00077960").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example12
         let tick_index = -29203900;
         let expected_price = Decimal256::from_str("0.00077961").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example13
         let tick_index = -12150000;
         let expected_price = Decimal256::from_str("0.068500").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example14
         let tick_index = -12149900;
         let expected_price = Decimal256::from_str("0.068501").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example15
         let tick_index = 64576000;
         let expected_price = Decimal256::from_str("25760000").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example16
         let tick_index = 64576100;
         let expected_price = Decimal256::from_str("25761000").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example17
         let tick_index = 0;
         let expected_price = Decimal256::from_str("1").unwrap();
-        let price = _tick_to_price(tick_index).unwrap();
+        let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example19
-        assert!(_tick_to_price(_MAX_TICK as i64 + 1).is_err());
+        assert!(tick_to_price(MAX_TICK as i64 + 1).is_err());
 
         // example20
-        assert!(_tick_to_price(_MIN_INITIALIZED_TICK - 1).is_err());
+        assert!(tick_to_price(MIN_INITIALIZED_TICK - 1).is_err());
     }
 
     #[test]
@@ -388,13 +388,13 @@ mod tests {
 
         // example7
         price = Decimal256::from_str("99999000000000000000000000000000000000").unwrap();
-        expected_tick_index = _MAX_TICK - 100;
+        expected_tick_index = MAX_TICK - 100;
         tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 
         // example8
         price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
-        expected_tick_index = _MAX_TICK;
+        expected_tick_index = MAX_TICK;
         tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 

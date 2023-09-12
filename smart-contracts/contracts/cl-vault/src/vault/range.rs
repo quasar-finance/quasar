@@ -11,9 +11,10 @@ use osmosis_std::types::{
     osmosis::{
         concentratedliquidity::v1beta1::{
             MsgCreatePosition, MsgCreatePositionResponse, MsgWithdrawPosition,
-            MsgWithdrawPositionResponse,
+            MsgWithdrawPositionResponse, Pool,
         },
         gamm::v1beta1::MsgSwapExactAmountInResponse,
+        poolmanager::v1beta1::PoolmanagerQuerier,
     },
 };
 
@@ -100,7 +101,7 @@ pub fn execute_update_range_ticks(
     let withdraw_msg = MsgWithdrawPosition {
         position_id: position.position_id,
         sender: env.contract.address.to_string(),
-        liquidity_amount: Decimal::from_str(position.liquidity.as_str())?
+        liquidity_amount: Decimal256::from_str(position.liquidity.as_str())?
             .atomics()
             .to_string(),
     };
@@ -166,8 +167,14 @@ pub fn handle_withdraw_position_reply(
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
     // we can fix this by going straight into a swap-deposit-merge before creating any positions
 
-    if (amount0.is_zero() && modify_range_state.lower_tick <= pool_details.current_tick)
-        || (amount1.is_zero() && modify_range_state.upper_tick >= pool_details.current_tick)
+    // todo: Check if needs LTE or just LT
+    // 0 token0 and current_tick > lower_tick
+    // 0 token1 and current_tick < upper_tick
+    // if (lower < current < upper) && amount0 == 0  || amount1 == 0
+    // also onesided but wrong token
+    // bad complexity demon, grug no like
+    if (amount0.is_zero() && pool_details.current_tick < modify_range_state.upper_tick)
+        || (amount1.is_zero() && pool_details.current_tick > modify_range_state.lower_tick)
     {
         do_swap_deposit_merge(
             deps,
@@ -255,7 +262,7 @@ pub fn handle_initial_create_position_reply(
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 pub fn do_swap_deposit_merge(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
@@ -290,11 +297,11 @@ pub fn do_swap_deposit_merge(
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
         (
+            // range is above current tick
             if pool_details.current_tick > target_upper_tick {
                 balance0
             } else {
                 get_single_sided_deposit_0_to_1_swap_amount(
-                    deps.branch(),
                     balance0,
                     target_lower_tick,
                     pool_details.current_tick,
@@ -305,11 +312,12 @@ pub fn do_swap_deposit_merge(
         )
     } else if !balance1.is_zero() {
         (
+            // current tick is above range
             if pool_details.current_tick < target_lower_tick {
+                // TODO: Maybe here <= ?
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
-                    deps.branch(),
                     balance1,
                     target_lower_tick,
                     pool_details.current_tick,
@@ -328,12 +336,14 @@ pub fn do_swap_deposit_merge(
                 position_id: position_id.expect("position id should be set if no swap is needed"),
             },
         )?;
+
+        SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
+
         return Ok(Response::new()
             .add_attribute("action", "swap_deposit_merge")
             .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
-
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
@@ -378,6 +388,7 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    // TODO: Remove handling of data. if we keep reply_on_success in the caller function
     match data.clone() {
         SubMsgResult::Ok(_msg) => handle_swap_success(deps, env, data.try_into()?),
         SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
@@ -409,7 +420,6 @@ fn handle_swap_success(
             left_over_amount,
         ),
     };
-
     // Create the position after swapped the leftovers based on swap direction
     let mut coins_to_send = vec![];
     if !balance0.is_zero() {
@@ -434,7 +444,16 @@ fn handle_swap_success(
         Uint128::zero(),
     )?;
 
-    // TODO evaluate st change _always to _on_success
+    // get the current pool
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
+    let pm_querier = PoolmanagerQuerier::new(&deps.querier);
+    let pool: Pool = pm_querier
+        .pool(pool_config.pool_id)?
+        .pool
+        .unwrap()
+        .try_into()?;
+
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             create_position_msg,

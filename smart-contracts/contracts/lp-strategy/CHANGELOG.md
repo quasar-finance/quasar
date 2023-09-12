@@ -24,8 +24,8 @@
 
 ### Features
 
-- Added retry entry point to handle exit pool errors
-- Added retry entry point to handle join pool errors
+- Added permission-less retry entrypoint to handle exit pool errors
+- Added permission-less retry entrypoint to handle join pool errors
 
 ### Bugfixes
 
@@ -33,6 +33,9 @@
 - readd proper lock behaviour
 - Do not allow opentry messages to clog up our state
 - Compare users' shares to their owned amount of queued shares instead of all queued shares
+- make it so that the primitive compounds
+- using only the unbonds amount to calculate slippage (previously using total shares amount)
+- fixed math on consolidate_exit_pool_amount_into_local_denom
 
 ## V0.1.1 08-05-2023
 

@@ -1,10 +1,11 @@
 use std::str::FromStr;
 
+use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper, Storage,
-    Uint128,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage,
+    Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -133,65 +134,75 @@ pub fn get_spot_price(
 
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
-    _deps: DepsMut,
     token0_balance: Uint128,
     lower_tick: i64,
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    if current_tick < lower_tick {
-        return Err(ContractError::InvalidCurrentTick {}); // error for 0% swap
-    }
-    if current_tick > upper_tick {
-        return Ok(token0_balance); // swap 100% of token0
-    }
+    // TODO error here if this condition holds
+    // if current_tick < lower_tick {
+    //     return ;
+    // }
 
-    let precision = 1_000_000u128; // six decimal of precision, TODO: remove this and convert types properly
+    let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
+    let upper_price = tick_to_price(upper_tick)?;
 
-    let current_less_lower = current_tick.checked_sub(lower_tick).unwrap() as u128;
-    let upper_less_lower = upper_tick.checked_sub(lower_tick).unwrap() as u128;
+    let cur_price_sqrt = current_price.sqrt();
+    let lower_price_sqrt = lower_price.sqrt();
+    let upper_price_sqrt = upper_price.sqrt();
 
-    let factor = (upper_less_lower
-        .checked_sub(current_less_lower)
-        .unwrap()
-        .checked_mul(precision)
-        .unwrap())
-    .checked_div(upper_less_lower)
-    .unwrap();
+    // let pool_metadata_constant: Decimal256 = cur_price_sqrt
+    //     .checked_mul(lower_price_sqrt)?
+    //     .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
+    //     .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
 
-    let swap_amount = token0_balance.checked_mul(Uint128::new(factor)).unwrap();
-    let final_swap_amount = swap_amount.checked_div(Uint128::new(precision)).unwrap();
+    let pool_metadata_constant: Decimal256 = (upper_price_sqrt
+        .checked_mul(cur_price_sqrt)?
+        .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?))?
+    .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
 
-    Ok(final_swap_amount)
+    let spot_price_over_pool_metadata_constant =
+        current_price.checked_div(pool_metadata_constant)?;
+
+    let denominator = Decimal256::one().checked_add(spot_price_over_pool_metadata_constant)?;
+
+    let swap_amount: Uint128 = Uint256::from(token0_balance)
+        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .try_into()?;
+
+    Ok(swap_amount)
 }
 
 pub fn get_single_sided_deposit_1_to_0_swap_amount(
-    _deps: DepsMut,
     token1_balance: Uint128,
     lower_tick: i64,
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    if current_tick < lower_tick {
-        return Ok(token1_balance); // swap 100% of token1
-    }
-    if current_tick > upper_tick {
-        return Err(ContractError::InvalidCurrentTick {}); // error for 0% swap
-    }
+    let lower_price = tick_to_price(lower_tick)?;
+    let current_price = tick_to_price(current_tick)?;
+    let upper_price = tick_to_price(upper_tick)?;
 
-    let precision = 1_000_000u128; // six decimal of precision, TODO: remove this and convert types properly
+    let cur_price_sqrt = current_price.sqrt();
+    let lower_price_sqrt = lower_price.sqrt();
+    let upper_price_sqrt = upper_price.sqrt();
 
-    let current_less_lower = current_tick.checked_sub(lower_tick).unwrap() as u128;
-    let upper_less_lower = upper_tick.checked_sub(lower_tick).unwrap() as u128;
+    let pool_metadata_constant: Decimal256 = (upper_price_sqrt
+        .checked_mul(cur_price_sqrt)?
+        .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?))?
+    .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
 
-    let factor = (current_less_lower.checked_mul(precision).unwrap())
-        .checked_div(upper_less_lower)
-        .unwrap();
+    let pool_metadata_constant_over_spot_price: Decimal256 =
+        pool_metadata_constant.checked_div(current_price)?;
 
-    let swap_amount = token1_balance.checked_mul(Uint128::new(factor)).unwrap();
-    let final_swap_amount = swap_amount.checked_div(Uint128::new(precision)).unwrap();
+    let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
 
-    Ok(final_swap_amount)
+    let swap_amount: Uint128 = Uint256::from(token1_balance)
+        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .try_into()?;
+
+    Ok(swap_amount)
 }
 
 pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, ContractError> {
@@ -230,12 +241,11 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
-    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-        FullPositionBreakdown, Position,
-    };
+    use std::collections::HashMap;
 
-    use crate::{state::PoolConfig, test_helpers::QuasarQuerier};
+    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
+
+    use crate::math::tick::price_to_tick;
 
     use super::*;
 
@@ -300,6 +310,122 @@ mod tests {
     }
 
     #[test]
+    fn test_0_to_1_swap() {
+        let mut deps = mock_dependencies();
+
+        let lowSqrtP = "4500";
+        let highSqrtP = "5500";
+        let token0amt = 200000u128;
+
+        // prices and expected amounts taken from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
+        let mut prices = HashMap::new();
+        prices.insert("4501", Uint128::new(199768));
+        prices.insert("4600", Uint128::new(177326));
+        prices.insert("4700", Uint128::new(155696));
+        prices.insert("4800", Uint128::new(134901));
+        prices.insert("4900", Uint128::new(114759));
+        prices.insert("5000", Uint128::new(95116));
+        prices.insert("5100", Uint128::new(75834));
+        prices.insert("5200", Uint128::new(56790));
+        prices.insert("5300", Uint128::new(37872));
+        prices.insert("5400", Uint128::new(18975));
+        prices.insert("5499", Uint128::new(191));
+
+        let lower_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(lowSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+        let upper_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(highSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+        for (price, result) in prices.into_iter() {
+            let curr_tick =
+                price_to_tick(deps.as_mut().storage, Decimal256::from_str(price).unwrap())
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+
+            let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
+                token0amt.into(),
+                lower_tick,
+                curr_tick,
+                upper_tick,
+            )
+            .unwrap();
+
+            assert_eq!(swap_amount, result);
+        }
+    }
+
+    #[test]
+    fn test_1_to_0_swap() {
+        let mut deps = mock_dependencies();
+
+        let lowSqrtP = "4500";
+        let highSqrtP = "5500";
+        let token1amt = 200000u128;
+
+        // multiplying this by 2 (?) so that we can roughly compare to the go test
+        let token1amt = 200000u128;
+
+        let mut prices = HashMap::new();
+        prices.insert("4501", Uint128::new(233));
+        prices.insert("4600", Uint128::new(22675));
+        prices.insert("4700", Uint128::new(44305));
+        prices.insert("4800", Uint128::new(65100));
+        prices.insert("4900", Uint128::new(85242));
+        prices.insert("5000", Uint128::new(104885));
+        prices.insert("5100", Uint128::new(124167));
+        prices.insert("5200", Uint128::new(143211));
+        prices.insert("5300", Uint128::new(162129));
+        prices.insert("5400", Uint128::new(181026));
+        prices.insert("5499", Uint128::new(199810));
+
+        let lower_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(lowSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+        let upper_tick: i64 = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(highSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+        for (price, result) in prices.into_iter() {
+            let curr_tick =
+                price_to_tick(deps.as_mut().storage, Decimal256::from_str(price).unwrap())
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+
+            let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
+                token1amt.into(),
+                lower_tick,
+                curr_tick,
+                upper_tick,
+            )
+            .unwrap();
+
+            assert_eq!(swap_amount, result);
+        }
+    }
+
+    #[test]
     fn test_round_up_to_nearest_multiple() {
         assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
         assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
@@ -324,177 +450,5 @@ mod tests {
         assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
         assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
         assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
-    }
-
-    #[test]
-    fn test_get_single_sided_deposit_0_to_1_swap_amount() {
-        // Common setup
-        let mut deps = mock_dependencies();
-        let position = FullPositionBreakdown {
-            position: Some(Position {
-                position_id: 1,
-                address: "some".to_string(),
-                pool_id: 1,
-                lower_tick: 100,
-                upper_tick: 2000,
-                join_time: None,
-                liquidity: "12317361863813".to_string(),
-            }),
-            asset0: Some(Coin::new(1_000_000, "uatom").into()),
-            asset1: Some(Coin::new(1_000_000, "uosmo").into()),
-            claimable_spread_rewards: vec![Coin::new(1_000_000, "uosmo").into()], // not relevant
-            claimable_incentives: vec![Coin::new(1_000_000, "uosmo").into()],     // not relevant
-            forfeited_incentives: vec![Coin::new(1_000_000, "uosmo").into()],     // not relevant
-        };
-        let token0_balance = Uint128::new(1_000_000); // User balance
-
-        // Mock PoolConfig
-        POOL_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &PoolConfig {
-                    pool_id: 1,
-                    token0: "uatom".to_string(),
-                    token1: "uosmo".to_string(),
-                },
-            )
-            .unwrap();
-
-        // Test case 1: current tick is the lowest
-        let mut current_tick = 100;
-        let querier1 = QuasarQuerier::new(position.clone(), current_tick);
-        let qw1 = QuerierWrapper::new(&querier1);
-        let mut deps_mut1 = deps.as_mut();
-        deps_mut1.querier = qw1;
-
-        let swap_amount1 = get_single_sided_deposit_0_to_1_swap_amount(
-            deps_mut1,
-            token0_balance,
-            100,
-            current_tick,
-            2000,
-        )
-        .unwrap();
-        assert_eq!(swap_amount1, Uint128::new(1000000));
-
-        // Test case 2: current tick is within the range
-        current_tick = 1050;
-        let querier2 = QuasarQuerier::new(position.clone(), current_tick);
-        let qw2 = QuerierWrapper::new(&querier2);
-        let mut deps_mut2 = deps.as_mut();
-        deps_mut2.querier = qw2;
-
-        let swap_amount2 = get_single_sided_deposit_0_to_1_swap_amount(
-            deps_mut2,
-            token0_balance,
-            100,
-            current_tick,
-            2000,
-        )
-        .unwrap();
-        assert_eq!(swap_amount2, Uint128::new(500000));
-
-        // Test case 3: current tick is the highest
-        current_tick = 2000;
-        let querier3 = QuasarQuerier::new(position, current_tick);
-        let qw3 = QuerierWrapper::new(&querier3);
-        let mut deps_mut3 = deps.as_mut();
-        deps_mut3.querier = qw3;
-
-        let swap_amount3 = get_single_sided_deposit_0_to_1_swap_amount(
-            deps_mut3,
-            token0_balance,
-            100,
-            current_tick,
-            2000,
-        )
-        .unwrap();
-        assert_eq!(swap_amount3, Uint128::new(0));
-    }
-
-    #[test]
-    fn test_get_single_sided_deposit_1_to_0_swap_amount() {
-        // Common setup
-        let mut deps = mock_dependencies();
-        let position = FullPositionBreakdown {
-            position: Some(Position {
-                position_id: 1,
-                address: "some".to_string(),
-                pool_id: 1,
-                lower_tick: 100,
-                upper_tick: 2000,
-                join_time: None,
-                liquidity: "12317361863813".to_string(),
-            }),
-            asset0: Some(Coin::new(1_000_000, "uatom").into()),
-            asset1: Some(Coin::new(1_000_000, "uosmo").into()),
-            claimable_spread_rewards: vec![Coin::new(1_000_000, "uosmo").into()], // not relevant
-            claimable_incentives: vec![Coin::new(1_000_000, "uosmo").into()],     // not relevant
-            forfeited_incentives: vec![Coin::new(1_000_000, "uosmo").into()],     // not relevant
-        };
-        let token1_balance = Uint128::new(1_000_000); // User balance
-
-        // Mock PoolConfig
-        POOL_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &PoolConfig {
-                    pool_id: 1,
-                    token0: "uatom".to_string(),
-                    token1: "uosmo".to_string(),
-                },
-            )
-            .unwrap();
-
-        // Test case 1: current tick is the highest
-        let mut current_tick = 2000;
-        let querier1 = QuasarQuerier::new(position.clone(), current_tick);
-        let qw1 = QuerierWrapper::new(&querier1);
-        let mut deps_mut1 = deps.as_mut();
-        deps_mut1.querier = qw1;
-
-        let swap_amount1 = get_single_sided_deposit_1_to_0_swap_amount(
-            deps_mut1,
-            token1_balance,
-            100,
-            current_tick,
-            2000,
-        )
-        .unwrap();
-        assert_eq!(swap_amount1, Uint128::new(1000000));
-
-        // Test case 2: current tick is within the range
-        current_tick = 1050;
-        let querier2 = QuasarQuerier::new(position.clone(), current_tick);
-        let qw2 = QuerierWrapper::new(&querier2);
-        let mut deps_mut2 = deps.as_mut();
-        deps_mut2.querier = qw2;
-
-        let swap_amount2 = get_single_sided_deposit_1_to_0_swap_amount(
-            deps_mut2,
-            token1_balance,
-            100,
-            current_tick,
-            2000,
-        )
-        .unwrap();
-        assert_eq!(swap_amount2, Uint128::new(500000));
-
-        // Test case 3: current tick is the lowest
-        current_tick = 100;
-        let querier3 = QuasarQuerier::new(position, current_tick);
-        let qw3 = QuerierWrapper::new(&querier3);
-        let mut deps_mut3 = deps.as_mut();
-        deps_mut3.querier = qw3;
-
-        let swap_amount3 = get_single_sided_deposit_1_to_0_swap_amount(
-            deps_mut3,
-            token1_balance,
-            100,
-            current_tick,
-            2000,
-        )
-        .unwrap();
-        assert_eq!(swap_amount3, Uint128::new(0));
     }
 }
