@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128, StdError,
+    coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, SubMsgResult,
+    Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, Pool,
@@ -15,7 +16,7 @@ use crate::reply::Replies;
 use crate::rewards::Rewards;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
-    VAULT_CONFIG, VAULT_DENOM, STRATEGIST_REWARDS,
+    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -26,10 +27,11 @@ pub fn handle_instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    
     // a performance fee of more than 1 means that the performance fee is more than 100%
     if msg.config.performance_fee > Decimal::one() {
-        return Err(ContractError::Std(StdError::generic_err("performance fee cannot be more than 1.0")));
+        return Err(ContractError::Std(StdError::generic_err(
+            "performance fee cannot be more than 1.0",
+        )));
     }
 
     VAULT_CONFIG.save(deps.storage, &msg.config)?;

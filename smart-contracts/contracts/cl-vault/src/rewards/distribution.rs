@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    Addr, Attribute, Deps, DepsMut, Env, Fraction, Order, Response, StdError, SubMsg, SubMsgResult,
-    Uint128, Decimal,
+    Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult,
+    Uint128,
 };
 
 use crate::{
@@ -21,7 +21,7 @@ use osmosis_std::types::{
     },
 };
 
-use super::rewards::Rewards;
+use super::helpers::Rewards;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
@@ -152,7 +152,7 @@ fn distribute_rewards(
 
     Ok(vec![Attribute::new(
         "total_rewards_amount",
-        format!("{:?}", rewards.into_coins()),
+        format!("{:?}", rewards.coins()),
     )])
 }
 
@@ -176,19 +176,12 @@ fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadReward
 mod tests {
     use cosmwasm_std::{
         coin,
-        testing::{mock_dependencies, mock_env, mock_dependencies_with_balances, MockQuerier},
-        Binary, Decimal, SubMsgResponse, Uint128, QuerierWrapper,
+        testing::{mock_dependencies, mock_env},
     };
 
-    use crate::{
-        state::{Position, VaultConfig},
-        test_helpers::QuasarQuerier,
-    };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, Position as OsmoPosition,
-        },
+    use crate::{state::Position, test_helpers::QuasarQuerier};
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+        FullPositionBreakdown, Position as OsmoPosition,
     };
 
     use super::*;
@@ -197,7 +190,7 @@ mod tests {
     fn test_claim_rewards() {
         let position_id = 2;
         let mut deps = mock_dependencies();
-        let qq = QuasarQuerier::new(
+        let _qq = QuasarQuerier::new(
             FullPositionBreakdown {
                 position: Some(OsmoPosition {
                     position_id,
@@ -364,121 +357,121 @@ mod tests {
     //         })
     // }
 
-        // #[test]
-        // fn distribute_rewards_works() {
-        //     let mut deps = mock_dependencies();
-        //     let mut mut_deps = deps.as_mut();
+    // #[test]
+    // fn distribute_rewards_works() {
+    //     let mut deps = mock_dependencies();
+    //     let mut mut_deps = deps.as_mut();
 
-        //     let qq = QuasarQuerier::new_with_balances(
-        //         FullPositionBreakdown {
-        //             position: Some(OsmoPosition {
-        //                 position_id: 1,
-        //                 address: "bob".to_string(),
-        //                 pool_id: 1,
-        //                 lower_tick: 100,
-        //                 upper_tick: 1000,
-        //                 join_time: None,
-        //                 liquidity: "1000000.2".to_string(),
-        //             }),
-        //             asset0: Some(OsmoCoin {
-        //                 denom: "token0".to_string(),
-        //                 amount: "1000000".to_string(),
-        //             }),
-        //             asset1: Some(OsmoCoin {
-        //                 denom: "token1".to_string(),
-        //                 amount: "1000000".to_string(),
-        //             }),
-        //             claimable_spread_rewards: vec![
-        //                 OsmoCoin {
-        //                     denom: "token0".to_string(),
-        //                     amount: "100".to_string(),
-        //                 },
-        //                 OsmoCoin {
-        //                     denom: "token1".to_string(),
-        //                     amount: "100".to_string(),
-        //                 },
-        //             ],
-        //             claimable_incentives: vec![],
-        //             forfeited_incentives: vec![],
-        //         },
-        //         500,
-        //         &[]
-        //     );
-        //     mut_deps.querier = QuerierWrapper::new(&qq);
-        //     // let qq = QuasarQuerier::new()
-        //     // we need a vault config to distribute the rewards in the vault config
-        //     VAULT_CONFIG
-        //         .save(
-        //             mut_deps.storage,
-        //             &VaultConfig {
-        //                 performance_fee: Decimal::percent(20),
-        //                 treasury: Addr::unchecked("strategy_man"),
-        //                 swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
-        //             },
-        //         )
-        //         .unwrap();
+    //     let qq = QuasarQuerier::new_with_balances(
+    //         FullPositionBreakdown {
+    //             position: Some(OsmoPosition {
+    //                 position_id: 1,
+    //                 address: "bob".to_string(),
+    //                 pool_id: 1,
+    //                 lower_tick: 100,
+    //                 upper_tick: 1000,
+    //                 join_time: None,
+    //                 liquidity: "1000000.2".to_string(),
+    //             }),
+    //             asset0: Some(OsmoCoin {
+    //                 denom: "token0".to_string(),
+    //                 amount: "1000000".to_string(),
+    //             }),
+    //             asset1: Some(OsmoCoin {
+    //                 denom: "token1".to_string(),
+    //                 amount: "1000000".to_string(),
+    //             }),
+    //             claimable_spread_rewards: vec![
+    //                 OsmoCoin {
+    //                     denom: "token0".to_string(),
+    //                     amount: "100".to_string(),
+    //                 },
+    //                 OsmoCoin {
+    //                     denom: "token1".to_string(),
+    //                     amount: "100".to_string(),
+    //                 },
+    //             ],
+    //             claimable_incentives: vec![],
+    //             forfeited_incentives: vec![],
+    //         },
+    //         500,
+    //         &[]
+    //     );
+    //     mut_deps.querier = QuerierWrapper::new(&qq);
+    //     // let qq = QuasarQuerier::new()
+    //     // we need a vault config to distribute the rewards in the vault config
+    //     VAULT_CONFIG
+    //         .save(
+    //             mut_deps.storage,
+    //             &VaultConfig {
+    //                 performance_fee: Decimal::percent(20),
+    //                 treasury: Addr::unchecked("strategy_man"),
+    //                 swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+    //             },
+    //         )
+    //         .unwrap();
 
-        //     VAULT_DENOM.save(mut_deps.storage, &"share_denom".to_string()).unwrap();
+    //     VAULT_DENOM.save(mut_deps.storage, &"share_denom".to_string()).unwrap();
 
-        //     // mock a vec of user shares
-        //     let user_shares = vec![(Addr::unchecked("user1"), Uint128::new(1000))];
-        //     let total = user_shares
-        //         .iter()
-        //         .fold(Uint128::zero(), |acc, (_, shares)| acc + shares);
-        //     user_shares.into_iter().for_each(|(addr, shares)| {
-        //         SHARES
-        //             .save(mut_deps.storage, addr, &shares)
-        //             .unwrap()
-        //     });
+    //     // mock a vec of user shares
+    //     let user_shares = vec![(Addr::unchecked("user1"), Uint128::new(1000))];
+    //     let total = user_shares
+    //         .iter()
+    //         .fold(Uint128::zero(), |acc, (_, shares)| acc + shares);
+    //     user_shares.into_iter().for_each(|(addr, shares)| {
+    //         SHARES
+    //             .save(mut_deps.storage, addr, &shares)
+    //             .unwrap()
+    //     });
 
-        //     let strategist_rewards = Rewards::from_coins(vec![coin(50, "uosmo")]);
-        //     STRATEGIST_REWARDS
-        //         .save(mut_deps.storage, &strategist_rewards)
-        //         .unwrap();
+    //     let strategist_rewards = Rewards::from_coins(vec![coin(50, "uosmo")]);
+    //     STRATEGIST_REWARDS
+    //         .save(mut_deps.storage, &strategist_rewards)
+    //         .unwrap();
 
-        //     let rewards = Rewards::from_coins(vec![coin(10000, "uosmo"), coin(1000000, "uatom")]);
-        //     distribute_rewards(mut_deps, rewards.clone()).unwrap();
+    //     let rewards = Rewards::from_coins(vec![coin(10000, "uosmo"), coin(1000000, "uatom")]);
+    //     distribute_rewards(mut_deps, rewards.clone()).unwrap();
 
-        //     // each entry in USER_REWARDS should be equal to rewards.sub_percentage(strategist_fee_percentage).percentage(user_shares, total_shares)
-        //     // we can get the user shares from SHARES
-        //     let strategist_fee_percentage = VAULT_CONFIG
-        //         .load(mut_deps.storage)
-        //         .unwrap()
-        //         .performance_fee;
+    //     // each entry in USER_REWARDS should be equal to rewards.sub_percentage(strategist_fee_percentage).percentage(user_shares, total_shares)
+    //     // we can get the user shares from SHARES
+    //     let strategist_fee_percentage = VAULT_CONFIG
+    //         .load(mut_deps.storage)
+    //         .unwrap()
+    //         .performance_fee;
 
-        //     assert_eq!(
-        //         STRATEGIST_REWARDS.load(mut_deps.storage).unwrap(),
-        //         strategist_rewards
-        //             .add(
-        //                 rewards
-        //                     .clone()
-        //                     .sub_ratio(
-        //                         strategist_fee_percentage
-        //                     )
-        //                     .unwrap()
-        //             )
-        //             .unwrap()
-        //     );
+    //     assert_eq!(
+    //         STRATEGIST_REWARDS.load(mut_deps.storage).unwrap(),
+    //         strategist_rewards
+    //             .add(
+    //                 rewards
+    //                     .clone()
+    //                     .sub_ratio(
+    //                         strategist_fee_percentage
+    //                     )
+    //                     .unwrap()
+    //             )
+    //             .unwrap()
+    //     );
 
-        //     USER_REWARDS
-        //         .range(mut_deps.branch().storage, None, None, Order::Ascending)
-        //         .for_each(|val| {
-        //             let (user, user_rewards) = val.unwrap();
-        //             let user_shares = SHARES.load(mut_deps.branch().storage, user).unwrap();
-        //             let mut tmp_rewards = rewards.clone();
+    //     USER_REWARDS
+    //         .range(mut_deps.branch().storage, None, None, Order::Ascending)
+    //         .for_each(|val| {
+    //             let (user, user_rewards) = val.unwrap();
+    //             let user_shares = SHARES.load(mut_deps.branch().storage, user).unwrap();
+    //             let mut tmp_rewards = rewards.clone();
 
-        //             tmp_rewards
-        //                 .sub_ratio(
-        //                     strategist_fee_percentage
-        //                 )
-        //                 .unwrap();
+    //             tmp_rewards
+    //                 .sub_ratio(
+    //                     strategist_fee_percentage
+    //                 )
+    //                 .unwrap();
 
-        //             assert_eq!(
-        //                 user_rewards,
-        //                 tmp_rewards.ratio(Decimal::from_ratio(user_shares, total))
-        //             )
-        //         })
-        // }
+    //             assert_eq!(
+    //                 user_rewards,
+    //                 tmp_rewards.ratio(Decimal::from_ratio(user_shares, total))
+    //             )
+    //         })
+    // }
 
     //     #[test]
     //     fn test_collect_incentives() {

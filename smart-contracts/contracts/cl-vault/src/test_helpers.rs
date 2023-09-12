@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use cosmwasm_std::testing::BankQuerier;
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, ContractResult as CwContractResult, Empty, Querier,
-    QuerierResult, QueryRequest, Coin,
+    from_binary, to_binary, Binary, Coin, ContractResult as CwContractResult, Empty, Querier,
+    QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
@@ -15,10 +13,12 @@ use osmosis_std::types::{
         FullPositionBreakdown, PositionByIdRequest, PositionByIdResponse,
     },
 };
+
+use crate::math::tick::_tick_to_price;
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
-    bank: BankQuerier
+    bank: BankQuerier,
 }
 
 impl QuasarQuerier {
@@ -30,7 +30,11 @@ impl QuasarQuerier {
         }
     }
 
-    pub fn new_with_balances(position: FullPositionBreakdown, current_tick: i64, balances: &[(&str, &[Coin])]) -> QuasarQuerier {
+    pub fn new_with_balances(
+        position: FullPositionBreakdown,
+        current_tick: i64,
+        balances: &[(&str, &[Coin])],
+    ) -> QuasarQuerier {
         QuasarQuerier {
             position,
             current_tick,
@@ -105,7 +109,7 @@ impl Querier for QuasarQuerier {
                     "/osmosis.poolmanager.v1beta1.Query/SpotPrice" => {
                         QuerierResult::Ok(CwContractResult::Ok(
                             to_binary(&SpotPriceResponse {
-                                spot_price: "1.5".to_string(),
+                                spot_price: _tick_to_price(self.current_tick).unwrap().to_string(),
                             })
                             .unwrap(),
                         ))
