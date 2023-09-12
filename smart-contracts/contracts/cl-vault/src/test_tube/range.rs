@@ -2,13 +2,13 @@
 mod test {
     use std::str::FromStr;
 
-    use cosmwasm_std::{Coin, Decimal, Uint128, coin};
+    use cosmwasm_std::{coin, Coin, Decimal, Uint128};
     use osmosis_std::types::{
         cosmos::base::v1beta1,
         osmosis::{
             concentratedliquidity::{
                 poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-                v1beta1::{Pool, PoolsRequest, PositionByIdRequest, MsgCreatePosition},
+                v1beta1::{MsgCreatePosition, Pool, PoolsRequest, PositionByIdRequest},
             },
             poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
         },
@@ -282,7 +282,10 @@ mod test {
             sender: alice.address(),
             lower_tick: 30500000,
             upper_tick: 31500000,
-            tokens_provided: vec![coin(3349580, "uatom").into(), coin(4280628569, "uosmo").into()],
+            tokens_provided: vec![
+                coin(3349580, "uatom").into(),
+                coin(4280628569, "uosmo").into(),
+            ],
             token_min_amount0: "0".to_string(),
             token_min_amount1: "0".to_string(),
         };
