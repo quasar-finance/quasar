@@ -13,7 +13,7 @@ mod tests {
     use proptest::prelude::*;
     use std::collections::HashMap;
 
-    use crate::math::tick::_tick_to_price;
+    use crate::math::tick::tick_to_price;
     use crate::query::PositionResponse;
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
@@ -177,6 +177,9 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
+        let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address); // TOOD: remove this is just for debug
+        println!("Position assets: {:#?}", pos_assets);
+
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
         println!(
@@ -184,8 +187,8 @@ mod tests {
             current_lower_tick, current_upper_tick
         );
         let (current_lower_price, current_upper_price) = (
-            _tick_to_price(current_lower_tick).unwrap(),
-            _tick_to_price(current_upper_tick).unwrap(),
+            tick_to_price(current_lower_tick).unwrap(),
+            tick_to_price(current_upper_tick).unwrap(),
         );
         println!(
             "current_lower_price: {} and current_upper_price: {}",
@@ -378,8 +381,8 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(1_000_000_000_000, "uatom"),
-                    Coin::new(1_000_000_000_000, "uosmo"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uatom"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -393,11 +396,11 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: "uatom".to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: "100000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: "uosmo".to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: "100000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),
