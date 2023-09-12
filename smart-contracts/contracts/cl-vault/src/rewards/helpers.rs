@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Uint128};
+use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
 
 use crate::error::ContractResult;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -12,14 +12,16 @@ impl Rewards {
         Rewards::default()
     }
 
-    /// calculates the percentage that the user should have
-    pub fn percentage(&self, numerator: Uint128, denominator: Uint128) -> Rewards {
+    /// calculates the ratio of the current rewards
+    pub fn ratio(&self, ratio: Decimal) -> Rewards {
         Rewards(
             self.0
                 .iter()
                 .map(|c| {
                     coin(
-                        c.amount.multiply_ratio(numerator, denominator).u128(),
+                        c.amount
+                            .multiply_ratio(ratio.numerator(), ratio.denominator())
+                            .u128(),
                         c.denom.clone(),
                     )
                 })
@@ -45,7 +47,7 @@ impl Rewards {
 
     /// add rewards to self and mutate self
     pub fn add(mut self, rewards: Rewards) -> ContractResult<Self> {
-        self.merge(rewards.into_coins())?;
+        self.merge(rewards.coins())?;
         Ok(self)
     }
 
@@ -62,12 +64,8 @@ impl Rewards {
     }
 
     /// substract a percentage from self, mutate self and return the subtracted rewards
-    pub fn sub_percentage(
-        &mut self,
-        numerator: Uint128,
-        denominator: Uint128,
-    ) -> ContractResult<Rewards> {
-        let to_sub = self.percentage(numerator, denominator);
+    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<Rewards> {
+        let to_sub = self.ratio(ratio);
 
         // actually subtract the funds
         self.sub(&to_sub)?;
@@ -91,7 +89,7 @@ impl Rewards {
     }
 
     pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
-        let rewards = self.into_coins();
+        let rewards = self.coins();
         self.0.clear();
 
         Ok(BankMsg::Send {
@@ -111,7 +109,7 @@ impl Rewards {
             .collect()
     }
 
-    pub fn into_coins(&self) -> Vec<Coin> {
+    pub fn coins(&self) -> Vec<Coin> {
         self.0.clone()
     }
 
@@ -122,6 +120,8 @@ impl Rewards {
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Uint128;
+
     use super::*;
 
     #[test]
@@ -207,7 +207,7 @@ mod tests {
             ])
             .unwrap();
 
-        let ratio = rewards.percentage(Uint128::new(10), Uint128::new(100));
+        let ratio = rewards.ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
         assert_eq!(
             ratio,
             Rewards(vec![
@@ -239,7 +239,7 @@ mod tests {
             .unwrap();
 
         let ratio = rewards
-            .sub_percentage(Uint128::new(10), Uint128::new(100))
+            .sub_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)))
             .unwrap();
         assert_eq!(
             ratio,

@@ -18,12 +18,9 @@ use osmosis_std::types::{
 };
 
 use crate::helpers::round_up_to_nearest_multiple;
+use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
-use crate::{
-    debug,
-    msg::{ExecuteMsg, MergePositionMsg},
-};
 use crate::{
     helpers::get_spot_price,
     math::tick::price_to_tick,

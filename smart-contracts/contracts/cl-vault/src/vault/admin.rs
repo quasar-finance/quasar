@@ -42,10 +42,10 @@ pub fn execute_claim_strategist_rewards(
     STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
 
     Ok(Response::new()
-        .add_attribute("rewards", format!("{:?}", rewards.into_coins()))
+        .add_attribute("rewards", format!("{:?}", rewards.coins()))
         .add_message(BankMsg::Send {
             to_address: range_admin.to_string(),
-            amount: rewards.into_coins(),
+            amount: rewards.coins(),
         }))
 }
 

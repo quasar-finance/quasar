@@ -1,5 +1,5 @@
 mod distribution;
-mod rewards;
+mod helpers;
 
 pub use distribution::*;
-pub use rewards::*;
+pub use helpers::*;

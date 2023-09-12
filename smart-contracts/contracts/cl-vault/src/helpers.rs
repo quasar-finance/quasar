@@ -1,12 +1,10 @@
 use std::str::FromStr;
 
-
-use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
-    Storage, Uint128,
+    coin, Addr, Coin, Decimal, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper, Storage,
+    Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -135,7 +133,7 @@ pub fn get_spot_price(
 
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
-    deps: DepsMut,
+    _deps: DepsMut,
     token0_balance: Uint128,
     lower_tick: i64,
     current_tick: i64,
@@ -168,7 +166,7 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
 }
 
 pub fn get_single_sided_deposit_1_to_0_swap_amount(
-    deps: DepsMut,
+    _deps: DepsMut,
     token1_balance: Uint128,
     lower_tick: i64,
     current_tick: i64,
@@ -232,7 +230,7 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
 #[cfg(test)]
 mod tests {
 
-    use cosmwasm_std::{coin, testing::mock_dependencies, Addr, Querier};
+    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         FullPositionBreakdown, Position,
     };
@@ -398,7 +396,7 @@ mod tests {
 
         // Test case 3: current tick is the highest
         current_tick = 2000;
-        let querier3 = QuasarQuerier::new(position.clone(), current_tick);
+        let querier3 = QuasarQuerier::new(position, current_tick);
         let qw3 = QuerierWrapper::new(&querier3);
         let mut deps_mut3 = deps.as_mut();
         deps_mut3.querier = qw3;
@@ -484,7 +482,7 @@ mod tests {
 
         // Test case 3: current tick is the lowest
         current_tick = 100;
-        let querier3 = QuasarQuerier::new(position.clone(), current_tick);
+        let querier3 = QuasarQuerier::new(position, current_tick);
         let qw3 = QuerierWrapper::new(&querier3);
         let mut deps_mut3 = deps.as_mut();
         deps_mut3.querier = qw3;
