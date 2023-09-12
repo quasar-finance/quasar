@@ -61,7 +61,6 @@ mod tests {
             .expect("Failed to parse balance to f64");
         let amount1 = (balance1_f64 * (percentage / 100.0)).round() as u128;
 
-
         // Get current pool position to know token0 and token1 amounts
         let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address);
 
@@ -187,7 +186,6 @@ mod tests {
         let percentage_factor = percentage / 100.0;
         let new_lower_price = (clp_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
         let new_upper_price = (cup_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
-
 
         // Execute deposit and get liquidity_created from emitted events
         let _update_range = wasm

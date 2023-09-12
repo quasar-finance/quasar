@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_binary, to_binary, CosmosMsg, DepsMut, Env, MessageInfo, Response,
-    StdError, SubMsg, SubMsgResult, Uint128, Decimal256,
+    coin, from_binary, to_binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
+    StdError, SubMsg, SubMsgResult, Uint128,
 };
 use cw_utils::parse_execute_response_data;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{

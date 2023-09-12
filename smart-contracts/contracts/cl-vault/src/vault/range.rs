@@ -2,8 +2,8 @@ use cosmwasm_schema::cw_serde;
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128, Decimal,
+    to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::{
@@ -13,11 +13,12 @@ use osmosis_std::types::{
             MsgCreatePosition, MsgCreatePositionResponse, MsgWithdrawPosition,
             MsgWithdrawPositionResponse, Pool,
         },
-        gamm::v1beta1::MsgSwapExactAmountInResponse, poolmanager::v1beta1::PoolmanagerQuerier,
+        gamm::v1beta1::MsgSwapExactAmountInResponse,
+        poolmanager::v1beta1::PoolmanagerQuerier,
     },
 };
 
-use crate::{helpers::round_up_to_nearest_multiple};
+use crate::helpers::round_up_to_nearest_multiple;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
@@ -172,7 +173,7 @@ pub fn handle_withdraw_position_reply(
     // if (lower < current < upper) && amount0 == 0  || amount1 == 0
     // also onesided but wrong token
     // bad complexity demon, grug no like
-    if (amount0.is_zero() && pool_details.current_tick < modify_range_state.upper_tick )
+    if (amount0.is_zero() && pool_details.current_tick < modify_range_state.upper_tick)
         || (amount1.is_zero() && pool_details.current_tick > modify_range_state.lower_tick)
     {
         do_swap_deposit_merge(
@@ -312,7 +313,8 @@ pub fn do_swap_deposit_merge(
     } else if !balance1.is_zero() {
         (
             // current tick is above range
-            if pool_details.current_tick < target_lower_tick { // TODO: Maybe here <= ?
+            if pool_details.current_tick < target_lower_tick {
+                // TODO: Maybe here <= ?
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
@@ -446,7 +448,11 @@ fn handle_swap_success(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     let pm_querier = PoolmanagerQuerier::new(&deps.querier);
-    let pool: Pool = pm_querier.pool(pool_config.pool_id)?.pool.unwrap().try_into()?;
+    let pool: Pool = pm_querier
+        .pool(pool_config.pool_id)?
+        .pool
+        .unwrap()
+        .try_into()?;
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
