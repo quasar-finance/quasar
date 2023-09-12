@@ -1,10 +1,5 @@
 use std::str::FromStr;
 
-<<<<<<< HEAD
-
-use crate::math::tick::tick_to_price;
-=======
->>>>>>> 2a425990100f78d2c5136b1d3bf7e1919e23139f
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
