@@ -6,47 +6,53 @@ use crate::state::AirdropConfig;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// owner is the admin address
-    pub owner: Option<String>,
     /// funding address to send back funds to
-    pub quasar_funding_address: String,
+    pub funding_or_refund_address: String,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
+    /// admin contains all the messages that can be executed by admin permission only
     Admin(AdminExecuteMsg),
 
-    ClaimAirdrop { airdrop_id: Uint128 },
+    /// claim airdrop is for the users to execute a specific airdrop id
+    ClaimAirdrop(Uint128),
 }
 
 #[cw_serde]
 pub enum AdminExecuteMsg {
+    /// adds a new airdrop config given by the admin
     AddAirdropConfig(AirdropConfig),
 
+    /// updates airdrop config given by the admin
     UpdateAirdropConfig {
         airdrop_id: Uint128,
         airdrop_config: AirdropConfig,
     },
 
+    /// add users to the airdrop with the given amounts
     AddUsers {
         airdrop_id: Uint128,
         users: Vec<Addr>,
-        amounts: Vec<AssetInfo>,
+        amounts: Vec<Uint128>,
     },
 
+    /// add single user to the airdrop with the given amount
     AddUser {
         airdrop_id: Uint128,
         user: Addr,
-        amount: AssetInfo,
+        amount: Uint128,
     },
 
-    RemoveUser {
-        airdrop_id: Uint128,
-        user: Addr,
-    },
-
+    /// remove a list of users from an airdrop
     RemoveUsers {
         airdrop_id: Uint128,
         users: Vec<Addr>,
     },
+
+    /// remove a user from an airdrop
+    RemoveUser { airdrop_id: Uint128, user: Addr },
+
+    /// sends back the remaining funds to the quasar funding address
+    WithdrawFunds { airdrop_id: Uint128 },
 }

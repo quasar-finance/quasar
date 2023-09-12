@@ -15,10 +15,8 @@ pub const AIRDROP_INFO: Map<Uint128, Map<Addr, AirdropInfo>> = Map::new("airdrop
 
 #[cw_serde]
 pub struct Config {
-    /// Account who can update config
-    pub owner: Addr,
     ///  QUASAR token address for funding and refund
-    pub quasar_funding_address: Addr,
+    pub funding_or_refund_address: Addr,
 }
 
 #[cw_serde]
