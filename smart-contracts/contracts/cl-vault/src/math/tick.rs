@@ -10,8 +10,8 @@ use crate::{
 const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
 const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
 const EXPONENT_AT_PRICE_ONE: i64 = -6;
-const MIN_INITIALIZED_TICK: i64 = -108000000;
-const MAX_TICK: i128 = 342000000;
+const _MIN_INITIALIZED_TICK: i64 = -108000000;
+const _MAX_TICK: i128 = 342000000;
 
 // TODO: exponent_at_current_price_one is fixed at -6? We assume exp is always neg?
 pub fn _tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
@@ -20,16 +20,16 @@ pub fn _tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     }
 
     let geometric_exponent_increment_distance_in_ticks = Decimal::from_str("9")?
-        .checked_mul(pow_ten_internal_dec(-EXPONENT_AT_PRICE_ONE)?)?
+        .checked_mul(_pow_ten_internal_dec(-EXPONENT_AT_PRICE_ONE)?)?
         .to_string()
         .parse::<i64>()?;
 
     // Check that the tick index is between min and max value
-    if tick_index < MIN_INITIALIZED_TICK {
+    if tick_index < _MIN_INITIALIZED_TICK {
         return Err(ContractError::TickIndexMinError {});
     }
 
-    if tick_index > MAX_TICK as i64 {
+    if tick_index > _MAX_TICK as i64 {
         return Err(ContractError::TickIndexMaxError {});
     }
 
@@ -56,7 +56,7 @@ pub fn _tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     // Finally, we can calculate the price
 
     let price: Decimal256 = if num_additive_ticks < 0 {
-        pow_ten_internal_dec(geometric_exponent_delta)?
+        _pow_ten_internal_dec(geometric_exponent_delta)?
             .checked_sub(
                 Decimal::from_str(&num_additive_ticks.abs().to_string())?.checked_mul(
                     Decimal::from_str(&current_additive_increment_in_ticks.to_string())?,
@@ -143,7 +143,7 @@ fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
 }
 
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
-fn pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
+fn _pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
     let p = 10u128
         .checked_pow(exponent.unsigned_abs() as u32)
         .ok_or(ContractError::Overflow {})?;
@@ -274,14 +274,14 @@ mod tests {
         assert_eq!(price, expected_price);
 
         // example7
-        let tick_index = MAX_TICK as i64 - 100;
+        let tick_index = _MAX_TICK as i64 - 100;
         let expected_price =
             Decimal256::from_str("99999000000000000000000000000000000000").unwrap();
         let price = _tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
         // example8
-        let tick_index = MAX_TICK as i64;
+        let tick_index = _MAX_TICK as i64;
         let expected_price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
         let price = _tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
@@ -341,10 +341,10 @@ mod tests {
         assert_eq!(price, expected_price);
 
         // example19
-        assert!(_tick_to_price(MAX_TICK as i64 + 1).is_err());
+        assert!(_tick_to_price(_MAX_TICK as i64 + 1).is_err());
 
         // example20
-        assert!(_tick_to_price(MIN_INITIALIZED_TICK - 1).is_err());
+        assert!(_tick_to_price(_MIN_INITIALIZED_TICK - 1).is_err());
     }
 
     #[test]
@@ -388,13 +388,13 @@ mod tests {
 
         // example7
         price = Decimal256::from_str("99999000000000000000000000000000000000").unwrap();
-        expected_tick_index = MAX_TICK - 100;
+        expected_tick_index = _MAX_TICK - 100;
         tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 
         // example8
         price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
-        expected_tick_index = MAX_TICK;
+        expected_tick_index = _MAX_TICK;
         tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
 
