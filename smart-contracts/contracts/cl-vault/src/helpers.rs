@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::debug;
+
 use crate::math::tick::tick_to_price;
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
@@ -17,7 +17,7 @@ pub(crate) fn must_pay_one_or_two(
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
     if info.funds.len() != 2 && info.funds.len() != 1 {
-        return Err(ContractError::IncorrectAmountFunds).into();
+        return Err(ContractError::IncorrectAmountFunds);
     }
 
     let token0 = info

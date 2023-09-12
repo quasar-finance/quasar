@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Uint128, Fraction};
+use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
 
 use crate::error::ContractResult;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;

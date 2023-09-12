@@ -2,7 +2,7 @@ use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
     Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
 };
-use cw_dex::CwDexError;
+
 use cw_utils::PaymentError;
 use thiserror::Error;
 
@@ -61,9 +61,6 @@ pub enum ContractError {
 
     #[error("{0}")]
     ConversionOverflowError(#[from] ConversionOverflowError),
-
-    #[error("{0}")]
-    DecodeError(#[from] prost::DecodeError),
 
     #[error("{0}")]
     DecodeError(#[from] prost::DecodeError),
