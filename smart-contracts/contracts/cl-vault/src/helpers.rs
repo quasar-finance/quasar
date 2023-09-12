@@ -5,7 +5,7 @@ use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage,
-    Uint128,
+    Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -143,21 +143,43 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
 
+    println!(
+        "lower_price: {:?}\ncurrent_price: {:?}\nupper_price: {:?}",
+        lower_price.to_string(),
+        current_price.to_string(),
+        upper_price.to_string()
+    );
+
     let cur_price_sqrt = current_price.sqrt();
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
 
-    let pool_metadata_constant: Decimal256 = cur_price_sqrt
-        .checked_mul(lower_price_sqrt)?
-        .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
-        .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
+    // let pool_metadata_constant: Decimal256 = cur_price_sqrt
+    //     .checked_mul(lower_price_sqrt)?
+    //     .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
+    //     .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
+
+    let pool_metadata_constant: Decimal256 =
+        (upper_price_sqrt * cur_price_sqrt * (cur_price_sqrt - lower_price_sqrt))
+            / (upper_price_sqrt - cur_price_sqrt);
+
+    println!("K = {:?}", pool_metadata_constant.to_string());
 
     let spot_price_over_pool_metadata_constant =
         current_price.checked_div(pool_metadata_constant)?;
 
+    println!(
+        "P_c / K = {:?}",
+        spot_price_over_pool_metadata_constant.to_string()
+    );
+
     let denominator = Decimal256::one().checked_add(spot_price_over_pool_metadata_constant)?;
 
-    let swap_amount = token0_balance.checked_div(denominator.to_uint_floor().try_into()?)?;
+    println!("1 + P_c / K{:?}", denominator.to_string());
+
+    let swap_amount: Uint128 = Uint256::from(token0_balance)
+        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .try_into()?;
 
     Ok(swap_amount)
 }
@@ -298,12 +320,72 @@ mod tests {
     fn test_0_to_1_swap() {
         let mut deps = mock_dependencies();
 
-        let lowSqrtP = "4545"; // not sure why 4545  - thats what SHmosmosis uses, but try 4500 and you'll see same outcome
-        let currSqrtP = "5000";
+        // not sure why 4545  - thats what SHmosmosis uses, but try 4500 and you'll see same outcome
+        let lowSqrtP = "4500";
+        let currSqrtP = "4700";
         let highSqrtP = "5500";
+
         // multiplying this by 2 (?) so that we can roughly compare to the go test
         let token0amt = 2000000u128;
         let token0expected_swap_amount = Uint128::from(1000000u128);
+        // let expected_out_amount = 5000000000u128;
+
+        // these are multiplied by 2 because we multiplied by 2 above
+        // let liquidity0_needed = 1519437308.014768571720923239 * 2
+        // let liquidity1_needed = 1517882343.751510418088349649 * 2
+
+        let lower_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(lowSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+        println!("lower_tick: {:?}", lower_tick);
+        let curr_tick = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(currSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+        let upper_tick: i64 = price_to_tick(
+            deps.as_mut().storage,
+            Decimal256::from_str(highSqrtP).unwrap(),
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+        println!("upper_tick: {:?}", upper_tick);
+
+        let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
+            token0amt.into(),
+            lower_tick,
+            curr_tick,
+            upper_tick,
+        )
+        .unwrap();
+
+        assert_eq!(swap_amount, token0expected_swap_amount);
+    }
+
+    #[test]
+    fn test_1_to_0_swap() {
+        let mut deps = mock_dependencies();
+
+        let lowSqrtP = "67.416615162732695594"; // not sure why 4545  - thats what SHmosmosis uses, but try 4500 and you'll see same outcome
+        let currSqrtP = "70.710678118654752440";
+        let highSqrtP = "74.161984870956629487";
+
+        /*
+        sqrt4545 = osmomath.MustNewDecFromStr("67.416615162732695594")
+        sqrt5000 = osmomath.MustNewDecFromStr("70.710678118654752440")
+        sqrt5500 = osmomath.MustNewDecFromStr("74.161984870956629487")
+        */
+
+        // multiplying this by 2 (?) so that we can roughly compare to the go test
+        let token1amt = 2000000u128;
+        let token1expected_swap_amount = Uint128::from(1000000u128);
         // let expected_out_amount = 5000000000u128;
 
         // these are multiplied by 2 because we multiplied by 2 above
@@ -332,15 +414,15 @@ mod tests {
         .try_into()
         .unwrap();
 
-        let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
-            token0amt.into(),
+        let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
+            token1amt.into(),
             lower_tick,
             curr_tick,
             upper_tick,
         )
         .unwrap();
 
-        assert_eq!(swap_amount, token0expected_swap_amount);
+        assert_eq!(swap_amount, token1expected_swap_amount);
     }
 
     #[test]
