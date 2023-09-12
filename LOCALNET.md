@@ -1,5 +1,6 @@
 
 # Quasar Local Testnet (localnet)
+## NOTE - This feature is as of now deprecated. We will be bringing better localnet support in future.
 
 To run a small network of Quasar nodes locally, first generate their respective configuration:
 

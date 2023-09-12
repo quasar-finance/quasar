@@ -90,7 +90,8 @@ func (s *E2ETestSuite) ExecuteContract(
 	keyName string,
 	contractAddr string,
 	funds sdk.Coins,
-	args any, result any,
+	args any,
+	result any,
 ) {
 	tn := GetFullNode(chain)
 
@@ -135,7 +136,7 @@ func (s *E2ETestSuite) ExecuteContractQuery(ctx context.Context, chain *cosmos.C
 	return res
 }
 
-func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte) {
+func (s *E2ETestSuite) CreatePoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte, poolType string) {
 	tn := GetFullNode(chain)
 
 	logger := s.logger.With(
@@ -153,6 +154,69 @@ func (s *E2ETestSuite) CreatePoolsOnOsmosis(ctx context.Context, chain *cosmos.C
 	s.Require().NoError(err, "failed to write pool file")
 
 	cmds = append(cmds, "--pool-file", filepath.Join(tn.HomeDir(), poolFile))
+
+	if len(poolType) != 0 {
+		cmds = append(cmds, "--pool-type", poolType)
+	}
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to create pool")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
+func (s *E2ETestSuite) SwapTokenOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, tokenIn string, tokenOutMinAmount string, flagSwapRouteDenoms string, flagSwapRoutePoolIds string) {
+	tn := GetFullNode(chain)
+
+	cmds := []string{
+		"gamm", "swap-exact-amount-in",
+		tokenIn,
+		tokenOutMinAmount,
+		"--swap-route-denoms", flagSwapRouteDenoms,
+		"--swap-route-pool-ids", flagSwapRoutePoolIds,
+		"--gas", "20000000",
+	}
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to swap token")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
+func (s *E2ETestSuite) JoinPoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolId string, maxAmountsIn string, shareAmountOut string) {
+	tn := GetFullNode(chain)
+
+	cmds := []string{
+		"gamm", "join-pool",
+		"--gas", "20000000", "--pool-id", poolId,
+		"--max-amounts-in", maxAmountsIn,
+		"--share-amount-out", shareAmountOut,
+	}
+
+	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
+	s.Require().NoError(err, "failed to join pool")
+
+	s.AssertSuccessfulResultTx(ctx, chain, txhash, nil)
+}
+
+func (s *E2ETestSuite) CreateStableswapPoolOnOsmosis(ctx context.Context, chain *cosmos.CosmosChain, keyName string, poolBytes []byte) {
+	tn := GetFullNode(chain)
+
+	logger := s.logger.With(
+		zap.String("chain_id", tn.Chain.Config().ChainID),
+		zap.String("test", tn.TestName),
+	)
+
+	cmds := []string{"gamm", "create-pool",
+		"--gas", "20000000",
+	}
+
+	poolFile := "sample.json"
+	fw := dockerutil.NewFileWriter(logger, tn.DockerClient, tn.TestName)
+	err := fw.WriteFile(ctx, tn.VolumeName, poolFile, poolBytes)
+	s.Require().NoError(err, "failed to write pool file")
+
+	cmds = append(cmds, "--pool-file", filepath.Join(tn.HomeDir(), poolFile), "--pool-type", "stableswap")
 
 	txhash, err := tn.ExecTx(ctx, keyName, cmds...)
 	s.Require().NoError(err, "failed to create pool")

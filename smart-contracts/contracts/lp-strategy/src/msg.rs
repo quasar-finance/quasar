@@ -15,7 +15,7 @@ use crate::{
     helpers::{IbcMsgKind, SubMsgKind},
     ibc_lock,
     start_unbond::StartUnbond,
-    state::{Config, LpCache, Unbond},
+    state::{Config, LpCache, OngoingDeposit, Unbond},
     unbond::PendingReturningUnbonds,
 };
 
@@ -98,6 +98,9 @@ pub struct GetQueuesResponse {
     pub bond_queue: Vec<Bond>,
     pub start_unbond_queue: Vec<StartUnbond>,
     pub unbond_queue: Vec<Unbond>,
+    pub failed_join_queue: Vec<Bond>,
+    pub rejoin_queue: Vec<OngoingDeposit>,
+    pub pending_unbond_queue: Vec<Unbond>,
 }
 
 #[cw_serde]

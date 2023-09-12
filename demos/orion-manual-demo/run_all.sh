@@ -23,18 +23,18 @@ mkdir ./logs
 # COSMOS_PID=$!
 
 # run quasar and save pid
-./quasar_localnet.sh &
+../quasar_localnet.sh &
 QUASAR_PID=$!
 
 #run osmo and save pid
-./osmo_localnet.sh &
+../osmo_localnet.sh &
 OSMO_PID=$!
 
 # wait for chains to start
 sleep 10
 
 # create a pool on osmosis to test against
-osmosisd tx gamm create-pool --pool-file ./sample_pool1.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
+osmosisd tx gamm create-pool --pool-file ./sample_pool1.json --pool-type stableswap --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
 osmosisd tx gamm create-pool --pool-file ./sample_pool2.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
 osmosisd tx gamm create-pool --pool-file ./sample_pool3.json --node http://127.0.0.1:26679 --from bob --keyring-backend test --home $HOME/.osmosis --chain-id osmosis -y --gas-prices 1uosmo -b block
 

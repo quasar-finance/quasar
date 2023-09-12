@@ -13,10 +13,10 @@ use crate::ibc_util::{
 use crate::icq::calc_total_balance;
 use crate::start_unbond::{batch_start_unbond, handle_start_unbond_ack};
 use crate::state::{
-    LpCache, OngoingDeposit, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME,
-    ICA_CHANNEL, ICQ_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE,
-    SIMULATED_EXIT_RESULT, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
-    TOTAL_VAULT_BALANCE, TRAPS,
+    LpCache, PendingBond, CHANNELS, CONFIG, IBC_LOCK, IBC_TIMEOUT_TIME, ICA_CHANNEL, ICQ_CHANNEL,
+    LP_SHARES, OSMO_LOCK, PENDING_ACK, RECOVERY_ACK, REJOIN_QUEUE, SIMULATED_EXIT_RESULT,
+    SIMULATED_EXIT_SHARES_IN, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, TIMED_OUT,
+    TOTAL_VAULT_BALANCE, TRAPS, USABLE_COMPOUND_BALANCE,
 };
 use crate::unbond::{batch_unbond, transfer_batch_unbond, PendingReturningUnbonds};
 use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
@@ -47,7 +47,7 @@ use cosmwasm_std::{
     from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
-    QuerierWrapper, Response, StdError, StdResult, Storage, SubMsg, Uint128, WasmMsg,
+    QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 
 /// enforces ordering and versioning constraints, this combines ChanOpenInit and ChanOpenTry
@@ -308,7 +308,7 @@ pub fn handle_transfer_ack(
 
     let share_out_min_amount = calculate_share_out_min_amount(storage)?;
 
-    let failed_bonds_amount = REJOIN_QUEUE.iter(storage)?.try_fold(
+    let rejoin_queue_amount = REJOIN_QUEUE.iter(storage)?.try_fold(
         Uint128::zero(),
         |acc, val| -> Result<Uint128, ContractError> {
             match val?.raw_amount {
@@ -317,10 +317,22 @@ pub fn handle_transfer_ack(
             }
         },
     )?;
-    let total_amount = transferred_amount + failed_bonds_amount;
 
-    let pending_rejoins: StdResult<Vec<OngoingDeposit>> = REJOIN_QUEUE.iter(storage)?.collect();
-    pending.bonds.append(&mut pending_rejoins?);
+    // add in usable base token compound balance to include rewards
+    // TODO: In an ideal world, I'd also fix share_out_min_amount to adjust for the amount we are compounding
+    // However, share_out_min_amount is already broken (doens't include failed_bonds_amount), the fix would live in ibc_util.rs L:78 (this would only fix failed_join_amount)
+    // a better fix would be to get the last state of the pool and do the math on our side to then also be able to include this USABLE_COMPOUND_BALANCE
+    // howver, if we are going to deprecate this vault, I'd argue it's not worth it - seeing as the compound balance would just be "extra money" for a user anyway
+    // TODO: remove this comment
+    let base_token_rewards = USABLE_COMPOUND_BALANCE.load(storage)?;
+
+    let total_amount = transferred_amount + rejoin_queue_amount + base_token_rewards;
+
+    // remove all items from REJOIN_QUEUE & add them to the deposits: Vec<OngoingDeposit>
+    while !REJOIN_QUEUE.is_empty(storage)? {
+        let rejoin = REJOIN_QUEUE.pop_front(storage)?;
+        pending.bonds.push(rejoin.unwrap());
+    }
 
     let msg = do_ibc_join_pool_swap_extern_amount_in(
         storage,
@@ -370,13 +382,16 @@ pub fn handle_icq_ack(
                 })?,
         );
 
-    let usable_base_balance = get_usable_compound_balance(storage, base_balance)?;
+    // free base_token osmo side balance but subtracted out anything from trapped_errors, saved for use in transfer ack
+    let usable_base_token_compound_balance = get_usable_compound_balance(storage, base_balance)?;
+    USABLE_COMPOUND_BALANCE.save(storage, &usable_base_token_compound_balance)?;
 
     // TODO the quote balance should be able to be compounded aswell
     let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
+
     // TODO we can make the LP_SHARES cache less error prone here by using the actual state of lp shares
     //  We then need to query locked shares aswell, since they are not part of balance
     let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
@@ -384,7 +399,7 @@ pub fn handle_icq_ack(
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
-    let exit_pool =
+    let exit_total_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
@@ -406,6 +421,8 @@ pub fn handle_icq_ack(
         }
     };
 
+    let config = CONFIG.load(storage)?;
+
     let locked_lp_shares = match OSMO_LOCK.may_load(storage)? {
         Some(_) => {
             // found, increment response index
@@ -418,7 +435,6 @@ pub fn handle_icq_ack(
             } else {
                 vec![]
             };
-            let config = CONFIG.load(storage)?;
             gamms
                 .into_iter()
                 .find(|val| val.denom == config.pool_denom)
@@ -432,12 +448,27 @@ pub fn handle_icq_ack(
         None => Uint128::zero(),
     };
 
-    let old_lp_shares = LP_SHARES.load(storage)?;
     // update the locked shares in our cache
     LP_SHARES.update(storage, |mut cache| -> Result<LpCache, ContractError> {
         cache.locked_shares = locked_lp_shares;
         Ok(cache)
     })?;
+
+    let exit_pool_unbonds = if SIMULATED_EXIT_SHARES_IN
+        .may_load(storage)?
+        .unwrap_or(0u128.into())
+        >= 1u128.into()
+    {
+        // found, increment response index
+        response_idx += 1;
+
+        // decode result
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(
+            resp.responses[response_idx].value.as_ref(),
+        )?
+    } else {
+        QueryCalcExitPoolCoinsFromSharesResponse { tokens_out: vec![] }
+    };
 
     let spot_price =
         Decimal::from_str(spot_price.as_str()).map_err(|err| ContractError::ParseDecError {
@@ -447,15 +478,18 @@ pub fn handle_icq_ack(
 
     let total_balance = calc_total_balance(
         storage,
-        usable_base_balance,
-        &exit_pool.tokens_out,
+        usable_base_token_compound_balance,
+        &exit_total_pool.tokens_out,
         spot_price,
     )?;
 
-    let parsed_exit_pool_out =
-        consolidate_exit_pool_amount_into_local_denom(storage, &exit_pool.tokens_out, spot_price)?;
-
     TOTAL_VAULT_BALANCE.save(storage, &total_balance)?;
+
+    let parsed_exit_pool_out = consolidate_exit_pool_amount_into_local_denom(
+        storage,
+        &exit_pool_unbonds.tokens_out,
+        spot_price,
+    )?;
 
     let parsed_join_pool_out = parse_join_pool(storage, join_pool)?;
 
@@ -463,7 +497,7 @@ pub fn handle_icq_ack(
     SIMULATED_EXIT_RESULT.save(storage, &parsed_exit_pool_out)?;
 
     // todo move this to below into the lock decisions
-    let bond = batch_bond(storage, &env, total_balance)?;
+    let bond: Option<SubMsg> = batch_bond(storage, &env, total_balance)?;
 
     let mut msges = Vec::new();
     let mut attrs = Vec::new();
@@ -487,7 +521,7 @@ pub fn handle_icq_ack(
             })?;
         } else {
             attrs.push(Attribute::new("start-unbond-status", "empty"));
-            if let Some(msg) = batch_unbond(storage, &env, old_lp_shares)? {
+            if let Some(msg) = batch_unbond(storage, &env)? {
                 msges.push(msg);
                 attrs.push(Attribute::new("unbond-status", "unbonding"));
                 IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
@@ -789,18 +823,16 @@ pub(crate) fn on_packet_timeout(
 
 #[cfg(test)]
 mod tests {
-
+    use super::*;
+    use crate::{
+        state::{Config, LOCK_ADMIN, SIMULATED_JOIN_AMOUNT_IN},
+        test_helpers::{create_query_response, default_setup},
+    };
+    use cosmos_sdk_proto::cosmos::base::v1beta1::Coin as OsmoCoin;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        IbcEndpoint, IbcOrder,
+        Addr, Empty, IbcEndpoint, IbcOrder,
     };
-
-    use crate::{
-        state::{Config, SIMULATED_JOIN_AMOUNT_IN},
-        test_helpers::default_setup,
-    };
-
-    use super::*;
 
     #[test]
     fn handle_icq_ack_works() {
@@ -930,5 +962,213 @@ mod tests {
 
         let err = handle_ica_channel(deps.as_mut(), msg).unwrap_err();
         assert_eq!(err, ContractError::IncorrectChannelOpenType);
+    }
+
+    #[test]
+    fn test_handle_icq_ack() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        default_setup(deps.as_mut().storage).unwrap();
+
+        IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
+
+        // no osmo lock as we're not sending lock ICQ for simplicity
+        // OSMO_LOCK.save(deps.as_mut().storage, &1u64).unwrap();
+
+        LOCK_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
+            .unwrap();
+
+        // mocking the ICQ ACK (some values don't make sense, but we're not using them in this math calculation)
+        let raw_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uatom".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let quote_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uqsr".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let lp_balance = create_query_response(
+            QueryBalanceResponse {
+                balance: Some(OsmoCoin {
+                    denom: "uosmo".to_string(),
+                    amount: "100".to_string(),
+                }),
+            }
+            .encode_to_vec(),
+        );
+
+        let exit_pool = create_query_response(
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    Coin {
+                        // base denom
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                    Coin {
+                        // quote denom
+                        denom: "uqsr".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                ],
+            }
+            .encode_to_vec(),
+        );
+
+        let spot_price = create_query_response(
+            QuerySpotPriceResponse {
+                spot_price: "1".to_string(),
+            }
+            .encode_to_vec(),
+        );
+
+        let join_pool = create_query_response(
+            QueryCalcJoinPoolSharesResponse {
+                share_out_amount: "123".to_string(),
+                tokens_out: vec![Coin {
+                    denom: "uosmo".to_string(),
+                    amount: Uint128::new(100),
+                }
+                .into()],
+            }
+            .encode_to_vec(),
+        );
+
+        let exit_pool_unbonds = create_query_response(
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    Coin {
+                        denom: "uqsr".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                    Coin {
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(100),
+                    }
+                    .into(),
+                ],
+            }
+            .encode_to_vec(),
+        );
+
+        let ibc_ack = InterchainQueryPacketAck {
+            data: Binary::from(
+                &CosmosResponse {
+                    responses: vec![
+                        raw_balance.clone(),
+                        quote_balance.clone(),
+                        lp_balance.clone(),
+                        exit_pool.clone(),
+                        spot_price.clone(),
+                        join_pool.clone(),
+                        //lock, we're not sending lock for simplicity and to test indexing logic without one value works
+                        exit_pool_unbonds.clone(),
+                    ],
+                }
+                .encode_to_vec()[..],
+            ),
+        };
+
+        // mock the value of shares we had before sending the query
+        SIMULATED_EXIT_SHARES_IN
+            .save(deps.as_mut().storage, &Uint128::new(200))
+            .unwrap();
+
+        // mock the value of shares we had before sending the query
+        SIMULATED_JOIN_AMOUNT_IN
+            .save(deps.as_mut().storage, &Uint128::new(100))
+            .unwrap();
+
+        // simulate that we received the ICQ ACK, shouldn't return any messages
+        let _res = handle_icq_ack(
+            deps.as_mut().storage,
+            env.clone(),
+            to_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            SIMULATED_EXIT_RESULT
+                .load(deps.as_ref().storage)
+                .unwrap()
+                .u128(),
+            // base_amount + (quote_amount / spot_price)
+            100 + (100 / 1)
+        );
+
+        // changing some ICQ ACK params to create a different test scenario
+        let spot_price = create_query_response(
+            QuerySpotPriceResponse {
+                spot_price: "5".to_string(),
+            }
+            .encode_to_vec(),
+        );
+
+        let exit_pool_unbonds = create_query_response(
+            QueryCalcExitPoolCoinsFromSharesResponse {
+                tokens_out: vec![
+                    Coin {
+                        // base denom
+                        denom: "uosmo".to_string(),
+                        amount: Uint128::new(1000),
+                    }
+                    .into(),
+                    Coin {
+                        // quote denom
+                        denom: "uqsr".to_string(),
+                        amount: Uint128::new(5000),
+                    }
+                    .into(),
+                ],
+            }
+            .encode_to_vec(),
+        );
+
+        let ibc_ack = InterchainQueryPacketAck {
+            data: Binary::from(
+                &CosmosResponse {
+                    responses: vec![
+                        raw_balance,
+                        quote_balance,
+                        lp_balance,
+                        exit_pool,
+                        spot_price,
+                        join_pool,
+                        //lock, we're not sending lock for simplicity and to test indexing logic without one value works
+                        exit_pool_unbonds,
+                    ],
+                }
+                .encode_to_vec()[..],
+            ),
+        };
+
+        // simulate that we received another ICQ ACK, shouldn't return any messages
+        let _res =
+            handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+
+        assert_eq!(
+            SIMULATED_EXIT_RESULT
+                .load(deps.as_ref().storage)
+                .unwrap()
+                .u128(),
+            // base_amount + (quote_amount / spot_price)
+            1000 + (5000 / 5)
+        );
     }
 }
