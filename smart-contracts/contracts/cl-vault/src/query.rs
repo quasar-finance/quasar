@@ -113,7 +113,7 @@ pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanc
 pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserRewardsResponse> {
     let rewards = USER_REWARDS
         .load(deps.storage, deps.api.addr_validate(&user)?)?
-        .into_coins();
+        .coins();
     Ok(UserRewardsResponse { rewards })
 }
 
