@@ -48,7 +48,7 @@ pub fn get_spot_price(
     let pm_querier = PoolmanagerQuerier::new(querier);
     let spot_price =
         pm_querier.spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?;
-    
+
     Ok(Decimal::from_str(&spot_price.spot_price)?)
 }
 

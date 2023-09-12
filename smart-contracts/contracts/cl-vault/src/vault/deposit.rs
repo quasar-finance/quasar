@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256, Decimal256,
+    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env, Fraction,
+    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
@@ -108,8 +108,9 @@ pub fn handle_deposit_create_position_reply(
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    let user_created_liquidity =
-        Decimal256::new(Uint256::from_str(create_deposit_position_resp.liquidity_created.as_str())?);
+    let user_created_liquidity = Decimal256::new(Uint256::from_str(
+        create_deposit_position_resp.liquidity_created.as_str(),
+    )?);
 
     let existing_position = get_position(deps.storage, &deps.querier, &env)?
         .position

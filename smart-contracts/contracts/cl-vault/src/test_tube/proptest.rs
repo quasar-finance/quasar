@@ -61,7 +61,6 @@ mod tests {
             .expect("Failed to parse balance to f64");
         let amount1 = (balance1_f64 * (percentage / 100.0)).round() as u128;
 
-
         // Get current pool position to know token0 and token1 amounts
         let pos_assets: TotalAssetsResponse = get_position_assets(wasm, contract_address);
 
