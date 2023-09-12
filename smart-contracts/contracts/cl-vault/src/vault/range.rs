@@ -430,7 +430,7 @@ fn handle_swap_success(
     }
     if !balance1.is_zero() {
         coins_to_send.push(Coin {
-            denom: pool_config.token1.clone(),
+            denom: pool_config.token1,
             amount: balance1,
         });
     }
@@ -448,7 +448,7 @@ fn handle_swap_success(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     let pm_querier = PoolmanagerQuerier::new(&deps.querier);
-    let pool: Pool = pm_querier
+    let _pool: Pool = pm_querier
         .pool(pool_config.pool_id)?
         .pool
         .unwrap()

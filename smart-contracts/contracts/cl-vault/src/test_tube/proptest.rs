@@ -155,7 +155,7 @@ mod tests {
         let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance_str = balance_response.balance.unwrap().amount;
         let balance_f64: f64 = balance_str.parse().expect("Failed to parse balance to f64");
-        let amount = (balance_f64 * (percentage / 100.0)).round() as u128;
+        let _amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
 
@@ -187,7 +187,7 @@ mod tests {
 
         // Skip equal ticks test case
         if new_lower_price == new_upper_price {
-            return
+            return;
         }
 
         // Execute deposit and get liquidity_created from emitted events
@@ -360,8 +360,8 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uatom"),
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000, "uatom"),
+                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),

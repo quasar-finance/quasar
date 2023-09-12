@@ -372,7 +372,7 @@ mod tests {
 
         let lowSqrtP = "4500";
         let highSqrtP = "5500";
-        let token1amt = 200000u128;
+        let _token1amt = 200000u128;
 
         // multiplying this by 2 (?) so that we can roughly compare to the go test
         let token1amt = 200000u128;
