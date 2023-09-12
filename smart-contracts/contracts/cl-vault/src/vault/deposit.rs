@@ -128,7 +128,7 @@ pub fn handle_deposit_create_position_reply(
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
-        existing_liquidity.to_uint_floor().try_into().unwrap()
+        existing_liquidity.to_uint_floor()
     } else {
         total_vault_shares
             .multiply_ratio(

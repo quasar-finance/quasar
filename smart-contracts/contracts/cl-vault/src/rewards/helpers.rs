@@ -47,7 +47,7 @@ impl Rewards {
 
     /// add rewards to self and mutate self
     pub fn add(mut self, rewards: Rewards) -> ContractResult<Self> {
-        self.merge(rewards.into_coins())?;
+        self.merge(rewards.coins())?;
         Ok(self)
     }
 
@@ -89,7 +89,7 @@ impl Rewards {
     }
 
     pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
-        let rewards = self.into_coins();
+        let rewards = self.coins();
         self.0.clear();
 
         Ok(BankMsg::Send {
@@ -109,7 +109,7 @@ impl Rewards {
             .collect()
     }
 
-    pub fn into_coins(&self) -> Vec<Coin> {
+    pub fn coins(&self) -> Vec<Coin> {
         self.0.clone()
     }
 
