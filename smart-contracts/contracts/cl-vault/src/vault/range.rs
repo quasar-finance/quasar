@@ -152,7 +152,7 @@ pub fn handle_withdraw_position_reply(
     // todo: Test that one-sided withdraw wouldn't error here (it shouldn't)
     let amount0: Uint128 = msg.amount0.parse()?;
     let amount1: Uint128 = msg.amount1.parse()?;
-    debug!(deps, "amounts", vec![amount0.clone(), amount1.clone()]);
+    debug!(deps, "amounts", vec![amount0, amount1]);
 
     CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 
@@ -292,7 +292,7 @@ pub fn do_swap_deposit_merge(
         &SwapDepositMergeState {
             target_lower_tick,
             target_upper_tick,
-            target_range_position_ids: if (position_id.is_some()) {
+            target_range_position_ids: if position_id.is_some() {
                 vec![position_id.unwrap()]
             } else {
                 vec![]
@@ -542,24 +542,19 @@ mod tests {
     use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
-        from_binary,
         testing::{
             mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
-        },
-        to_binary, Addr, Binary, ContractResult, Decimal, Empty, MessageInfo, OwnedDeps, Querier,
-        QuerierResult, QueryRequest, Reply, SubMsgResponse, SubMsgResult,
+        }, Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
     };
     use osmosis_std::{
-        shim::Any,
         types::{
             cosmos::base::v1beta1::Coin as OsmoCoin,
             osmosis::concentratedliquidity::v1beta1::{
                 FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
-                PositionByIdRequest, PositionByIdResponse,
             },
         },
     };
-    use prost::Message;
+    
 
     use crate::{
         state::{

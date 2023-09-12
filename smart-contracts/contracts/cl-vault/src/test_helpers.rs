@@ -1,10 +1,10 @@
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, ContractResult, ContractResult as CwContractResult, Empty,
+    from_binary, to_binary, Binary, ContractResult as CwContractResult, Empty,
     Querier, QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{Pool, PoolsResponse};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{Pool};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceResponse};
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
