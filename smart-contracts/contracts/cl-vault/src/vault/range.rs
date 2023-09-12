@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::{
@@ -32,9 +32,9 @@ use crate::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
         POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
-    swap::swap,
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
+    vault::swap::swap,
     ContractError,
 };
 use crate::{
@@ -54,7 +54,7 @@ fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), Co
     Ok(())
 }
 
-fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
+fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
@@ -62,19 +62,15 @@ pub fn execute_update_range(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    lower_price: String,
-    upper_price: String,
+    lower_price: Decimal,
+    upper_price: Decimal,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    let storage = deps.storage;
-    let querier = deps.querier;
-
-    let lower_tick = price_to_tick(storage, Decimal256::from_str(lower_price.as_str())?)?;
-    let upper_tick = price_to_tick(storage, Decimal256::from_str(upper_price.as_str())?)?;
+    let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
+    let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
 
     execute_update_range_ticks(
-        storage,
-        &querier,
+        deps,
         env,
         info,
         lower_tick.try_into().unwrap(),
@@ -89,20 +85,19 @@ pub fn execute_update_range(
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
 pub fn execute_update_range_ticks(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     lower_tick: i64,
     upper_tick: i64,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    assert_range_admin(storage, &info.sender)?;
+    assert_range_admin(deps.storage, &info.sender)?;
 
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(storage, querier, &env)?;
+    let position_breakdown = get_position(deps.storage, &deps.querier, &env)?;
     let position = position_breakdown.position.unwrap();
 
     let withdraw_msg = MsgWithdrawPosition {
@@ -114,7 +109,7 @@ pub fn execute_update_range_ticks(
     };
 
     MODIFY_RANGE_STATE.save(
-        storage,
+        deps.storage,
         // todo: should ModifyRangeState be an enum?
         &Some(ModifyRangeState {
             lower_tick,
@@ -147,7 +142,7 @@ pub fn handle_withdraw_position_reply(
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-
+    debug!(deps, "withdraw_response", msg);
     // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
     // todo: Test that one-sided withdraw wouldn't error here (it shouldn't)
     let amount0: Uint128 = msg.amount0.parse()?;
@@ -270,7 +265,7 @@ pub fn handle_initial_create_position_reply(
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 pub fn do_swap_deposit_merge(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
@@ -301,35 +296,47 @@ pub fn do_swap_deposit_merge(
     )?;
 
     // start swap workflow
+    // get pool
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     // get remaining balance in contract for each token (one of these should be zero i think)
     // @notice: this actually works if this function (do_swap_deposit_merge) is called by
     // handle_initial_create_position_reply, double check if implementing it somewhere else
     let (balance0, balance1) = refunded_amounts;
-    debug!(deps, "oh no", "before_spot_price");
 
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
-        (
-            get_single_sided_deposit_0_to_1_swap_amount(
-                deps.storage,
-                &deps.querier,
-                balance0,
-                target_lower_tick,
-                target_upper_tick,
-            )?,
-            SwapDirection::ZeroToOne,
-        )
+        {
+            (
+                if pool_details.current_tick > target_upper_tick {
+                    balance0
+                } else {
+                    get_single_sided_deposit_0_to_1_swap_amount(
+                        deps.branch(),
+                        balance0,
+                        target_lower_tick,
+                        pool_details.current_tick,
+                        target_upper_tick,
+                    )?
+                },
+                SwapDirection::ZeroToOne,
+            )
+        }
     } else if !balance1.is_zero() {
         (
-            get_single_sided_deposit_1_to_0_swap_amount(
-                deps.storage,
-                &deps.querier,
-                balance1,
-                target_lower_tick,
-                target_upper_tick,
-            )?,
+            if pool_details.current_tick < target_lower_tick {
+                balance1
+            } else {
+                get_single_sided_deposit_1_to_0_swap_amount(
+                    deps.storage,
+                    &deps.querier,
+                    balance1,
+                    target_lower_tick,
+                    pool_details.current_tick,
+                    target_upper_tick,
+                )?
+            },
             SwapDirection::OneToZero,
         )
     } else {
@@ -347,7 +354,6 @@ pub fn do_swap_deposit_merge(
             .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
-    debug!(deps, "hereaa", "before_spot_price");
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
@@ -381,7 +387,7 @@ pub fn do_swap_deposit_merge(
     )?;
 
     Ok(Response::new()
-        .add_submessage(SubMsg::reply_always(swap_msg, Replies::Swap.into()))
+        .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "swap")
         .add_attribute("token_in", format!("{:?}{:?}", swap_amount, token_in_denom))
@@ -451,7 +457,7 @@ fn handle_swap_success(
     Ok(Response::new()
         .add_submessage(SubMsg::reply_always(
             create_position_msg,
-            Replies::RangeInitialCreatePosition.into(),
+            Replies::RangeIterationCreatePosition.into(),
         ))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "create_position2")
@@ -544,17 +550,15 @@ mod tests {
     use cosmwasm_std::{
         testing::{
             mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
-        }, Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
+        },
+        Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
     };
-    use osmosis_std::{
-        types::{
-            cosmos::base::v1beta1::Coin as OsmoCoin,
-            osmosis::concentratedliquidity::v1beta1::{
-                FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
-            },
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
         },
     };
-    
 
     use crate::{
         state::{
@@ -662,7 +666,7 @@ mod tests {
 
         RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        assert_eq!(super::get_range_admin(deps.as_ref()).unwrap(), info.sender);
+        assert_eq!(super::_get_range_admin(deps.as_ref()).unwrap(), info.sender);
     }
 
     #[test]
@@ -679,8 +683,8 @@ mod tests {
             deps.as_mut(),
             env,
             info,
-            lower_price.to_string(),
-            upper_price.to_string(),
+            lower_price,
+            upper_price,
             max_slippage,
         )
         .unwrap();

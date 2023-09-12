@@ -80,7 +80,7 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
     }
 }
 
-pub fn may_get_position(
+pub fn _may_get_position(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     _env: &Env,

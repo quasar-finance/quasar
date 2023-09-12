@@ -54,7 +54,7 @@ mod tests {
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserLockedBalance {
+                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
                         user: alice.address(),
                     },
                 )),
@@ -104,7 +104,7 @@ mod tests {
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserLockedBalance {
+                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
                         user: alice.address(),
                     },
                 )),

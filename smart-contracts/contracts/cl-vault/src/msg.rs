@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal};
+use cosmwasm_std::Decimal;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -42,14 +42,15 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
+    ClaimStrategistRewards {},
 }
 
 #[cw_serde]
 pub struct ModifyRangeMsg {
     /// The new lower bound of the range, this is converted to an 18 precision digit decimal
-    pub lower_price: String,
+    pub lower_price: Decimal,
     /// The new upper bound of the range, this is converted to an 18 precision digit decimal
-    pub upper_price: String,
+    pub upper_price: Decimal,
     /// max position slippage
     pub max_slippage: Decimal,
 }
@@ -63,7 +64,7 @@ pub struct MergePositionMsg {
 #[cw_serde]
 pub enum ExtensionQueryMsg {
     /// Metadata surrounding the vault
-    Metadata,
+    Metadata {},
     /// Queries related to the lockup extension.
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
@@ -73,7 +74,7 @@ pub enum ExtensionQueryMsg {
 /// Extension query messages for user balance related queries
 #[cw_serde]
 pub enum UserBalanceQueryMsg {
-    UserLockedBalance { user: String },
+    UserSharesBalance { user: String },
     UserRewards { user: String },
 }
 

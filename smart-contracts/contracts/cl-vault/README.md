@@ -1,5 +1,7 @@
 # CL-Vault
+
 ## Intro
+
 The CL-vault is a contract that users to move their funds in accordance to given signals by an offchain actor. The user deposits it's funds into the contract. Whenever the range admin submits a new range, the vaults creates a position using that range and deposits all funds in that range.
 
 # Testing
@@ -33,37 +35,53 @@ The current chain-side concentrated liquidity deposits support lopsided deposits
 
 We start with the two concentrated liquidity-needed formulas:
 
+We define the following variables:
+$$P_{uc} = min(P_u, P_c)$$
+$$P_{lc} = max(P_l, P_c)$$
+
 token0:
-$$L=\frac{\Delta x\sqrt{P_u}\sqrt{P_l}}{\sqrt{P_u}-\sqrt{P_l}}$$
+$$L=\frac{\Delta x\sqrt{P_{uc}}\sqrt{P_l}}{\sqrt{P_{uc}}-\sqrt{P_l}}$$
 token1:
-$$L=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_l}}$$
+$$L=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_{lc}}}$$
 
-If we also equate the two Liquidity needed formulas, we get a cleaner relationship between $\Delta x$ and $\Delta y$:
+Let's also explore the three scenarios we can have: $P_c$ is above the range, $P_c$ is below the range, and $P_c$ is within the range.
 
-$$\frac{\Delta x\sqrt{P_u}\sqrt{P_l}}{\sqrt{P_u}-\sqrt{P_l}}=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_l}}$$
+When $P_c$ is above the range (greater than $P_u$) then we implicitly know that we must swap all token1 for token0 to create a position. We can ignore this case for now.
 
-which we can simplify by multiplying both sides by $\sqrt{P_u}-\sqrt{P_l}$:
+When $P_c$ is below the range (less than $P_l$) then we implicitly know that we must swap all token0 for token1 to create a position. We can ignore this case for now.
 
-$$\Delta x\sqrt{P_u}\sqrt{P_l}=\Delta y$$
+within the range, we can simplify by substituting $P_c$ for $P_{uc}$ and $P_{lc}$ in both liquidity formulas:
 
-We can now easily get how much $\Delta y$ we need in terms of $\Delta x$:
+Where $P_c$ is the current price, $P_u$ is the upper price, and $P_l$ is the lower price.
 
-$$\Delta y=\Delta x\sqrt{P_u}\sqrt{P_l}$$
+token0:
+$$L=\frac{\Delta x\sqrt{P_{c}}\sqrt{P_l}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
+token1:
+$$L=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_{c}}}$$
 
-and also how much $\Delta x$ we need in terms of $\Delta y$:
+By setting these two liquidity formulas equal to each other, we are implicitly stating that the amount of token0 awe are depositiing, will match up correctly with the amount of token1 we are depositing. That gives us this equation:
 
-$$\Delta x=\frac{\Delta y}{\sqrt{P_u}\sqrt{P_l}}$$
+$$\frac{\Delta x\sqrt{P_{c}}\sqrt{P_l}}{\sqrt{P_{c}}-\sqrt{P_l}}=\frac{\Delta y}{\sqrt{P_u}-\sqrt{P_{c}}}$$
 
-the only problem is we only have x tokens, no y tokens. so we need to understand how many x tokens to swap to give us the exact amount of y tokens we need.
+which we can rearrange and solve for $\Delta y$:
+
+$$\Delta y=\Delta x\sqrt{P_{c}}\sqrt{P_l}\frac{\sqrt{P_u}-\sqrt{P_{c}}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
+
+lets define a pool metadata variable $K$:
+
+$$K=\sqrt{P_c}\sqrt{P_l}\frac{\sqrt{P_u}-\sqrt{P_{c}}}{\sqrt{P_{c}}-\sqrt{P_l}}$$
+which gives us
+$$\Delta y=\Delta xK$$
+
+Now that we have a relationship between what an even deposit would contain (in terms of token0 and token1) we can use this to determine how much token1 we need to swap for token0 to create an even deposit (or vice-versa).
 
 We can use the spot price formula to get the spot price of the pool:
 
-$$P_s=\frac{x}{y}$$
-_todo: check me to make sure this fraction is correct_
+$$P_s=\frac{y}{x}$$
 
 which we can rearrange to get the amount of y tokens we need in terms of x tokens:
 
-$$y=\frac{x}{P_s}$$
+$$y=xP_s$$
 
 We now introduce two new variables: $x'$ and $x''$, where $x'$ is the amount of x tokens we will NOT swap, and $x''$ is the amount of x tokens we WILL swap. Of course, implicitly this means we have
 
@@ -73,27 +91,19 @@ $$x'=x-x''$$
 
 We are now looking to swap such that the following relationship is satisfied:
 
-$$\Delta x=\frac{\Delta y}{\sqrt{P_u}\sqrt{P_l}}$$
+$$\Delta x=\frac{\Delta y}{K}$$
 
 We will replace $\Delta x$ with the amount of tokens we are NOT swapping ($x'$). But how do we replace $\Delta y$? We know that $\Delta y$ is just $\Delta x$ over the spot price, so we can replace $\Delta y$ with $\frac{\Delta x}{P_s}$: and we know that in order to get to $\Delta y$ from $\Delta x$, we will need to swap these tokens. Ah! but we already have a variable that tells us how many tokens we will swap: $x''$. So we can replace $\Delta x$ with $x''$:
 
-$$x'=\frac{x''}{P_s\sqrt{P_u}\sqrt{P_l}}$$
+$$x'=\frac{x''}{P_sK}$$
 
 We are interested in finding the exact amount of tokens to swap, so let's substitute and solve for $x''$ in terms of x:
 
-$$x-x''=\frac{x''}{P_s\sqrt{P_u}\sqrt{P_l}}$$
+$$x-x''=\frac{x''}{P_sK}$$
 
 After some clever algebra, one can verify that we get:
 
-$$x''=\frac{xP_s\sqrt{P_u}\sqrt{P_l}}{1+P_s\sqrt{P_u}\sqrt{P_l}}$$
-
-to make smart contract math more fun, lets define a pool metadata variable $K$:
-
-$$K=P_s\sqrt{P_u}\sqrt{P_l}$$
-
-which turns our equation into:
-
-$$x''=\frac{xK}{1+K}$$
+$$x''=\frac{x}{1+\frac{1}{P_sK}}$$
 
 Where $x''$ is the amount of tokens we will swap. and $x$ is the total amount of tokens we have.
 
@@ -105,19 +115,28 @@ $$y=y'+y''$$
 which can also be written as
 $$y'=y-y''$$
 
+The inverse spot price for x in terms of y is:
+
+$$x=\frac{y}{P_s}$$
+
 We are now looking to swap such that the following relationship is satisfied:
 
-$$\Delta y=\Delta x\sqrt{P_u}\sqrt{P_l}$$
+$$\Delta y=\Delta xK$$
+
+Where K is the same as above.
 
 We will replace $\Delta y$ with the amount of tokens we are NOT swapping ($y'$). But how do we replace $\Delta x$? We know that $\Delta x$ is just some amount of y tokens multiplied by the spot price, so we can replace $\Delta x$ with $\hat{y}P_s$. Multiplying by the spot price is equivalent to saying, swapping these tokens, but how do we know how many $\hat{y}$ tokens we need to swap?, Ah! but we already have a variable that tells us how many tokens we will swap: $y''$. So we can replace $\hat{y}$ with $y''$:
 
-$$y'=y''P_s\sqrt{P_u}\sqrt{P_l}$$
+$$y'=\frac{y''K}{P_s}$$
 
 substituting and solving for the amount of tokens to swap given our total amount of y tokens gives us:
 
-$$y''=\frac{y}{(1+P_s\sqrt{P_u}\sqrt{P_l})}$$
-or, given our pool metadata constant from earlier:
-$$y''=\frac{y}{(1+K)}$$
+$$y-y''=\frac{y''K}{P_s}$$
+
+After some clever algebra, it is trivial for one to verify that we get:
+
+$$y''=\frac{y}{1+\frac{K}{P_s}}$$
+
 Where $y''$ is the amount of tokens we will swap. and $y$ is the total amount of tokens we have.
 
 ### Further/Future optimizations

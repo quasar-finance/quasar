@@ -1,10 +1,13 @@
+use std::collections::HashMap;
+
+use cosmwasm_std::testing::BankQuerier;
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, ContractResult as CwContractResult, Empty,
-    Querier, QuerierResult, QueryRequest,
+    from_binary, to_binary, Binary, Coin, ContractResult as CwContractResult, Empty, Querier,
+    QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{Pool};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceResponse};
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -15,6 +18,7 @@ use osmosis_std::types::{
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
+    bank: BankQuerier,
 }
 
 impl QuasarQuerier {
@@ -22,6 +26,19 @@ impl QuasarQuerier {
         QuasarQuerier {
             position,
             current_tick,
+            bank: BankQuerier::new(&[]),
+        }
+    }
+
+    pub fn new_with_balances(
+        position: FullPositionBreakdown,
+        current_tick: i64,
+        balances: &[(&str, &[Coin])],
+    ) -> QuasarQuerier {
+        QuasarQuerier {
+            position,
+            current_tick,
+            bank: BankQuerier::new(balances),
         }
     }
 }
