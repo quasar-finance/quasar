@@ -21,7 +21,6 @@ use crate::helpers::round_up_to_nearest_multiple;
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
 use crate::{
-    debug,
     msg::{ExecuteMsg, MergePositionMsg},
 };
 use crate::{

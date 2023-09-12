@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
 
-use crate::math::tick::tick_to_price;
+
 use crate::state::ADMIN_ADDRESS;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
+    coin, Addr, Coin, Decimal, Deps, DepsMut, Fraction, MessageInfo, QuerierWrapper,
     Storage, Uint128,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
@@ -135,7 +135,7 @@ pub fn get_spot_price(
 
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
-    deps: DepsMut,
+    _deps: DepsMut,
     token0_balance: Uint128,
     lower_tick: i64,
     current_tick: i64,
@@ -168,7 +168,7 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
 }
 
 pub fn get_single_sided_deposit_1_to_0_swap_amount(
-    deps: DepsMut,
+    _deps: DepsMut,
     token1_balance: Uint128,
     lower_tick: i64,
     current_tick: i64,

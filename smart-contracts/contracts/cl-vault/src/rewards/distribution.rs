@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Addr, Attribute, Deps, DepsMut, Env, Fraction, Order, Response, StdError, SubMsg, SubMsgResult,
+    Addr, Attribute, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult,
     Uint128, Decimal,
 };
 
