@@ -9,7 +9,7 @@ use osmosis_std::types::{
             v2::QuerySpotPriceRequest,
         },
         lockup::LockedRequest,
-    }
+    },
 };
 use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
