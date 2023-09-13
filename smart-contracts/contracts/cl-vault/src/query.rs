@@ -60,7 +60,7 @@ pub struct RangeAdminResponse {
 
 #[cw_serde]
 pub struct TotalVaultTokenSupplyResponse {
-    total: Uint128,
+    pub total: Uint128,
 }
 
 pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
