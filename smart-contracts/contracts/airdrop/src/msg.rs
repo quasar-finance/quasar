@@ -43,14 +43,8 @@ pub enum AdminExecuteMsg {
         amounts: Vec<Uint128>,
     },
 
-    /// add single user to the airdrop with the given amount
-    AddUser { user: String, amount: Uint128 },
-
     /// remove a list of users from an airdrop
     RemoveUsers(Vec<String>),
-
-    /// remove a user from an airdrop
-    RemoveUser(String),
 
     /// sends back the remaining funds to the quasar funding address
     WithdrawFunds(),

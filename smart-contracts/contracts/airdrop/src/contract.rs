@@ -66,9 +66,7 @@ pub fn execute(
                     // Call the function to add users and their amounts
                     execute_add_users(deps, env, users, amounts)
                 }
-                AdminExecuteMsg::AddUser { user, amount } => {}
                 AdminExecuteMsg::RemoveUsers(users) => {}
-                AdminExecuteMsg::RemoveUser(user) => {}
                 AdminExecuteMsg::WithdrawFunds() => {}
             }
         }
