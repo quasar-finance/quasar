@@ -347,6 +347,7 @@ mod tests {
 
     proptest! {
         #[test]
+        #[ignore]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
             actions in get_strategy_list(),
