@@ -15,12 +15,12 @@ mod tests {
     use proptest::prelude::*;
 
     use crate::{
+        helpers::sort_tokens,
+        math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
+        query::{PositionResponse, TotalVaultTokenSupplyResponse},
         query::{TotalAssetsResponse, UserBalanceResponse},
         test_tube::initialize::initialize::init_test_contract,
-        query::{PositionResponse, TotalVaultTokenSupplyResponse},
-        math::tick::tick_to_price,
-        helpers::sort_tokens,
     };
 
     const ITERATIONS_NUMBER: usize = 1000;

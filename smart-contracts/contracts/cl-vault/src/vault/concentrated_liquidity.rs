@@ -7,9 +7,9 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
 use crate::{
+    helpers::{round_up_to_nearest_multiple, sort_tokens},
     state::{POOL_CONFIG, POSITION},
     ContractError,
-    helpers::{round_up_to_nearest_multiple, sort_tokens},
 };
 
 pub fn create_position(
