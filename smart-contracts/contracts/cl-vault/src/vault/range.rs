@@ -6,16 +6,12 @@ use cosmwasm_std::{
     Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
-use osmosis_std::types::{
-    osmosis::{
-        concentratedliquidity::v1beta1::{
-            MsgCreatePositionResponse, MsgWithdrawPosition,
-            MsgWithdrawPositionResponse,
-        },
-        gamm::v1beta1::MsgSwapExactAmountInResponse,
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{
+        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
     },
+    gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
-
 
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;

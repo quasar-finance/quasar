@@ -117,7 +117,7 @@ pub mod initialize {
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
-        // create a basic position on the pool
+                                                               // create a basic position on the pool
         let initial_position = MsgCreatePosition {
             pool_id: pool.id,
             sender: admin.address(),

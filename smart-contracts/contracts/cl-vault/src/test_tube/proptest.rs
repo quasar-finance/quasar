@@ -4,18 +4,23 @@ mod tests {
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
+    use osmosis_std::types::{
+        cosmos::base::v1beta1,
+        osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+    };
     use osmosis_test_tube::{
         Account, Bank, ConcentratedLiquidity, ExecuteResponse, Module, OsmosisTestApp,
         SigningAccount, Wasm,
     };
     use proptest::prelude::*;
 
-    use crate::helpers::sort_tokens;
-    use crate::math::tick::tick_to_price;
-    use crate::query::{PositionResponse, TotalVaultTokenSupplyResponse};
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{TotalAssetsResponse, UserBalanceResponse},
+        test_tube::initialize::initialize::init_test_contract,
+        query::{PositionResponse, TotalVaultTokenSupplyResponse},
+        math::tick::tick_to_price,
+        helpers::sort_tokens,
     };
 
     const ITERATIONS_NUMBER: usize = 1000;
