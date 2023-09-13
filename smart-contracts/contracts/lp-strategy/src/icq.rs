@@ -3,10 +3,13 @@ use cosmwasm_std::{
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
-    osmosis::gamm::{
-        v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
-        v2::QuerySpotPriceRequest,
-    },
+    osmosis::{
+        gamm::{
+            v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
+            v2::QuerySpotPriceRequest,
+        },
+        lockup::LockedRequest,
+    }
 };
 use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
@@ -169,14 +172,14 @@ pub fn prepare_full_query(
         share_in_amount: shares_out.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
-    let _spot_price = QuerySpotPriceRequest {
+    let spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,
         quote_asset_denom: config.quote_denom,
     };
 
     // path have to be set manually, should be equal to the proto_queries of osmosis-std types
-    let q = Query::new()
+    let mut q = Query::new()
         .add_request(
             base_balance.encode_to_vec().into(),
             "/cosmos.bank.v1beta1.Query/Balance".to_string(),
