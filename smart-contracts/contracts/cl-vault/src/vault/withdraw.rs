@@ -172,7 +172,7 @@ mod tests {
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: to_address.to_string(),
-                amount: vec![coin(1000, "uosmo"), coin(1000, "uatom")]
+                amount: sort_tokens(vec![coin(1000, "uosmo"), coin(1000, "uatom")])
             })
         )
     }

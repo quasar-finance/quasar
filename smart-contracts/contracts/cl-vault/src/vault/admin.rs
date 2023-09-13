@@ -142,7 +142,7 @@ mod tests {
         assert_eq!(
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: range_admin.to_string(),
-                amount: rewards
+                amount: sort_tokens(rewards)
             }),
             response.messages[0].msg
         )
