@@ -6,6 +6,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
+use crate::helpers::{round_up_to_nearest_multiple, sort_tokens};
 use crate::{
     state::{POOL_CONFIG, POSITION},
     ContractError,
@@ -13,6 +14,7 @@ use crate::{
 
 pub fn create_position(
     storage: &mut dyn Storage,
+    querier: &QuerierWrapper,
     env: &Env,
     lower_tick: i64,
     upper_tick: i64,
@@ -23,12 +25,20 @@ pub fn create_position(
     let pool_config = POOL_CONFIG.load(storage)?;
     let sender = env.contract.address.to_string();
 
+    let sorted_tokens = sort_tokens(tokens_provided);
+
+    let pool_details = get_cl_pool_info(querier, pool_config.pool_id)?;
+    let tick_spacing = pool_details
+        .tick_spacing
+        .try_into()
+        .expect("tick spacing is too big to fit into i64");
+
     let create_position = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender,
-        lower_tick,
-        upper_tick,
-        tokens_provided: tokens_provided.into_iter().map(|c| c.into()).collect(),
+        lower_tick: round_up_to_nearest_multiple(lower_tick, tick_spacing),
+        upper_tick: round_up_to_nearest_multiple(upper_tick, tick_spacing),
+        tokens_provided: sorted_tokens.into_iter().map(|c| c.into()).collect(),
         // An sdk.Int in the Go code
         token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
@@ -131,6 +141,7 @@ mod tests {
 
         let result = create_position(
             deps.as_mut().storage,
+            &deps.as_mut().querier,
             &env,
             lower_tick,
             upper_tick,

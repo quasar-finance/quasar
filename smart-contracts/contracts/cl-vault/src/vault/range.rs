@@ -149,15 +149,15 @@ pub fn handle_withdraw_position_reply(
 
     let mut tokens_provided = vec![];
     if !amount0.is_zero() {
-        tokens_provided.push(OsmoCoin {
+        tokens_provided.push(Coin {
             denom: pool_config.token0.clone(),
-            amount: amount0.to_string(),
+            amount: amount0,
         })
     }
     if !amount1.is_zero() {
-        tokens_provided.push(OsmoCoin {
+        tokens_provided.push(Coin {
             denom: pool_config.token1.clone(),
-            amount: amount1.to_string(),
+            amount: amount1,
         })
     }
 
@@ -186,29 +186,16 @@ pub fn handle_withdraw_position_reply(
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
-        let create_position_msg = MsgCreatePosition {
-            pool_id: pool_config.pool_id,
-            sender: env.contract.address.to_string(),
-            // round our lower tick and upper tick up to the nearest pool_details.tick_spacing
-            lower_tick: round_up_to_nearest_multiple(
-                modify_range_state.lower_tick,
-                pool_details
-                    .tick_spacing
-                    .try_into()
-                    .expect("tick spacing is too big to fit into u64"),
-            ),
-            upper_tick: round_up_to_nearest_multiple(
-                modify_range_state.upper_tick,
-                pool_details
-                    .tick_spacing
-                    .try_into()
-                    .expect("tick spacing is too big to fit into u64"),
-            ),
+        let create_position_msg = create_position(
+            deps.storage,
+            &deps.querier,
+            &env,
+            modify_range_state.lower_tick,
+            modify_range_state.upper_tick,
             tokens_provided,
-            // passing 0 is ok here because currently no swap is done on osmosis side, so we don't actually need to worry about slippage impact
-            token_min_amount0: "0".to_string(),
-            token_min_amount1: "0".to_string(),
-        };
+            Uint128::zero(),
+            Uint128::zero(),
+        )?;
 
         Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
@@ -436,6 +423,7 @@ fn handle_swap_success(
     }
     let create_position_msg = create_position(
         deps.storage,
+        &deps.querier,
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,
