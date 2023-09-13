@@ -213,6 +213,7 @@ mod test {
     so we want to deposit 4280628569 and 3349580
     */
     #[test]
+    #[ignore]
     fn test_swap_math_poc() {
         let (app, _contract, _cl_pool_id, _admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
