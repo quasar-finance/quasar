@@ -1,15 +1,15 @@
 [workspace]
 
 members = [
-  "contracts/icq",
+  # "contracts/icq",
   "contracts/lp-strategy",
-  "contracts/ibc-transfer",
+  # "contracts/ibc-transfer",
   "contracts/basic-vault",
   "contracts/vault-rewards",
-  "contracts/intergamm-bindings-test",
-  "contracts/qoracle-bindings-test",
+  # "contracts/intergamm-bindings-test",
   "contracts/multihop-router",
-  "packages/intergamm-bindings",
+  "contracts/cl-vault",
+  # "packages/intergamm-bindings",
   "packages/quasar-types",
   "contracts/airdrop",
 ]

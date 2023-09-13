@@ -226,22 +226,6 @@ impl KeyDeserialize for RouteId {
     }
 }
 
-impl<'a> PrimaryKey<'a> for &RouteId {
-    type Prefix = Destination;
-
-    type SubPrefix = ();
-
-    type Suffix = String;
-
-    type SuperSuffix = (Destination, String);
-
-    fn key(&self) -> Vec<Key> {
-        let mut keys = self.destination.key();
-        keys.extend(self.asset.key());
-        keys
-    }
-}
-
 impl KeyDeserialize for &RouteId {
     type Output = RouteId;
 
@@ -320,17 +304,6 @@ impl KeyDeserialize for Destination {
         Ok(Destination(
             String::from_utf8(value).map_err(StdError::invalid_utf8)?,
         ))
-    }
-}
-
-impl<'a> PrimaryKey<'a> for &Destination {
-    type Prefix = ();
-    type SubPrefix = ();
-    type Suffix = Self;
-    type SuperSuffix = Self;
-
-    fn key(&self) -> Vec<cw_storage_plus::Key> {
-        self.0.key()
     }
 }
 
