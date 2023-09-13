@@ -23,7 +23,7 @@ pub fn instantiate(
 
     // Check if the provided end height is less than or equal to the start height.
     if msg.end_height <= msg.start_height {
-        return Err(AirdropErrors::InvalidAirdropWindow);
+        return Err(AirdropErrors::InvalidAirdropWindow {});
     }
 
     // Create a new airdrop configuration based on the provided parameters

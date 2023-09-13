@@ -1,6 +1,5 @@
 use cosmwasm_std::{DepsMut, Env, Response, StdError, Uint128};
-use schemars::schema::InstanceType::String;
-use std::backtrace::Backtrace;
+use std::string::String;
 
 use crate::helpers::get_total_in_user_info;
 use crate::state::{AirdropConfig, UserInfo, AIRDROP_CONFIG, USER_INFO};
@@ -41,14 +40,10 @@ pub fn execute_add_users(
     users: Vec<String>,
     amounts: Vec<Uint128>,
 ) -> Result<Response, AirdropErrors> {
-    // Capture a backtrace for error reporting
-    let backtrace = Backtrace::capture();
-
     // Check if the number of users and amounts provided match
     if users.len() != amounts.len() {
         return Err(AirdropErrors::Std(StdError::GenericErr {
             msg: "Deposit amount weight for primitive is zero".to_string(),
-            backtrace,
         }));
     }
 
@@ -60,8 +55,9 @@ pub fn execute_add_users(
         // Validate that the amount is not negative
         if amounts[number] < Uint128::zero() {
             return Err(AirdropErrors::Std(StdError::GenericErr {
-                msg: "Amount at index :" + number.to_string() + "is negative",
-                backtrace,
+                msg: "Amount at index :".to_string()
+                    + &*number.to_string()
+                    + &*"is negative".to_string(),
             }));
         }
 
@@ -83,11 +79,10 @@ pub fn execute_add_users(
     // Check if the total claimable amount exceeds the airdrop amount
     if total_in_user_info > current_airdrop_config.airdrop_amount {
         return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Total amount in the given user amounts"
-                + total_in_user_info.to_string()
-                + " is greater than "
-                + current_airdrop_config.airdrop_amount.to_string(),
-            backtrace,
+            msg: "Total amount in the given user amounts".to_string()
+                + &*total_in_user_info.to_string()
+                + &*" is greater than ".to_string()
+                + &*current_airdrop_config.airdrop_amount.to_string(),
         }));
     }
 

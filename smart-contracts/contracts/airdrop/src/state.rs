@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
 use cw_storage_plus::{Item, Map};
+use std::string::String;
 
 pub const AIRDROP_CONFIG: Item<AirdropConfig> = Item::new("airdrop_config");
 pub const USER_INFO: Map<String, Vec<UserInfo>> = Map::new("user_info");
