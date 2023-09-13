@@ -12,7 +12,7 @@ use crate::rewards::{
     execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
-use crate::vault::admin::execute_update;
+use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -66,7 +66,7 @@ pub fn execute(
         cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
-                    execute_update(deps, info, admin_msg)
+                    execute_admin(deps, info, admin_msg)
                 }
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
