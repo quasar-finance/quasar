@@ -27,8 +27,8 @@ mod tests {
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
+    const DENOM_BASE: &str = "jgasdiuagd9asgd9asdbaskjd"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
+    const DENOM_QUOTE: &str = "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -116,11 +116,13 @@ mod tests {
         );
         let create_amount0 = get_event_value_amount_numeric(&create_position_attrs[1].value);
         let create_amount1 = get_event_value_amount_numeric(&create_position_attrs[2].value);
+        println!("create_position_attrs {:?}", create_position_attrs);
 
         // Find the event with "ty": "tf_mint" and collect the relevant attributes
         let tf_mint_attrs =
             get_event_attributes_by_ty_and_key(&create_position, "tf_mint", vec!["amount"]);
         let tf_mint_amount = get_event_value_amount_numeric(&tf_mint_attrs[0].value);
+        println!("tf_mint_attrs {:?}", tf_mint_attrs);
 
         // After queries
         let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
@@ -136,6 +138,8 @@ mod tests {
                 .unwrap()
                 .to_uint_floor();
         let liquidity_created = Uint128::try_from(liquidity_created_uint_floor).unwrap();
+        println!("vault_shares_balance_before/liquidity_created {:?} {}", vault_shares_balance_before, liquidity_created);
+        println!("vault_shares_balance_after {:?}", vault_shares_balance_after);
         assert_eq!(
             vault_shares_balance_before.total + liquidity_created,
             vault_shares_balance_after.total
@@ -251,7 +255,7 @@ mod tests {
         let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance_str = balance_response.balance.unwrap().amount;
         let balance_f64: f64 = balance_str.parse().expect("Failed to parse balance to f64");
-        let amount = (balance_f64 * (percentage / 100.0)).round() as u128;
+        let _amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
 
@@ -482,7 +486,6 @@ mod tests {
 
     proptest! {
         #[test]
-        #[ignore]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
             actions in get_strategy_list(),
@@ -493,13 +496,14 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uatom"),
                     Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, DENOM_BASE),
+                    Coin::new(1_000_000_000_000_000_000_000_00, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
-                    denom0: "uatom".to_string(),
-                    denom1: "uosmo".to_string(),
+                    denom0: DENOM_BASE.to_string(),
+                    denom1: DENOM_QUOTE.to_string(),
                     tick_spacing: 1,
                     spread_factor: "100000000000000".to_string(),
                 },
@@ -507,11 +511,11 @@ mod tests {
                 initial_upper_tick,
                 vec![
                     v1beta1::Coin {
-                        denom: "uatom".to_string(),
+                        denom: DENOM_BASE.to_string(),
                         amount: "100000000000000000".to_string(),
                     },
                     v1beta1::Coin {
-                        denom: "uosmo".to_string(),
+                        denom: DENOM_QUOTE.to_string(),
                         amount: "100000000000000000".to_string(),
                     },
                 ],
