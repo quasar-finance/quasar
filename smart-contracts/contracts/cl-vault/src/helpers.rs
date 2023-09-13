@@ -239,7 +239,7 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
 }
 
 pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
-    let mut sorted_tokens = tokens.clone();
+    let mut sorted_tokens = tokens;
     sorted_tokens.sort_by(|a, b| a.denom.cmp(&b.denom));
     sorted_tokens
 }

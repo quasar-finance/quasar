@@ -1,20 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Decimal256, Uint128};
+    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
-    use osmosis_std::types::{
-        cosmos::base::v1beta1,
-        osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-    };
     use osmosis_test_tube::{
         Account, Bank, ConcentratedLiquidity, ExecuteResponse, Module, OsmosisTestApp,
         SigningAccount, Wasm,
     };
     use proptest::prelude::*;
-    use std::collections::HashMap;
-    use std::str::FromStr;
 
     use crate::helpers::sort_tokens;
     use crate::math::tick::tick_to_price;
@@ -22,7 +16,6 @@ mod tests {
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{TotalAssetsResponse, UserBalanceResponse},
-        test_tube::initialize::initialize::init_test_contract,
     };
 
     const ITERATIONS_NUMBER: usize = 1000;
@@ -492,9 +485,9 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
-                    Coin::new(1_000_000_000_000_000_000_000_00, DENOM_BASE),
-                    Coin::new(1_000_000_000_000_000_000_000_00, DENOM_QUOTE),
+                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000, DENOM_BASE),
+                    Coin::new(100_000_000_000_000_000_000_000, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -525,7 +518,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
