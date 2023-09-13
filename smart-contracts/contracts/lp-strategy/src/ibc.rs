@@ -1075,10 +1075,10 @@ mod tests {
                         quote_balance.clone(),
                         lp_balance.clone(),
                         exit_pool.clone(),
-                        spot_price.clone(),
+                        spot_price,
                         join_pool.clone(),
                         //lock, we're not sending lock for simplicity and to test indexing logic without one value works
-                        exit_pool_unbonds.clone(),
+                        exit_pool_unbonds,
                     ],
                 }
                 .encode_to_vec()[..],
@@ -1109,7 +1109,7 @@ mod tests {
                 .unwrap()
                 .u128(),
             // base_amount + (quote_amount / spot_price)
-            100 + (100 / 1)
+            100 + 100
         );
 
         // changing some ICQ ACK params to create a different test scenario
