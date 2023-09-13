@@ -313,27 +313,27 @@ mod tests {
     fn test_0_to_1_swap() {
         let mut deps = mock_dependencies();
 
-        let low_sqrt_p = "4500";
-        let high_sqrt_p = "5500";
+        let lower_price = "4500";
+        let upper_price = "5500";
         let token0amt = 200000u128;
 
         // prices and expected amounts taken from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
         let mut prices = HashMap::new();
-        prices.insert("4501", Uint128::new(199768));
-        prices.insert("4600", Uint128::new(177326));
-        prices.insert("4700", Uint128::new(155696));
-        prices.insert("4800", Uint128::new(134901));
-        prices.insert("4900", Uint128::new(114759));
-        prices.insert("5000", Uint128::new(95116));
-        prices.insert("5100", Uint128::new(75834));
-        prices.insert("5200", Uint128::new(56790));
-        prices.insert("5300", Uint128::new(37872));
-        prices.insert("5400", Uint128::new(18975));
-        prices.insert("5499", Uint128::new(191));
+        prices.insert("4501", Uint128::new(232));
+        prices.insert("4600", Uint128::new(22674));
+        prices.insert("4700", Uint128::new(44304));
+        prices.insert("4800", Uint128::new(65099));
+        prices.insert("4900", Uint128::new(85241));
+        prices.insert("5000", Uint128::new(104884));
+        prices.insert("5100", Uint128::new(124166));
+        prices.insert("5200", Uint128::new(143210));
+        prices.insert("5300", Uint128::new(162128));
+        prices.insert("5400", Uint128::new(181025));
+        prices.insert("5499", Uint128::new(199809));
 
         let lower_tick = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(low_sqrt_p).unwrap(),
+            Decimal256::from_str(lower_price).unwrap(),
         )
         .unwrap()
         .try_into()
@@ -341,7 +341,7 @@ mod tests {
 
         let upper_tick = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(high_sqrt_p).unwrap(),
+            Decimal256::from_str(upper_price).unwrap(),
         )
         .unwrap()
         .try_into()
@@ -370,28 +370,28 @@ mod tests {
     fn test_1_to_0_swap() {
         let mut deps = mock_dependencies();
 
-        let low_sqrt_p = "4500";
-        let high_sqrt_p = "5500";
+        let lower_price = "4500";
+        let upper_price = "5500";
 
-        // multiplying this by 2 (?) so that we can roughly compare to the go test
         let token1amt = 200000u128;
 
+        // prices and expected amounts taken from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
         let mut prices = HashMap::new();
-        prices.insert("4501", Uint128::new(233));
-        prices.insert("4600", Uint128::new(22675));
-        prices.insert("4700", Uint128::new(44305));
-        prices.insert("4800", Uint128::new(65100));
-        prices.insert("4900", Uint128::new(85242));
-        prices.insert("5000", Uint128::new(104885));
-        prices.insert("5100", Uint128::new(124167));
-        prices.insert("5200", Uint128::new(143211));
-        prices.insert("5300", Uint128::new(162129));
-        prices.insert("5400", Uint128::new(181026));
-        prices.insert("5499", Uint128::new(199810));
+        prices.insert("4501", Uint128::new(199767));
+        prices.insert("4600", Uint128::new(177325));
+        prices.insert("4700", Uint128::new(155695));
+        prices.insert("4800", Uint128::new(134900));
+        prices.insert("4900", Uint128::new(114758));
+        prices.insert("5000", Uint128::new(95115));
+        prices.insert("5100", Uint128::new(75833));
+        prices.insert("5200", Uint128::new(56789));
+        prices.insert("5300", Uint128::new(37871));
+        prices.insert("5400", Uint128::new(18974));
+        prices.insert("5499", Uint128::new(190));
 
         let lower_tick = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(low_sqrt_p).unwrap(),
+            Decimal256::from_str(lower_price).unwrap(),
         )
         .unwrap()
         .try_into()
@@ -399,7 +399,7 @@ mod tests {
 
         let upper_tick: i64 = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(high_sqrt_p).unwrap(),
+            Decimal256::from_str(upper_price).unwrap(),
         )
         .unwrap()
         .try_into()
