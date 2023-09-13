@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Decimal256, Uint128};
+    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
@@ -13,8 +13,8 @@ mod tests {
         SigningAccount, Wasm,
     };
     use proptest::prelude::*;
-    use std::collections::HashMap;
-    use std::str::FromStr;
+    
+    
 
     use crate::math::tick::tick_to_price;
     use crate::query::{PositionResponse, TotalVaultTokenSupplyResponse};
@@ -94,11 +94,11 @@ mod tests {
         coins_to_deposit.sort_by(|a, b| a.denom.cmp(&b.denom));
 
         // Before queries
-        let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
+        let _vault_shares_balance_before: TotalVaultTokenSupplyResponse =
             get_vault_shares_balance(wasm, contract_address);
-        let vault_position_assets_before: TotalAssetsResponse =
+        let _vault_position_assets_before: TotalAssetsResponse =
             get_vault_position_assets(wasm, contract_address);
-        let user_shares_balance_before: UserBalanceResponse =
+        let _user_shares_balance_before: UserBalanceResponse =
             get_user_shares_balance(wasm, contract_address, account);
 
         // Execute deposit
@@ -180,11 +180,11 @@ mod tests {
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
         // Before queries
-        let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
+        let _vault_shares_balance_before: TotalVaultTokenSupplyResponse =
             get_vault_shares_balance(wasm, contract_address);
-        let vault_position_assets_before: TotalAssetsResponse =
+        let _vault_position_assets_before: TotalAssetsResponse =
             get_vault_position_assets(wasm, contract_address);
-        let user_shares_balance_before: UserBalanceResponse =
+        let _user_shares_balance_before: UserBalanceResponse =
             get_user_shares_balance(wasm, contract_address, account);
 
         // Execute withdraw
@@ -506,9 +506,9 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
-                    Coin::new(1_000_000_000_000_000_000_000_00, DENOM_BASE),
-                    Coin::new(1_000_000_000_000_000_000_000_00, DENOM_QUOTE),
+                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000, DENOM_BASE),
+                    Coin::new(100_000_000_000_000_000_000_000, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -539,7 +539,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)

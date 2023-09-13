@@ -240,7 +240,7 @@ pub mod initialize {
         .unwrap();
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _result = wasm
             .execute(

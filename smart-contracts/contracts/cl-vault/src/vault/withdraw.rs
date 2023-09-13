@@ -11,7 +11,6 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    debug,
     reply::Replies,
     state::{CURRENT_WITHDRAWER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},

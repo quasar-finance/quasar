@@ -602,7 +602,7 @@ mod tests {
                 (3539, "channel-35".to_string()),
                 &Trap {
                     error: "join pool failed on osmosis".to_string(),
-                    step: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(failed.clone())),
+                    step: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(failed)),
                     last_succesful: true,
                 },
             )
