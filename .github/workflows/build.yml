@@ -30,7 +30,6 @@ jobs:
         uses: technote-space/get-diff-action@v6.1.2
         with:
           PATTERNS: |
-            **/**.rs
             **/**.go
             go.mod
             go.sum
@@ -108,7 +107,7 @@ jobs:
         run: ls -R
       - name: Move the cl-vault
         if: env.GIT_DIFF
-        run: mkdir -p smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release && mv smart-contracts/artifacts/cl_vault.wasm  smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm
+        run: mkdir -p smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release && mv ./cl_vault.wasm  smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm
       - name: Run test-tube tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test --package cl-vault --lib -- test_tube::* --nocapture --ignored 
