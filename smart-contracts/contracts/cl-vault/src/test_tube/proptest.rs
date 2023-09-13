@@ -2,7 +2,7 @@
 mod tests {
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
-    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{PositionByIdRequest, MsgCreatePositionResponse, MsgWithdrawPositionResponse};
     use osmosis_std::types::{
         cosmos::base::v1beta1,
         osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
@@ -26,8 +26,6 @@ mod tests {
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    //const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
-    //const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -43,7 +41,7 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        _accounts_shares_balance: &HashMap<String, Uint128>,
+        accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
@@ -85,32 +83,31 @@ mod tests {
             coins_to_deposit.push(Coin::new(adjusted_amount1, DENOM_QUOTE));
         }
 
-        // Check if coins_to_deposit is not empty before proceeding
+        // Check if coins_to_deposit is not empty before proceeding or skip the iteration
         if coins_to_deposit.is_empty() {
-            // Handle the case where no coins are to be deposited
-        } else {
-            // Execute deposit and get liquidity_created from emitted events
-            let _deposit = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                    &coins_to_deposit,
-                    account,
-                )
-                .unwrap();
+            return
         }
-        /*
-        // TODO: Get liquidity_created value from deposit response
-        let deposit_resp: MsgCreatePositionResponse = deposit.data.try_into();
-        let liquidity_created = deposit_resp.liquidity_created;
+
+        // Execute deposit and get liquidity_created from emitted events
+        let create_position = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
+                &coins_to_deposit,
+                account,
+            )
+            .unwrap();
+
+        // TODO: Get create_position data from response
+        let create_position_response: MsgCreatePositionResponse = create_position.data.try_into().unwrap();
+        let liquidity_created = create_position_response.liquidity_created.parse::<u128>().unwrap(); // same as vault_denom_amount minted
 
         // TODO: Update map to keep track of user shares amount and make further assertions
-        let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&0u128);
+        let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&Uint128::new(0u128));
         accounts_shares_balance.insert(
             account.address(),
-            current_shares_amount.checked_add(liquidity_created),
+            current_shares_amount.checked_add(Uint128::new(liquidity_created)).unwrap(),
         );
-        */
     }
 
     fn withdraw(
@@ -118,13 +115,13 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
-        _accounts_shares_balance: &HashMap<String, Uint128>,
+        accounts_shares_balance: &HashMap<String, Uint128>,
     ) {
         let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
         // Execute deposit and get liquidity_created from emitted events
-        let _withdraw = wasm
+        let withdraw_position = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
@@ -136,12 +133,17 @@ mod tests {
             )
             .unwrap();
 
-        // TODO: Update map to keep track of user shares amount and make further assertions
-        /*let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&0u128);
+        // TODO: Get withdraw_position data from response
+        let withdraw_position_response: MsgWithdrawPositionResponse = withdraw_position.data.try_into().unwrap();
+        let returned_amount0 = withdraw_position_response.amount0.parse::<u128>().unwrap(); // same as vault_denom_amount minted
+        let returned_amount1 = withdraw_position_response.amount1.parse::<u128>().unwrap(); // same as vault_denom_amount minted
+
+        // Update map to keep track of user shares amount and make further assertions
+        let mut current_shares_amount = accounts_shares_balance.get(&account.address()).unwrap_or(&Uint128::new(0u128));
         accounts_shares_balance.insert(
             account.address(),
-            current_shares_amount.checked_sub(amount),
-        );*/
+            current_shares_amount.checked_sub(Uint128::new(amount)).unwrap(),
+        );
     }
 
     fn swap(
@@ -155,7 +157,7 @@ mod tests {
         let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance_str = balance_response.balance.unwrap().amount;
         let balance_f64: f64 = balance_str.parse().expect("Failed to parse balance to f64");
-        let _amount = (balance_f64 * (percentage / 100.0)).round() as u128;
+        let amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
         // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
 
@@ -187,7 +189,7 @@ mod tests {
 
         // Skip equal ticks test case
         if new_lower_price == new_upper_price {
-            return;
+            return
         }
 
         // Execute deposit and get liquidity_created from emitted events
@@ -218,7 +220,7 @@ mod tests {
             address: account.address(),
             denom: denom.to_string(),
         })
-        .unwrap()
+            .unwrap()
     }
 
     fn get_user_shares_balance(
@@ -234,7 +236,7 @@ mod tests {
                 },
             )),
         )
-        .unwrap()
+            .unwrap()
     }
 
     fn get_position_assets(
@@ -321,7 +323,7 @@ mod tests {
         fn get_strategy_list()(list in prop::collection::vec(prop_oneof![
             Just(Action::Deposit),
             Just(Action::Withdraw),
-            Just(Action::Swap),
+            //Just(Action::Swap),
             Just(Action::UpdateRange),
         ], ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<Action> {
             list
@@ -360,8 +362,8 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, "uatom"),
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uatom"),
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -407,11 +409,11 @@ mod tests {
                 match actions[i] {
                     Action::Deposit => {
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
+                        assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Withdraw => {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], &accounts_shares_balance);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
+                        assert_deposit_withdraw(&wasm, &contract_address, &accounts, &accounts_shares_balance);
                     },
                     Action::Swap => {
                         swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);

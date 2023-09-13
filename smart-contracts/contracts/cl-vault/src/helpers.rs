@@ -313,8 +313,8 @@ mod tests {
     fn test_0_to_1_swap() {
         let mut deps = mock_dependencies();
 
-        let lowSqrtP = "4500";
-        let highSqrtP = "5500";
+        let low_sqrt_p = "4500";
+        let high_sqrt_p = "5500";
         let token0amt = 200000u128;
 
         // prices and expected amounts taken from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
@@ -333,7 +333,7 @@ mod tests {
 
         let lower_tick = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(lowSqrtP).unwrap(),
+            Decimal256::from_str(low_sqrt_p).unwrap(),
         )
         .unwrap()
         .try_into()
@@ -341,7 +341,7 @@ mod tests {
 
         let upper_tick = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(highSqrtP).unwrap(),
+            Decimal256::from_str(high_sqrt_p).unwrap(),
         )
         .unwrap()
         .try_into()
@@ -370,9 +370,8 @@ mod tests {
     fn test_1_to_0_swap() {
         let mut deps = mock_dependencies();
 
-        let lowSqrtP = "4500";
-        let highSqrtP = "5500";
-        let _token1amt = 200000u128;
+        let low_sqrt_p = "4500";
+        let high_sqrt_p = "5500";
 
         // multiplying this by 2 (?) so that we can roughly compare to the go test
         let token1amt = 200000u128;
@@ -392,7 +391,7 @@ mod tests {
 
         let lower_tick = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(lowSqrtP).unwrap(),
+            Decimal256::from_str(low_sqrt_p).unwrap(),
         )
         .unwrap()
         .try_into()
@@ -400,7 +399,7 @@ mod tests {
 
         let upper_tick: i64 = price_to_tick(
             deps.as_mut().storage,
-            Decimal256::from_str(highSqrtP).unwrap(),
+            Decimal256::from_str(high_sqrt_p).unwrap(),
         )
         .unwrap()
         .try_into()
