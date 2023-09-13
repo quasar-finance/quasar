@@ -25,9 +25,7 @@ pub fn create_position(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let sender = env.contract.address.to_string();
 
-    debug!(deps, "before", tokens_provided);
     let sorted_tokens = sort_tokens(tokens_provided);
-    debug!(deps, "after", sorted_tokens);
 
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
     let tick_spacing = pool_details

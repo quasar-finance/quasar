@@ -21,6 +21,7 @@ pub mod initialize {
     };
     use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
 
+    use crate::helpers::sort_tokens;
     use crate::msg::{
         ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
     };
@@ -115,7 +116,7 @@ pub mod initialize {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom));
+        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
         // create a basic position on the pool
         let initial_position = MsgCreatePosition {
             pool_id: pool.id,
@@ -162,16 +163,15 @@ pub mod initialize {
             thesis: "provide big swap efficiency".to_string(),
             name: "good contract".to_string(),
         };
-        let mut tokens_provided = vec![coin(100000, pool.token0), coin(100000, pool.token1)];
-        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom));
 
+        // Instantiate
         let contract = wasm
             .instantiate(
                 code_id,
                 &instantiate_msg,
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                tokens_provided.as_ref(),
+                sort_tokens(vec![coin(100000, pool.token0), coin(100000, pool.token1)]).as_ref(),
                 &admin,
             )
             .unwrap();
@@ -218,7 +218,6 @@ pub mod initialize {
             .unwrap();
 
         let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
 
         // do a swap to move the cur tick
         let pm = PoolManager::new(&app);
@@ -238,9 +237,6 @@ pub mod initialize {
             &alice,
         )
         .unwrap();
-
-        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _result = wasm
             .execute(

@@ -14,7 +14,7 @@ use crate::{
     reply::Replies,
     state::{CURRENT_WITHDRAWER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
-    ContractError, debug,
+    ContractError, helpers::sort_tokens,
 };
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
@@ -112,12 +112,11 @@ pub fn handle_withdraw_user_reply(
         attr("token0_amount", coin0.amount),
         attr("token1_amount", coin1.amount),
     ];
-    let mut tokens_provided = vec![coin0, coin1];
-    tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom));
+
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
-        amount: tokens_provided,
+        amount: sort_tokens(vec![coin0, coin1]),
     };
     Ok(Response::new()
         .add_message(msg)

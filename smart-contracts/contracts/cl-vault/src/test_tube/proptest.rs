@@ -16,6 +16,7 @@ mod tests {
     use std::collections::HashMap;
     use std::str::FromStr;
 
+    use crate::helpers::sort_tokens;
     use crate::math::tick::tick_to_price;
     use crate::query::{PositionResponse, TotalVaultTokenSupplyResponse};
     use crate::{
@@ -28,7 +29,8 @@ mod tests {
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "jgasdiuagd9asgd9asdbaskjd"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
-    const DENOM_QUOTE: &str = "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+    const DENOM_QUOTE: &str =
+        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -45,7 +47,6 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        println!(">>>> DEPOSIT CASE");
         // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
         let balance0_str = balance_asset0.balance.unwrap().amount;
@@ -90,22 +91,21 @@ mod tests {
         if coins_to_deposit.is_empty() {
             return;
         }
-        coins_to_deposit.sort_by(|a, b| a.denom.cmp(&b.denom));
 
-        // Before queries
-        let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
-            get_vault_shares_balance(wasm, contract_address);
-        let vault_position_assets_before: TotalAssetsResponse =
-            get_vault_position_assets(wasm, contract_address);
-        let user_shares_balance_before: UserBalanceResponse =
-            get_user_shares_balance(wasm, contract_address, account);
+        // // Before queries
+        // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
+        //     get_vault_shares_balance(wasm, contract_address);
+        // let vault_position_assets_before: TotalAssetsResponse =
+        //     get_vault_position_assets(wasm, contract_address);
+        // let user_shares_balance_before: UserBalanceResponse =
+        //     get_user_shares_balance(wasm, contract_address, account);
 
         // Execute deposit
         let create_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                &coins_to_deposit,
+                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit.rs::execute_exact_deposit
                 account,
             )
             .unwrap();
@@ -116,17 +116,13 @@ mod tests {
             "create_position",
             vec!["liquidity", "amount0", "amount1"],
         );
-        println!("create_position_attrs {:?}", create_position_attrs);
         // let create_amount0 = get_event_value_amount_numeric(&create_position_attrs[1].value);
-        // println!("create_amount0 {:?}", create_amount0);
         // let create_amount1 = get_event_value_amount_numeric(&create_position_attrs[2].value);
-        // println!("create_amount1 {:?}", create_amount1);
 
         // // Find the event with "ty": "tf_mint" and collect the relevant attributes
         // let tf_mint_attrs =
         //     get_event_attributes_by_ty_and_key(&create_position, "tf_mint", vec!["amount"]);
         // let tf_mint_amount = get_event_value_amount_numeric(&tf_mint_attrs[0].value);
-        // println!("tf_mint_attrs {:?}", tf_mint_amount);
 
         // // After queries
         // let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
@@ -142,8 +138,6 @@ mod tests {
         //         .unwrap()
         //         .to_uint_floor();
         // let liquidity_created = Uint128::try_from(liquidity_created_uint_floor).unwrap();
-        // println!("vault_shares_balance_before/liquidity_created {:?} {}", vault_shares_balance_before, liquidity_created);
-        // println!("vault_shares_balance_after {:?}", vault_shares_balance_after);
         // assert_eq!(
         //     vault_shares_balance_before.total + liquidity_created,
         //     vault_shares_balance_after.total
@@ -173,18 +167,16 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        println!(">>>> WITHDRAW CASE");
-
         let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
-        // Before queries
-        let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
-            get_vault_shares_balance(wasm, contract_address);
-        let vault_position_assets_before: TotalAssetsResponse =
-            get_vault_position_assets(wasm, contract_address);
-        let user_shares_balance_before: UserBalanceResponse =
-            get_user_shares_balance(wasm, contract_address, account);
+        // // Before queries
+        // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
+        //     get_vault_shares_balance(wasm, contract_address);
+        // let vault_position_assets_before: TotalAssetsResponse =
+        //     get_vault_position_assets(wasm, contract_address);
+        // let user_shares_balance_before: UserBalanceResponse =
+        //     get_user_shares_balance(wasm, contract_address, account);
 
         // Execute withdraw
         let withdraw_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -205,15 +197,13 @@ mod tests {
             "withdraw_position",
             vec!["liquidity", "amount0", "amount1"],
         );
-        println!("withdraw_position_attrs {:?}", withdraw_position_attrs);
-        //let withdraw_amount0 = get_event_value_amount_numeric(&withdraw_position_attrs[1].value); TODO this shouldnt pass trough get_event_value_amount_numeric as it is: -55190706220 
+        //let withdraw_amount0 = get_event_value_amount_numeric(&withdraw_position_attrs[1].value); TODO this shouldnt pass trough get_event_value_amount_numeric as it is: -55190706220
         //let withdraw_amount1 = get_event_value_amount_numeric(&withdraw_position_attrs[2].value);
 
         // Find the event with "ty": "tf_burn" and collect the relevant attributes
         // let tf_burn_attrs =
         //     get_event_attributes_by_ty_and_key(&withdraw_position, "tf_burn", vec!["amount"]);
         // let tf_burn_amount = get_event_value_amount_numeric(&tf_burn_attrs[0].value);
-        // println!("tf_burn_amount {:?}", tf_burn_amount);
 
         // // After queries
         // let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
@@ -412,13 +402,10 @@ mod tests {
     }
 
     fn get_event_value_amount_numeric(value: &String) -> u128 {
-        println!("value: {}", value);
         // Find the position where the non-numeric part starts
         let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
-
         // Extract the numeric part from the string
         let numeric_part = &value[0..pos];
-        println!("numeric_part: {}", numeric_part);
         // Try to parse the numeric string to u128
         numeric_part.parse::<u128>().unwrap()
     }
@@ -546,7 +533,6 @@ mod tests {
 
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-                println!("iteration {}", i);
                 deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00);
             }
 
