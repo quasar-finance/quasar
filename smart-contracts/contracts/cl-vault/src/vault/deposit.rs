@@ -14,13 +14,14 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     helpers::must_pay_one_or_two,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{create_position, get_position},
-    ContractError, debug,
+    ContractError,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
