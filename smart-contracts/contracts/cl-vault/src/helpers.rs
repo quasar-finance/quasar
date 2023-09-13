@@ -238,6 +238,12 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
     }
 }
 
+pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
+    let mut sorted_tokens = tokens.clone();
+    sorted_tokens.sort_by(|a, b| a.denom.cmp(&b.denom));
+    sorted_tokens
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -449,5 +455,26 @@ mod tests {
         assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
         assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
         assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
+    }
+
+    #[test]
+    fn test_sort_tokens() {
+        let tokens = vec![
+            coin(100, "uatom"),
+            coin(200, "uosmo"),
+            coin(300, "uqsr"),
+            coin(400, "ueth"),
+        ];
+
+        let expected = vec![
+            coin(100, "uatom"),
+            coin(400, "ueth"),
+            coin(200, "uosmo"),
+            coin(300, "uqsr"),
+        ];
+
+        let sorted_tokens = sort_tokens(tokens);
+
+        assert_eq!(sorted_tokens, expected);
     }
 }

@@ -6,6 +6,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
+use crate::helpers::sort_tokens;
 use crate::{
     state::{POOL_CONFIG, POSITION},
     ContractError,
@@ -23,12 +24,14 @@ pub fn create_position(
     let pool_config = POOL_CONFIG.load(storage)?;
     let sender = env.contract.address.to_string();
 
+    let sorted_tokens = sort_tokens(tokens_provided);
+
     let create_position = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender,
         lower_tick,
         upper_tick,
-        tokens_provided: tokens_provided.into_iter().map(|c| c.into()).collect(),
+        tokens_provided: sorted_tokens.into_iter().map(|c| c.into()).collect(),
         // An sdk.Int in the Go code
         token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
