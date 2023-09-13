@@ -19,7 +19,7 @@ mod tests {
         ibc_lock::Lock,
         state::{
             OngoingDeposit, PendingBond, RawAmount, FAILED_JOIN_QUEUE, IBC_LOCK, LOCK_ADMIN,
-            PENDING_BOND_QUEUE, TRAPS,
+            PENDING_BOND_QUEUE, REJOIN_QUEUE, TRAPS,
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
     };
@@ -30,8 +30,7 @@ mod tests {
         },
     };
     use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v2::QuerySpotPriceResponse, lockup::LockedResponse},
+        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v2::QuerySpotPriceResponse,
     };
     use proptest::collection::vec;
 
@@ -79,9 +78,9 @@ mod tests {
 
             // mock the failed join pool trap with 3 bonds
             let failed = PendingBond {
-                bonds: claim_amount.iter().zip(&raw_amount).zip(&owner).zip(&bond_id).map(|(((claim, raw), owner), id)| {
+                bonds: claim_amount.iter().zip(&raw_amount).zip(&owner).zip(&bond_id).map(|(((_claim, raw), owner), id)| {
                     OngoingDeposit {
-                        claim_amount: Uint128::new(*claim),
+                        claim_amount: Uint128::new(*raw),
                         raw_amount: RawAmount::LocalDenom(Uint128::new(*raw)),
                         owner: Addr::unchecked(owner),
                         bond_id: id.to_string(),
@@ -248,21 +247,12 @@ mod tests {
             // simulate that we received the ICQ ACK
             let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
-            // get the failed pending bonds total amount
-            let failed_total_amount = failed.bonds.iter().fold(Uint128::zero(), |acc, bond| {
-                let amount = match bond.raw_amount {
-                    RawAmount::LocalDenom(amount) => amount,
-                    RawAmount::LpShares(_) => panic!("unexpected lp shares"),
-                };
-                acc + amount
-            });
-
             // get the pending bonds total amount
             let pending_total_amount = pending_bonds.iter().fold(Uint128::zero(), |acc, bond| {
                 acc + bond.amount
             });
 
-            // check that the res amount matches the amount in both queues
+            // check that the res amount matches the amount in the pending queue ONLY
             // only if there are messages
             if res.messages.len() !=0 {
                 match &res.messages[0].msg {
@@ -271,7 +261,7 @@ mod tests {
                             amount,
                             &Coin {
                                 denom: "ibc/local_osmo".to_string(),
-                                amount: failed_total_amount + pending_total_amount,
+                                amount: pending_total_amount,
                             }
                         );
                     }
@@ -280,9 +270,22 @@ mod tests {
              }
 
 
-            // check that the failed join & pending queues are emptied
-            prop_assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+            // if BOND_QUEUE & REJOIN_QUEUE are empty FAILED_JOIN_QUEUE items are not moved to REJOIN_QUEUE
+            if !pending_bonds.is_empty() && !failed.bonds.is_empty() {
+                prop_assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+            }
+
+            // PENDING_BOND_QUEUE should be empty
             prop_assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
+
+            // failed bonds should be now in the REJOIN_QUEUE
+            let rejoin_queue: Result<Vec<OngoingDeposit>, StdError> =
+            REJOIN_QUEUE.iter(&deps.storage).unwrap().collect();
+
+            // only check when there's pending bonds & failed bonds
+            if !pending_bonds.is_empty() && !failed.bonds.is_empty() {
+                assert_eq!(failed.bonds, rejoin_queue.unwrap());
+            }
         }
     }
 }
