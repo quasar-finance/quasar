@@ -11,27 +11,27 @@ pub fn execute_update_airdrop_config(
     env: Env,
     config: AirdropConfig,
 ) -> Result<Response, AirdropErrors> {
-    /// Load the current airdrop configuration from storage
+    // Load the current airdrop configuration from storage
     let mut current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    /// Get the start and end heights from the current config
+    // Get the start and end heights from the current config
     let heights = current_airdrop_config.get_start_and_end_heights();
 
-    /// Check if the current block height is greater than or equal to the start height in the current config.
-    /// If true, it's not allowed to update the configuration, return an error.
+    // Check if the current block height is greater than or equal to the start height in the current config.
+    // If true, it's not allowed to update the configuration, return an error.
     if env.block.height >= heights.0 {
         return Err(AirdropErrors::InvalidChangeInConfig {});
     }
 
-    /// Check if the provided end height is less than or equal to the start height.
+    // Check if the provided end height is less than or equal to the start height.
     if config.end_height <= config.start_height {
         return Err(AirdropErrors::InvalidAirdropWindow {});
     }
 
-    /// Save the new airdrop configuration to storage
+    // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &config)?;
 
-    /// Return a default response to indicate success
+    // Return a default response to indicate success
     Ok(Response::default())
 }
 
@@ -41,10 +41,10 @@ pub fn execute_add_users(
     users: Vec<String>,
     amounts: Vec<Uint128>,
 ) -> Result<Response, AirdropErrors> {
-    /// Capture a backtrace for error reporting
+    // Capture a backtrace for error reporting
     let backtrace = Backtrace::capture();
 
-    /// Check if the number of users and amounts provided match
+    // Check if the number of users and amounts provided match
     if users.len() != amounts.len() {
         return Err(AirdropErrors::Std(StdError::GenericErr {
             msg: "Deposit amount weight for primitive is zero".to_string(),
@@ -52,12 +52,12 @@ pub fn execute_add_users(
         }));
     }
 
-    /// Loop through the provided users and amounts
+    // Loop through the provided users and amounts
     for number in 0..=users.len() {
-        /// Validate the user's address
+        // Validate the user's address
         deps.api.addr_validate(&users[number].to_string())?;
 
-        /// Validate that the amount is not negative
+        // Validate that the amount is not negative
         if amounts[number] < Uint128::zero() {
             return Err(AirdropErrors::Std(StdError::GenericErr {
                 msg: "Amount at index :" + number.to_string() + "is negative",
@@ -65,7 +65,7 @@ pub fn execute_add_users(
             }));
         }
 
-        /// update all the users with the give info
+        // update all the users with the give info
         let mut user_info = USER_INFO.load(deps.storage, users[number])?;
         user_info.push(UserInfo {
             claimable_amount: amounts[number],
@@ -74,13 +74,13 @@ pub fn execute_add_users(
         USER_INFO.save(deps.storage, users[number], &user_info)?;
     }
 
-    /// Calculate the total claimable amount from USER_INFO
+    // Calculate the total claimable amount from USER_INFO
     let total_in_user_info = get_total_in_user_info(deps);
 
-    /// Load the current airdrop configuration
+    // Load the current airdrop configuration
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    /// Check if the total claimable amount exceeds the airdrop amount
+    // Check if the total claimable amount exceeds the airdrop amount
     if total_in_user_info > current_airdrop_config.airdrop_amount {
         return Err(AirdropErrors::Std(StdError::GenericErr {
             msg: "Total amount in the given user amounts"
@@ -91,6 +91,6 @@ pub fn execute_add_users(
         }));
     }
 
-    /// Return a default response if all checks pass
+    // Return a default response if all checks pass
     Ok(Response::default())
 }

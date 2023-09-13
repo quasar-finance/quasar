@@ -18,15 +18,15 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, AirdropErrors> {
-    /// Set the contract version in storage
+    // Set the contract version in storage
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    /// Check if the provided end height is less than or equal to the start height.
+    // Check if the provided end height is less than or equal to the start height.
     if msg.end_height <= msg.start_height {
         return Err(AirdropErrors::InvalidAirdropWindow);
     }
 
-    /// Create a new airdrop configuration based on the provided parameters
+    // Create a new airdrop configuration based on the provided parameters
     let airdrop_config = AirdropConfig {
         airdrop_description: msg.airdrop_description,
         airdrop_amount: msg.airdrop_amount,
@@ -38,10 +38,10 @@ pub fn instantiate(
         unclaimed_tokens: msg.unclaimed_tokens,
     };
 
-    /// Save the new airdrop configuration to storage
+    // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &airdrop_config)?;
 
-    /// Return a default response to indicate success
+    // Return a default response to indicate success
     Ok(Response::default())
 }
 
@@ -54,16 +54,16 @@ pub fn execute(
 ) -> Result<Response, AirdropErrors> {
     match msg {
         ExecuteMsg::Admin(admin_msg) => {
-            /// Check if the sender is a contract admin
+            // Check if the sender is a contract admin
             is_contract_admin(&deps.querier, &env, &info.sender)?;
 
             match admin_msg {
                 AdminExecuteMsg::UpdateAirdropConfig(airdrop_config) => {
-                    /// Call the function to update the airdrop configuration
+                    // Call the function to update the airdrop configuration
                     execute_update_airdrop_config(deps, env, airdrop_config)
                 }
                 AdminExecuteMsg::AddUsers { users, amounts } => {
-                    /// Call the function to add users and their amounts
+                    // Call the function to add users and their amounts
                     execute_add_users(deps, env, users, amounts)
                 }
                 AdminExecuteMsg::AddUser { user, amount } => {}
