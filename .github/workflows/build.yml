@@ -104,6 +104,8 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
+      - name: the classic ls
+        run: ls -R
       - name: Move the cl-vault
         if: env.GIT_DIFF
         run: mkdir -p smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release && mv smart-contracts/artifacts/cl_vault.wasm  smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm
