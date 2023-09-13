@@ -161,6 +161,7 @@ pub fn handle_merge_withdraw_reply(
         // are returning zero tokens and this would fail on osmosis side
         let position = create_position(
             deps.storage,
+            &deps.querier,
             &env,
             range.lower_tick,
             range.upper_tick,

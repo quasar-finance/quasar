@@ -67,6 +67,7 @@ pub(crate) fn execute_exact_deposit(
     }
     let create_position_msg = create_position(
         deps.storage,
+        &deps.querier,
         &env,
         position.lower_tick,
         position.upper_tick,

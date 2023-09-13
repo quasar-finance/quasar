@@ -80,6 +80,7 @@ pub fn handle_instantiate(
 
     let create_position_msg = create_position(
         deps.storage,
+        &deps.querier,
         &env,
         msg.initial_lower_tick,
         msg.initial_upper_tick,
