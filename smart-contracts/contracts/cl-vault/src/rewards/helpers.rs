@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
 
-use crate::error::ContractResult;
+use crate::{error::ContractResult, helpers::sort_tokens};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 #[cw_serde]
 #[derive(Default)]
@@ -89,7 +89,7 @@ impl Rewards {
     }
 
     pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
-        let rewards = self.coins();
+        let rewards = sort_tokens(self.coins());
         self.0.clear();
 
         Ok(BankMsg::Send {

@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128, DepsMut};
+use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
     Pool,
