@@ -106,7 +106,9 @@ pub fn query_position(deps: Deps) -> ContractResult<PositionResponse> {
     })
 }
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
-    let balance = SHARES.load(deps.storage, deps.api.addr_validate(&user)?)?;
+    let balance = SHARES
+        .may_load(deps.storage, deps.api.addr_validate(&user)?)?
+        .unwrap_or(Uint128::zero());
     Ok(UserBalanceResponse { balance })
 }
 
