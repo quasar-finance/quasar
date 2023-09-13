@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION="1.18"
-ARG RUNNER_IMAGE="gcr.io/distroless/static"
+ARG GO_VERSION="1.20"
+ARG RUNNER_IMAGE="gcr.io/distroless/static-debian11"
 
 # --------------------------------------------------------
 # Builder
@@ -25,12 +25,12 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 
 # Cosmwasm - Download correct libwasmvm version
-RUN WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | cut -d ' ' -f 2) && \
-    wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$(uname -m).a \
-      -O /lib/libwasmvm_muslc.a && \
+RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | sed 's/.* //') && \
+    wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$ARCH.a \
+        -O /lib/libwasmvm_muslc.a && \
     # verify checksum
     wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/checksums.txt -O /tmp/checksums.txt && \
-    sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep $(uname -m) | cut -d ' ' -f 1)
+    sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep libwasmvm_muslc.$ARCH | cut -d ' ' -f 1)
 
 # Copy the remaining files
 COPY . .
@@ -52,18 +52,15 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
                 -X github.com/cosmos/cosmos-sdk/version.BuildTags='netgo,ledger,muslc' \
                 -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
             -trimpath \
-    -o build/quasarnoded ./cmd/quasarnoded
+    -o build/quasarnoded \
+    /quasar/cmd/quasarnoded/main.go
 
 
 # --------------------------------------------------------
 # Runner
 # --------------------------------------------------------
 
-FROM alpine:3.17.2 as runner
-
-ENV PACKAGES bash
-
-RUN apk add --no-cache $PACKAGES
+FROM ${RUNNER_IMAGE} as runner
 
 COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
 

@@ -1,6 +1,10 @@
 package testutil
 
 import (
+	"github.com/cosmos/cosmos-sdk/simapp"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -11,8 +15,10 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	stakingKeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
 	"github.com/quasarlabs/quasarnode/app"
@@ -23,7 +29,10 @@ import (
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
+	qvestingkeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
+	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
@@ -43,6 +52,32 @@ func init() {
 	config.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	config.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
 	config.Seal()
+}
+func CreateRandomAccounts(numAccts int) []sdk.AccAddress {
+	testAddrs := make([]sdk.AccAddress, numAccts)
+	for i := 0; i < numAccts; i++ {
+		pk := ed25519.GenPrivKey().PubKey()
+		testAddrs[i] = sdk.AccAddress(pk.Address())
+	}
+
+	return testAddrs
+}
+
+// FundAcc funds target address with specified amount.
+func (ts *TestSetup) FundAcc(t testing.TB, acc sdk.AccAddress, amounts sdk.Coins) {
+	err := simapp.FundAccount(ts.Keepers.BankKeeper, ts.Ctx, acc, amounts)
+	require.NoError(t, err)
+}
+
+// FundModuleAcc funds target modules with specified amount.
+func (ts *TestSetup) FundModuleAcc(t testing.TB, moduleName string, amounts sdk.Coins) {
+	err := simapp.FundModuleAccount(ts.Keepers.BankKeeper, ts.Ctx, moduleName, amounts)
+	require.NoError(t, err)
+}
+
+func (ts *TestSetup) MintCoins(t testing.TB, coins sdk.Coins) {
+	err := ts.Keepers.BankKeeper.MintCoins(ts.Ctx, minttypes.ModuleName, coins)
+	require.NoError(t, err)
 }
 
 func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
@@ -92,6 +127,9 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
+	stakingKeeper := factory.StakingKeeper(paramsKeeper, accountKeeper, bankKeeper)
+	distrKeeper := factory.DistributionKeeper(paramsKeeper, accountKeeper, bankKeeper, stakingKeeper,
+		"feeCollectorName", blockedMaccAddresses)
 	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
@@ -99,6 +137,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
 	qoracleKeeper.Seal()
 	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
+	qvestingKeeper := factory.QVestingKeeper(paramsKeeper, accountKeeper, bankKeeper)
+	tfKeeper := factory.TfKeeper(paramsKeeper, accountKeeper, bankKeeper, distrKeeper)
 
 	// Note: the relative order of LoadLatestVersion and Set*DefaultParams is important.
 	// Setting params before loading stores causes store does not exist error.
@@ -108,7 +148,12 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 	factory.SetQoracleDefaultParams(qoracleKeeper)
 	factory.SetQosmosisDefaultParams(qosmosisKeeper)
+	testAccts := CreateRandomAccounts(3)
 
+	//  Init Genesis of Keepers
+
+	distrGendata := distrtypes.GenesisState{Params: distrtypes.DefaultParams()}
+	distrKeeper.InitGenesis(ctx, distrGendata)
 	return &TestSetup{
 		Ctx: ctx,
 		Cdc: encodingConfig.Marshaler,
@@ -126,7 +171,10 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			QoracleKeeper:    qoracleKeeper,
 			QosmosisKeeper:   qosmosisKeeper,
 			QTransfer:        qtransferkeeper,
+			QVestingKeeper:   qvestingKeeper,
+			TfKeeper:         tfKeeper,
 		},
+		TestAccs: testAccts,
 	}
 }
 
@@ -134,8 +182,9 @@ type TestSetup struct {
 	Ctx sdk.Context
 	Cdc codec.Codec
 
-	Keepers *testKeepers
-	Mocks   *testMocks
+	Keepers  *testKeepers
+	Mocks    *testMocks
+	TestAccs []sdk.AccAddress
 }
 
 type testMocks struct {
@@ -143,12 +192,16 @@ type testMocks struct {
 }
 
 type testKeepers struct {
-	ParamsKeeper     paramskeeper.Keeper
-	EpochsKeeper     *epochskeeper.Keeper
-	AccountKeeper    authkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
-	CapabilityKeeper capabilitykeeper.Keeper
-	QoracleKeeper    qoraclekeeper.Keeper
-	QosmosisKeeper   qosmokeeper.Keeper
-	QTransfer        qtransferkeeper.Keeper
+	ParamsKeeper      paramskeeper.Keeper
+	EpochsKeeper      *epochskeeper.Keeper
+	AccountKeeper     authkeeper.AccountKeeper
+	BankKeeper        bankkeeper.Keeper
+	StakingKeeper     stakingKeeper.Keeper
+	DistributedKeeper distrkeeper.Keeper
+	CapabilityKeeper  capabilitykeeper.Keeper
+	QoracleKeeper     qoraclekeeper.Keeper
+	QosmosisKeeper    qosmokeeper.Keeper
+	QTransfer         qtransferkeeper.Keeper
+	QVestingKeeper    qvestingkeeper.Keeper
+	TfKeeper          tfkeeper.Keeper
 }

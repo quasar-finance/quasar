@@ -6,7 +6,7 @@ use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
 
-pub(crate) fn execute_update(
+pub(crate) fn execute_admin(
     deps: DepsMut,
     info: MessageInfo,
     admin_msg: AdminExtensionExecuteMsg,

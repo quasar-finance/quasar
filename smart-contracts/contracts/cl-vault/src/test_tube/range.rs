@@ -86,8 +86,6 @@ mod test {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        println!("{:?}", pool);
-
         let before_position: PositionResponse = wasm
             .query(
                 contract.as_str(),
@@ -96,15 +94,6 @@ mod test {
                 )),
             )
             .unwrap();
-
-        //  liquidity: "444754394944564241997324" }), asset0: Some(Coin { denom: "uatom", amount: "9766" }), asset1: Some(Coin { denom: "uosmo", amount: "100001" }
-        println!(
-            "{:?}",
-            cl.query_position_by_id(&PositionByIdRequest {
-                position_id: before_position.position_ids[0]
-            })
-            .unwrap()
-        );
 
         let _result = wasm
             .execute(
@@ -129,14 +118,6 @@ mod test {
                 )),
             )
             .unwrap();
-        // liquidity: "136802306715768225461536" }), asset0: Some(Coin { denom: "uatom", amount: "3026" }), asset1: Some(Coin { denom: "uosmo", amount: "99994" }
-        println!(
-            "{:?}",
-            cl.query_position_by_id(&PositionByIdRequest {
-                position_id: after_position.position_ids[0]
-            })
-            .unwrap()
-        );
     }
 
     #[test]
@@ -233,7 +214,7 @@ mod test {
     */
     #[test]
     fn test_swap_math_poc() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
+        let (app, _contract, _cl_pool_id, _admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000, "uatom"),
