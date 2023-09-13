@@ -110,7 +110,7 @@ impl Rewards {
     }
 
     pub fn coins(&self) -> Vec<Coin> {
-        self.0.clone()
+        sort_tokens(self.0.clone())
     }
 
     pub fn from_coins(coins: Vec<Coin>) -> Self {
