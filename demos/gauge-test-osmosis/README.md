@@ -18,7 +18,7 @@ by user to attract users to bond the liquidity that they have provided for more 
     ```shell
   osmosisd status
   ```
-* Once the chain is producing blocks, run : 
+* Once the chain is producing blocks, run (**as soon as the chain is up to match timings of minute epoch**) : 
     ```shell
   sh gauge-test.sh 
   ```
