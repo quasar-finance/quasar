@@ -1,13 +1,26 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
-use cw_asset::AssetInfo;
+use cosmwasm_std::Uint128;
 
 use crate::state::AirdropConfig;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// funding address to send back funds to
-    pub funding_or_refund_address: String,
+    /// every airdrop contains a description of it
+    pub airdrop_description: String,
+    /// token amount to be airdropped
+    pub airdrop_amount: Uint128,
+    /// token denom to be airdropped
+    pub airdrop_denom: Uint128,
+    /// total claimed amount, zero initially
+    pub total_claimed: Uint128,
+    /// starting time from which users can claim airdrop
+    pub start_height: u64,
+    /// end time after which users cannot claim airdrop
+    pub end_height: u64,
+    /// flag to enable and disable claims for the given airdrop in case of any emergency
+    pub claim_enabled: bool,
+    /// total amount of unclaimed tokens, equal to airdrop_tokens_amount
+    pub unclaimed_tokens: Uint128,
 }
 
 #[cw_serde]
@@ -16,43 +29,29 @@ pub enum ExecuteMsg {
     Admin(AdminExecuteMsg),
 
     /// claim airdrop is for the users to execute a specific airdrop id
-    ClaimAirdrop(Uint128),
+    ClaimAirdrop(),
 }
 
 #[cw_serde]
 pub enum AdminExecuteMsg {
-    /// adds a new airdrop config given by the admin
-    AddAirdropConfig(AirdropConfig),
-
     /// updates airdrop config given by the admin
-    UpdateAirdropConfig {
-        airdrop_id: Uint128,
-        airdrop_config: AirdropConfig,
-    },
+    UpdateAirdropConfig(AirdropConfig),
 
     /// add users to the airdrop with the given amounts
     AddUsers {
-        airdrop_id: Uint128,
-        users: Vec<Addr>,
+        users: Vec<String>,
         amounts: Vec<Uint128>,
     },
 
     /// add single user to the airdrop with the given amount
-    AddUser {
-        airdrop_id: Uint128,
-        user: Addr,
-        amount: Uint128,
-    },
+    AddUser { user: String, amount: Uint128 },
 
     /// remove a list of users from an airdrop
-    RemoveUsers {
-        airdrop_id: Uint128,
-        users: Vec<Addr>,
-    },
+    RemoveUsers(Vec<String>),
 
     /// remove a user from an airdrop
-    RemoveUser { airdrop_id: Uint128, user: Addr },
+    RemoveUser(String),
 
     /// sends back the remaining funds to the quasar funding address
-    WithdrawFunds { airdrop_id: Uint128 },
+    WithdrawFunds(),
 }

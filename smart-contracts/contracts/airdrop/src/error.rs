@@ -12,4 +12,10 @@ pub enum AirdropErrors {
 
     #[error("Unauthorized")]
     Unauthorized {},
+
+    #[error("Invalid airdrop window")]
+    InvalidAirdropWindow {},
+
+    #[error("Airdrop config cannot be changed once airdrop is active")]
+    InvalidChangeInConfig {},
 }

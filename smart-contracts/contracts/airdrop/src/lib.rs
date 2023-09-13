@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod contract;
 pub mod helpers;
 pub mod msg;
