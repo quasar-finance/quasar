@@ -2,15 +2,15 @@
 
 members = [
   # "contracts/icq",
-  # "contracts/lp-strategy",
+  "contracts/lp-strategy",
   # "contracts/ibc-transfer",
-  # "contracts/basic-vault",
-  # "contracts/vault-rewards",
+  "contracts/basic-vault",
+  "contracts/vault-rewards",
   # "contracts/intergamm-bindings-test",
-  # "contracts/multihop-router",
+  "contracts/multihop-router",
   "contracts/cl-vault",
   # "packages/intergamm-bindings",
-  # "packages/quasar-types",
+  "packages/quasar-types",
 ]
 
 [workspace.dependencies]
