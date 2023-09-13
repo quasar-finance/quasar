@@ -81,3 +81,29 @@ jobs:
           path: |
             smart-contracts/artifacts/basic_vault.wasm
             smart-contracts/artifacts/lp_strategy.wasm
+            smart-contracts/artifacts/cl_vault.wasm
+  test-test-tube:
+    runs-on: ubuntu-latest
+    needs: build-rust
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Get git diff
+        uses: technote-space/get-diff-action@v6.1.2
+        with:
+          PATTERNS: |
+            **/**.rs
+            Makefile
+            .github/workflows/build.yml
+      - name: Download contracts
+        if: env.GIT_DIFF
+        uses: actions/download-artifact@v3
+        with:
+          name:
+            smart-contracts
+      - name: Install Rust
+        if: env.GIT_DIFF
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run test-tube tests
+        if: env.GIT_DIFF
+        run: cd smart-contracts && cargo test --package cl-vault --lib -- test_tube::* --nocapture --ignored 
