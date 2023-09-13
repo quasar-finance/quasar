@@ -374,7 +374,7 @@ mod tests {
         let upper_price = "5500";
 
         let token1amt = 200000u128;
-        
+
         // prices and expected amounts taken from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
         let mut prices = HashMap::new();
         prices.insert("4501", Uint128::new(199767));

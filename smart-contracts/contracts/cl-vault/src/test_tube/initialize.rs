@@ -21,7 +21,9 @@ pub mod initialize {
     };
     use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
 
-    use crate::msg::{ClQueryMsg, ExtensionQueryMsg, InstantiateMsg, QueryMsg, ModifyRangeMsg, ExecuteMsg};
+    use crate::msg::{
+        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
+    };
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
 
@@ -235,7 +237,6 @@ pub mod initialize {
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
-
 
         let _result = wasm
             .execute(
