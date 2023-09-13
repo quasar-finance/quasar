@@ -86,8 +86,6 @@ mod test {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        println!("{:?}", pool);
-
         let before_position: PositionResponse = wasm
             .query(
                 contract.as_str(),
@@ -96,15 +94,6 @@ mod test {
                 )),
             )
             .unwrap();
-
-        //  liquidity: "444754394944564241997324" }), asset0: Some(Coin { denom: "uatom", amount: "9766" }), asset1: Some(Coin { denom: "uosmo", amount: "100001" }
-        println!(
-            "{:?}",
-            cl.query_position_by_id(&PositionByIdRequest {
-                position_id: before_position.position_ids[0]
-            })
-            .unwrap()
-        );
 
         let _result = wasm
             .execute(
@@ -129,14 +118,6 @@ mod test {
                 )),
             )
             .unwrap();
-        // liquidity: "136802306715768225461536" }), asset0: Some(Coin { denom: "uatom", amount: "3026" }), asset1: Some(Coin { denom: "uosmo", amount: "99994" }
-        println!(
-            "{:?}",
-            cl.query_position_by_id(&PositionByIdRequest {
-                position_id: after_position.position_ids[0]
-            })
-            .unwrap()
-        );
     }
 
     #[test]
