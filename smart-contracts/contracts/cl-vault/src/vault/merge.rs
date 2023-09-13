@@ -160,8 +160,7 @@ pub fn handle_merge_withdraw_reply(
         // tokens should never be an empty vec![] as this would mean that all the current positions
         // are returning zero tokens and this would fail on osmosis side
         let position = create_position(
-            deps.storage,
-            &deps.querier,
+            deps,
             &env,
             range.lower_tick,
             range.upper_tick,

@@ -20,7 +20,7 @@ use crate::{
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{create_position, get_position},
-    ContractError,
+    ContractError, debug,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -58,24 +58,6 @@ pub(crate) fn execute_exact_deposit(
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    let mut coins_to_send = vec![];
-    if !token0.amount.is_zero() {
-        coins_to_send.push(token0.clone());
-    }
-    if !token1.amount.is_zero() {
-        coins_to_send.push(token1.clone());
-    }
-    let create_position_msg = create_position(
-        deps.storage,
-        &deps.querier,
-        &env,
-        position.lower_tick,
-        position.upper_tick,
-        coins_to_send,
-        Uint128::zero(),
-        Uint128::zero(),
-    )?;
-
     CURRENT_DEPOSIT.save(
         deps.storage,
         &CurrentDeposit {
@@ -83,6 +65,25 @@ pub(crate) fn execute_exact_deposit(
             token1_in: token1.amount,
             sender: recipient,
         },
+    )?;
+
+    let mut coins_to_send = vec![];
+    if !token0.amount.is_zero() {
+        coins_to_send.push(token0.clone());
+    }
+    if !token1.amount.is_zero() {
+        coins_to_send.push(token1.clone());
+    }
+    debug!(deps, "deposit_before", "");
+    coins_to_send.sort_by(|a, b| a.denom.cmp(&b.denom));
+    let create_position_msg = create_position(
+        deps,
+        &env,
+        position.lower_tick,
+        position.upper_tick,
+        coins_to_send,
+        Uint128::zero(),
+        Uint128::zero(),
     )?;
 
     Ok(Response::new()
@@ -103,6 +104,7 @@ pub fn handle_deposit_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
+    debug!(deps, "handle_deposit_create_position_reply", "");
     let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;

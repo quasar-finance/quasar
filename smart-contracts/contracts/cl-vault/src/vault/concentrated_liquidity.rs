@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128, DepsMut};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
     Pool,
@@ -6,6 +6,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
+use crate::debug;
 use crate::helpers::{round_up_to_nearest_multiple, sort_tokens};
 use crate::{
     state::{POOL_CONFIG, POSITION},
@@ -13,8 +14,7 @@ use crate::{
 };
 
 pub fn create_position(
-    storage: &mut dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     env: &Env,
     lower_tick: i64,
     upper_tick: i64,
@@ -22,12 +22,14 @@ pub fn create_position(
     token_min_amount0: Uint128,
     token_min_amount1: Uint128,
 ) -> Result<MsgCreatePosition, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
     let sender = env.contract.address.to_string();
 
+    debug!(deps, "before", tokens_provided);
     let sorted_tokens = sort_tokens(tokens_provided);
+    debug!(deps, "after", sorted_tokens);
 
-    let pool_details = get_cl_pool_info(querier, pool_config.pool_id)?;
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
     let tick_spacing = pool_details
         .tick_spacing
         .try_into()
@@ -140,8 +142,7 @@ mod tests {
         let token_min_amount1 = Uint128::new(2000);
 
         let result = create_position(
-            deps.as_mut().storage,
-            &deps.as_mut().querier,
+            deps.as_mut(),
             &env,
             lower_tick,
             upper_tick,

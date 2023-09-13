@@ -89,6 +89,7 @@ mod tests {
         if coins_to_deposit.is_empty() {
             return;
         }
+        coins_to_deposit.sort_by(|a, b| a.denom.cmp(&b.denom));
 
         // Before queries
         let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
@@ -529,6 +530,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
+                    Coin::new(1_000_000_000_000_000_000_000_00, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
@@ -536,6 +538,7 @@ mod tests {
 
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
+                println!("iteration {}", i);
                 deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00);
             }
 

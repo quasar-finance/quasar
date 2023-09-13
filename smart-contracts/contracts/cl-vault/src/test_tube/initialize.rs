@@ -68,7 +68,7 @@ pub mod initialize {
         pool: MsgCreateConcentratedPool,
         lower_tick: i64,
         upper_tick: i64,
-        tokens_provided: Vec<v1beta1::Coin>,
+        mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
     ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
@@ -115,6 +115,7 @@ pub mod initialize {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
+        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom));
         // create a basic position on the pool
         let initial_position = MsgCreatePosition {
             pool_id: pool.id,
@@ -134,10 +135,10 @@ pub mod initialize {
                 sender: admin.address(),
                 routes: vec![SwapAmountInRoute {
                     pool_id: pool.id,
-                    token_out_denom: pool.token0,
+                    token_out_denom: pool.token0.clone(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: pool.token1,
+                    denom: pool.token1.clone(),
                     amount: "1000000000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
@@ -161,13 +162,16 @@ pub mod initialize {
             thesis: "provide big swap efficiency".to_string(),
             name: "good contract".to_string(),
         };
+        let mut tokens_provided = vec![coin(100000, pool.token0), coin(100000, pool.token1)];
+        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom));
+
         let contract = wasm
             .instantiate(
                 code_id,
                 &instantiate_msg,
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                &[coin(100000, "uatom"), coin(100000, "uosmo")],
+                tokens_provided.as_ref(),
                 &admin,
             )
             .unwrap();

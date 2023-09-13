@@ -187,8 +187,7 @@ pub fn handle_withdraw_position_reply(
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
         let create_position_msg = create_position(
-            deps.storage,
-            &deps.querier,
+            deps,
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
@@ -417,13 +416,12 @@ fn handle_swap_success(
     }
     if !balance1.is_zero() {
         coins_to_send.push(Coin {
-            denom: pool_config.token1,
+            denom: pool_config.token1.clone(),
             amount: balance1,
         });
     }
     let create_position_msg = create_position(
-        deps.storage,
-        &deps.querier,
+        deps,
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,
@@ -431,16 +429,6 @@ fn handle_swap_success(
         Uint128::zero(),
         Uint128::zero(),
     )?;
-
-    // get the current pool
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    let pm_querier = PoolmanagerQuerier::new(&deps.querier);
-    let _pool: Pool = pm_querier
-        .pool(pool_config.pool_id)?
-        .pool
-        .unwrap()
-        .try_into()?;
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
