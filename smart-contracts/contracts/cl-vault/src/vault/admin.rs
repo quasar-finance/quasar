@@ -1,5 +1,5 @@
 use crate::error::ContractResult;
-use crate::helpers::assert_admin;
+use crate::helpers::{assert_admin, sort_tokens};
 use crate::rewards::Rewards;
 use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
@@ -45,7 +45,7 @@ pub fn execute_claim_strategist_rewards(
         .add_attribute("rewards", format!("{:?}", rewards.coins()))
         .add_message(BankMsg::Send {
             to_address: range_admin.to_string(),
-            amount: rewards.coins(),
+            amount: sort_tokens(rewards.coins()),
         }))
 }
 
