@@ -8,7 +8,7 @@ mod test {
         osmosis::{
             concentratedliquidity::{
                 poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-                v1beta1::{MsgCreatePosition, Pool, PoolsRequest, PositionByIdRequest},
+                v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
             },
             poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
         },
@@ -84,9 +84,9 @@ mod test {
         .unwrap();
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        let before_position: PositionResponse = wasm
+        let _before_position: PositionResponse = wasm
             .query(
                 contract.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
@@ -110,7 +110,7 @@ mod test {
             )
             .unwrap();
 
-        let after_position: PositionResponse = wasm
+        let _after_position: PositionResponse = wasm
             .query(
                 contract.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(

@@ -254,7 +254,7 @@ mod tests {
 
             // check that the res amount matches the amount in the pending queue ONLY
             // only if there are messages
-            if res.messages.len() !=0 {
+            if !res.messages.is_empty() {
                 match &res.messages[0].msg {
                     CosmosMsg::Ibc(IbcMsg::Transfer { amount, .. }) => {
                         assert_eq!(
