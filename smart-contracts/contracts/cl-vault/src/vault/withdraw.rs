@@ -13,7 +13,7 @@ use osmosis_std::types::{
 use crate::{
     helpers::sort_tokens,
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
@@ -40,6 +40,28 @@ pub fn execute_withdraw(
         .checked_sub(amount)
         .map_err(|_| ContractError::InsufficientFunds)?;
     SHARES.save(deps.storage, info.sender, &left_over)?;
+
+    let total_shares = BankQuerier::new(&deps.querier)
+        .supply_of(vault_denom.clone())?
+        .amount
+        .unwrap()
+        .amount
+        .parse()?;
+
+    // get the dust amounts belonging to the user
+    let (dust0, dust1) = DUST.load(deps.storage)?;
+    let user_dust0 = dust0.checked_mul(amount)?.checked_div(total_shares)?;
+    let user_dust1 = dust1.checked_mul(amount)?.checked_div(total_shares)?;
+    // save the new total amount of dust available for other actions
+    DUST.save(
+        deps.storage,
+        &(
+            dust0.checked_sub(user_dust0)?,
+            dust1.checked_sub(user_dust1)?,
+        ),
+    )?;
+
+    CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
 
     // burn the shares
     let burn_coin = coin(amount.u128(), vault_denom);
@@ -106,8 +128,12 @@ pub fn handle_withdraw_user_reply(
     let user = CURRENT_WITHDRAWER.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    let coin0 = coin(response.amount0.parse()?, pool_config.token0);
-    let coin1 = coin(response.amount1.parse()?, pool_config.token1);
+    let (user_dust0, user_dust1) = CURRENT_WITHDRAWER_DUST.load(deps.storage)?;
+    let amount0 = Uint128::new(response.amount0.parse()?).checked_add(user_dust0)?;
+    let amount1 = Uint128::new(response.amount1.parse()?).checked_add(user_dust1)?;
+
+    let coin0 = coin(amount0.u128(), pool_config.token0);
+    let coin1 = coin(amount1.u128(), pool_config.token1);
 
     let withdraw_attrs = vec![
         attr("token0_amount", coin0.amount),
@@ -128,10 +154,47 @@ pub fn handle_withdraw_user_reply(
 
 #[cfg(test)]
 mod tests {
-    use crate::state::PoolConfig;
-    use cosmwasm_std::{testing::mock_dependencies, Addr, CosmosMsg, SubMsgResponse};
+    use crate::{state::PoolConfig, test_helpers::mock_deps_with_querier};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Addr, CosmosMsg, SubMsgResponse,
+    };
 
     use super::*;
+
+    #[test]
+    fn execute_withdraw_works() {
+        let info = mock_info("bolice", &[]);
+        let mut deps = mock_deps_with_querier(&info);
+        let env = mock_env();
+
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"share_token".to_string())
+            .unwrap();
+        SHARES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("bolice"),
+                &Uint128::new(1000),
+            )
+            .unwrap();
+        DUST.save(
+            deps.as_mut().storage,
+            &(Uint128::new(2000), Uint128::new(3000)),
+        )
+        .unwrap();
+
+        let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
+        // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
+        assert_eq!(
+            DUST.load(deps.as_ref().storage).unwrap(),
+            (Uint128::new(1980), Uint128::new(2970))
+        );
+        assert_eq!(
+            CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
+            (Uint128::new(20), Uint128::new(30))
+        )
+      }
 
     // the execute withdraw flow should be easiest to test in test-tube, since it requires quite a bit of Osmsosis specific information
     // we just test the handle withdraw implementation here
@@ -142,6 +205,13 @@ mod tests {
         CURRENT_WITHDRAWER
             .save(deps.as_mut().storage, &to_address)
             .unwrap();
+        CURRENT_WITHDRAWER_DUST
+            .save(
+                deps.as_mut().storage,
+                &(Uint128::new(123), Uint128::new(234)),
+            )
+            .unwrap();
+
         POOL_CONFIG
             .save(
                 deps.as_mut().storage,
@@ -172,7 +242,7 @@ mod tests {
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: to_address.to_string(),
-                amount: sort_tokens(vec![coin(1000, "uosmo"), coin(1000, "uatom")])
+                amount: sort_tokens(vec![coin(1123, "uosmo"), coin(1234, "uatom")])
             })
         )
     }

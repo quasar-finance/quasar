@@ -127,6 +127,7 @@ pub struct TickExpIndexData {
 
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
 pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
+pub const CURRENT_WITHDRAWER_DUST: Item<(Uint128, Uint128)> = Item::new("current_withdrawer_dust");
 
 #[cfg(test)]
 mod tests {
