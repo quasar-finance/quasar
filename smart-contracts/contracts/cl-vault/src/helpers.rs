@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
 use crate::math::tick::tick_to_price;
-use crate::state::ADMIN_ADDRESS;
+use crate::rewards::CoinList;
+use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, Fraction, MessageInfo, QuerierWrapper, Storage,
-    Uint128, Uint256,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Storage, Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
@@ -242,6 +243,31 @@ pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
     let mut sorted_tokens = tokens;
     sorted_tokens.sort_by(|a, b| a.denom.cmp(&b.denom));
     sorted_tokens
+}
+
+/// this function subtracts out anything from the raw contract balance that isn't dedicated towards user or strategist rewards.
+/// this function is expensive.
+pub fn get_unused_balances(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    env: &Env,
+) -> Result<CoinList, ContractError> {
+    let mut balances =
+        CoinList::from_coins(querier.query_all_balances(env.contract.address.to_string())?);
+
+    // subtract out strategist rewards and all user rewards
+    let strategist_rewards = STRATEGIST_REWARDS.load(storage)?;
+
+    balances.sub(&strategist_rewards)?;
+
+    for user_reward in USER_REWARDS
+        .range(storage, None, None, cosmwasm_std::Order::Ascending)
+        .into_iter()
+    {
+        balances.sub(&user_reward?.1)?;
+    }
+
+    Ok(balances)
 }
 
 #[cfg(test)]

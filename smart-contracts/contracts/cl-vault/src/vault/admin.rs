@@ -1,6 +1,6 @@
 use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
-use crate::rewards::Rewards;
+use crate::rewards::CoinList;
 use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
@@ -39,7 +39,7 @@ pub fn execute_claim_strategist_rewards(
     // get the currently attained rewards
     let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
     // empty the saved rewards
-    STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
+    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
 
     Ok(Response::new()
         .add_attribute("rewards", format!("{:?}", rewards.coins()))
@@ -129,7 +129,10 @@ mod tests {
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &Rewards::from_coins(rewards.clone()))
+            .save(
+                deps.as_mut().storage,
+                &CoinList::from_coins(rewards.clone()),
+            )
             .unwrap();
 
         RANGE_ADMIN
@@ -154,7 +157,7 @@ mod tests {
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &Rewards::from_coins(rewards))
+            .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
             .unwrap();
 
         RANGE_ADMIN

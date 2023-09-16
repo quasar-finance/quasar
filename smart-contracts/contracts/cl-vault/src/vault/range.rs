@@ -13,6 +13,7 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
+use crate::helpers::{get_unused_balances, round_up_to_nearest_multiple};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
@@ -134,10 +135,16 @@ pub fn handle_withdraw_position_reply(
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    // what about funds sent to the vault via banksend, what about airdrops/other ways this would not be the total deposited balance
-    // todo: Test that one-sided withdraw wouldn't error here (it shouldn't)
-    let amount0: Uint128 = msg.amount0.parse()?;
-    let amount1: Uint128 = msg.amount1.parse()?;
+
+    let mut amount0: Uint128 = msg.amount0.parse()?;
+    let mut amount1: Uint128 = msg.amount1.parse()?;
+
+    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let unused_balance0 = unused_balances.find_coin(pool_config.token0.clone());
+    let unused_balance1 = unused_balances.find_coin(pool_config.token1.clone());
+
+    amount0 = amount0.checked_add(unused_balance0.amount)?;
+    amount1 = amount1.checked_add(unused_balance1.amount)?;
 
     CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 

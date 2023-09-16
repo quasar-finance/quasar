@@ -13,13 +13,13 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 use crate::helpers::must_pay_one_or_two;
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
-use crate::rewards::Rewards;
+use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
     STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
-use crate::ContractError;
+use crate::{debug, ContractError};
 
 pub fn handle_instantiate(
     deps: DepsMut,
@@ -54,7 +54,7 @@ pub fn handle_instantiate(
         },
     )?;
 
-    STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
+    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
 
     METADATA.save(
         deps.storage,
@@ -78,6 +78,11 @@ pub fn handle_instantiate(
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
     let (initial0, initial1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
+    debug!(
+        deps,
+        "before_create_position",
+        vec![initial0.clone(), initial1.clone()]
+    );
     let create_position_msg = create_position(
         deps,
         &env,
