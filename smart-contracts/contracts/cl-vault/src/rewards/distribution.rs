@@ -4,7 +4,6 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    debug,
     error::ContractResult,
     reply::Replies,
     state::{
@@ -40,7 +39,6 @@ pub fn handle_collect_incentives_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
-    debug!(deps, "here2", data);
     // If we do not have data here, we treat this as an empty MsgCollectIncentivesResponse, this seems to be a bug somewhere between cosmwasm and osmosis
     let data: Result<MsgCollectIncentivesResponse, ContractError> = data
         .into_result()
@@ -61,7 +59,6 @@ pub fn handle_collect_incentives_reply(
         },
     )?;
 
-    debug!(deps, "here4", "");
     // collect the spread rewards
     let msg = collect_spread_rewards(deps.as_ref(), env)?;
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
@@ -75,7 +72,6 @@ pub fn handle_collect_spread_rewards_reply(
     _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    debug!(deps, "here3", "");
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
     let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data

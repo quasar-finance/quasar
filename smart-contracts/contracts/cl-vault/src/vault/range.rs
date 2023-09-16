@@ -6,19 +6,13 @@ use cosmwasm_std::{
     Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 
-use osmosis_std::types::{
-    cosmos::base::v1beta1::Coin as OsmoCoin,
-    osmosis::{
-        concentratedliquidity::v1beta1::{
-            MsgCreatePosition, MsgCreatePositionResponse, MsgWithdrawPosition,
-            MsgWithdrawPositionResponse, Pool,
-        },
-        gamm::v1beta1::MsgSwapExactAmountInResponse,
-        poolmanager::v1beta1::PoolmanagerQuerier,
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{
+        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
     },
+    gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
-use crate::helpers::round_up_to_nearest_multiple;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
@@ -28,7 +22,7 @@ use crate::{
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
+        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
@@ -149,15 +143,15 @@ pub fn handle_withdraw_position_reply(
 
     let mut tokens_provided = vec![];
     if !amount0.is_zero() {
-        tokens_provided.push(OsmoCoin {
+        tokens_provided.push(Coin {
             denom: pool_config.token0.clone(),
-            amount: amount0.to_string(),
+            amount: amount0,
         })
     }
     if !amount1.is_zero() {
-        tokens_provided.push(OsmoCoin {
+        tokens_provided.push(Coin {
             denom: pool_config.token1.clone(),
-            amount: amount1.to_string(),
+            amount: amount1,
         })
     }
 
@@ -186,29 +180,15 @@ pub fn handle_withdraw_position_reply(
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
-        let create_position_msg = MsgCreatePosition {
-            pool_id: pool_config.pool_id,
-            sender: env.contract.address.to_string(),
-            // round our lower tick and upper tick up to the nearest pool_details.tick_spacing
-            lower_tick: round_up_to_nearest_multiple(
-                modify_range_state.lower_tick,
-                pool_details
-                    .tick_spacing
-                    .try_into()
-                    .expect("tick spacing is too big to fit into u64"),
-            ),
-            upper_tick: round_up_to_nearest_multiple(
-                modify_range_state.upper_tick,
-                pool_details
-                    .tick_spacing
-                    .try_into()
-                    .expect("tick spacing is too big to fit into u64"),
-            ),
+        let create_position_msg = create_position(
+            deps,
+            &env,
+            modify_range_state.lower_tick,
+            modify_range_state.upper_tick,
             tokens_provided,
-            // passing 0 is ok here because currently no swap is done on osmosis side, so we don't actually need to worry about slippage impact
-            token_min_amount0: "0".to_string(),
-            token_min_amount1: "0".to_string(),
-        };
+            Uint128::zero(),
+            Uint128::zero(),
+        )?;
 
         Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
@@ -276,7 +256,6 @@ pub fn do_swap_deposit_merge(
     let (balance0, balance1) = refunded_amounts;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     let mut target_range_position_ids = vec![];
@@ -361,10 +340,9 @@ pub fn do_swap_deposit_merge(
 
     CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
 
-    let token_out_min_amount = token_out_ideal_amount?.checked_multiply_ratio(
-        vault_config.swap_max_slippage.numerator(),
-        vault_config.swap_max_slippage.denominator(),
-    )?;
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+    let token_out_min_amount = token_out_ideal_amount?
+        .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
 
     let swap_msg = swap(
         deps,
@@ -430,12 +408,12 @@ fn handle_swap_success(
     }
     if !balance1.is_zero() {
         coins_to_send.push(Coin {
-            denom: pool_config.token1,
+            denom: pool_config.token1.clone(),
             amount: balance1,
         });
     }
     let create_position_msg = create_position(
-        deps.storage,
+        deps,
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,
@@ -443,16 +421,6 @@ fn handle_swap_success(
         Uint128::zero(),
         Uint128::zero(),
     )?;
-
-    // get the current pool
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    let pm_querier = PoolmanagerQuerier::new(&deps.querier);
-    let _pool: Pool = pm_querier
-        .pool(pool_config.pool_id)?
-        .pool
-        .unwrap()
-        .try_into()?;
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(

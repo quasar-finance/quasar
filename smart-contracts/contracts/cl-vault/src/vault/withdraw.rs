@@ -11,6 +11,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    helpers::sort_tokens,
     reply::Replies,
     state::{CURRENT_WITHDRAWER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
@@ -112,10 +113,11 @@ pub fn handle_withdraw_user_reply(
         attr("token0_amount", coin0.amount),
         attr("token1_amount", coin1.amount),
     ];
+
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
-        amount: vec![coin0, coin1],
+        amount: sort_tokens(vec![coin0, coin1]),
     };
     Ok(Response::new()
         .add_message(msg)
@@ -170,7 +172,7 @@ mod tests {
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: to_address.to_string(),
-                amount: vec![coin(1000, "uosmo"), coin(1000, "uatom")]
+                amount: sort_tokens(vec![coin(1000, "uosmo"), coin(1000, "uatom")])
             })
         )
     }
