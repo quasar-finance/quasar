@@ -237,6 +237,9 @@ mod tests {
 
     #[test]
     fn test_tick_to_price() {
+        let upper = tick_to_price(100);
+        println!("{:?}", upper);
+        panic!();
         // example1
         let tick_index = 38035200;
         let expected_price = Decimal256::from_str("30352").unwrap();

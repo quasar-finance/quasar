@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 
-use crate::rewards::Rewards;
+use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
 
@@ -83,9 +83,9 @@ pub struct CurrentDeposit {
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-pub const CURRENT_REWARDS: Item<Rewards> = Item::new("current_rewards");
-pub const USER_REWARDS: Map<Addr, Rewards> = Map::new("user_rewards");
-pub const STRATEGIST_REWARDS: Item<Rewards> = Item::new("strategist_rewards");
+pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
+pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
+pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
