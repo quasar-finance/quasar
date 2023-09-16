@@ -62,8 +62,6 @@ pub const POSITION: Item<Position> = Item::new("position");
 
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
-pub const DUST: Item<(Uint128, Uint128)> = Item::new("dust");
-
 /// The merge of positions currently being executed
 pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
 

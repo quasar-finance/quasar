@@ -11,9 +11,9 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    helpers::sort_tokens,
+    helpers::{sort_tokens, get_unused_balances},
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
@@ -49,17 +49,14 @@ pub fn execute_withdraw(
         .parse()?;
 
     // get the dust amounts belonging to the user
-    let (dust0, dust1) = DUST.load(deps.storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    // TODO replace dust with queries for balance
+    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let dust0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
+    let dust1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
     let user_dust0 = dust0.checked_mul(amount)?.checked_div(total_shares)?;
     let user_dust1 = dust1.checked_mul(amount)?.checked_div(total_shares)?;
     // save the new total amount of dust available for other actions
-    DUST.save(
-        deps.storage,
-        &(
-            dust0.checked_sub(user_dust0)?,
-            dust1.checked_sub(user_dust1)?,
-        ),
-    )?;
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
 
@@ -186,10 +183,6 @@ mod tests {
 
         let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
-        assert_eq!(
-            DUST.load(deps.as_ref().storage).unwrap(),
-            (Uint128::new(1980), Uint128::new(2970))
-        );
         assert_eq!(
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
             (Uint128::new(20), Uint128::new(30))
