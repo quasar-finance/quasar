@@ -89,7 +89,7 @@ pub fn execute_withdraw(
 fn withdraw(
     deps: DepsMut,
     env: &Env,
-    shares: Uint128,
+    user_shares: Uint128,
 ) -> Result<MsgWithdrawPosition, ContractError> {
     let existing_position = get_position(deps.storage, &deps.querier, env)?;
     let existing_liquidity: Decimal256 = existing_position
@@ -109,11 +109,11 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    let user_shares = Decimal256::from_ratio(shares, 1_u128)
+    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
         .checked_mul(existing_liquidity)?
         .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
 
-    withdraw_from_position(deps.storage, env, user_shares)
+    withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
 pub fn handle_withdraw_user_reply(
