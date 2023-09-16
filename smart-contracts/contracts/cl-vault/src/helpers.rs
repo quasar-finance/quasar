@@ -8,6 +8,7 @@ use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     QuerierWrapper, Storage, Uint128, Uint256,
 };
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Position;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
@@ -268,6 +269,26 @@ pub fn get_unused_balances(
     }
 
     Ok(balances)
+}
+
+pub fn get_liquidity_amount_for_unused_funds(
+    deps: DepsMut,
+    position: Position,
+) -> Result<Decimal256, ContractError> {
+    // first get the ratio of token0:token1 in the position.
+
+    // then figure out based on current unused balance, what the max initial deposit could be (with the ratio, what is the max tokens we can deposit)
+    // then figure out how much liquidity this would give us. Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
+    // EDGE CASE: what if it's a one-sided position with only token1? SOLUTION: take whichever token is greater than the other to plug into the formula 1 line above
+
+    // subtract out the max deposit from both tokens, which will leave us with only one token, lets call this leftover_balance0 or 1
+
+    // call get_single_sided_deposit_0_to_1_swap_amount or get_single_sided_deposit_1_to_0_swap_amount to see how much we would swap to enter with the rest of our funds
+
+    // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
+    // be mindful of the edge case
+
+    // add together the liquidity from the initial deposit and the swap deposit and return that
 }
 
 #[cfg(test)]

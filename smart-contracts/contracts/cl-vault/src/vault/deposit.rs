@@ -133,14 +133,21 @@ pub fn handle_deposit_create_position_reply(
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         existing_liquidity.to_uint_floor().try_into()?
     } else {
+        let liquidity_amount_of_unused_funds: Decimal256 =
+            get_liquidity_amount_for_unused_funds(deps, existing_position)?;
+
         total_vault_shares
             .multiply_ratio(
                 user_created_liquidity.numerator(),
                 user_created_liquidity.denominator(),
             )
             .multiply_ratio(
-                existing_liquidity.denominator(),
-                existing_liquidity.numerator(),
+                existing_liquidity
+                    .denominator()
+                    .checked_add(liquidity_amount_of_unused_funds.denominator())?,
+                existing_liquidity
+                    .numerator()
+                    .checked_add(liquidity_amount_of_unused_funds.numerator())?,
             )
             .try_into()?
     };
