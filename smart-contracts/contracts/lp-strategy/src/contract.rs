@@ -601,7 +601,7 @@ mod tests {
             delete_pending_acks: vec![],
         };
 
-        migrate(deps.as_mut(), env, msg.clone()).unwrap();
+        migrate(deps.as_mut(), env, msg).unwrap();
         assert!(FAILED_JOIN_QUEUE.is_empty(deps.as_mut().storage).unwrap());
         assert_eq!(
             handle_trapped_errors_query(deps.as_ref())

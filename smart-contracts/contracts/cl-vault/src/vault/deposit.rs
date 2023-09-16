@@ -15,7 +15,7 @@ use osmosis_std::types::{
 
 use crate::{
     error::ContractResult,
-    helpers::must_pay_one_or_two,
+    helpers::{must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -58,23 +58,6 @@ pub(crate) fn execute_exact_deposit(
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    let mut coins_to_send = vec![];
-    if !token0.amount.is_zero() {
-        coins_to_send.push(token0.clone());
-    }
-    if !token1.amount.is_zero() {
-        coins_to_send.push(token1.clone());
-    }
-    let create_position_msg = create_position(
-        deps.storage,
-        &env,
-        position.lower_tick,
-        position.upper_tick,
-        coins_to_send,
-        Uint128::zero(),
-        Uint128::zero(),
-    )?;
-
     CURRENT_DEPOSIT.save(
         deps.storage,
         &CurrentDeposit {
@@ -82,6 +65,25 @@ pub(crate) fn execute_exact_deposit(
             token1_in: token1.amount,
             sender: recipient,
         },
+    )?;
+
+    // Create coins_to_send with no zero amounts
+    let mut coins_to_send = vec![];
+    if !token0.amount.is_zero() {
+        coins_to_send.push(token0.clone());
+    }
+    if !token1.amount.is_zero() {
+        coins_to_send.push(token1.clone());
+    }
+
+    let create_position_msg = create_position(
+        deps,
+        &env,
+        position.lower_tick,
+        position.upper_tick,
+        sort_tokens(coins_to_send),
+        Uint128::zero(),
+        Uint128::zero(),
     )?;
 
     Ok(Response::new()

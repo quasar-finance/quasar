@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Decimal256, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
     Pool,
@@ -7,12 +7,13 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
 use crate::{
+    helpers::{round_up_to_nearest_multiple, sort_tokens},
     state::{POOL_CONFIG, POSITION},
     ContractError,
 };
 
 pub fn create_position(
-    storage: &mut dyn Storage,
+    deps: DepsMut,
     env: &Env,
     lower_tick: i64,
     upper_tick: i64,
@@ -20,15 +21,23 @@ pub fn create_position(
     token_min_amount0: Uint128,
     token_min_amount1: Uint128,
 ) -> Result<MsgCreatePosition, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
     let sender = env.contract.address.to_string();
+
+    let sorted_tokens = sort_tokens(tokens_provided);
+
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+    let tick_spacing = pool_details
+        .tick_spacing
+        .try_into()
+        .expect("tick spacing is too big to fit into i64");
 
     let create_position = MsgCreatePosition {
         pool_id: pool_config.pool_id,
         sender,
-        lower_tick,
-        upper_tick,
-        tokens_provided: tokens_provided.into_iter().map(|c| c.into()).collect(),
+        lower_tick: round_up_to_nearest_multiple(lower_tick, tick_spacing),
+        upper_tick: round_up_to_nearest_multiple(upper_tick, tick_spacing),
+        tokens_provided: sorted_tokens.into_iter().map(|c| c.into()).collect(),
         // An sdk.Int in the Go code
         token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
@@ -99,11 +108,17 @@ pub fn _may_get_position(
 
 #[cfg(test)]
 mod tests {
-    use crate::state::{PoolConfig, Position};
+    use crate::{
+        state::{PoolConfig, Position},
+        test_helpers::QuasarQuerier,
+    };
     use cosmwasm_std::{
+        coin,
         testing::{mock_dependencies, mock_env},
         Coin, Uint128,
     };
+
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Position as OsmoPosition;
 
     use super::*;
 
@@ -116,21 +131,43 @@ mod tests {
                 deps.as_mut().storage,
                 &PoolConfig {
                     pool_id,
-                    token0: "token0".to_string(),
-                    token1: "token1".to_string(),
+                    token0: "uosmo".to_string(),
+                    token1: "uatom".to_string(),
                 },
             )
             .unwrap();
+        let qq = QuasarQuerier::new(
+            FullPositionBreakdown {
+                position: Some(OsmoPosition {
+                    position_id: 1,
+                    address: "bob".to_string(),
+                    pool_id: 1,
+                    lower_tick: 1,
+                    upper_tick: 100,
+                    join_time: None,
+                    liquidity: "123.214".to_string(),
+                }),
+                asset0: Some(coin(1000, "uosmo").into()),
+                asset1: Some(coin(1000, "uatom").into()),
+                claimable_spread_rewards: vec![coin(1000, "uosmo").into()],
+                claimable_incentives: vec![coin(123, "uatom").into()],
+                forfeited_incentives: vec![],
+            },
+            100,
+        );
+
+        let mut deps_mut = deps.as_mut();
+        deps_mut.querier = QuerierWrapper::new(&qq);
 
         let env = mock_env();
         let lower_tick = 100;
         let upper_tick = 200;
-        let tokens_provided = vec![Coin::new(100, "token0"), Coin::new(200, "token1")];
+        let tokens_provided = vec![Coin::new(100, "uosmo"), Coin::new(200, "uatom")];
         let token_min_amount0 = Uint128::new(1000);
         let token_min_amount1 = Uint128::new(2000);
 
         let result = create_position(
-            deps.as_mut().storage,
+            deps_mut,
             &env,
             lower_tick,
             upper_tick,
@@ -147,7 +184,10 @@ mod tests {
                 sender: env.contract.address.into(),
                 lower_tick,
                 upper_tick,
-                tokens_provided: tokens_provided.into_iter().map(|c| c.into()).collect(),
+                tokens_provided: sort_tokens(tokens_provided)
+                    .into_iter()
+                    .map(|c| c.into())
+                    .collect(),
                 token_min_amount0: token_min_amount0.to_string(),
                 token_min_amount1: token_min_amount1.to_string()
             }
