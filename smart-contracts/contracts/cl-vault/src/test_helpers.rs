@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
-use cosmwasm_std::testing::{BankQuerier, MockStorage, MockApi, MOCK_CONTRACT_ADDR};
+use cosmwasm_std::testing::{BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, to_binary, Binary, Coin, ContractResult as CwContractResult, Empty, Querier,
-    QuerierResult, QueryRequest, MessageInfo, OwnedDeps, Decimal, Addr,
+    from_binary, to_binary, Addr, Binary, Coin, ContractResult as CwContractResult, Decimal, Empty,
+    MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
@@ -12,12 +12,12 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceR
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::concentratedliquidity::v1beta1::{
-        FullPositionBreakdown, PositionByIdRequest, PositionByIdResponse, Position as OsmoPosition
+        FullPositionBreakdown, Position as OsmoPosition, PositionByIdRequest, PositionByIdResponse,
     },
 };
 
 use crate::math::tick::tick_to_price;
-use crate::state::{RANGE_ADMIN, POOL_CONFIG, PoolConfig, VAULT_CONFIG, POSITION, VaultConfig};
+use crate::state::{PoolConfig, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
@@ -78,7 +78,7 @@ impl Querier for QuasarQuerier {
                             to_binary(&QuerySupplyOfResponse {
                                 amount: Some(OsmoCoin {
                                     denom,
-                                    amount: 100.to_string(),
+                                    amount: 100000.to_string(),
                                 }),
                             })
                             .unwrap(),

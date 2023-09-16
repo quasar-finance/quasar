@@ -7,14 +7,15 @@ pub fn execute_claim_user_rewards(
     recipient: &str,
 ) -> Result<Response, ContractError> {
     // addr unchecked is safe here because we will chekc addresses on save into this map
-    let mut user_rewards = match USER_REWARDS.may_load(deps.storage, Addr::unchecked(recipient))? {
-        Some(user_rewards) => user_rewards,
-        None => {
-            return Ok(Response::default()
-                .add_attribute("action", "claim_user_rewards")
-                .add_attribute("result", "no_rewards"))
-        }
-    };
+    let mut user_rewards =
+        match USER_REWARDS.may_load(deps.storage, deps.api.addr_validate(recipient)?)? {
+            Some(user_rewards) => user_rewards,
+            None => {
+                return Ok(Response::default()
+                    .add_attribute("action", "claim_user_rewards")
+                    .add_attribute("result", "no_rewards"))
+            }
+        };
 
     let send_rewards_msg = user_rewards.claim(recipient)?;
 

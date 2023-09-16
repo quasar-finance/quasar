@@ -525,17 +525,14 @@ mod tests {
     use std::str::FromStr;
 
     use cosmwasm_std::{
-        testing::{
-            mock_dependencies, mock_env, mock_info
-        },
+        testing::{mock_dependencies, mock_env, mock_info},
         Addr, Decimal, SubMsgResponse, SubMsgResult,
     };
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
-        state::{
-         MODIFY_RANGE_STATE, RANGE_ADMIN,
-        }, test_helpers::mock_deps_with_querier,
+        state::{MODIFY_RANGE_STATE, RANGE_ADMIN},
+        test_helpers::mock_deps_with_querier,
     };
 
     #[test]
