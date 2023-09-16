@@ -370,7 +370,7 @@ mod tests {
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
         assert_eq!(
             SHARES.load(deps.as_ref().storage, sender).unwrap(),
-            Uint128::new(50)
+            Uint128::new(50000)
         );
         assert_eq!(
             response.messages[1],
@@ -378,7 +378,7 @@ mod tests {
                 sender: env.contract.address.to_string(),
                 amount: Some(OsmoCoin {
                     denom: "money".to_string(),
-                    amount: 50.to_string()
+                    amount: 50000.to_string()
                 }),
                 mint_to_address: env.contract.address.to_string()
             })

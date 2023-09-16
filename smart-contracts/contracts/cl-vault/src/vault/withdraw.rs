@@ -194,7 +194,7 @@ mod tests {
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
             (Uint128::new(20), Uint128::new(30))
         )
-      }
+    }
 
     // the execute withdraw flow should be easiest to test in test-tube, since it requires quite a bit of Osmsosis specific information
     // we just test the handle withdraw implementation here
