@@ -522,101 +522,21 @@ pub enum SwapDirection {
 
 #[cfg(test)]
 mod tests {
-    use std::{marker::PhantomData, str::FromStr};
+    use std::str::FromStr;
 
     use cosmwasm_std::{
         testing::{
-            mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
+            mock_dependencies, mock_env, mock_info
         },
-        Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
+        Addr, Decimal, SubMsgResponse, SubMsgResult,
     };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
-        },
-    };
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
         state::{
-            PoolConfig, VaultConfig, MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN,
-            VAULT_CONFIG,
-        },
-        test_helpers::QuasarQuerier,
+         MODIFY_RANGE_STATE, RANGE_ADMIN,
+        }, test_helpers::mock_deps_with_querier,
     };
-
-    fn mock_deps_with_querier(
-        info: &MessageInfo,
-    ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-        let mut deps = OwnedDeps {
-            storage: MockStorage::default(),
-            api: MockApi::default(),
-            querier: QuasarQuerier::new(
-                FullPositionBreakdown {
-                    position: Some(OsmoPosition {
-                        position_id: 1,
-                        address: MOCK_CONTRACT_ADDR.to_string(),
-                        pool_id: 1,
-                        lower_tick: 100,
-                        upper_tick: 1000,
-                        join_time: None,
-                        liquidity: "1000000.1".to_string(),
-                    }),
-                    asset0: Some(OsmoCoin {
-                        denom: "token0".to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    asset1: Some(OsmoCoin {
-                        denom: "token1".to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    claimable_spread_rewards: vec![
-                        OsmoCoin {
-                            denom: "token0".to_string(),
-                            amount: "100".to_string(),
-                        },
-                        OsmoCoin {
-                            denom: "token1".to_string(),
-                            amount: "100".to_string(),
-                        },
-                    ],
-                    claimable_incentives: vec![],
-                    forfeited_incentives: vec![],
-                },
-                500,
-            ),
-            custom_query_type: PhantomData,
-        };
-
-        let storage = &mut deps.storage;
-
-        RANGE_ADMIN.save(storage, &info.sender).unwrap();
-        POOL_CONFIG
-            .save(
-                storage,
-                &PoolConfig {
-                    pool_id: 1,
-                    token0: "token0".to_string(),
-                    token1: "token1".to_string(),
-                },
-            )
-            .unwrap();
-        VAULT_CONFIG
-            .save(
-                storage,
-                &VaultConfig {
-                    performance_fee: Decimal::zero(),
-                    treasury: Addr::unchecked("treasure"),
-                    swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
-                },
-            )
-            .unwrap();
-        POSITION
-            .save(storage, &crate::state::Position { position_id: 1 })
-            .unwrap();
-
-        deps
-    }
 
     #[test]
     fn test_assert_range_admin() {

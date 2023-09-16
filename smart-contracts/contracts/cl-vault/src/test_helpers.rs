@@ -1,7 +1,9 @@
-use cosmwasm_std::testing::BankQuerier;
+use std::marker::PhantomData;
+
+use cosmwasm_std::testing::{BankQuerier, MockStorage, MockApi, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
     from_binary, to_binary, Binary, Coin, ContractResult as CwContractResult, Empty, Querier,
-    QuerierResult, QueryRequest,
+    QuerierResult, QueryRequest, MessageInfo, OwnedDeps, Decimal, Addr,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
@@ -10,11 +12,12 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceR
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::concentratedliquidity::v1beta1::{
-        FullPositionBreakdown, PositionByIdRequest, PositionByIdResponse,
+        FullPositionBreakdown, PositionByIdRequest, PositionByIdResponse, Position as OsmoPosition
     },
 };
 
 use crate::math::tick::tick_to_price;
+use crate::state::{RANGE_ADMIN, POOL_CONFIG, PoolConfig, VAULT_CONFIG, POSITION, VaultConfig};
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
@@ -125,4 +128,77 @@ impl Querier for QuasarQuerier {
         }
         // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
     }
+}
+
+pub fn mock_deps_with_querier(
+    info: &MessageInfo,
+) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier: QuasarQuerier::new(
+            FullPositionBreakdown {
+                position: Some(OsmoPosition {
+                    position_id: 1,
+                    address: MOCK_CONTRACT_ADDR.to_string(),
+                    pool_id: 1,
+                    lower_tick: 100,
+                    upper_tick: 1000,
+                    join_time: None,
+                    liquidity: "1000000.1".to_string(),
+                }),
+                asset0: Some(OsmoCoin {
+                    denom: "token0".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                asset1: Some(OsmoCoin {
+                    denom: "token1".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                claimable_spread_rewards: vec![
+                    OsmoCoin {
+                        denom: "token0".to_string(),
+                        amount: "100".to_string(),
+                    },
+                    OsmoCoin {
+                        denom: "token1".to_string(),
+                        amount: "100".to_string(),
+                    },
+                ],
+                claimable_incentives: vec![],
+                forfeited_incentives: vec![],
+            },
+            500,
+        ),
+        custom_query_type: PhantomData,
+    };
+
+    let storage = &mut deps.storage;
+
+    RANGE_ADMIN.save(storage, &info.sender).unwrap();
+    POOL_CONFIG
+        .save(
+            storage,
+            &PoolConfig {
+                pool_id: 1,
+                token0: "token0".to_string(),
+                token1: "token1".to_string(),
+            },
+        )
+        .unwrap();
+    VAULT_CONFIG
+        .save(
+            storage,
+            &VaultConfig {
+                performance_fee: Decimal::zero(),
+                treasury: Addr::unchecked("treasure"),
+                swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+            },
+        )
+        .unwrap();
+    POSITION
+        .save(storage, &crate::state::Position { position_id: 1 })
+        .unwrap();
+
+    deps
 }
