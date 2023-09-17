@@ -100,7 +100,7 @@ pub(crate) fn execute_exact_deposit(
 /// handles the reply to creating a position for a user deposit
 /// and calculates the refund for the user
 pub fn handle_deposit_create_position_reply(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
@@ -134,7 +134,7 @@ pub fn handle_deposit_create_position_reply(
         existing_liquidity.to_uint_floor().try_into()?
     } else {
         let liquidity_amount_of_unused_funds: Decimal256 =
-            get_liquidity_amount_for_unused_funds(deps, existing_position)?;
+            get_liquidity_amount_for_unused_funds(deps.branch(), &env)?;
         let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
 
         total_vault_shares
@@ -205,6 +205,7 @@ pub fn handle_deposit_create_position_reply(
         attr("receiver", current_deposit.sender.as_str()),
     ];
 
+    // TODO, this remove causes borrower issues, see if we can remove the branch on line137
     // clear out the current deposit since it is no longer needed
     CURRENT_DEPOSIT.remove(deps.storage);
 
