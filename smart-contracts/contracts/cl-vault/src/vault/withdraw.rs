@@ -11,7 +11,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    helpers::{sort_tokens, get_unused_balances},
+    helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
@@ -151,20 +151,33 @@ pub fn handle_withdraw_user_reply(
 
 #[cfg(test)]
 mod tests {
-    use crate::{state::PoolConfig, test_helpers::mock_deps_with_querier};
+    use crate::{
+        rewards::CoinList,
+        state::{PoolConfig, STRATEGIST_REWARDS, USER_REWARDS},
+        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
+    };
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, mock_info},
+        testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
         Addr, CosmosMsg, SubMsgResponse,
     };
 
     use super::*;
 
     #[test]
-    fn execute_withdraw_works() {
+    fn execute_withdraw_works_no_rewards() {
         let info = mock_info("bolice", &[]);
-        let mut deps = mock_deps_with_querier(&info);
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(2000, "token0"), coin(3000, "token1")],
+            )],
+        );
         let env = mock_env();
 
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &CoinList::new())
+            .unwrap();
         VAULT_DENOM
             .save(deps.as_mut().storage, &"share_token".to_string())
             .unwrap();
@@ -175,17 +188,114 @@ mod tests {
                 &Uint128::new(1000),
             )
             .unwrap();
-        DUST.save(
-            deps.as_mut().storage,
-            &(Uint128::new(2000), Uint128::new(3000)),
-        )
-        .unwrap();
 
         let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
             (Uint128::new(20), Uint128::new(30))
+        )
+    }
+
+    #[test]
+    fn execute_withdraw_works_user_rewards() {
+        let info = mock_info("bolice", &[]);
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(2000, "token0"), coin(3000, "token1")],
+            )],
+        );
+        let env = mock_env();
+
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &CoinList::new())
+            .unwrap();
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"share_token".to_string())
+            .unwrap();
+        SHARES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("bolice"),
+                &Uint128::new(1000),
+            )
+            .unwrap();
+
+        USER_REWARDS
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("alice"),
+                &CoinList::from_coins(vec![coin(100, "token0"), coin(175, "token1")]),
+            )
+            .unwrap();
+        USER_REWARDS
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("bob"),
+                &CoinList::from_coins(vec![coin(50, "token0"), coin(125, "token1")]),
+            )
+            .unwrap();
+
+        let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
+        // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
+        assert_eq!(
+            CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
+            (Uint128::new(18), Uint128::new(27))
+        )
+    }
+
+    #[test]
+    fn execute_withdraw_works_user_strategist_rewards() {
+        let info = mock_info("bolice", &[]);
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(200000, "token0"), coin(300000, "token1")],
+            )],
+        );
+        let env = mock_env();
+
+        STRATEGIST_REWARDS
+            .save(
+                deps.as_mut().storage,
+                &CoinList::from_coins(vec![coin(50, "token0"), coin(50, "token1")]),
+            )
+            .unwrap();
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"share_token".to_string())
+            .unwrap();
+        SHARES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("bolice"),
+                &Uint128::new(1000),
+            )
+            .unwrap();
+
+        USER_REWARDS
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("alice"),
+                &CoinList::from_coins(vec![coin(200, "token0"), coin(300, "token1")]),
+            )
+            .unwrap();
+        USER_REWARDS
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("bob"),
+                &CoinList::from_coins(vec![coin(400, "token0"), coin(100, "token1")]),
+            )
+            .unwrap();
+
+        let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
+        // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
+        // user dust should be 1% of 200000 - 650 (= 1993.5) and 1% of 300000 - 450 (= 2995.5)
+        assert_eq!(
+            CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
+            (Uint128::new(1993), Uint128::new(2995))
         )
     }
 

@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use cosmwasm_std::testing::{BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Binary, Coin, ContractResult as CwContractResult, Decimal, Empty,
-    MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    from_binary, to_binary, Addr, BankQuery, Binary, Coin, ContractResult as CwContractResult,
+    Decimal, Empty, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
@@ -84,6 +84,14 @@ impl Querier for QuasarQuerier {
                             .unwrap(),
                         ))
                     }
+                    "/cosmos.bank.v1beta.Query/Balance" => {
+                        let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
+                        self.bank.query(&query)
+                    }
+                    "/cosmos.bank.v1beta.Query/AllBalances" => {
+                        let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
+                        self.bank.query(&query)
+                    }
                     "/osmosis.poolmanager.v1beta1.Query/Pool" => {
                         QuerierResult::Ok(CwContractResult::Ok(
                             to_binary(&PoolResponse {
@@ -122,12 +130,88 @@ impl Querier for QuasarQuerier {
                     }),
                 }
             }
+            QueryRequest::Bank(query) => self.bank.query(&query),
             _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                 kind: format!("Unmocked query type: {request:?}"),
             }),
         }
         // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
     }
+}
+
+pub fn mock_deps_with_querier_with_balance(
+    info: &MessageInfo,
+    balances: &[(&str, &[Coin])],
+) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier: QuasarQuerier::new_with_balances(
+            FullPositionBreakdown {
+                position: Some(OsmoPosition {
+                    position_id: 1,
+                    address: MOCK_CONTRACT_ADDR.to_string(),
+                    pool_id: 1,
+                    lower_tick: 100,
+                    upper_tick: 1000,
+                    join_time: None,
+                    liquidity: "1000000.1".to_string(),
+                }),
+                asset0: Some(OsmoCoin {
+                    denom: "token0".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                asset1: Some(OsmoCoin {
+                    denom: "token1".to_string(),
+                    amount: "1000000".to_string(),
+                }),
+                claimable_spread_rewards: vec![
+                    OsmoCoin {
+                        denom: "token0".to_string(),
+                        amount: "100".to_string(),
+                    },
+                    OsmoCoin {
+                        denom: "token1".to_string(),
+                        amount: "100".to_string(),
+                    },
+                ],
+                claimable_incentives: vec![],
+                forfeited_incentives: vec![],
+            },
+            500,
+            balances,
+        ),
+        custom_query_type: PhantomData,
+    };
+
+    let storage = &mut deps.storage;
+
+    RANGE_ADMIN.save(storage, &info.sender).unwrap();
+    POOL_CONFIG
+        .save(
+            storage,
+            &PoolConfig {
+                pool_id: 1,
+                token0: "token0".to_string(),
+                token1: "token1".to_string(),
+            },
+        )
+        .unwrap();
+    VAULT_CONFIG
+        .save(
+            storage,
+            &VaultConfig {
+                performance_fee: Decimal::zero(),
+                treasury: Addr::unchecked("treasure"),
+                swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+            },
+        )
+        .unwrap();
+    POSITION
+        .save(storage, &crate::state::Position { position_id: 1 })
+        .unwrap();
+
+    deps
 }
 
 pub fn mock_deps_with_querier(
