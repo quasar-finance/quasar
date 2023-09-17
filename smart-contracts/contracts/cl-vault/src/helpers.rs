@@ -278,13 +278,13 @@ pub fn get_liquidity_amount_for_unused_funds(
 ) -> Result<Decimal256, ContractError> {
     // first get the ratio of token0:token1 in the position.
     let p = get_position(deps.storage, &deps.querier)?;
-    let token0: Uint128 = p.asset0.unwrap().amount.parse()?;
-    let token1: Uint128 = p.asset1.unwrap().amount.parse()?;
-    let ratio = Decimal256::from_ratio(token0, token1);
+    let token0: Coin = p.asset0.unwrap().try_into()?;
+    let token1:Coin = p.asset1.unwrap().try_into()?;
+    let ratio = Decimal256::from_ratio(token0.amount, token1.amount);
 
     let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
-    let unused_t0 = tokens.coins().iter().find(|c|c.denom == p.asset0.unwrap().denom).unwrap();
-    let unused_t1 = tokens.coins().iter().find(|c|c.denom == p.asset1.unwrap().denom).unwrap();
+    let unused_t0 = tokens.coins().iter().find(|c|c.denom == token0.denom).unwrap();
+    let unused_t1 = tokens.coins().iter().find(|c|c.denom == token1.denom).unwrap();
     // then figure out based on current unused balance, what the max initial deposit could be
     // (with the ratio, what is the max tokens we can deposit)
     // then figure out how much liquidity this would give us.
