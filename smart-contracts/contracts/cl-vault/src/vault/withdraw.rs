@@ -95,7 +95,7 @@ fn withdraw(
     env: &Env,
     user_shares: Uint128,
 ) -> Result<MsgWithdrawPosition, ContractError> {
-    let existing_position = get_position(deps.storage, &deps.querier, env)?;
+    let existing_position = get_position(deps.storage, &deps.querier)?;
     let existing_liquidity: Decimal256 = existing_position
         .position
         .ok_or(ContractError::PositionNotFound)?

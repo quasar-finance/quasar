@@ -3,6 +3,7 @@ use std::str::FromStr;
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
+use crate::vault::concentrated_liquidity::get_position;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
@@ -273,13 +274,23 @@ pub fn get_unused_balances(
 
 pub fn get_liquidity_amount_for_unused_funds(
     deps: DepsMut,
-    position: Position,
+    env: &Env,
 ) -> Result<Decimal256, ContractError> {
     // first get the ratio of token0:token1 in the position.
+    let p = get_position(deps.storage, &deps.querier)?;
+    let token0: Uint128 = p.asset0.unwrap().amount.parse()?;
+    let token1: Uint128 = p.asset1.unwrap().amount.parse()?;
+    let ratio = Decimal256::from_ratio(token0, token1);
 
-    // then figure out based on current unused balance, what the max initial deposit could be (with the ratio, what is the max tokens we can deposit)
-    // then figure out how much liquidity this would give us. Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
-    // EDGE CASE: what if it's a one-sided position with only token1? SOLUTION: take whichever token is greater than the other to plug into the formula 1 line above
+    let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
+    let unused_t0 = tokens.coins().iter().find(|c|c.denom == p.asset0.unwrap().denom).unwrap();
+    let unused_t1 = tokens.coins().iter().find(|c|c.denom == p.asset1.unwrap().denom).unwrap();
+    // then figure out based on current unused balance, what the max initial deposit could be
+    // (with the ratio, what is the max tokens we can deposit)
+    // then figure out how much liquidity this would give us.
+    // Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
+    // EDGE CASE: what if it's a one-sided position with only token1?
+    // SOLUTION: take whichever token is greater than the other to plug into the formula 1 line above
 
     // subtract out the max deposit from both tokens, which will leave us with only one token, lets call this leftover_balance0 or 1
 
@@ -289,6 +300,7 @@ pub fn get_liquidity_amount_for_unused_funds(
     // be mindful of the edge case
 
     // add together the liquidity from the initial deposit and the swap deposit and return that
+    todo!()
 }
 
 #[cfg(test)]

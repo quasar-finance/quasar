@@ -90,7 +90,7 @@ pub fn execute_update_range_ticks(
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(deps.storage, &deps.querier, &env)?;
+    let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown.position.unwrap();
 
     let withdraw_msg = MsgWithdrawPosition {

@@ -15,7 +15,7 @@ use osmosis_std::types::{
 
 use crate::{
     error::ContractResult,
-    helpers::{must_pay_one_or_two, sort_tokens},
+    helpers::{must_pay_one_or_two, sort_tokens, get_liquidity_amount_for_unused_funds},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -114,7 +114,7 @@ pub fn handle_deposit_create_position_reply(
         create_deposit_position_resp.liquidity_created.as_str(),
     )?);
 
-    let existing_position = get_position(deps.storage, &deps.querier, &env)?
+    let existing_position = get_position(deps.storage, &deps.querier)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
@@ -135,20 +135,14 @@ pub fn handle_deposit_create_position_reply(
     } else {
         let liquidity_amount_of_unused_funds: Decimal256 =
             get_liquidity_amount_for_unused_funds(deps, existing_position)?;
+        let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
 
         total_vault_shares
             .multiply_ratio(
                 user_created_liquidity.numerator(),
                 user_created_liquidity.denominator(),
             )
-            .multiply_ratio(
-                existing_liquidity
-                    .denominator()
-                    .checked_add(liquidity_amount_of_unused_funds.denominator())?,
-                existing_liquidity
-                    .numerator()
-                    .checked_add(liquidity_amount_of_unused_funds.numerator())?,
-            )
+            .multiply_ratio(total_liquidity.numerator(), total_liquidity.denominator())
             .try_into()?
     };
 
