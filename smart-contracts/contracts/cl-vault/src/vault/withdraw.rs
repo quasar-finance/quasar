@@ -11,7 +11,6 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    debug,
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
@@ -62,7 +61,7 @@ pub fn execute_withdraw(
         .try_into()
         .unwrap();
     let dust1: Uint256 = unused_balances
-        .find_coin(pool_config.token1.clone())
+        .find_coin(pool_config.token1)
         .amount
         .try_into()
         .unwrap();
@@ -71,8 +70,8 @@ pub fn execute_withdraw(
         .checked_mul(shares_to_withdraw)?
         .checked_div(total_shares)?
         .try_into()?;
-    let user_dust1 = Uint256::from(dust1)
-        .checked_mul(shares_to_withdraw.into())?
+    let user_dust1 = dust1
+        .checked_mul(shares_to_withdraw)?
         .checked_div(total_shares)?
         .try_into()?;
     // save the new total amount of dust available for other actions
@@ -174,7 +173,7 @@ mod tests {
     use crate::{
         rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS, USER_REWARDS},
-        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
+        test_helpers::{mock_deps_with_querier_with_balance},
     };
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
@@ -209,7 +208,7 @@ mod tests {
             )
             .unwrap();
 
-        let res =
+        let _res =
             execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
@@ -259,7 +258,7 @@ mod tests {
             )
             .unwrap();
 
-        let res =
+        let _res =
             execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
@@ -312,7 +311,7 @@ mod tests {
             )
             .unwrap();
 
-        let res =
+        let _res =
             execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         // user dust should be 1% of 200000 - 650 (= 1993.5) and 1% of 300000 - 450 (= 2995.5)

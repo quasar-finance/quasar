@@ -13,7 +13,7 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
-use crate::{helpers::{get_unused_balances, round_up_to_nearest_multiple}, debug};
+use crate::helpers::get_unused_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
@@ -331,8 +331,6 @@ pub fn do_swap_deposit_merge(
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
 
-    debug!(deps, "after swap", balance0);
-    debug!(deps, "after swap", balance1);
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (

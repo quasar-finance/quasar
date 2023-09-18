@@ -9,7 +9,7 @@ use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     QuerierWrapper, Storage, Uint128, Uint256,
 };
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Position;
+
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
@@ -264,7 +264,6 @@ pub fn get_unused_balances(
 
     for user_reward in USER_REWARDS
         .range(storage, None, None, cosmwasm_std::Order::Ascending)
-        .into_iter()
     {
         balances.sub(&user_reward?.1)?;
     }
@@ -333,13 +332,13 @@ pub fn get_liquidity_amount_for_unused_funds(
         .into();
 
     let max_initial_deposit =
-        get_max_utilization_for_ratio(unused_t0.into(), unused_t1.into(), ratio)?;
+        get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;
 
     // then figure out how much liquidity this would give us.
     // Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
     // EDGE CASE: what if it's a one-sided position with only token1?
     // SOLUTION: take whichever token is greater than the other to plug into the formula 1 line above
-    let mut position_liquidity = Decimal256::from_str(&position_unwrapped.liquidity)?;
+    let position_liquidity = Decimal256::from_str(&position_unwrapped.liquidity)?;
     let max_initial_deposit_liquidity = if token0.amount > token1.amount {
         position_liquidity
             .checked_mul(Decimal256::new(max_initial_deposit.0))?

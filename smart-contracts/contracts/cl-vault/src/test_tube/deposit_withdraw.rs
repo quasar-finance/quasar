@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, Coin, Uint128};
+    use cosmwasm_std::{coin, Coin};
 
     use osmosis_std::types::{
         cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest},
@@ -17,7 +17,7 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract_address, cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -42,8 +42,8 @@ mod tests {
 
         let wasm = Wasm::new(&app);
 
-        // depositing
-        let res = wasm
+        // depositing 
+        let _res = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },

@@ -109,7 +109,7 @@ mod tests {
             .unwrap();
 
         // Find the event with "ty": "create_position" and collect the relevant attributes
-        let create_position_attrs = get_event_attributes_by_ty_and_key(
+        let _create_position_attrs = get_event_attributes_by_ty_and_key(
             &create_position,
             "create_position",
             vec!["liquidity", "amount0", "amount1"],
@@ -190,7 +190,7 @@ mod tests {
             .unwrap();
 
         // Find the event with "ty": "withdraw_position" and collect the relevant attributes
-        let withdraw_position_attrs = get_event_attributes_by_ty_and_key(
+        let _withdraw_position_attrs = get_event_attributes_by_ty_and_key(
             &withdraw_position,
             "withdraw_position",
             vec!["liquidity", "amount0", "amount1"],
