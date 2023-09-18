@@ -153,6 +153,13 @@ pub fn handle_deposit_create_position_reply(
         );
 
         // user_shares = total_vault_shares * user_liq / total_liq
+        debug!(deps, "uscl num, denom {:?}", 
+        user_created_liquidity.numerator(),
+        user_created_liquidity.denominator());
+
+        debug!(deps, "uscl num, denom {:?}", 
+        total_liquidity.numerator(),
+        total_liquidity.denominator());
         total_vault_shares
             .multiply_ratio(
                 user_created_liquidity.numerator(),

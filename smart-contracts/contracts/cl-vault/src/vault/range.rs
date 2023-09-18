@@ -13,7 +13,7 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
-use crate::helpers::{get_unused_balances, round_up_to_nearest_multiple};
+use crate::{helpers::{get_unused_balances, round_up_to_nearest_multiple}, debug};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
@@ -279,6 +279,8 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
+    debug!(deps, "swap", balance0);
+    debug!(deps, "swap", balance1);
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
@@ -330,6 +332,9 @@ pub fn do_swap_deposit_merge(
             .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
+
+    debug!(deps, "after swap", balance0);
+    debug!(deps, "after swap", balance1);
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
