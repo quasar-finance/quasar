@@ -25,7 +25,7 @@ pub fn execute_withdraw(
     env: Env,
     info: MessageInfo,
     recipient: Option<String>,
-    amount: Uint128,
+    shares_to_withdraw: Uint128,
 ) -> Result<Response, ContractError> {
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
@@ -37,7 +37,7 @@ pub fn execute_withdraw(
     // get the amount from SHARES state
     let user_shares = SHARES.load(deps.storage, info.sender.clone())?;
     let left_over = user_shares
-        .checked_sub(amount)
+        .checked_sub(shares_to_withdraw)
         .map_err(|_| ContractError::InsufficientFunds)?;
     SHARES.save(deps.storage, info.sender, &left_over)?;
 
@@ -54,14 +54,18 @@ pub fn execute_withdraw(
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
     let dust0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
     let dust1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
-    let user_dust0 = dust0.checked_mul(amount)?.checked_div(total_shares)?;
-    let user_dust1 = dust1.checked_mul(amount)?.checked_div(total_shares)?;
+    let user_dust0 = dust0
+        .checked_mul(shares_to_withdraw)?
+        .checked_div(total_shares)?;
+    let user_dust1 = dust1
+        .checked_mul(shares_to_withdraw)?
+        .checked_div(total_shares)?;
     // save the new total amount of dust available for other actions
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
 
     // burn the shares
-    let burn_coin = coin(amount.u128(), vault_denom);
+    let burn_coin = coin(shares_to_withdraw.u128(), vault_denom);
     let burn_msg: CosmosMsg = MsgBurn {
         sender: env.contract.address.clone().into_string(),
         amount: Some(burn_coin.into()),
@@ -72,13 +76,13 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, amount)?; // TODOSN: Rename this function name to something more explicative
+    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw)?; // TODOSN: Rename this function name to something more explicative
 
     Ok(Response::new()
         .add_attribute("method", "withdraw")
         .add_attribute("action", "withdraw")
         .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
-        .add_attribute("share_amount", amount)
+        .add_attribute("share_amount", shares_to_withdraw)
         .add_message(burn_msg)
         .add_submessage(SubMsg::reply_on_success(
             withdraw_msg,
@@ -89,9 +93,9 @@ pub fn execute_withdraw(
 fn withdraw(
     deps: DepsMut,
     env: &Env,
-    shares: Uint128,
+    user_shares: Uint128,
 ) -> Result<MsgWithdrawPosition, ContractError> {
-    let existing_position = get_position(deps.storage, &deps.querier, env)?;
+    let existing_position = get_position(deps.storage, &deps.querier)?;
     let existing_liquidity: Decimal256 = existing_position
         .position
         .ok_or(ContractError::PositionNotFound)?
@@ -109,11 +113,11 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    let user_shares = Decimal256::from_ratio(shares, 1_u128)
+    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
         .checked_mul(existing_liquidity)?
         .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
 
-    withdraw_from_position(deps.storage, env, user_shares)
+    withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
 pub fn handle_withdraw_user_reply(
