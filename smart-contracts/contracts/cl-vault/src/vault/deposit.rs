@@ -15,7 +15,7 @@ use osmosis_std::types::{
 
 use crate::{
     error::ContractResult,
-    helpers::{must_pay_one_or_two, sort_tokens, get_liquidity_amount_for_unused_funds},
+    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -129,12 +129,21 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
+    let refunded = (
+        current_deposit.token0_in.checked_sub(Uint128::new(
+            create_deposit_position_resp.amount0.parse::<u128>()?,
+        ))?,
+        current_deposit.token1_in.checked_sub(Uint128::new(
+            create_deposit_position_resp.amount1.parse::<u128>()?,
+        ))?,
+    );
+
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         existing_liquidity.to_uint_floor().try_into()?
     } else {
         let liquidity_amount_of_unused_funds: Decimal256 =
-            get_liquidity_amount_for_unused_funds(deps.branch(), &env)?;
+            get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
         let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
 
         total_vault_shares
