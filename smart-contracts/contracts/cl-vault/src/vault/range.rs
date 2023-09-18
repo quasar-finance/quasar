@@ -652,6 +652,32 @@ mod tests {
             "5962token1"
         );
 
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(MOCK_CONTRACT_ADDR, &[coin(11000, "token0"), coin(11234, "token1")])],
+        );
+
+        STRATEGIST_REWARDS
+            .save(
+                deps.as_mut().storage,
+                &CoinList::from_coins(vec![coin(1000, "token0"), coin(500, "token1")]),
+            )
+            .unwrap();
+
+        // moving into a range
+        MODIFY_RANGE_STATE
+            .save(
+                deps.as_mut().storage,
+                &Some(crate::state::ModifyRangeState {
+                    lower_tick: 100,
+                    upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
+                    new_range_position_ids: vec![],
+                    max_slippage: Decimal::zero(),
+                }),
+            )
+            .unwrap();
+
+
         // now test two-sided withdraw
         let data = SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
