@@ -147,10 +147,6 @@ pub fn handle_deposit_create_position_reply(
             get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
         let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
 
-        debug!(
-            deps,
-            "liquidity_amount_of_unused_funds", liquidity_amount_of_unused_funds
-        );
 
         // user_shares = total_vault_shares * user_liq / total_liq
         total_vault_shares
@@ -161,7 +157,6 @@ pub fn handle_deposit_create_position_reply(
             .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
             .try_into()?
     };
-    debug!(deps, "user_shares", user_shares);
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -222,7 +217,6 @@ pub fn handle_deposit_create_position_reply(
         attr("receiver", current_deposit.sender.as_str()),
     ];
 
-    // TODO, this remove causes borrower issues, see if we can remove the branch on line137
     // clear out the current deposit since it is no longer needed
     CURRENT_DEPOSIT.remove(deps.storage);
 

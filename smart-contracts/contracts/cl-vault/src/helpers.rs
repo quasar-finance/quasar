@@ -307,8 +307,14 @@ pub fn get_liquidity_amount_for_unused_funds(
     let position_unwrapped = p.position.unwrap();
     let token0: Coin = p.asset0.unwrap().try_into()?;
     let token1: Coin = p.asset1.unwrap().try_into()?;
-    let ratio = Decimal256::from_ratio(token0.amount, token1.amount);
-
+    // if any of the values are 0, we fill 1
+    let ratio = if token0.amount.is_zero() {
+        Decimal256::from_ratio(1_u128, token1.amount)
+    } else if token1.amount.is_zero() {
+        Decimal256::from_ratio(token0.amount, 1_u128)
+    } else {
+        Decimal256::from_ratio(token0.amount, token1.amount)
+    };
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
@@ -350,12 +356,23 @@ pub fn get_liquidity_amount_for_unused_funds(
 
     // call get_single_sided_deposit_0_to_1_swap_amount or get_single_sided_deposit_1_to_0_swap_amount to see how much we would swap to enter with the rest of our funds
     let post_swap_liquidity = if leftover_balance0 > leftover_balance1 {
-        let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
-            leftover_balance0.try_into().unwrap(),
-            position_unwrapped.lower_tick,
-            pool_details.current_tick,
-            position_unwrapped.upper_tick,
-        )?;
+        let swap_amount = if pool_details.current_tick > position_unwrapped.upper_tick {
+            leftover_balance0.try_into().unwrap()
+        } else {
+            get_single_sided_deposit_0_to_1_swap_amount(
+                leftover_balance0.try_into().unwrap(),
+                position_unwrapped.lower_tick,
+                pool_details.current_tick,
+                position_unwrapped.upper_tick,
+            )?
+        };
+        // let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
+        //     leftover_balance0.try_into().unwrap(),
+        //     position_unwrapped.lower_tick,
+        //     pool_details.current_tick,
+        //     position_unwrapped.upper_tick,
+        // )?;
+
 
         // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
         // we are also mindful of the same edge case
@@ -374,12 +391,22 @@ pub fn get_liquidity_amount_for_unused_funds(
                 .checked_div(Decimal256::new(token0.amount.into()))?
         }
     } else {
-        let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
-            leftover_balance1.try_into().unwrap(),
-            position_unwrapped.lower_tick,
-            pool_details.current_tick,
-            position_unwrapped.upper_tick,
-        )?;
+        let swap_amount = if pool_details.current_tick < position_unwrapped.lower_tick {
+            leftover_balance1.try_into().unwrap()
+        } else {
+            get_single_sided_deposit_1_to_0_swap_amount(
+                leftover_balance1.try_into().unwrap(),
+                position_unwrapped.lower_tick,
+                pool_details.current_tick,
+                position_unwrapped.upper_tick,
+            )?
+        };
+        // let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
+        //     leftover_balance1.try_into().unwrap(),
+        //     position_unwrapped.lower_tick,
+        //     pool_details.current_tick,
+        //     position_unwrapped.upper_tick,
+        // )?;
 
         // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
         // we are also mindful of the same edge case

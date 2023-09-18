@@ -13,7 +13,7 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
-use crate::helpers::{get_unused_balances, round_up_to_nearest_multiple};
+use crate::{helpers::{get_unused_balances, round_up_to_nearest_multiple}, debug};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::state::CURRENT_SWAP;
 use crate::vault::concentrated_liquidity::create_position;
@@ -23,7 +23,7 @@ use crate::{
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
+        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
@@ -263,7 +263,6 @@ pub fn do_swap_deposit_merge(
     let (balance0, balance1) = refunded_amounts;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     let mut target_range_position_ids = vec![];
@@ -331,6 +330,9 @@ pub fn do_swap_deposit_merge(
             .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
+
+    debug!(deps, "after swap", balance0);
+    debug!(deps, "after swap", balance1);
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
@@ -348,10 +350,9 @@ pub fn do_swap_deposit_merge(
 
     CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
 
-    let token_out_min_amount = token_out_ideal_amount?.checked_multiply_ratio(
-        vault_config.swap_max_slippage.numerator(),
-        vault_config.swap_max_slippage.denominator(),
-    )?;
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+    let token_out_min_amount = token_out_ideal_amount?
+        .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
 
     let swap_msg = swap(
         deps,
@@ -597,7 +598,7 @@ mod tests {
         let info = mock_info("addr0000", &[]);
         let mut deps = mock_deps_with_querier_with_balance(
             &info,
-            &[(MOCK_CONTRACT_ADDR, &[coin(1234, "token1")])],
+            &[(MOCK_CONTRACT_ADDR, &[coin(11234, "token1")])],
         );
 
         STRATEGIST_REWARDS
@@ -665,6 +666,7 @@ mod tests {
         });
 
         let res = super::handle_withdraw_position_reply(deps.as_mut(), env, data).unwrap();
+
         // verify that we did create_position first
         assert_eq!(res.messages.len(), 1);
         assert_eq!(res.attributes[0].value, "modify_range");
