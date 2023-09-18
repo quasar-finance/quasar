@@ -5,22 +5,7 @@ use crate::state::AirdropConfig;
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    /// every airdrop contains a description of it
-    pub airdrop_description: String,
-    /// token amount to be airdropped
-    pub airdrop_amount: Uint128,
-    /// token denom to be airdropped
-    pub airdrop_denom: Uint128,
-    /// total claimed amount, zero initially
-    pub total_claimed: Uint128,
-    /// starting time from which users can claim airdrop
-    pub start_height: u64,
-    /// end time after which users cannot claim airdrop
-    pub end_height: u64,
-    /// flag to enable and disable claims for the given airdrop in case of any emergency
-    pub claim_enabled: bool,
-    /// total amount of unclaimed tokens, equal to airdrop_tokens_amount
-    pub unclaimed_tokens: Uint128,
+    pub config: AirdropConfig,
 }
 
 #[cw_serde]
@@ -39,6 +24,12 @@ pub enum AdminExecuteMsg {
 
     /// add users to the airdrop with the given amounts
     AddUsers {
+        users: Vec<String>,
+        amounts: Vec<Uint128>,
+    },
+
+    /// updates the existing users with the given address and amounts
+    SetUsers {
         users: Vec<String>,
         amounts: Vec<Uint128>,
     },

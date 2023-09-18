@@ -1,10 +1,11 @@
+use std::string::String;
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
 use cw_storage_plus::{Item, Map};
-use std::string::String;
 
 pub const AIRDROP_CONFIG: Item<AirdropConfig> = Item::new("airdrop_config");
-pub const USER_INFO: Map<String, Vec<UserInfo>> = Map::new("user_info");
+pub const USER_INFO: Map<String, UserInfo> = Map::new("user_info");
 
 //----------------------------------------------------------------------------------------
 // Storage types
@@ -17,7 +18,7 @@ pub struct AirdropConfig {
     /// token amount to be airdropped
     pub airdrop_amount: Uint128,
     /// token denom to be airdropped
-    pub airdrop_denom: Uint128,
+    pub airdrop_denom: String,
     /// total claimed amount, zero initially
     pub total_claimed: Uint128,
     /// starting time from which users can claim airdrop
@@ -39,8 +40,20 @@ pub struct UserInfo {
 }
 
 impl AirdropConfig {
-    pub fn get_start_and_end_heights(&self) -> (u64, u64) {
-        (self.start_height, self.end_height)
+    pub fn get_start_height(&self) -> u64 {
+        self.start_height
+    }
+    pub fn get_end_heights(&self) -> u64 {
+        self.start_height
+    }
+}
+
+impl UserInfo {
+    pub fn get_claimable_amount(&self) -> Uint128 {
+        self.claimable_amount
+    }
+    pub fn get_claimed_flag(&self) -> bool {
+        self.claimed_flag
     }
 }
 

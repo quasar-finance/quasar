@@ -2,7 +2,7 @@ use cosmwasm_std::{DepsMut, Env, Response, StdError, Uint128};
 use std::string::String;
 
 use crate::helpers::get_total_in_user_info;
-use crate::state::{AirdropConfig, UserInfo, AIRDROP_CONFIG, USER_INFO};
+use crate::state::{AirdropConfig, AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
 pub fn execute_update_airdrop_config(
@@ -11,14 +11,15 @@ pub fn execute_update_airdrop_config(
     config: AirdropConfig,
 ) -> Result<Response, AirdropErrors> {
     // Load the current airdrop configuration from storage
-    let mut current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
+    let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Get the start and end heights from the current config
-    let heights = current_airdrop_config.get_start_and_end_heights();
+    let height = current_airdrop_config.get_start_height();
 
     // Check if the current block height is greater than or equal to the start height in the current config.
     // If true, it's not allowed to update the configuration, return an error.
-    if env.block.height >= heights.0 {
+    // TODO checks will be on claim enabled and start and end height is zero
+    if env.block.height >= height && current_airdrop_config.claim_enabled {
         return Err(AirdropErrors::InvalidChangeInConfig {});
     }
 
@@ -47,6 +48,8 @@ pub fn execute_add_users(
         }));
     }
 
+    // TODO checks will be on claim enabled and start and end height is zero
+
     // Loop through the provided users and amounts
     for number in 0..=users.len() {
         // Validate the user's address
@@ -62,16 +65,14 @@ pub fn execute_add_users(
         }
 
         // update all the users with the give info
-        let mut user_info = USER_INFO.load(deps.storage, users[number])?;
-        user_info.push(UserInfo {
-            claimable_amount: amounts[number],
-            claimed_flag: false,
-        });
-        USER_INFO.save(deps.storage, users[number], &user_info)?;
+        let user_info = USER_INFO.load(deps.storage, users[number].clone())?;
+        if user_info.get_claimable_amount() == Uint128::zero() && !user_info.get_claimed_flag() {
+            USER_INFO.save(deps.storage, users[number].clone(), &user_info)?;
+        }
     }
 
     // Calculate the total claimable amount from USER_INFO
-    let total_in_user_info = get_total_in_user_info(deps);
+    let total_in_user_info = get_total_in_user_info(deps.storage);
 
     // Load the current airdrop configuration
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;

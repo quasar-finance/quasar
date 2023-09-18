@@ -22,24 +22,12 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Check if the provided end height is less than or equal to the start height.
-    if msg.end_height <= msg.start_height {
+    if msg.config.end_height <= msg.config.start_height {
         return Err(AirdropErrors::InvalidAirdropWindow {});
     }
 
-    // Create a new airdrop configuration based on the provided parameters
-    let airdrop_config = AirdropConfig {
-        airdrop_description: msg.airdrop_description,
-        airdrop_amount: msg.airdrop_amount,
-        airdrop_denom: msg.airdrop_denom,
-        total_claimed: msg.total_claimed,
-        start_height: msg.start_height,
-        end_height: msg.end_height,
-        claim_enabled: msg.claim_enabled,
-        unclaimed_tokens: msg.unclaimed_tokens,
-    };
-
     // Save the new airdrop configuration to storage
-    AIRDROP_CONFIG.save(deps.storage, &airdrop_config)?;
+    AIRDROP_CONFIG.save(deps.storage, &msg.config)?;
 
     // Return a default response to indicate success
     Ok(Response::default())
@@ -68,6 +56,7 @@ pub fn execute(
                 }
                 AdminExecuteMsg::RemoveUsers(users) => {}
                 AdminExecuteMsg::WithdrawFunds() => {}
+                AdminExecuteMsg::SetUsers { users, amounts } => {}
             }
         }
         ExecuteMsg::ClaimAirdrop() => {}
