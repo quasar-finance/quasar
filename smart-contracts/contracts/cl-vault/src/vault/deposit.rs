@@ -145,7 +145,7 @@ pub fn handle_deposit_create_position_reply(
     } else {
         let liquidity_amount_of_unused_funds: Decimal256 =
             get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
-        let total_potential_liquidity =
+        let total_liquidity =
             existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
 
         debug!(
@@ -153,14 +153,15 @@ pub fn handle_deposit_create_position_reply(
             "liquidity_amount_of_unused_funds", liquidity_amount_of_unused_funds
         );
 
+        // user_shares = total_vault_shares * user_liq / total_liq
         total_vault_shares
             .multiply_ratio(
                 user_created_liquidity.numerator(),
                 user_created_liquidity.denominator(),
             )
             .multiply_ratio(
-                total_potential_liquidity.numerator(),
-                total_potential_liquidity.denominator(),
+                total_liquidity.denominator(),
+                total_liquidity.numerator(),
             )
             .try_into()?
     };
