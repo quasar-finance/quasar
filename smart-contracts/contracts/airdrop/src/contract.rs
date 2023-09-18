@@ -1,7 +1,7 @@
 use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
-use crate::admin::{execute_add_users, execute_update_airdrop_config};
+use crate::admin::{execute_add_users, execute_remove_users, execute_update_airdrop_config};
 use crate::error::AirdropErrors;
 use crate::helpers::is_contract_admin;
 use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg};
@@ -54,7 +54,7 @@ pub fn execute(
                     // Call the function to add users and their amounts
                     execute_add_users(deps, env, users, amounts)
                 }
-                AdminExecuteMsg::RemoveUsers(users) => {}
+                AdminExecuteMsg::RemoveUsers(users) => execute_remove_users(deps, env, users),
                 AdminExecuteMsg::WithdrawFunds() => {}
                 AdminExecuteMsg::SetUsers { users, amounts } => {}
             }
