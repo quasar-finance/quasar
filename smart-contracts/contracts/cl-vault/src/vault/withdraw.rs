@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     attr, coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128,
+    SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -54,12 +54,14 @@ pub fn execute_withdraw(
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
     let dust0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
     let dust1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
-    let user_dust0 = dust0
-        .checked_mul(shares_to_withdraw)?
-        .checked_div(total_shares)?;
-    let user_dust1 = dust1
-        .checked_mul(shares_to_withdraw)?
-        .checked_div(total_shares)?;
+    let user_dust0 = Uint256::from(dust0)
+        .checked_mul(shares_to_withdraw.into())?
+        .checked_div(total_shares)?
+        .try_into()?;
+    let user_dust1 = Uint256::from(dust1)
+        .checked_mul(shares_to_withdraw.into())?
+        .checked_div(total_shares)?
+        .try_into()?;
     // save the new total amount of dust available for other actions
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
