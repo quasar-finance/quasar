@@ -59,11 +59,13 @@ pub fn execute_withdraw(
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
-        .try_into()?;
+        .try_into()
+        .unwrap();
     let dust1: Uint256 = unused_balances
         .find_coin(pool_config.token1.clone())
         .amount
-        .try_into()?;
+        .try_into()
+        .unwrap();
 
     let user_dust0: Uint128 = dust0
         .checked_mul(shares_to_withdraw)?
