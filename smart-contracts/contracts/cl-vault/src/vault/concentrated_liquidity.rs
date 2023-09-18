@@ -66,7 +66,6 @@ pub fn withdraw_from_position(
 pub fn get_position(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    _env: &Env,
 ) -> Result<FullPositionBreakdown, ContractError> {
     let position = POSITION.load(storage)?;
 

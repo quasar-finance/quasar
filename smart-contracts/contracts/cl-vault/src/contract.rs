@@ -96,7 +96,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_binary(&query_total_assets(deps, env)?)?)
+            Ok(to_binary(&query_total_assets(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
