@@ -2,7 +2,7 @@ use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg, MigrateMsg};
 use crate::query::{
     query_info, query_metadata, query_pool, query_position, query_total_assets,
     query_total_vault_token_supply, query_user_balance, query_user_rewards,
@@ -148,6 +148,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]
