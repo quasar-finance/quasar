@@ -59,24 +59,20 @@ pub fn execute_withdraw(
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
-        .try_into()
-        .unwrap();
+        .try_into()?;
     let dust1: Uint256 = unused_balances
         .find_coin(pool_config.token1.clone())
         .amount
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
     let user_dust0: Uint128 = dust0
         .checked_mul(shares_to_withdraw)?
         .checked_div(total_shares)?
-        .try_into()
-        .unwrap();
+        .try_into()?;
     let user_dust1: Uint128 = dust1
         .checked_mul(shares_to_withdraw)?
         .checked_div(total_shares)?
-        .try_into()
-        .unwrap();
+        .try_into()?;
     // save the new total amount of dust available for other actions
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
@@ -131,13 +127,9 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    debug!(deps, "user_shares", user_shares);
-    debug!(deps, "existing_liquidity", existing_liquidity);
-    debug!(deps, "total_vault_shares", total_vault_shares);
     let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
         .checked_mul(existing_liquidity)?
         .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
-    debug!(deps, "user_liquidity", user_liquidity);
 
     withdraw_from_position(deps.storage, env, user_liquidity)
 }
