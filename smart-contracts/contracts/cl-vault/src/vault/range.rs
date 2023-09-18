@@ -279,8 +279,6 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
-    debug!(deps, "swap", balance0);
-    debug!(deps, "swap", balance1);
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
@@ -600,9 +598,9 @@ mod tests {
         let info = mock_info("addr0000", &[]);
         let mut deps = mock_deps_with_querier_with_balance(
             &info,
-            &[(MOCK_CONTRACT_ADDR, &[coin(1234, "token1")])],
+            &[(MOCK_CONTRACT_ADDR, &[coin(11234, "token1")])],
         );
-
+        
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
