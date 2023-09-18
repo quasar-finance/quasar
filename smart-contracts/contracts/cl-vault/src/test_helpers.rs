@@ -50,85 +50,83 @@ impl Querier for QuasarQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
         let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
         match request {
-            QueryRequest::Stargate { path, data } => {
-                match path.as_str() {
-                    "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
-                        let position_by_id_request: PositionByIdRequest =
-                            prost::Message::decode(data.as_slice()).unwrap();
-                        let position_id = position_by_id_request.position_id;
-                        if position_id == self.position.position.clone().unwrap().position_id {
-                            QuerierResult::Ok(CwContractResult::Ok(
-                                to_binary(&PositionByIdResponse {
-                                    position: Some(self.position.clone()),
-                                })
-                                .unwrap(),
-                            ))
-                        } else {
-                            QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                                kind: format!("position id not found: {position_id:?}"),
-                            })
-                        }
-                    }
-                    "/cosmos.bank.v1beta1.Query/SupplyOf" => {
-                        let query_supply_of_request: QuerySupplyOfRequest =
-                            prost::Message::decode(data.as_slice()).unwrap();
-                        let denom = query_supply_of_request.denom;
+            QueryRequest::Stargate { path, data } => match path.as_str() {
+                "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
+                    let position_by_id_request: PositionByIdRequest =
+                        prost::Message::decode(data.as_slice()).unwrap();
+                    let position_id = position_by_id_request.position_id;
+                    if position_id == self.position.position.clone().unwrap().position_id {
                         QuerierResult::Ok(CwContractResult::Ok(
-                            to_binary(&QuerySupplyOfResponse {
-                                amount: Some(OsmoCoin {
-                                    denom,
-                                    amount: 100000.to_string(),
-                                }),
+                            to_binary(&PositionByIdResponse {
+                                position: Some(self.position.clone()),
                             })
                             .unwrap(),
                         ))
+                    } else {
+                        QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                            kind: format!("position id not found: {position_id:?}"),
+                        })
                     }
-                    "/cosmos.bank.v1beta.Query/Balance" => {
-                        let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
-                        self.bank.query(&query)
-                    }
-                    "/cosmos.bank.v1beta.Query/AllBalances" => {
-                        let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
-                        self.bank.query(&query)
-                    }
-                    "/osmosis.poolmanager.v1beta1.Query/Pool" => {
-                        QuerierResult::Ok(CwContractResult::Ok(
-                            to_binary(&PoolResponse {
-                                pool: Some(
-                                    Pool {
-                                        address: "idc".to_string(),
-                                        incentives_address: "not being used".to_string(),
-                                        spread_rewards_address: "not being used".to_string(),
-                                        id: 1,
-                                        current_tick_liquidity: "100".to_string(),
-                                        token0: "uosmo".to_string(),
-                                        token1: "uion".to_string(),
-                                        current_sqrt_price: "not used".to_string(),
-                                        current_tick: self.current_tick,
-                                        tick_spacing: 100,
-                                        exponent_at_price_one: -6,
-                                        spread_factor: "not used".to_string(),
-                                        last_liquidity_update: None,
-                                    }
-                                    .to_any(),
-                                ),
-                            })
-                            .unwrap(),
-                        ))
-                    }
-                    "/osmosis.poolmanager.v1beta1.Query/SpotPrice" => {
-                        QuerierResult::Ok(CwContractResult::Ok(
-                            to_binary(&SpotPriceResponse {
-                                spot_price: tick_to_price(self.current_tick).unwrap().to_string(),
-                            })
-                            .unwrap(),
-                        ))
-                    }
-                    &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
-                        kind: format!("Unmocked stargate query path: {path:?}"),
-                    }),
                 }
-            }
+                "/cosmos.bank.v1beta1.Query/SupplyOf" => {
+                    let query_supply_of_request: QuerySupplyOfRequest =
+                        prost::Message::decode(data.as_slice()).unwrap();
+                    let denom = query_supply_of_request.denom;
+                    QuerierResult::Ok(CwContractResult::Ok(
+                        to_binary(&QuerySupplyOfResponse {
+                            amount: Some(OsmoCoin {
+                                denom,
+                                amount: 100000.to_string(),
+                            }),
+                        })
+                        .unwrap(),
+                    ))
+                }
+                "/cosmos.bank.v1beta.Query/Balance" => {
+                    let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
+                    self.bank.query(&query)
+                }
+                "/cosmos.bank.v1beta.Query/AllBalances" => {
+                    let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
+                    self.bank.query(&query)
+                }
+                "/osmosis.poolmanager.v1beta1.Query/Pool" => {
+                    QuerierResult::Ok(CwContractResult::Ok(
+                        to_binary(&PoolResponse {
+                            pool: Some(
+                                Pool {
+                                    address: "idc".to_string(),
+                                    incentives_address: "not being used".to_string(),
+                                    spread_rewards_address: "not being used".to_string(),
+                                    id: 1,
+                                    current_tick_liquidity: "100".to_string(),
+                                    token0: "uosmo".to_string(),
+                                    token1: "uion".to_string(),
+                                    current_sqrt_price: "not used".to_string(),
+                                    current_tick: self.current_tick,
+                                    tick_spacing: 100,
+                                    exponent_at_price_one: -6,
+                                    spread_factor: "not used".to_string(),
+                                    last_liquidity_update: None,
+                                }
+                                .to_any(),
+                            ),
+                        })
+                        .unwrap(),
+                    ))
+                }
+                "/osmosis.poolmanager.v1beta1.Query/SpotPrice" => {
+                    QuerierResult::Ok(CwContractResult::Ok(
+                        to_binary(&SpotPriceResponse {
+                            spot_price: tick_to_price(self.current_tick).unwrap().to_string(),
+                        })
+                        .unwrap(),
+                    ))
+                }
+                &_ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
+                    kind: format!("Unmocked stargate query path: {path:?}"),
+                }),
+            },
             QueryRequest::Bank(query) => self.bank.query(&query),
             _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                 kind: format!("Unmocked query type: {request:?}"),

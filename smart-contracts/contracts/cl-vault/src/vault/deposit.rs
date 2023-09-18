@@ -14,7 +14,6 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    debug,
     error::ContractResult,
     helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
@@ -407,7 +406,7 @@ mod tests {
         let total_liquidity = Decimal256::from_str("1000000000").unwrap();
         let liquidity = Decimal256::from_str("5000000").unwrap();
 
-        let user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
+        let _user_shares: Uint128 = if total_shares.is_zero() && total_liquidity.is_zero() {
             liquidity.to_uint_floor().try_into().unwrap()
         } else {
             let _ratio = liquidity.checked_div(total_liquidity).unwrap();

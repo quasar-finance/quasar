@@ -19,7 +19,7 @@ use crate::state::{
     STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
-use crate::{debug, ContractError};
+use crate::ContractError;
 
 pub fn handle_instantiate(
     deps: DepsMut,

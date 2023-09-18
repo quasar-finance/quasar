@@ -13,18 +13,18 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
-use crate::helpers::get_unused_balances;
-use crate::msg::{ExecuteMsg, MergePositionMsg};
-use crate::state::CURRENT_SWAP;
-use crate::vault::concentrated_liquidity::create_position;
 use crate::{
     helpers::get_spot_price,
+    helpers::get_unused_balances,
     math::tick::price_to_tick,
+    msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
+    state::CURRENT_SWAP,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
         POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
+    vault::concentrated_liquidity::create_position,
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
     vault::swap::swap,
@@ -337,6 +337,7 @@ pub fn do_swap_deposit_merge(
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
 
+    // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
