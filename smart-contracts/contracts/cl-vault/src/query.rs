@@ -119,8 +119,8 @@ pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserReward
     Ok(UserRewardsResponse { rewards })
 }
 
-pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
-    let position = get_position(deps.storage, &deps.querier, &env)?;
+pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
+    let position = get_position(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
     Ok(TotalAssetsResponse {
         token0: position

@@ -14,8 +14,9 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
-    helpers::{must_pay_one_or_two, sort_tokens},
+    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -100,7 +101,7 @@ pub(crate) fn execute_exact_deposit(
 /// handles the reply to creating a position for a user deposit
 /// and calculates the refund for the user
 pub fn handle_deposit_create_position_reply(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
@@ -114,7 +115,7 @@ pub fn handle_deposit_create_position_reply(
         create_deposit_position_resp.liquidity_created.as_str(),
     )?);
 
-    let existing_position = get_position(deps.storage, &deps.querier, &env)?
+    let existing_position = get_position(deps.storage, &deps.querier)?
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
@@ -129,21 +130,38 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
+    let refunded = (
+        current_deposit.token0_in.checked_sub(Uint128::new(
+            create_deposit_position_resp.amount0.parse::<u128>()?,
+        ))?,
+        current_deposit.token1_in.checked_sub(Uint128::new(
+            create_deposit_position_resp.amount1.parse::<u128>()?,
+        ))?,
+    );
+
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         existing_liquidity.to_uint_floor().try_into()?
     } else {
+        let liquidity_amount_of_unused_funds: Decimal256 =
+            get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
+        let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
+
+        debug!(
+            deps,
+            "liquidity_amount_of_unused_funds", liquidity_amount_of_unused_funds
+        );
+
+        // user_shares = total_vault_shares * user_liq / total_liq
         total_vault_shares
             .multiply_ratio(
                 user_created_liquidity.numerator(),
                 user_created_liquidity.denominator(),
             )
-            .multiply_ratio(
-                existing_liquidity.denominator(),
-                existing_liquidity.numerator(),
-            )
+            .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
             .try_into()?
     };
+    debug!(deps, "user_shares", user_shares);
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -204,6 +222,7 @@ pub fn handle_deposit_create_position_reply(
         attr("receiver", current_deposit.sender.as_str()),
     ];
 
+    // TODO, this remove causes borrower issues, see if we can remove the branch on line137
     // clear out the current deposit since it is no longer needed
     CURRENT_DEPOSIT.remove(deps.storage);
 
@@ -291,7 +310,8 @@ mod tests {
     };
 
     use crate::{
-        state::{PoolConfig, Position},
+        rewards::CoinList,
+        state::{PoolConfig, Position, STRATEGIST_REWARDS},
         test_helpers::QuasarQuerier,
     };
 
@@ -309,6 +329,9 @@ mod tests {
             .save(deps.as_mut().storage, &Position { position_id: 1 })
             .unwrap();
 
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &CoinList::new())
+            .unwrap();
         CURRENT_DEPOSIT
             .save(
                 deps.as_mut().storage,
@@ -370,7 +393,7 @@ mod tests {
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
         assert_eq!(
             SHARES.load(deps.as_ref().storage, sender).unwrap(),
-            Uint128::new(50)
+            Uint128::new(50000)
         );
         assert_eq!(
             response.messages[1],
@@ -378,7 +401,7 @@ mod tests {
                 sender: env.contract.address.to_string(),
                 amount: Some(OsmoCoin {
                     denom: "money".to_string(),
-                    amount: 50.to_string()
+                    amount: 50000.to_string()
                 }),
                 mint_to_address: env.contract.address.to_string()
             })

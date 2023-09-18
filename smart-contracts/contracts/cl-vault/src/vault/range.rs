@@ -90,7 +90,7 @@ pub fn execute_update_range_ticks(
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(deps.storage, &deps.querier, &env)?;
+    let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown.position.unwrap();
 
     let withdraw_msg = MsgWithdrawPosition {
@@ -206,8 +206,8 @@ pub fn handle_withdraw_position_reply(
             .add_attribute("method", "create_position")
             .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
             .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
-            .add_attribute("token0", format!("{:?}{:?}", amount0, pool_config.token0))
-            .add_attribute("token1", format!("{:?}{:?}", amount1, pool_config.token1)))
+            .add_attribute("token0", format!("{}{}", amount0, pool_config.token0))
+            .add_attribute("token1", format!("{}{}", amount1, pool_config.token1)))
     }
 }
 
@@ -363,8 +363,8 @@ pub fn do_swap_deposit_merge(
         .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
         .add_attribute("action", "swap_deposit_merge")
         .add_attribute("method", "swap")
-        .add_attribute("token_in", format!("{:?}{:?}", swap_amount, token_in_denom))
-        .add_attribute("token_out_min", format!("{:?}", token_out_min_amount)))
+        .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
+        .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
 
 // do deposit
@@ -520,101 +520,20 @@ pub enum SwapDirection {
 
 #[cfg(test)]
 mod tests {
-    use std::{marker::PhantomData, str::FromStr};
+    use std::str::FromStr;
 
     use cosmwasm_std::{
-        testing::{
-            mock_dependencies, mock_env, mock_info, MockApi, MockStorage, MOCK_CONTRACT_ADDR,
-        },
-        Addr, Decimal, Empty, MessageInfo, OwnedDeps, SubMsgResponse, SubMsgResult,
+        coin,
+        testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
+        Addr, Decimal, SubMsgResponse, SubMsgResult,
     };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::concentratedliquidity::v1beta1::{
-            FullPositionBreakdown, MsgWithdrawPositionResponse, Position as OsmoPosition,
-        },
-    };
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
-        state::{
-            PoolConfig, VaultConfig, MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN,
-            VAULT_CONFIG,
-        },
-        test_helpers::QuasarQuerier,
+        rewards::CoinList,
+        state::{MODIFY_RANGE_STATE, RANGE_ADMIN, STRATEGIST_REWARDS},
+        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
     };
-
-    fn mock_deps_with_querier(
-        info: &MessageInfo,
-    ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-        let mut deps = OwnedDeps {
-            storage: MockStorage::default(),
-            api: MockApi::default(),
-            querier: QuasarQuerier::new(
-                FullPositionBreakdown {
-                    position: Some(OsmoPosition {
-                        position_id: 1,
-                        address: MOCK_CONTRACT_ADDR.to_string(),
-                        pool_id: 1,
-                        lower_tick: 100,
-                        upper_tick: 1000,
-                        join_time: None,
-                        liquidity: "1000000.1".to_string(),
-                    }),
-                    asset0: Some(OsmoCoin {
-                        denom: "token0".to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    asset1: Some(OsmoCoin {
-                        denom: "token1".to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    claimable_spread_rewards: vec![
-                        OsmoCoin {
-                            denom: "token0".to_string(),
-                            amount: "100".to_string(),
-                        },
-                        OsmoCoin {
-                            denom: "token1".to_string(),
-                            amount: "100".to_string(),
-                        },
-                    ],
-                    claimable_incentives: vec![],
-                    forfeited_incentives: vec![],
-                },
-                500,
-            ),
-            custom_query_type: PhantomData,
-        };
-
-        let storage = &mut deps.storage;
-
-        RANGE_ADMIN.save(storage, &info.sender).unwrap();
-        POOL_CONFIG
-            .save(
-                storage,
-                &PoolConfig {
-                    pool_id: 1,
-                    token0: "token0".to_string(),
-                    token1: "token1".to_string(),
-                },
-            )
-            .unwrap();
-        VAULT_CONFIG
-            .save(
-                storage,
-                &VaultConfig {
-                    performance_fee: Decimal::zero(),
-                    treasury: Addr::unchecked("treasure"),
-                    swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
-                },
-            )
-            .unwrap();
-        POSITION
-            .save(storage, &crate::state::Position { position_id: 1 })
-            .unwrap();
-
-        deps
-    }
 
     #[test]
     fn test_assert_range_admin() {
@@ -674,7 +593,17 @@ mod tests {
     #[test]
     fn test_handle_withdraw_position_reply_selects_correct_next_step_for_new_range() {
         let info = mock_info("addr0000", &[]);
-        let mut deps = mock_deps_with_querier(&info);
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(MOCK_CONTRACT_ADDR, &[coin(1234, "token1")])],
+        );
+
+        STRATEGIST_REWARDS
+            .save(
+                deps.as_mut().storage,
+                &CoinList::from_coins(vec![coin(1000, "token0"), coin(500, "token1")]),
+            )
+            .unwrap();
 
         // moving into a range
         MODIFY_RANGE_STATE
@@ -710,6 +639,15 @@ mod tests {
         assert_eq!(res.messages.len(), 1);
         assert_eq!(res.attributes[0].value, "swap_deposit_merge");
         assert_eq!(res.attributes[1].value, "swap");
+        // check that our token1 attribute is incremented with the local balance - strategist rewards
+        assert_eq!(
+            res.attributes
+                .iter()
+                .find(|a| { a.key == "token_in" })
+                .unwrap()
+                .value,
+            "5962token1"
+        );
 
         // now test two-sided withdraw
         let data = SubMsgResult::Ok(SubMsgResponse {
@@ -725,10 +663,17 @@ mod tests {
         });
 
         let res = super::handle_withdraw_position_reply(deps.as_mut(), env, data).unwrap();
-
         // verify that we did create_position first
         assert_eq!(res.messages.len(), 1);
         assert_eq!(res.attributes[0].value, "modify_range");
         assert_eq!(res.attributes[1].value, "create_position");
+        assert_eq!(
+            res.attributes
+                .iter()
+                .find(|a| { a.key == "token1" })
+                .unwrap()
+                .value,
+            "10734token1"
+        ); // 10000 withdrawn + 1234 local balance - 500 rewards
     }
 }
