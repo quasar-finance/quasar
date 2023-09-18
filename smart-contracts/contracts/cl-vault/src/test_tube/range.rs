@@ -183,8 +183,6 @@ mod test {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        println!("{:?}", pool);
-
         let _result = wasm
             .execute(
                 contract.as_str(),
@@ -255,8 +253,6 @@ mod test {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        println!("pool: {:?}", pool);
-
         // from the spreadsheet
         // create a basic position on the pool
         let initial_position = MsgCreatePosition {
@@ -272,7 +268,5 @@ mod test {
             token_min_amount1: "0".to_string(),
         };
         let position = cl.create_position(initial_position, &alice).unwrap();
-
-        println!("{:?}", position.events)
     }
 }
