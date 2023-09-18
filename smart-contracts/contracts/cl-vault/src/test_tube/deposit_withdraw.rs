@@ -42,7 +42,7 @@ mod tests {
 
         let wasm = Wasm::new(&app);
 
-        // depositing 
+        // depositing
         let _res = wasm
             .execute(
                 contract_address.as_str(),
@@ -129,7 +129,6 @@ mod tests {
                 )),
             )
             .unwrap();
-
 
         let balances = bank
             .query_all_balances(&QueryAllBalancesRequest {

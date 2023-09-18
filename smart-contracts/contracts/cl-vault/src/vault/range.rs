@@ -140,8 +140,14 @@ pub fn handle_withdraw_position_reply(
     let mut amount1: Uint128 = msg.amount1.parse()?;
 
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let unused_balance0 = unused_balances.find_coin(pool_config.token0.clone()).amount.checked_sub(amount0)?;
-    let unused_balance1 = unused_balances.find_coin(pool_config.token1.clone()).amount.checked_sub(amount1)?;
+    let unused_balance0 = unused_balances
+        .find_coin(pool_config.token0.clone())
+        .amount
+        .checked_sub(amount0)?;
+    let unused_balance1 = unused_balances
+        .find_coin(pool_config.token1.clone())
+        .amount
+        .checked_sub(amount1)?;
 
     amount0 = amount0.checked_add(unused_balance0)?;
     amount1 = amount1.checked_add(unused_balance1)?;
@@ -651,7 +657,10 @@ mod tests {
 
         let mut deps = mock_deps_with_querier_with_balance(
             &info,
-            &[(MOCK_CONTRACT_ADDR, &[coin(11000, "token0"), coin(11234, "token1")])],
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(11000, "token0"), coin(11234, "token1")],
+            )],
         );
 
         STRATEGIST_REWARDS
@@ -673,7 +682,6 @@ mod tests {
                 }),
             )
             .unwrap();
-
 
         // now test two-sided withdraw
         let data = SubMsgResult::Ok(SubMsgResponse {

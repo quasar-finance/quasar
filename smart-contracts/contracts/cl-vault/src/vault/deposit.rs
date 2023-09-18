@@ -147,7 +147,6 @@ pub fn handle_deposit_create_position_reply(
             get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
         let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
 
-
         // user_shares = total_vault_shares * user_liq / total_liq
         total_vault_shares
             .multiply_ratio(

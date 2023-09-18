@@ -173,7 +173,7 @@ mod tests {
     use crate::{
         rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS, USER_REWARDS},
-        test_helpers::{mock_deps_with_querier_with_balance},
+        test_helpers::mock_deps_with_querier_with_balance,
     };
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},

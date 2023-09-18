@@ -262,9 +262,7 @@ pub fn get_unused_balances(
 
     balances.sub(&strategist_rewards)?;
 
-    for user_reward in USER_REWARDS
-        .range(storage, None, None, cosmwasm_std::Order::Ascending)
-    {
+    for user_reward in USER_REWARDS.range(storage, None, None, cosmwasm_std::Order::Ascending) {
         balances.sub(&user_reward?.1)?;
     }
 
@@ -331,8 +329,7 @@ pub fn get_liquidity_amount_for_unused_funds(
         .checked_sub(additional_excluded_funds.1)?
         .into();
 
-    let max_initial_deposit =
-        get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;
+    let max_initial_deposit = get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;
 
     // then figure out how much liquidity this would give us.
     // Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
@@ -371,7 +368,6 @@ pub fn get_liquidity_amount_for_unused_funds(
         //     pool_details.current_tick,
         //     position_unwrapped.upper_tick,
         // )?;
-
 
         // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
         // we are also mindful of the same edge case
