@@ -61,7 +61,7 @@ pub fn execute(
             execute_exact_deposit(deps, env, info, recipient)
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
-            execute_withdraw(deps, env, info, recipient, amount)
+            execute_withdraw(deps, env, info, recipient, amount.into())
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {

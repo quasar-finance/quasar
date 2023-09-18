@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     attr, coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128,
+    SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -11,6 +11,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
@@ -25,7 +26,7 @@ pub fn execute_withdraw(
     env: Env,
     info: MessageInfo,
     recipient: Option<String>,
-    shares_to_withdraw: Uint128,
+    shares_to_withdraw: Uint256,
 ) -> Result<Response, ContractError> {
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
@@ -35,11 +36,14 @@ pub fn execute_withdraw(
     // let shares = must_pay(&info, vault_denom.as_str())?;
 
     // get the amount from SHARES state
-    let user_shares = SHARES.load(deps.storage, info.sender.clone())?;
+    let user_shares: Uint256 = SHARES
+        .load(deps.storage, info.sender.clone())?
+        .try_into()
+        .unwrap();
     let left_over = user_shares
         .checked_sub(shares_to_withdraw)
         .map_err(|_| ContractError::InsufficientFunds)?;
-    SHARES.save(deps.storage, info.sender, &left_over)?;
+    SHARES.save(deps.storage, info.sender, &left_over.try_into().unwrap())?;
 
     let total_shares = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
@@ -52,20 +56,34 @@ pub fn execute_withdraw(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let dust0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
-    let dust1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
-    let user_dust0 = dust0
+    let dust0: Uint256 = unused_balances
+        .find_coin(pool_config.token0.clone())
+        .amount
+        .try_into()
+        .unwrap();
+    let dust1: Uint256 = unused_balances
+        .find_coin(pool_config.token1.clone())
+        .amount
+        .try_into()
+        .unwrap();
+
+    let user_dust0: Uint128 = dust0
         .checked_mul(shares_to_withdraw)?
-        .checked_div(total_shares)?;
-    let user_dust1 = dust1
+        .checked_div(total_shares)?
+        .try_into()
+        .unwrap();
+    let user_dust1: Uint128 = dust1
         .checked_mul(shares_to_withdraw)?
-        .checked_div(total_shares)?;
+        .checked_div(total_shares)?
+        .try_into()
+        .unwrap();
     // save the new total amount of dust available for other actions
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
 
+    let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into().unwrap();
     // burn the shares
-    let burn_coin = coin(shares_to_withdraw.u128(), vault_denom);
+    let burn_coin = coin(shares_to_withdraw_u128.u128(), vault_denom);
     let burn_msg: CosmosMsg = MsgBurn {
         sender: env.contract.address.clone().into_string(),
         amount: Some(burn_coin.into()),
@@ -76,7 +94,7 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw)?; // TODOSN: Rename this function name to something more explicative
+    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?; // TODOSN: Rename this function name to something more explicative
 
     Ok(Response::new()
         .add_attribute("method", "withdraw")
@@ -113,9 +131,13 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
+    debug!(deps, "user_shares", user_shares);
+    debug!(deps, "existing_liquidity", existing_liquidity);
+    debug!(deps, "total_vault_shares", total_vault_shares);
     let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
         .checked_mul(existing_liquidity)?
         .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
+    debug!(deps, "user_liquidity", user_liquidity);
 
     withdraw_from_position(deps.storage, env, user_liquidity)
 }
@@ -193,7 +215,8 @@ mod tests {
             )
             .unwrap();
 
-        let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
+        let res =
+            execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
@@ -242,7 +265,8 @@ mod tests {
             )
             .unwrap();
 
-        let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
+        let res =
+            execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
@@ -294,7 +318,8 @@ mod tests {
             )
             .unwrap();
 
-        let res = execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000)).unwrap();
+        let res =
+            execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         // user dust should be 1% of 200000 - 650 (= 1993.5) and 1% of 300000 - 450 (= 2995.5)
         assert_eq!(
