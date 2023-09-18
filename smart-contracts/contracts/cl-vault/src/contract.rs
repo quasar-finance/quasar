@@ -152,7 +152,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[entry_point]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    Ok(Response::new().add_attribute("migrate", "succesful"))
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]
