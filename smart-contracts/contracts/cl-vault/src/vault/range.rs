@@ -595,7 +595,10 @@ mod tests {
     #[test]
     fn test_handle_withdraw_position_reply_selects_correct_next_step_for_new_range() {
         let info = mock_info("addr0000", &[]);
-        let mut deps = mock_deps_with_querier_with_balance(&info, &[(MOCK_CONTRACT_ADDR, &[coin(1234, "token1")])]);
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(MOCK_CONTRACT_ADDR, &[coin(1234, "token1")])],
+        );
 
         STRATEGIST_REWARDS
             .save(
@@ -639,9 +642,14 @@ mod tests {
         assert_eq!(res.attributes[0].value, "swap_deposit_merge");
         assert_eq!(res.attributes[1].value, "swap");
         // check that our token1 attribute is incremented with the local balance - strategist rewards
-        assert_eq!(res.attributes.iter().find(|a| {
-            a.key == "token_in"
-        }).unwrap().value, "5962token1" );
+        assert_eq!(
+            res.attributes
+                .iter()
+                .find(|a| { a.key == "token_in" })
+                .unwrap()
+                .value,
+            "5962token1"
+        );
 
         // now test two-sided withdraw
         let data = SubMsgResult::Ok(SubMsgResponse {
@@ -661,8 +669,13 @@ mod tests {
         assert_eq!(res.messages.len(), 1);
         assert_eq!(res.attributes[0].value, "modify_range");
         assert_eq!(res.attributes[1].value, "create_position");
-        assert_eq!(res.attributes.iter().find(|a| {
-            a.key == "token1"
-        }).unwrap().value, "10734token1" ); // 10000 withdrawn + 1234 local balance - 500 rewards
+        assert_eq!(
+            res.attributes
+                .iter()
+                .find(|a| { a.key == "token1" })
+                .unwrap()
+                .value,
+            "10734token1"
+        ); // 10000 withdrawn + 1234 local balance - 500 rewards
     }
 }
