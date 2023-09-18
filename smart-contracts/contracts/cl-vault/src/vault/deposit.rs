@@ -14,6 +14,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
@@ -144,16 +145,26 @@ pub fn handle_deposit_create_position_reply(
     } else {
         let liquidity_amount_of_unused_funds: Decimal256 =
             get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
-        let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
+        let total_potential_liquidity =
+            existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
+
+        debug!(
+            deps,
+            "liquidity_amount_of_unused_funds", liquidity_amount_of_unused_funds
+        );
 
         total_vault_shares
             .multiply_ratio(
                 user_created_liquidity.numerator(),
                 user_created_liquidity.denominator(),
             )
-            .multiply_ratio(total_liquidity.numerator(), total_liquidity.denominator())
+            .multiply_ratio(
+                total_potential_liquidity.numerator(),
+                total_potential_liquidity.denominator(),
+            )
             .try_into()?
     };
+    debug!(deps, "user_shares", user_shares);
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -302,7 +313,8 @@ mod tests {
     };
 
     use crate::{
-        state::{PoolConfig, Position},
+        rewards::CoinList,
+        state::{PoolConfig, Position, STRATEGIST_REWARDS},
         test_helpers::QuasarQuerier,
     };
 
@@ -320,6 +332,9 @@ mod tests {
             .save(deps.as_mut().storage, &Position { position_id: 1 })
             .unwrap();
 
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &CoinList::new())
+            .unwrap();
         CURRENT_DEPOSIT
             .save(
                 deps.as_mut().storage,
