@@ -56,10 +56,19 @@ pub fn execute_withdraw(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let dust0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
-    let dust1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
-    let user_dust0 = Uint256::from(dust0)
-        .checked_mul(shares_to_withdraw.into())?
+    let dust0: Uint256 = unused_balances
+        .find_coin(pool_config.token0.clone())
+        .amount
+        .try_into()
+        .unwrap();
+    let dust1: Uint256 = unused_balances
+        .find_coin(pool_config.token1.clone())
+        .amount
+        .try_into()
+        .unwrap();
+
+    let user_dust0: Uint128 = dust0
+        .checked_mul(shares_to_withdraw)?
         .checked_div(total_shares)?
         .try_into()?;
     let user_dust1 = Uint256::from(dust1)
