@@ -229,7 +229,6 @@ mod tests {
         let tick_index = 27445000_i128;
         let _expected_price = Decimal256::from_str("30352").unwrap();
         let price = tick_to_price(tick_index.try_into().unwrap()).unwrap();
-        println!("{:?}", price.to_string());
         // assert_eq!(price, expected_price);
         let tick = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, tick)

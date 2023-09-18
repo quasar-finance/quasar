@@ -39,11 +39,10 @@ mod tests {
                 pagination: None,
             })
             .unwrap();
-        println!("{:?}", balances);
 
         let wasm = Wasm::new(&app);
 
-        // depositing 
+        // depositing
         let res = wasm
             .execute(
                 contract_address.as_str(),
@@ -70,7 +69,6 @@ mod tests {
             })
             .unwrap();
         // This amount should decrease the amount of shares we get back
-        println!("position {:?}", position);
         // "uatom", amount: "100000" }), asset1: Some(Coin { denom: "uosmo", amount: "10126"
         // to dilute 50%, we need to send uatom100000, 10631uosmo + 89874+uosmo = 100000uosmo
         // aka double the liquidty
@@ -93,7 +91,6 @@ mod tests {
                 &bob,
             )
             .unwrap();
-        println!("{:?}", res);
 
         // 2766182566501133149875859 before banksend,
         // 1926137978194597565946694 after banksend
@@ -140,7 +137,6 @@ mod tests {
                 pagination: None,
             })
             .unwrap();
-        println!("balances-pre-w {:?}", balances);
         let pos_id: PositionResponse = wasm
             .query(
                 contract_address.as_str(),
@@ -155,7 +151,6 @@ mod tests {
             })
             .unwrap();
         // This amount should decrease the amount of shares we get back
-        println!("position-pre-w {:?}", position);
 
         let withdraw = wasm
             .execute(
@@ -168,7 +163,6 @@ mod tests {
                 &bob,
             )
             .unwrap();
-        println!("w_low {:?}", withdraw);
 
         let withdraw = wasm
             .execute(
@@ -181,7 +175,6 @@ mod tests {
                 &alice,
             )
             .unwrap();
-        println!("w_up {:?}", withdraw);
         // we receive "token0_amount", value: "2018" }, Attribute { key: "token1_amount", value: "3503
         // we used 5000uatom to deposit and 507 uosmo, thus we are down 3000 uatom and up 2996 uosmo
     }
@@ -273,8 +266,6 @@ mod tests {
                 &alice,
             )
             .unwrap();
-        println!("{:?}", deposit);
-
 
         let shares: UserBalanceResponse = wasm
             .query(
@@ -299,7 +290,6 @@ mod tests {
                 &alice,
             )
             .unwrap();
-        println!("{:?}", withdraw)
         // verify the correct execution
     }
 }

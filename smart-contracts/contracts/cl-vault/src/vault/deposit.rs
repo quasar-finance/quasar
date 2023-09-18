@@ -418,8 +418,6 @@ mod tests {
                 .try_into()
                 .unwrap()
         };
-
-        println!("{}", user_shares);
     }
 
     #[test]

@@ -129,13 +129,9 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    debug!(deps, "user_shares", user_shares);
-    debug!(deps, "existing_liquidity", existing_liquidity);
-    debug!(deps, "total_vault_shares", total_vault_shares);
     let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
         .checked_mul(existing_liquidity)?
         .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
-    debug!(deps, "user_liquidity", user_liquidity);
 
     withdraw_from_position(deps.storage, env, user_liquidity)
 }

@@ -51,7 +51,6 @@ impl Querier for QuasarQuerier {
         let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
         match request {
             QueryRequest::Stargate { path, data } => {
-                println!("{}", path.as_str());
                 match path.as_str() {
                     "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
                         let position_by_id_request: PositionByIdRequest =

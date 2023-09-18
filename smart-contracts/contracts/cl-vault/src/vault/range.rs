@@ -331,8 +331,6 @@ pub fn do_swap_deposit_merge(
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
 
-    debug!(deps, "after swap", balance0);
-    debug!(deps, "after swap", balance1);
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
