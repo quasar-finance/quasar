@@ -2,7 +2,7 @@ use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg, MigrateMsg};
 use crate::query::{
     query_info, query_metadata, query_pool, query_position, query_total_assets,
     query_total_vault_token_supply, query_user_balance, query_user_rewards,
@@ -61,7 +61,7 @@ pub fn execute(
             execute_exact_deposit(deps, env, info, recipient)
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
-            execute_withdraw(deps, env, info, recipient, amount)
+            execute_withdraw(deps, env, info, recipient, amount.into())
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {
@@ -86,7 +86,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {
@@ -96,7 +96,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_binary(&query_total_assets(deps, env)?)?)
+            Ok(to_binary(&query_total_assets(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
@@ -148,6 +148,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]

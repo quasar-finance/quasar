@@ -171,7 +171,7 @@ pub mod initialize {
                 &instantiate_msg,
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                sort_tokens(vec![coin(100000, pool.token0), coin(100000, pool.token1)]).as_ref(),
+                sort_tokens(vec![coin(5000, pool.token0), coin(507, pool.token1)]).as_ref(),
                 &admin,
             )
             .unwrap();

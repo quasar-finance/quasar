@@ -229,7 +229,6 @@ pub mod tests {
         let expected = MergeResponse { new_position_id: 5 };
 
         let data = &to_binary(&expected).unwrap();
-        println!("{:?}", data);
 
         let result = from_binary(data).unwrap();
         assert_eq!(expected, result)

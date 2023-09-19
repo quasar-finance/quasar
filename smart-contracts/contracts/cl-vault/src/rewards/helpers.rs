@@ -5,16 +5,16 @@ use crate::{error::ContractResult, helpers::sort_tokens};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 #[cw_serde]
 #[derive(Default)]
-pub struct Rewards(Vec<Coin>);
+pub struct CoinList(Vec<Coin>);
 
-impl Rewards {
-    pub fn new() -> Rewards {
-        Rewards::default()
+impl CoinList {
+    pub fn new() -> CoinList {
+        CoinList::default()
     }
 
     /// calculates the ratio of the current rewards
-    pub fn ratio(&self, ratio: Decimal) -> Rewards {
-        Rewards(
+    pub fn ratio(&self, ratio: Decimal) -> CoinList {
+        CoinList(
             self.0
                 .iter()
                 .map(|c| {
@@ -46,7 +46,7 @@ impl Rewards {
     }
 
     /// add rewards to self and mutate self
-    pub fn add(mut self, rewards: Rewards) -> ContractResult<Self> {
+    pub fn add(mut self, rewards: CoinList) -> ContractResult<Self> {
         self.merge(rewards.coins())?;
         Ok(self)
     }
@@ -64,7 +64,7 @@ impl Rewards {
     }
 
     /// substract a percentage from self, mutate self and return the subtracted rewards
-    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<Rewards> {
+    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<CoinList> {
         let to_sub = self.ratio(ratio);
 
         // actually subtract the funds
@@ -75,7 +75,7 @@ impl Rewards {
     /// subtract to_sub from self, ignores any coins in to_sub that don't exist in self and vice versa
     /// every item in self is expected to be greater or equal to the amount of the coin with the same denom
     /// in to_sub
-    pub fn sub(&mut self, to_sub: &Rewards) -> ContractResult<()> {
+    pub fn sub(&mut self, to_sub: &CoinList) -> ContractResult<()> {
         to_sub
             .0
             .iter()
@@ -114,7 +114,18 @@ impl Rewards {
     }
 
     pub fn from_coins(coins: Vec<Coin>) -> Self {
-        Rewards(coins)
+        CoinList(coins)
+    }
+
+    pub fn find_coin(&self, denom: String) -> Coin {
+        self.0
+            .clone()
+            .into_iter()
+            .find(|c| c.denom == denom)
+            .unwrap_or(Coin {
+                denom,
+                amount: 0u128.into(),
+            })
     }
 }
 
@@ -126,7 +137,7 @@ mod tests {
 
     #[test]
     fn sub_works() {
-        let mut rewards = Rewards::new();
+        let mut rewards = CoinList::new();
         rewards
             .update_rewards(vec![
                 OsmoCoin {
@@ -146,7 +157,7 @@ mod tests {
 
         assert_eq!(
             rewards,
-            Rewards(vec![
+            CoinList(vec![
                 coin(1000, "uosmo"),
                 coin(2000, "uatom"),
                 coin(3000, "uqsr")
@@ -154,12 +165,12 @@ mod tests {
         );
 
         rewards
-            .sub(&Rewards::from_coins(vec![coin(1500, "uqsr")]))
+            .sub(&CoinList::from_coins(vec![coin(1500, "uqsr")]))
             .unwrap();
 
         assert_eq!(
             rewards,
-            Rewards(vec![
+            CoinList(vec![
                 coin(1000, "uosmo"),
                 coin(2000, "uatom"),
                 coin(1500, "uqsr")
@@ -167,11 +178,11 @@ mod tests {
         );
 
         rewards
-            .sub(&Rewards::from_coins(vec![coin(2000, "uqsr")]))
+            .sub(&CoinList::from_coins(vec![coin(2000, "uqsr")]))
             .unwrap_err();
 
         rewards
-            .sub(&Rewards::from_coins(vec![
+            .sub(&CoinList::from_coins(vec![
                 coin(999, "uqsr"),
                 coin(999, "uosmo"),
             ]))
@@ -179,7 +190,7 @@ mod tests {
 
         assert_eq!(
             rewards,
-            Rewards(vec![
+            CoinList(vec![
                 coin(1, "uosmo"),
                 coin(2000, "uatom"),
                 coin(501, "uqsr")
@@ -189,7 +200,7 @@ mod tests {
 
     #[test]
     fn percentage_works() {
-        let mut rewards = Rewards::new();
+        let mut rewards = CoinList::new();
         rewards
             .update_rewards(vec![
                 OsmoCoin {
@@ -210,7 +221,7 @@ mod tests {
         let ratio = rewards.ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
         assert_eq!(
             ratio,
-            Rewards(vec![
+            CoinList(vec![
                 coin(100, "uosmo"),
                 coin(200, "uatom"),
                 coin(300, "uqsr")
@@ -220,7 +231,7 @@ mod tests {
 
     #[test]
     fn sub_percentage_works() {
-        let mut rewards = Rewards::new();
+        let mut rewards = CoinList::new();
         rewards
             .update_rewards(vec![
                 OsmoCoin {
@@ -243,7 +254,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             ratio,
-            Rewards(vec![
+            CoinList(vec![
                 coin(100, "uosmo"),
                 coin(200, "uatom"),
                 coin(300, "uqsr")
@@ -251,7 +262,7 @@ mod tests {
         );
         assert_eq!(
             rewards,
-            Rewards(vec![
+            CoinList(vec![
                 coin(900, "uosmo"),
                 coin(1800, "uatom"),
                 coin(2700, "uqsr")
@@ -264,7 +275,7 @@ mod tests {
 
     #[test]
     fn add_works() {
-        let mut rewards = Rewards::new();
+        let mut rewards = CoinList::new();
         rewards
             .update_rewards(vec![
                 OsmoCoin {
@@ -282,7 +293,7 @@ mod tests {
             ])
             .unwrap();
         rewards = rewards
-            .add(Rewards::from_coins(vec![
+            .add(CoinList::from_coins(vec![
                 coin(2000, "uosmo"),
                 coin(2000, "uatom"),
                 coin(6000, "uqsr"),
@@ -291,7 +302,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             rewards,
-            Rewards::from_coins(vec![
+            CoinList::from_coins(vec![
                 coin(3000, "uosmo"),
                 coin(4000, "uatom"),
                 coin(9000, "uqsr"),
@@ -302,7 +313,7 @@ mod tests {
 
     #[test]
     fn update_rewards_works() {
-        let mut rewards = Rewards::new();
+        let mut rewards = CoinList::new();
         rewards
             .update_rewards(vec![
                 OsmoCoin {
@@ -339,7 +350,7 @@ mod tests {
 
         assert_eq!(
             rewards,
-            Rewards::from_coins(vec![
+            CoinList::from_coins(vec![
                 coin(2000, "uosmo"),
                 coin(2000, "uatom"),
                 coin(6000, "uqsr"),
