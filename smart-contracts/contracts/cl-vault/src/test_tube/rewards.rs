@@ -154,7 +154,5 @@ mod tests {
                 &alice,
             )
             .unwrap();
-
-        println!("{:?}", res.events)
     }
 }

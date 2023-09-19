@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Deps, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -119,8 +119,8 @@ pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserReward
     Ok(UserRewardsResponse { rewards })
 }
 
-pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
-    let position = get_position(deps.storage, &deps.querier, &env)?;
+pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
+    let position = get_position(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
     Ok(TotalAssetsResponse {
         token0: position
