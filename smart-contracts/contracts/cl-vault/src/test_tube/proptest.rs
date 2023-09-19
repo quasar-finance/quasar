@@ -275,7 +275,7 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                        max_slippage: Decimal::new(Uint128::new(5)),
+                        max_slippage: Decimal::bps(5),
                     },
                 )),
                 &[],
