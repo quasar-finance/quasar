@@ -21,8 +21,8 @@ pub fn instantiate(
     // Set the contract version in storage
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    // Check if the provided end height is less than or equal to the start height.
-    if msg.config.end_height <= msg.config.start_height {
+    // do not instantiate the contract if start height or end height is not set to zero
+    if msg.config.start_height != 0 && msg.config.end_height != 0 {
         return Err(AirdropErrors::InvalidAirdropWindow {});
     }
 
@@ -52,10 +52,10 @@ pub fn execute(
                 }
                 AdminExecuteMsg::AddUsers { users, amounts } => {
                     // Call the function to add users and their amounts
-                    execute_add_users(deps, env, users, amounts)
+                    execute_add_users(deps, users, amounts)
                 }
-                AdminExecuteMsg::RemoveUsers(users) => execute_remove_users(deps, env, users),
-                AdminExecuteMsg::WithdrawFunds() => {}
+                AdminExecuteMsg::RemoveUsers(users) => execute_remove_users(deps, users),
+                AdminExecuteMsg::WithdrawFunds(withdraw_address) => {}
                 AdminExecuteMsg::SetUsers { users, amounts } => {}
             }
         }

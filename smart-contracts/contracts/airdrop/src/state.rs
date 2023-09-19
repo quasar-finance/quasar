@@ -22,13 +22,10 @@ pub struct AirdropConfig {
     /// total claimed amount, zero initially
     pub total_claimed: Uint128,
     /// starting time from which users can claim airdrop
+    // TODO check with height 0 instead of claim enabled
     pub start_height: u64,
     /// end time after which users cannot claim airdrop
     pub end_height: u64,
-    /// flag to enable and disable claims for the given airdrop in case of any emergency
-    pub claim_enabled: bool,
-    /// total amount of unclaimed tokens, equal to airdrop_tokens_amount
-    pub unclaimed_tokens: Uint128,
 }
 
 #[cw_serde]

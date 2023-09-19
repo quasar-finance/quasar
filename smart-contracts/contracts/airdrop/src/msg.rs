@@ -38,5 +38,5 @@ pub enum AdminExecuteMsg {
     RemoveUsers(Vec<String>),
 
     /// sends back the remaining funds to the quasar funding address
-    WithdrawFunds(),
+    WithdrawFunds(String),
 }

@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Env, Order, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Addr, Api, Env, Order, QuerierWrapper, Storage, Uint128};
 
 use crate::state::{UserInfo, USER_INFO};
 use crate::AirdropErrors;
