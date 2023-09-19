@@ -18,4 +18,10 @@ pub enum AirdropErrors {
 
     #[error("Airdrop config cannot be changed once airdrop is active")]
     InvalidChangeInConfig {},
+
+    #[error("User info cannot be changed once airdrop is active")]
+    InvalidChangeUserInfo {},
+
+    #[error("Withdraw is in an invalid window")]
+    InvalidWithdraw {},
 }

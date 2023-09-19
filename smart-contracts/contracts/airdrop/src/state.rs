@@ -2,6 +2,7 @@ use std::string::String;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Uint128;
+use cw_asset::AssetInfo;
 use cw_storage_plus::{Item, Map};
 
 pub const AIRDROP_CONFIG: Item<AirdropConfig> = Item::new("airdrop_config");
@@ -18,7 +19,7 @@ pub struct AirdropConfig {
     /// token amount to be airdropped
     pub airdrop_amount: Uint128,
     /// token denom to be airdropped
-    pub airdrop_denom: String,
+    pub airdrop_asset: AssetInfo,
     /// total claimed amount, zero initially
     pub total_claimed: Uint128,
     /// starting time from which users can claim airdrop
