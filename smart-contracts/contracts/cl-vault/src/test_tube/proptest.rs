@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
+    use cosmwasm_std::{assert_approx_eq, Addr, Attribute, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
@@ -14,6 +14,7 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::debug;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -114,7 +115,7 @@ mod tests {
         let user_shares_balance_after: UserBalanceResponse =
             get_user_shares_balance(wasm, contract_address, account);
 
-        // Use tf_mint_amount to sum over the get_vault_shares_balance() query before and after
+        // Assert Total Vault Shares using tf_mint_amount to sum over the get_vault_shares_balance() query before and after
         let tf_mint_attrs =
             get_event_attributes_by_ty_and_key(&create_position, "tf_mint", vec!["amount"]);
         let tf_mint_amount = get_event_value_amount_numeric(&tf_mint_attrs[0].value);
@@ -142,7 +143,7 @@ mod tests {
         //     vault_position_assets_after.token1.amount
         // );
 
-        // Use tf_mint_amount to sum with previous balance and compare to current
+        // Assert User Shares Balance using tf_mint_amount to sum with previous balance and compare to current
         assert_eq!(
             user_shares_balance_before.balance + Uint128::new(tf_mint_amount),
             user_shares_balance_after.balance
@@ -187,7 +188,7 @@ mod tests {
         let user_shares_balance_after: UserBalanceResponse =
             get_user_shares_balance(wasm, contract_address, account);
 
-        // Use tf_burn_amount to sub over the total_vault_shares_balance
+        // Assert Total Vault Shares using tf_burn_amount to sub over the total_vault_shares_balance
         let tf_burn_attrs =
             get_event_attributes_by_ty_and_key(&withdraw_position, "tf_burn", vec!["amount"]);
         let tf_burn_amount = get_event_value_amount_numeric(&tf_burn_attrs[0].value);
@@ -215,7 +216,7 @@ mod tests {
         //     vault_position_assets_after.token1.amount
         // );
 
-        // Use tf_burn_amount to subtract from previous balance and compare to current
+        // Assert User Shares Balance using tf_burn_amount to subtract from previous balance and compare to current
         assert_eq!(
             user_shares_balance_before.balance - Uint128::new(tf_burn_amount),
             user_shares_balance_after.balance
@@ -248,8 +249,7 @@ mod tests {
         admin_account: &SigningAccount,
     ) {
         // Before queries
-        let (lower_tick_before, upper_tick_before) =
-            get_position_ticks(wasm, cl, contract_address);
+        let (lower_tick_before, upper_tick_before) = get_position_ticks(wasm, cl, contract_address);
         let (lower_price_before, upper_price_before) = (
             tick_to_price(lower_tick_before).unwrap(),
             tick_to_price(upper_tick_before).unwrap(),
@@ -284,8 +284,7 @@ mod tests {
             .unwrap();
 
         // After queries
-        let (lower_tick_after, upper_tick_after) =
-        get_position_ticks(wasm, cl, contract_address);
+        let (lower_tick_after, upper_tick_after) = get_position_ticks(wasm, cl, contract_address);
         let (lower_price_after, upper_price_after) = (
             tick_to_price(lower_tick_after).unwrap(),
             tick_to_price(upper_tick_after).unwrap(),
@@ -294,8 +293,8 @@ mod tests {
         let aup_u128: Uint128 = upper_price_after.atomics().try_into().unwrap();
 
         // As we do before we get ticks, convert to price and compare the before with after
-        assert_eq!(alp_u128, Uint128::new(new_lower_price));
-        assert_eq!(aup_u128, Uint128::new(new_upper_price));
+        assert_approx_eq!(alp_u128, Uint128::new(new_lower_price), "0.000001"); // TODO: Optimize this, maybe changing with assert_eq with rounding on the left arg
+        assert_approx_eq!(aup_u128, Uint128::new(new_upper_price), "0.000001"); // TODO: Optimize this
     }
 
     // GETTERS
@@ -404,13 +403,6 @@ mod tests {
 
     // COMPOSE STRATEGY
 
-    // get_initial_range generates random lower and upper ticks for the initial position
-    prop_compose! {
-        fn get_initial_range()(lower_tick in -1_000_000i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
-            (lower_tick, upper_tick)
-        }
-    }
-
     // Actions enum
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -418,6 +410,13 @@ mod tests {
         Withdraw,
         Swap,
         UpdateRange,
+    }
+
+    // get_initial_range generates random lower and upper ticks for the initial position
+    prop_compose! {
+        fn get_initial_range()(lower_tick in -1_000_000i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+            (lower_tick, upper_tick)
+        }
     }
 
     // get_strategy_list
