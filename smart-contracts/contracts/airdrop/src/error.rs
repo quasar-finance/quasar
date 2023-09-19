@@ -24,4 +24,13 @@ pub enum AirdropErrors {
 
     #[error("Withdraw is in an invalid window")]
     InvalidWithdraw {},
+
+    #[error("Claim is in an invalid window")]
+    InvalidClaim {},
+
+    #[error("Already claimed")]
+    AlreadyClaimed {},
+
+    #[error("Insufficient funds in contract account")]
+    InsufficientFundsInContractAccount {},
 }

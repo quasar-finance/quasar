@@ -4,6 +4,7 @@ pub mod helpers;
 pub mod msg;
 pub mod query;
 pub mod state;
+pub mod users;
 
 mod error;
 pub use crate::error::AirdropErrors;

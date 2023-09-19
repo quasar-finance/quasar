@@ -58,8 +58,8 @@ pub fn execute_add_users(
     // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    // Check if the current airdrop window is not open (start_height and end_height not zero)
-    if current_airdrop_config.start_height != 0 && current_airdrop_config.end_height != 0 {
+    // Check if the current airdrop window is not open (start_height or end_height not zero)
+    if current_airdrop_config.start_height != 0 || current_airdrop_config.end_height != 0 {
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
@@ -120,8 +120,8 @@ pub fn execute_set_users(
     // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    // Check if the current airdrop window is not open (start_height and end_height not zero)
-    if current_airdrop_config.start_height != 0 && current_airdrop_config.end_height != 0 {
+    // Check if the current airdrop window is not open (start_height or end_height not zero)
+    if current_airdrop_config.start_height != 0 || current_airdrop_config.end_height != 0 {
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
@@ -177,8 +177,8 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
     // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    // Check if the current airdrop window is not open (start_height and end_height not zero)
-    if current_airdrop_config.start_height != 0 && current_airdrop_config.end_height != 0 {
+    // Check if the current airdrop window is not open (start_height or end_height not zero)
+    if current_airdrop_config.start_height != 0 || current_airdrop_config.end_height != 0 {
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
@@ -212,7 +212,8 @@ pub fn execute_withdraw_funds(
 
     // Check if the current block height is within the airdrop window or the window is open-ended
     if env.block.height < current_airdrop_config.end_height
-        && current_airdrop_config.end_height == 0
+        || current_airdrop_config.end_height == 0
+        || current_airdrop_config.start_height == 0
     {
         return Err(AirdropErrors::InvalidWithdraw {});
     }

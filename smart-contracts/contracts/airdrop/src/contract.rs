@@ -2,12 +2,14 @@ use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
 use cw2::set_contract_version;
 
 use crate::admin::{
-    execute_add_users, execute_remove_users, execute_update_airdrop_config, execute_withdraw_funds,
+    execute_add_users, execute_remove_users, execute_set_users, execute_update_airdrop_config,
+    execute_withdraw_funds,
 };
 use crate::error::AirdropErrors;
 use crate::helpers::is_contract_admin;
 use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg};
 use crate::state::AIRDROP_CONFIG;
+use crate::users::execute_claim;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "quasar_airdrop";
@@ -60,9 +62,11 @@ pub fn execute(
                 AdminExecuteMsg::WithdrawFunds(withdraw_address) => {
                     execute_withdraw_funds(deps, env, withdraw_address)
                 }
-                AdminExecuteMsg::SetUsers { users, amounts } => {}
+                AdminExecuteMsg::SetUsers { users, amounts } => {
+                    execute_set_users(deps, users, amounts)
+                }
             }
         }
-        ExecuteMsg::ClaimAirdrop() => {}
+        ExecuteMsg::ClaimAirdrop() => { execute_claim(deps, env, info.sender)}
     }
 }
