@@ -92,9 +92,6 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
         return Ok(0i128);
     }
 
-    // TODO: move this to instantiate?
-    build_tick_exp_cache(storage)?;
-
     let mut geo_spacing;
     if price > Decimal256::one() {
         let mut index = 0i64;
@@ -165,7 +162,7 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     }
 }
 
-fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
+pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
     // Build positive indices
     let mut max_price = Decimal256::one();
     let mut cur_exp_index = 0i64;
