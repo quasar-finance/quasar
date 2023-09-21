@@ -1,4 +1,6 @@
-use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+};
 use cw2::set_contract_version;
 
 use crate::admin::{
@@ -7,7 +9,8 @@ use crate::admin::{
 };
 use crate::error::AirdropErrors;
 use crate::helpers::is_contract_admin;
-use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg};
+use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::query::{query_config, query_contract_state, query_user};
 use crate::state::AIRDROP_CONFIG;
 use crate::users::execute_claim;
 
@@ -67,6 +70,15 @@ pub fn execute(
                 }
             }
         }
-        ExecuteMsg::ClaimAirdrop() => { execute_claim(deps, env, info.sender)}
+        ExecuteMsg::ClaimAirdrop() => execute_claim(deps, env, info.sender),
+    }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::AirdropConfigQuery {} => to_binary(&query_config(deps)?),
+        QueryMsg::UserInfoQuery { user } => to_binary(&query_user(deps, user)?),
+        QueryMsg::ContractStateQuery {} => to_binary(&query_contract_state(deps)?),
     }
 }

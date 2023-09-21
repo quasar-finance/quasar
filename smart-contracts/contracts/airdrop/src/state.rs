@@ -44,6 +44,9 @@ impl AirdropConfig {
     pub fn get_end_heights(&self) -> u64 {
         self.start_height
     }
+    pub fn get_config(self) -> AirdropConfig {
+        self
+    }
 }
 
 impl UserInfo {

@@ -185,7 +185,7 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
     // Iterate through the list of users to be removed
     for user in users.iter() {
         // Validate the user's address
-        deps.api.addr_validate(&user)?;
+        deps.api.addr_validate(user)?;
 
         // Load the user_info entry from storage
         let user_info = USER_INFO.load(deps.storage, user.clone())?;
@@ -234,11 +234,8 @@ pub fn execute_withdraw_funds(
 
     // Transfer the airdrop asset to the withdrawal address
     // TODO: Store this transaction as an event
-    Asset::new(
-        current_airdrop_config.airdrop_asset.clone(),
-        contract_bank_balance,
-    )
-    .transfer_msg(&withdraw_address)?;
+    Asset::new(current_airdrop_config.airdrop_asset, contract_bank_balance)
+        .transfer_msg(&withdraw_address)?;
 
     // Return a default response if all checks pass
     // TODO: Add events

@@ -18,7 +18,7 @@ pub fn execute_claim(deps: DepsMut, env: Env, user: Addr) -> Result<Response, Ai
     }
 
     // Validate the withdrawal address
-    deps.api.addr_validate(&user.to_string())?;
+    deps.api.addr_validate(user.as_ref())?;
 
     let user_info = USER_INFO.load(deps.storage, user.to_string())?;
     if user_info.get_claimed_flag() {
@@ -42,11 +42,7 @@ pub fn execute_claim(deps: DepsMut, env: Env, user: Addr) -> Result<Response, Ai
 
     // Transfer the airdrop asset to the withdrawal address
     // TODO: Store this transaction as an event
-    Asset::new(
-        current_airdrop_config.airdrop_asset.clone(),
-        contract_bank_balance,
-    )
-    .transfer_msg(&user)?;
+    Asset::new(current_airdrop_config.airdrop_asset, contract_bank_balance).transfer_msg(&user)?;
 
     // Return a default response if all checks pass
     // TODO: Add events
