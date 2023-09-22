@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, to_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    Uint128, WasmMsg,
+    Uint128, WasmMsg, CosmosMsg,
 };
 
 use cw20::BalanceResponse;
@@ -603,6 +603,45 @@ pub fn update_cap(
         .add_attribute("action", "update_cap")
         .add_attributes(attributes)
         .add_attribute("success", "true"))
+}
+
+pub fn execute_force_unbond(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    addresses: Vec<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut submsgs: Vec<CosmosMsg> = vec![];
+    let mut attrs = vec![];
+
+    for address in addresses {
+        let address = deps.api.addr_validate(&address)?;
+        let balance =
+            cw20_base::contract::query_balance(deps.as_ref(), address.to_string())?.balance;
+        if balance > Uint128::zero() {
+            // workaround to pass the user address instead of the contract admin address
+            let user_info = MessageInfo {
+                sender: address.clone(),
+                funds: vec![],
+            };
+            // TODO: we need to actually append instead of overwriting the response
+            let start_unbond_response =
+                do_start_unbond(deps.branch(), &env, &user_info, Some(balance))?
+                    .unwrap_or(Response::new());
+
+            submsgs = start_unbond_response
+                .messages
+                .iter()
+                .map(|sm| sm.msg.clone())
+                .collect();
+
+            attrs.extend(start_unbond_response.attributes);
+        }
+    }
+
+    Ok(Response::new().add_messages(submsgs).add_attributes(attrs))
 }
 
 #[cfg(test)]
