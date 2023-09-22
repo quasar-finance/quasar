@@ -1,11 +1,10 @@
 use std::string::String;
 
 use cosmwasm_std::{DepsMut, Env, Response, StdError, Uint128};
-use cw20_base::contract::query_balance;
 use cw_asset::Asset;
 
 use crate::helpers::get_total_in_user_info;
-use crate::state::{AirdropConfig, AIRDROP_CONFIG, USER_INFO};
+use crate::state::{AirdropConfig, UserInfo, AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
 pub fn execute_update_airdrop_config(
@@ -17,28 +16,36 @@ pub fn execute_update_airdrop_config(
 
     // Check if the start height and end height are not zero,
     // indicating a valid airdrop window
-    if config.start_height != 0 && config.end_height != 0 {
+    if config.start_height != 0 || config.end_height != 0 {
         // Check if the current block height is less than the start height
         // and if the start height is less than the end height
         if env.block.height < config.start_height && config.start_height < config.end_height {
             // Check if the airdrop amount is sufficient to supply all users
             if config.airdrop_amount >= get_total_in_user_info(deps.storage) {
-                // Get the admin address of the contract
-                let admin_address = deps
-                    .querier
-                    .query_wasm_contract_info(&env.contract.address)?
-                    .admin;
-
                 // Get the contract's bank balance
-                let contract_bank_balance = query_balance(deps.as_ref(), admin_address.unwrap())
-                    .unwrap()
-                    .balance;
+                let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
+                let contract_balance = current_airdrop_config
+                    .airdrop_asset
+                    .query_balance(&deps.querier, &env.contract.address)?;
 
                 // Check if the contract has enough funds for the airdrop
-                if contract_bank_balance < config.airdrop_amount {
-                    return Err(AirdropErrors::InvalidChangeInConfig {});
+                if contract_balance < config.airdrop_amount {
+                    return Err(AirdropErrors::Std(StdError::GenericErr {
+                        msg:
+                            "Failed due to insufficient balance in the contract account. Balance : "
+                                .to_string()
+                                + &contract_balance.to_string(),
+                    }));
                 }
+            } else {
+                return Err(AirdropErrors::Std(StdError::GenericErr {
+                    msg: "Failed due to config has less amount than the amount allowed to the users to claim".to_string(),
+                }));
             }
+        } else {
+            return Err(AirdropErrors::Std(StdError::GenericErr {
+                msg: "Failed as the heights given do not satisfy the conditions".to_string(),
+            }));
         }
     }
 
@@ -71,9 +78,9 @@ pub fn execute_add_users(
     }
 
     // Loop through the provided users and amounts
-    for number in 0..=users.len() {
+    for number in 0..users.len() {
         // Validate the user's address
-        deps.api.addr_validate(&users[number].to_string())?;
+        deps.api.addr_validate(&users[number])?;
 
         // Validate that the amount is not negative
         if amounts[number] < Uint128::zero() {
@@ -84,13 +91,22 @@ pub fn execute_add_users(
             }));
         }
 
-        // Load the user's current information from storage
-        let user_info = USER_INFO.load(deps.storage, users[number].clone())?;
+        let maybe_user_info = USER_INFO.may_load(deps.storage, users[number].clone())?;
 
-        // Check if the user has not claimed and has no existing claimable amount
-        if user_info.get_claimable_amount() == Uint128::zero() && !user_info.get_claimed_flag() {
-            // Save the user's information with the given info
-            USER_INFO.save(deps.storage, users[number].clone(), &user_info)?;
+        // Check if the user_info exists (is not empty)
+        if let Some(user_info) = maybe_user_info {
+            // User info exists, perform your checks here
+            if user_info.get_claimable_amount() != Uint128::zero() || user_info.get_claimed_flag() {
+                // Handle the case where user_info exists
+                return Err(AirdropErrors::AlreadyExists {});
+            }
+        } else {
+            // User info does not exist, create a new entry
+            let new_user_info = UserInfo {
+                claimable_amount: amounts[number],
+                claimed_flag: false,
+            };
+            USER_INFO.save(deps.storage, users[number].clone(), &new_user_info)?;
         }
     }
 
@@ -100,7 +116,7 @@ pub fn execute_add_users(
     // Check if the total claimable amount exceeds the airdrop amount
     if total_in_user_info > current_airdrop_config.airdrop_amount {
         return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Total amount in the given user amounts".to_string()
+            msg: "Total amount in the given user amounts ".to_string()
                 + &*total_in_user_info.to_string()
                 + &*" is greater than ".to_string()
                 + &*current_airdrop_config.airdrop_amount.to_string(),
@@ -132,14 +148,14 @@ pub fn execute_set_users(
         }));
     }
 
-    for number in 0..=users.len() {
+    for number in 0..users.len() {
         // Validate the user's address
-        deps.api.addr_validate(&users[number].to_string())?;
+        deps.api.addr_validate(&users[number])?;
 
         // Validate that the amount is not negative
         if amounts[number] < Uint128::zero() {
             return Err(AirdropErrors::Std(StdError::GenericErr {
-                msg: "Amount at index :".to_string()
+                msg: "Amount at index : ".to_string()
                     + &*number.to_string()
                     + &*"is negative".to_string(),
             }));
@@ -151,7 +167,11 @@ pub fn execute_set_users(
         // Check if the user has not claimed
         if !user_info.get_claimed_flag() {
             // Update all the users with the given info
-            USER_INFO.save(deps.storage, users[number].clone(), &user_info)?;
+            let new_user_info = UserInfo {
+                claimable_amount: amounts[number],
+                claimed_flag: false,
+            };
+            USER_INFO.save(deps.storage, users[number].clone(), &new_user_info)?;
         }
     }
 
@@ -161,7 +181,7 @@ pub fn execute_set_users(
     // Check if the total claimable amount exceeds the airdrop amount
     if total_in_user_info > current_airdrop_config.airdrop_amount {
         return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Total amount in the given user amounts".to_string()
+            msg: "Total amount in the given user amounts ".to_string()
                 + &*total_in_user_info.to_string()
                 + &*" is greater than ".to_string()
                 + &*current_airdrop_config.airdrop_amount.to_string(),
@@ -221,23 +241,20 @@ pub fn execute_withdraw_funds(
     // Validate the withdrawal address
     deps.api.addr_validate(&withdraw_address)?;
 
-    // Get the admin address of the contract
-    let admin_address = deps
-        .querier
-        .query_wasm_contract_info(&env.contract.address)?
-        .admin;
-
-    // Get the contract's bank balance
-    let contract_bank_balance = query_balance(deps.as_ref(), admin_address.unwrap())
-        .unwrap()
-        .balance;
+    let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
+    let contract_balance = current_airdrop_config
+        .airdrop_asset
+        .query_balance(&deps.querier, &env.contract.address)?;
 
     // Transfer the airdrop asset to the withdrawal address
     // TODO: Store this transaction as an event
-    Asset::new(current_airdrop_config.airdrop_asset, contract_bank_balance)
+    let withdraw = Asset::new(current_airdrop_config.airdrop_asset, contract_balance)
         .transfer_msg(&withdraw_address)?;
 
-    // Return a default response if all checks pass
-    // TODO: Add events
-    Ok(Response::default())
+    // Return a response and add the withdraw transfer message
+    Ok(Response::new().add_message(withdraw).add_attributes(vec![
+        ("action", "withdraw"),
+        ("address", env.contract.address.as_ref()),
+        ("amount", &contract_balance.to_string()),
+    ]))
 }
