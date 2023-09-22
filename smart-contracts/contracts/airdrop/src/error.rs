@@ -31,6 +31,9 @@ pub enum AirdropErrors {
     #[error("Already claimed")]
     AlreadyClaimed {},
 
+    #[error("Already exists")]
+    AlreadyExists {},
+
     #[error("Insufficient funds in contract account")]
     InsufficientFundsInContractAccount {},
 }
