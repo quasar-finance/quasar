@@ -2,7 +2,7 @@ use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg, MigrateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
     query_info, query_metadata, query_pool, query_position, query_total_assets,
     query_total_vault_token_supply, query_user_balance, query_user_rewards,
