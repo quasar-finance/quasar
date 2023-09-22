@@ -2249,6 +2249,14 @@ fn test_force_unbond() {
                 key: "bond_id".to_string(),
                 value: "2".to_string(),
             },
+            Attribute {
+                key: "action".to_string(),
+                value: "skipped_start_unbond".to_string(),
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "user_not_bonded".to_string(),
+            },
         ],
     );
 }
