@@ -122,7 +122,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.OsmosisDenomInQuasar = helpers.IbcDenomFromChannel(s.Quasar2OsmosisTransferChan, s.Osmosis().Config().Denom)
 	s.QuasarDenomInOsmosis = helpers.IbcDenomFromChannelCounterparty(s.Quasar2OsmosisTransferChan, s.Quasar().Config().Denom)
 
-	// Setup an account in quasar chain for contract deployment
+	// Set up an account in quasar chain for contract deployment
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
 
 	// Create Pools twice in order to create them in a range from poolId 1 to 6 for both test cases as Join and Exit
@@ -130,24 +130,31 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.CreatePools(ctx)
 }
 
-func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
+func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	t := s.T()
 	ctx := context.Background()
 	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init1, init2, init3})
 
 	// create user and check his balance
-	acc := s.createUserAndCheckBalances(ctx)
+	acc1 := s.createUserAndCheckBalances(ctx, 10_000_000)
+	acc2 := s.createUserAndCheckBalances(ctx, 20_000_000)
 
-	t.Log("Execute first bond transaction, this should fail due to slippage as we bond 10/3 OSMO on 2denom:2denom assets pools")
-	s.executeBond(ctx, acc, basicVaultAddress)
-	t.Log("Execute sandwich attack before ICA/ICQ to finish the process")
-	s.executeSandwichAttackJoin(ctx)
-	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
+	t.Log("Execute 1st bond transaction, for user 1")
+	s.executeBond(ctx, acc1, basicVaultAddress, 10_000_000)
+
+	t.Log("Execute 2nd bond transaction, for user 2")
+	s.executeBond(ctx, acc2, basicVaultAddress, 20_000_000)
+
+	t.Log("Execute first clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Check that the user shares balance is still 0 as the joinPool didn't happen due to slippage on the osmosis side")
-	balance := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
-	s.Require().True(int64(0) == balance)
+	t.Log("Check that the user1 shares balance is 10 OSMO")
+	balance1 := s.getUserSharesBalance(ctx, acc1, basicVaultAddress)
+	s.Require().Equal(int64(10_000_000-1), balance1)
+
+	t.Log("Check that the user2 shares balance is 20 OSMO")
+	balance2 := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
+	s.Require().Equal(int64(20_000_000-1), balance2)
 
 	t.Log("Get the counterparty ICA osmo1 addresses for each one of the primitive and check their uosmo balances after executing bond that failed")
 	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
@@ -177,7 +184,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t.Log("Execute retry endpoints against each one of the primitives to enqueue previously failed join pools")
 	s.executeRetry(
 		ctx,
-		acc,
+		acc2,
 		[]string{lpAddresses[0], lpAddresses[1], lpAddresses[2]},
 		[]uint64{seqError1, seqError2, seqError3},
 		[]string{channelIdError1, channelIdError2, channelIdError3},
@@ -190,7 +197,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().Equal(0, len(trappedErrorsAfter[2]))
 
 	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
-	s.executeBond(ctx, acc, basicVaultAddress)
+	s.executeBond(ctx, acc2, basicVaultAddress, 10_000_000)
 	t.Log("Execute third clear cache to perform the joinPool on the osmosis side")
 	s.executeClearCache(ctx, basicVaultAddress)
 
@@ -201,7 +208,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[2]))
 
 	t.Log("Check that the user shares balance is ~20 as both join pools should have worked")
-	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
+	balanceAfter := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
 	s.Require().Equal(BondAmount*2-1-1, balanceAfter)
 
 	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
@@ -221,10 +228,10 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	ctx := context.Background()
 	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init4, init5, init6})
 
-	acc := s.createUserAndCheckBalances(ctx)
+	acc := s.createUserAndCheckBalances(ctx, 10_000_000)
 
 	t.Log("Execute first bond transaction, this should work")
-	s.executeBond(ctx, acc, basicVaultAddress)
+	s.executeBond(ctx, acc, basicVaultAddress, 10_000_000)
 
 	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
 	s.executeClearCache(ctx, basicVaultAddress)
@@ -387,15 +394,15 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context, inits []map[string
 	return basicVaultAddress, []string{lpAddress1, lpAddress2, lpAddress3}
 }
 
-func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wallet {
+func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context, amount int64) *ibc.Wallet {
 	t := s.T()
 
 	t.Log("Create testing account on Quasar chain with some QSR tokens for fees")
 	acc := s.CreateUserAndFund(ctx, s.Quasar(), 10_000_000) // unused qsr, just for tx fees
 
 	t.Log("Fund testing account with uosmo via IBC transfer from Osmosis chain Treasury account")
-	walletAmount0 := ibc.WalletAmount{Address: acc.Bech32Address(s.Quasar().Config().Bech32Prefix), Denom: s.Osmosis().Config().Denom, Amount: BondAmount * 2}
-	transfer, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, walletAmount0, ibc.TransferOptions{})
+	walletAmount := ibc.WalletAmount{Address: acc.Bech32Address(s.Quasar().Config().Bech32Prefix), Denom: s.Osmosis().Config().Denom, Amount: amount}
+	transfer, err := s.Osmosis().SendIBCTransfer(ctx, s.Osmosis2QuasarTransferChan.ChannelId, s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, walletAmount, ibc.TransferOptions{})
 	s.Require().NoError(err)
 	s.Require().NoError(transfer.Validate())
 
@@ -404,14 +411,14 @@ func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wa
 	s.Require().NoError(err)
 
 	t.Log("Check tester accounts uosmo balance after executing IBC transfer")
-	balanceTester0, err := s.Quasar().GetBalance(ctx, acc.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	balanceTester, err := s.Quasar().GetBalance(ctx, acc.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
-	s.Require().Equal(BondAmount*2, balanceTester0)
+	s.Require().Equal(amount, balanceTester)
 
 	return acc
 }
 
-func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
+func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string, amount int64) {
 	t := s.T()
 
 	s.ExecuteContract(
@@ -419,7 +426,7 @@ func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basic
 		s.Quasar(),
 		acc.KeyName,
 		basicVaultAddress,
-		sdk.NewCoins(sdk.NewInt64Coin(s.OsmosisDenomInQuasar, BondAmount)),
+		sdk.NewCoins(sdk.NewInt64Coin(s.OsmosisDenomInQuasar, amount)),
 		map[string]any{"bond": map[string]any{}},
 		nil,
 	)
