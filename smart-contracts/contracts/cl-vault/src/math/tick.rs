@@ -222,6 +222,8 @@ mod tests {
     #[test]
     fn test_test_tube_tick_to_price() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let tick_index = 27445000_i128;
         let _expected_price = Decimal256::from_str("30352").unwrap();
@@ -346,6 +348,8 @@ mod tests {
     #[test]
     fn test_price_to_tick() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let mut price = Decimal256::from_str("30352").unwrap();
         let mut expected_tick_index = 38035200;

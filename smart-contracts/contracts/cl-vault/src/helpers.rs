@@ -457,7 +457,7 @@ mod tests {
 
     use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
 
-    use crate::math::tick::price_to_tick;
+    use crate::math::tick::{price_to_tick, build_tick_exp_cache};
 
     use super::*;
 
@@ -524,6 +524,7 @@ mod tests {
     #[test]
     fn test_0_to_1_swap() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
         let lower_price = "4500";
         let upper_price = "5500";
@@ -581,6 +582,7 @@ mod tests {
     #[test]
     fn test_1_to_0_swap() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
         let lower_price = "4500";
         let upper_price = "5500";
