@@ -571,9 +571,10 @@ mod tests {
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
+        math::tick::build_tick_exp_cache,
         rewards::CoinList,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN, STRATEGIST_REWARDS},
-        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance}, math::tick::build_tick_exp_cache,
+        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
     };
 
     #[test]

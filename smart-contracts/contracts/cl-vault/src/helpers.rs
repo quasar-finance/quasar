@@ -457,7 +457,7 @@ mod tests {
 
     use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
 
-    use crate::math::tick::{price_to_tick, build_tick_exp_cache};
+    use crate::math::tick::{build_tick_exp_cache, price_to_tick};
 
     use super::*;
 
