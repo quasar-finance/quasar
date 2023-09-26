@@ -1,7 +1,9 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_binary, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply,
+    Response, StdResult, Uint128,
 };
 use cw2::set_contract_version;
+use cw20_base::msg::MigrateMsg;
 
 use crate::admin::{
     execute_add_users, execute_remove_users, execute_set_users, execute_update_airdrop_config,
@@ -11,7 +13,8 @@ use crate::error::AirdropErrors;
 use crate::helpers::is_contract_admin;
 use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::{query_config, query_contract_state, query_sanity_check, query_user};
-use crate::state::AIRDROP_CONFIG;
+use crate::reply::handle_reply;
+use crate::state::{AIRDROP_CONFIG, REPLY_MAP};
 use crate::users::execute_claim;
 
 // version info for migration info
@@ -29,7 +32,11 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // do not instantiate the contract if start height or end height is not set to zero
-    if msg.config.start_height != 0 && msg.config.end_height != 0 {
+    // and total claimed is not zero
+    if msg.config.start_height != 0
+        && msg.config.end_height != 0
+        && msg.config.total_claimed != Uint128::zero()
+    {
         return Err(AirdropErrors::InvalidAirdropWindow {});
     }
 
@@ -37,7 +44,34 @@ pub fn instantiate(
     AIRDROP_CONFIG.save(deps.storage, &msg.config)?;
 
     // Return a default response to indicate success
-    Ok(Response::default())
+    let attributes: Vec<Attribute> = vec![
+        Attribute {
+            key: "description".to_string(),
+            value: msg.config.airdrop_description.to_string(),
+        },
+        Attribute {
+            key: "airdrop_amount".to_string(),
+            value: msg.config.airdrop_amount.to_string(),
+        },
+        Attribute {
+            key: "airdrop_asset".to_string(),
+            value: msg.config.airdrop_asset.to_string(),
+        },
+        Attribute {
+            key: "claimed".to_string(),
+            value: msg.config.total_claimed.to_string(),
+        },
+        Attribute {
+            key: "start_height".to_string(),
+            value: msg.config.start_height.to_string(),
+        },
+        Attribute {
+            key: "end_height".to_string(),
+            value: msg.config.end_height.to_string(),
+        },
+    ];
+    Ok(Response::default()
+        .add_event(Event::new("instantiate_airdrop_contract").add_attributes(attributes)))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -82,4 +116,15 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ContractStateQuery {} => to_binary(&query_contract_state(deps)?),
         QueryMsg::SanityCheckQuery {} => to_binary(&query_sanity_check(deps, env)?),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, AirdropErrors> {
+    let address = REPLY_MAP.load(deps.storage, msg.id)?;
+    handle_reply(deps, address)
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, AirdropErrors> {
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }

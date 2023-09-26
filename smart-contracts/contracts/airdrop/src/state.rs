@@ -7,6 +7,7 @@ use cw_storage_plus::{Item, Map};
 
 pub const AIRDROP_CONFIG: Item<AirdropConfig> = Item::new("airdrop_config");
 pub const USER_INFO: Map<String, UserInfo> = Map::new("user_info");
+pub const REPLY_MAP: Map<u64, String> = Map::new("reply_map");
 
 //----------------------------------------------------------------------------------------
 // Storage types
@@ -23,7 +24,6 @@ pub struct AirdropConfig {
     /// total claimed amount, zero initially
     pub total_claimed: Uint128,
     /// starting time from which users can claim airdrop
-    // TODO check with height 0 instead of claim enabled
     pub start_height: u64,
     /// end time after which users cannot claim airdrop
     pub end_height: u64,

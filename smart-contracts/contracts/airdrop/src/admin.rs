@@ -1,6 +1,6 @@
 use std::string::String;
 
-use cosmwasm_std::{DepsMut, Env, Response, StdError, Uint128};
+use cosmwasm_std::{Attribute, DepsMut, Env, Event, Response, StdError, Uint128};
 use cw_asset::Asset;
 
 use crate::helpers::{
@@ -33,8 +33,34 @@ pub fn execute_update_airdrop_config(
     AIRDROP_CONFIG.save(deps.storage, &config)?;
 
     // Return a default response to indicate success
-    // TODO: Add events
-    Ok(Response::default())
+    let attributes: Vec<Attribute> = vec![
+        Attribute {
+            key: "description".to_string(),
+            value: config.airdrop_description.to_string(),
+        },
+        Attribute {
+            key: "airdrop_amount".to_string(),
+            value: config.airdrop_amount.to_string(),
+        },
+        Attribute {
+            key: "airdrop_asset".to_string(),
+            value: config.airdrop_asset.to_string(),
+        },
+        Attribute {
+            key: "claimed".to_string(),
+            value: config.total_claimed.to_string(),
+        },
+        Attribute {
+            key: "start_height".to_string(),
+            value: config.start_height.to_string(),
+        },
+        Attribute {
+            key: "end_height".to_string(),
+            value: config.end_height.to_string(),
+        },
+    ];
+    Ok(Response::default()
+        .add_event(Event::new("update_airdrop_config").add_attributes(attributes)))
 }
 
 pub fn execute_add_users(
@@ -57,19 +83,14 @@ pub fn execute_add_users(
         }));
     }
 
+    let mut attributes: Vec<Attribute> = Vec::new();
     // Loop through the provided users and amounts
     for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
         // Validate the user's address
         deps.api.addr_validate(user_and_amount.0)?;
 
         // Validate that the amount is not zero
-        if user_and_amount.1 != Uint128::zero() {
-            return Err(AirdropErrors::Std(StdError::GenericErr {
-                msg: "Amount at index :".to_string()
-                    + &*index.to_string()
-                    + &*"is zero".to_string(),
-            }));
-        }
+        validate_amount(*user_and_amount.1, index)?;
 
         let maybe_user_info = USER_INFO.may_load(deps.storage, user_and_amount.0.clone())?;
 
@@ -87,6 +108,14 @@ pub fn execute_add_users(
                 claimed_flag: false,
             };
             USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
+            attributes.push(Attribute {
+                key: "address".to_string(),
+                value: user_and_amount.0.to_string(),
+            });
+            attributes.push(Attribute {
+                key: "amount".to_string(),
+                value: user_and_amount.1.to_string(),
+            })
         }
     }
 
@@ -97,8 +126,7 @@ pub fn execute_add_users(
     )?;
 
     // Return a default response if all checks pass
-    // TODO: Add events
-    Ok(Response::default())
+    Ok(Response::default().add_event(Event::new("airdrop_add_users").add_attributes(attributes)))
 }
 
 pub fn execute_set_users(
@@ -121,12 +149,13 @@ pub fn execute_set_users(
         }));
     }
 
+    let mut attributes: Vec<Attribute> = Vec::new();
     for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
         // Validate the user's address
         deps.api.addr_validate(user_and_amount.0)?;
 
         // Validate that the amount is not zero
-        validate_amount(user_and_amount.1, index)?;
+        validate_amount(*user_and_amount.1, index)?;
 
         // Load the user's current information from storage
         let user_info = USER_INFO.load(deps.storage, user_and_amount.0.clone())?;
@@ -139,6 +168,14 @@ pub fn execute_set_users(
                 claimed_flag: false,
             };
             USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
+            attributes.push(Attribute {
+                key: "address".to_string(),
+                value: user_and_amount.0.to_string(),
+            });
+            attributes.push(Attribute {
+                key: "amount".to_string(),
+                value: user_and_amount.1.to_string(),
+            })
         }
     }
 
@@ -149,8 +186,7 @@ pub fn execute_set_users(
     )?;
 
     // Return a default response if all checks pass
-    // TODO: Add events
-    Ok(Response::default())
+    Ok(Response::default().add_event(Event::new("airdrop_set_users").add_attributes(attributes)))
 }
 
 pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Response, AirdropErrors> {
@@ -163,6 +199,7 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
     }
 
     let mut removed_users: Vec<String> = Vec::new();
+    let mut attributes: Vec<Attribute> = Vec::new();
     // Iterate through the list of users to be removed
     for user in users.iter() {
         // Validate the user's address
@@ -176,12 +213,18 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
             removed_users.push(user.to_string());
             // Remove the user's entry from the USER_INFO map
             USER_INFO.remove(deps.storage, user.to_string());
+            attributes.push(Attribute {
+                key: "address".to_string(),
+                value: user.to_string(),
+            });
         }
     }
 
     // Return a default response if all checks pass
-    // TODO: Add events
-    Ok(Response::default())
+    Ok(
+        Response::default()
+            .add_event(Event::new("airdrop_remove_users").add_attributes(attributes)),
+    )
 }
 
 pub fn execute_withdraw_funds(

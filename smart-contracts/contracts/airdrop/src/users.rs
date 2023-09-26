@@ -1,6 +1,7 @@
 use cosmwasm_std::{Addr, DepsMut, Env, Response};
 use cw_asset::Asset;
 
+use crate::helpers::add_reply;
 use crate::state::{AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
@@ -16,7 +17,7 @@ pub fn execute_claim(deps: DepsMut, env: Env, user: Addr) -> Result<Response, Ai
         return Err(AirdropErrors::InvalidClaim {});
     }
 
-    let mut user_info = USER_INFO.load(deps.storage, user.to_string())?;
+    let user_info = USER_INFO.load(deps.storage, user.to_string())?;
     if user_info.get_claimed_flag() {
         return Err(AirdropErrors::AlreadyClaimed {});
     }
@@ -32,21 +33,18 @@ pub fn execute_claim(deps: DepsMut, env: Env, user: Addr) -> Result<Response, Ai
     }
 
     // Transfer the airdrop asset to the withdrawal address
-    // TODO: Store this transaction as an event
     let claim = Asset::new(
         current_airdrop_config.airdrop_asset,
         user_info.claimable_amount,
     )
     .transfer_msg(user.clone())?;
 
-    // update the user info as claimed
-    user_info.claimed_flag = true;
-    USER_INFO.save(deps.storage, user.to_string(), &user_info)?;
-
     // Return a default response if all checks pass
-    Ok(Response::new().add_message(claim).add_attributes(vec![
-        ("action", "claim"),
-        ("user", user.as_ref()),
-        ("amount", &user_info.claimable_amount.to_string()),
-    ]))
+    Ok(Response::new()
+        .add_submessage(add_reply(deps.storage, claim, user.clone())?)
+        .add_attributes(vec![
+            ("action", "claim"),
+            ("user", user.as_ref()),
+            ("amount", &user_info.claimable_amount.to_string()),
+        ]))
 }

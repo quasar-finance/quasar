@@ -1,6 +1,8 @@
-use cosmwasm_std::{Addr, Env, Order, QuerierWrapper, Response, StdError, Storage, Uint128};
+use cosmwasm_std::{
+    Addr, CosmosMsg, Env, Order, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128,
+};
 
-use crate::state::{AirdropConfig, AIRDROP_CONFIG, USER_INFO};
+use crate::state::{AirdropConfig, AIRDROP_CONFIG, REPLY_MAP, USER_INFO};
 use crate::AirdropErrors;
 
 pub fn is_contract_admin(
@@ -29,6 +31,23 @@ pub fn is_contract_admin(
     Ok(())
 }
 
+pub fn add_reply(
+    storage: &mut dyn Storage,
+    msg: CosmosMsg,
+    user: Addr,
+) -> Result<SubMsg, AirdropErrors> {
+    let last = REPLY_MAP
+        .range(storage, None, None, Order::Descending)
+        .next();
+    let mut id: u64 = 0;
+    if let Some(val) = last {
+        id = val?.0 + 1;
+    }
+    REPLY_MAP.save(storage, id, &user.to_string())?;
+
+    Ok(SubMsg::reply_on_success(msg, id))
+}
+
 pub fn check_amounts_and_airdrop_size(
     total_in_user_info: Uint128,
     current_airdrop_amount: Uint128,
@@ -45,9 +64,9 @@ pub fn check_amounts_and_airdrop_size(
     Ok(Response::default())
 }
 
-pub fn validate_amount(amount: &Uint128, index: usize) -> Result<Response, AirdropErrors> {
+pub fn validate_amount(amount: Uint128, index: usize) -> Result<Response, AirdropErrors> {
     // Check if the total claimable amount exceeds the airdrop amount
-    if amount != Uint128::zero() {
+    if amount == Uint128::zero() {
         return Err(AirdropErrors::Std(StdError::GenericErr {
             msg: "Amount at index :".to_string() + &*index.to_string() + &*"is zero".to_string(),
         }));
@@ -63,37 +82,43 @@ pub fn validate_update_config(
 ) -> Result<Response, AirdropErrors> {
     // Check if the start height and end height are not zero,
     // indicating a valid airdrop window
-    if config.start_height != 0 || config.end_height != 0 {
-        // Check if the current block height is less than the start height
-        // and if the start height is less than the end height
-        if env.block.height < config.start_height && config.start_height < config.end_height {
-            // Check if the airdrop amount is sufficient to supply all users
-            if config.airdrop_amount >= get_total_in_user_info(storage) {
-                // Get the contract's bank balance
-                let current_airdrop_config = AIRDROP_CONFIG.load(storage)?;
-                let contract_balance = current_airdrop_config
-                    .airdrop_asset
-                    .query_balance(&querier, &env.contract.address)?;
+    if config.total_claimed == Uint128::zero() {
+        if config.start_height != 0 || config.end_height != 0 {
+            // Check if the current block height is less than the start height
+            // and if the start height is less than the end height
+            if env.block.height < config.start_height && config.start_height < config.end_height {
+                // Check if the airdrop amount is sufficient to supply all users
+                if config.airdrop_amount >= get_total_in_user_info(storage) {
+                    // Get the contract's bank balance
+                    let current_airdrop_config = AIRDROP_CONFIG.load(storage)?;
+                    let contract_balance = current_airdrop_config
+                        .airdrop_asset
+                        .query_balance(&querier, &env.contract.address)?;
 
-                // Check if the contract has enough funds for the airdrop
-                if contract_balance < config.airdrop_amount {
-                    return Err(AirdropErrors::Std(StdError::GenericErr {
-                        msg:
+                    // Check if the contract has enough funds for the airdrop
+                    if contract_balance < config.airdrop_amount {
+                        return Err(AirdropErrors::Std(StdError::GenericErr {
+                            msg:
                             "Failed due to insufficient balance in the contract account. Balance : "
                                 .to_string()
                                 + &contract_balance.to_string(),
+                        }));
+                    }
+                } else {
+                    return Err(AirdropErrors::Std(StdError::GenericErr {
+                        msg: "Failed due to config has less amount than the amount allowed to the users to claim".to_string(),
                     }));
                 }
             } else {
                 return Err(AirdropErrors::Std(StdError::GenericErr {
-                    msg: "Failed due to config has less amount than the amount allowed to the users to claim".to_string(),
+                    msg: "Failed as the heights given do not satisfy the conditions".to_string(),
                 }));
             }
-        } else {
-            return Err(AirdropErrors::Std(StdError::GenericErr {
-                msg: "Failed as the heights given do not satisfy the conditions".to_string(),
-            }));
         }
+    } else {
+        return Err(AirdropErrors::Std(StdError::GenericErr {
+            msg: "Failed as total claimed is non zero".to_string(),
+        }));
     }
     Ok(Response::default())
 }
@@ -102,7 +127,10 @@ pub fn get_total_in_user_info(storage: &dyn Storage) -> Uint128 {
     let mut total_claimable_amount = Uint128::zero();
 
     for res in USER_INFO.range(storage, None, None, Order::Ascending) {
-        total_claimable_amount += res.unwrap().1.get_claimable_amount()
+        let claimed = res.as_ref().unwrap().1.get_claimed_flag();
+        if claimed {
+            total_claimable_amount += res.unwrap().1.get_claimable_amount()
+        }
     }
 
     // Return the total claimable amount

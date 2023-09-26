@@ -27,18 +27,20 @@ quasarnoded tx wasm execute $ADDR1 '{"admin": {"add_users": {"users": ["quasar1s
 
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
-echo "Should fail"
-quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"], "amounts": ["3500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
+echo "Set alice amount to a higher amount so that it overflows and it should fail"
+quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"], "amounts": ["4500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
-echo "Should work"
+echo "Update set new users to update airdrop amount for alice and bob and it should work"
 quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"], "amounts": ["1500000000", "3500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
+echo "Remove alice from the airdrop eligibility"
 quasarnoded tx wasm execute $ADDR1 '{"admin": {"remove_users":["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"]}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
+echo "Add alcie to the airdrop eligibility"
 quasarnoded tx wasm execute $ADDR1 '{"admin": {"add_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"], "amounts": ["1500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 echo "funding contract account"
@@ -63,15 +65,15 @@ while true; do
   sleep 5
 done
 
-quasarnoded q bank balances $ADDR1
+quasarnoded query wasm contract-state smart $ADDR1 '{"airdrop_config_query":{}}'
 quasarnoded tx wasm execute $ADDR1 '{"claim_airdrop":[]}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 quasarnoded tx wasm execute $ADDR1 '{"claim_airdrop":[]}' --from bob --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
-quasarnoded q bank balances $ADDR1
+quasarnoded query wasm contract-state smart $ADDR1 '{"airdrop_config_query":{}}'
 quasarnoded tx wasm execute $ADDR1 '{"claim_airdrop":[]}' --from user1 --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 quasarnoded tx wasm execute $ADDR1 '{"claim_airdrop":[]}' --from user2 --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
-quasarnoded q bank balances $ADDR1
+quasarnoded query wasm contract-state smart quasar14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sy9numu '{"contract_state_query":{}}'
 
 echo ">>> Waiting for the block height to reach $AIRDROP_END_HEIGHT"
 while true; do
