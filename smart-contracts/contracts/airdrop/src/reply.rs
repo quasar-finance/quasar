@@ -11,7 +11,7 @@ pub fn handle_reply(deps: DepsMut, user: String) -> Result<Response, AirdropErro
 
     // update airdrop config by increasing the claimed amount
     let mut airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
-    airdrop_config.airdrop_amount += user_info.claimable_amount;
+    airdrop_config.total_claimed += user_info.claimable_amount;
     AIRDROP_CONFIG.save(deps.storage, &airdrop_config)?;
 
     Ok(Response::default()
