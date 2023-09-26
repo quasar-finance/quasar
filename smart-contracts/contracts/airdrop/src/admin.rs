@@ -3,7 +3,9 @@ use std::string::String;
 use cosmwasm_std::{DepsMut, Env, Response, StdError, Uint128};
 use cw_asset::Asset;
 
-use crate::helpers::get_total_in_user_info;
+use crate::helpers::{
+    check_amounts_and_airdrop_size, get_total_in_user_info, validate_amount, validate_update_config,
+};
 use crate::state::{AirdropConfig, UserInfo, AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
@@ -12,42 +14,20 @@ pub fn execute_update_airdrop_config(
     env: Env,
     config: AirdropConfig,
 ) -> Result<Response, AirdropErrors> {
-    // Check various conditions to validate the airdrop configuration update
+    // load current airdrop config
+    let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    // Check if the start height and end height are not zero,
-    // indicating a valid airdrop window
-    if config.start_height != 0 || config.end_height != 0 {
-        // Check if the current block height is less than the start height
-        // and if the start height is less than the end height
-        if env.block.height < config.start_height && config.start_height < config.end_height {
-            // Check if the airdrop amount is sufficient to supply all users
-            if config.airdrop_amount >= get_total_in_user_info(deps.storage) {
-                // Get the contract's bank balance
-                let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
-                let contract_balance = current_airdrop_config
-                    .airdrop_asset
-                    .query_balance(&deps.querier, &env.contract.address)?;
-
-                // Check if the contract has enough funds for the airdrop
-                if contract_balance < config.airdrop_amount {
-                    return Err(AirdropErrors::Std(StdError::GenericErr {
-                        msg:
-                            "Failed due to insufficient balance in the contract account. Balance : "
-                                .to_string()
-                                + &contract_balance.to_string(),
-                    }));
-                }
-            } else {
-                return Err(AirdropErrors::Std(StdError::GenericErr {
-                    msg: "Failed due to config has less amount than the amount allowed to the users to claim".to_string(),
-                }));
-            }
-        } else {
-            return Err(AirdropErrors::Std(StdError::GenericErr {
-                msg: "Failed as the heights given do not satisfy the conditions".to_string(),
-            }));
-        }
+    // check if an airdrop has been executed on the contract, if yes then return an error
+    if current_airdrop_config.end_height != 0
+        && env.block.height > current_airdrop_config.end_height
+    {
+        return Err(AirdropErrors::Std(StdError::GenericErr {
+            msg: "Failed to execute update as it is post airdrop ending".to_string(),
+        }));
     }
+
+    // Check various conditions to validate the airdrop configuration update
+    validate_update_config(config.clone(), deps.storage, deps.querier, env)?;
 
     // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &config)?;
@@ -78,20 +58,20 @@ pub fn execute_add_users(
     }
 
     // Loop through the provided users and amounts
-    for number in 0..users.len() {
+    for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
         // Validate the user's address
-        deps.api.addr_validate(&users[number])?;
+        deps.api.addr_validate(user_and_amount.0)?;
 
-        // Validate that the amount is not negative
-        if amounts[number] < Uint128::zero() {
+        // Validate that the amount is not zero
+        if user_and_amount.1 != Uint128::zero() {
             return Err(AirdropErrors::Std(StdError::GenericErr {
                 msg: "Amount at index :".to_string()
-                    + &*number.to_string()
-                    + &*"is negative".to_string(),
+                    + &*index.to_string()
+                    + &*"is zero".to_string(),
             }));
         }
 
-        let maybe_user_info = USER_INFO.may_load(deps.storage, users[number].clone())?;
+        let maybe_user_info = USER_INFO.may_load(deps.storage, user_and_amount.0.clone())?;
 
         // Check if the user_info exists (is not empty)
         if let Some(user_info) = maybe_user_info {
@@ -103,25 +83,18 @@ pub fn execute_add_users(
         } else {
             // User info does not exist, create a new entry
             let new_user_info = UserInfo {
-                claimable_amount: amounts[number],
+                claimable_amount: *user_and_amount.1,
                 claimed_flag: false,
             };
-            USER_INFO.save(deps.storage, users[number].clone(), &new_user_info)?;
+            USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
         }
     }
 
-    // Calculate the total claimable amount from USER_INFO
-    let total_in_user_info = get_total_in_user_info(deps.storage);
-
     // Check if the total claimable amount exceeds the airdrop amount
-    if total_in_user_info > current_airdrop_config.airdrop_amount {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Total amount in the given user amounts ".to_string()
-                + &*total_in_user_info.to_string()
-                + &*" is greater than ".to_string()
-                + &*current_airdrop_config.airdrop_amount.to_string(),
-        }));
-    }
+    check_amounts_and_airdrop_size(
+        get_total_in_user_info(deps.storage),
+        current_airdrop_config.airdrop_amount,
+    )?;
 
     // Return a default response if all checks pass
     // TODO: Add events
@@ -148,45 +121,32 @@ pub fn execute_set_users(
         }));
     }
 
-    for number in 0..users.len() {
+    for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
         // Validate the user's address
-        deps.api.addr_validate(&users[number])?;
+        deps.api.addr_validate(user_and_amount.0)?;
 
-        // Validate that the amount is not negative
-        if amounts[number] < Uint128::zero() {
-            return Err(AirdropErrors::Std(StdError::GenericErr {
-                msg: "Amount at index : ".to_string()
-                    + &*number.to_string()
-                    + &*"is negative".to_string(),
-            }));
-        }
+        // Validate that the amount is not zero
+        validate_amount(user_and_amount.1, index)?;
 
         // Load the user's current information from storage
-        let user_info = USER_INFO.load(deps.storage, users[number].clone())?;
+        let user_info = USER_INFO.load(deps.storage, user_and_amount.0.clone())?;
 
         // Check if the user has not claimed
         if !user_info.get_claimed_flag() {
             // Update all the users with the given info
             let new_user_info = UserInfo {
-                claimable_amount: amounts[number],
+                claimable_amount: *user_and_amount.1,
                 claimed_flag: false,
             };
-            USER_INFO.save(deps.storage, users[number].clone(), &new_user_info)?;
+            USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
         }
     }
 
-    // Calculate the total claimable amount from USER_INFO
-    let total_in_user_info = get_total_in_user_info(deps.storage);
-
     // Check if the total claimable amount exceeds the airdrop amount
-    if total_in_user_info > current_airdrop_config.airdrop_amount {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Total amount in the given user amounts ".to_string()
-                + &*total_in_user_info.to_string()
-                + &*" is greater than ".to_string()
-                + &*current_airdrop_config.airdrop_amount.to_string(),
-        }));
-    }
+    check_amounts_and_airdrop_size(
+        get_total_in_user_info(deps.storage),
+        current_airdrop_config.airdrop_amount,
+    )?;
 
     // Return a default response if all checks pass
     // TODO: Add events
@@ -202,18 +162,20 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
+    let mut removed_users: Vec<String> = Vec::new();
     // Iterate through the list of users to be removed
     for user in users.iter() {
         // Validate the user's address
         deps.api.addr_validate(user)?;
 
         // Load the user_info entry from storage
-        let user_info = USER_INFO.load(deps.storage, user.clone())?;
+        let user_info = USER_INFO.load(deps.storage, user.to_string())?;
 
         // Check if the claimed flag is false, indicating that the user has not claimed
         if !user_info.get_claimed_flag() {
+            removed_users.push(user.to_string());
             // Remove the user's entry from the USER_INFO map
-            USER_INFO.remove(deps.storage, user.clone());
+            USER_INFO.remove(deps.storage, user.to_string());
         }
     }
 
@@ -247,7 +209,6 @@ pub fn execute_withdraw_funds(
         .query_balance(&deps.querier, &env.contract.address)?;
 
     // Transfer the airdrop asset to the withdrawal address
-    // TODO: Store this transaction as an event
     let withdraw = Asset::new(current_airdrop_config.airdrop_asset, contract_balance)
         .transfer_msg(&withdraw_address)?;
 

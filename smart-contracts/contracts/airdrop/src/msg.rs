@@ -53,6 +53,9 @@ pub enum QueryMsg {
 
     #[returns(ContractStateResponse)]
     ContractStateQuery {},
+
+    #[returns(SanityCheckResponse)]
+    SanityCheckQuery {},
 }
 
 #[cw_serde]
@@ -69,4 +72,9 @@ pub struct UserInfoResponse {
 pub struct ContractStateResponse {
     pub airdrop_config: AirdropConfig,
     pub user_info: Vec<(String, UserInfo)>,
+}
+
+#[cw_serde]
+pub struct SanityCheckResponse {
+    pub response: bool,
 }

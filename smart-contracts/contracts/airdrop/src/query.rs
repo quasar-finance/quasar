@@ -1,7 +1,9 @@
-use cosmwasm_std::{Deps, Order, StdResult};
 use std::string::String;
 
-use crate::msg::{ConfigResponse, ContractStateResponse, UserInfoResponse};
+use crate::helpers::get_total_in_user_info;
+use cosmwasm_std::{Deps, Env, Order, StdResult};
+
+use crate::msg::{ConfigResponse, ContractStateResponse, SanityCheckResponse, UserInfoResponse};
 use crate::state::{UserInfo, AIRDROP_CONFIG, USER_INFO};
 
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
@@ -28,4 +30,24 @@ pub fn query_contract_state(deps: Deps) -> StdResult<ContractStateResponse> {
         airdrop_config: config,
         user_info: user_infos,
     })
+}
+
+pub fn query_sanity_check(deps: Deps, env: Env) -> StdResult<SanityCheckResponse> {
+    // Check if the airdrop amount is sufficient to supply all users
+    let airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
+    if airdrop_config.airdrop_amount >= get_total_in_user_info(deps.storage) {
+        // Get the contract's bank balance
+        let contract_balance = airdrop_config
+            .airdrop_asset
+            .query_balance(&deps.querier, env.contract.address)
+            .unwrap();
+
+        // Check if the contract has enough funds for the airdrop
+        if contract_balance < airdrop_config.airdrop_amount {
+            return Ok(SanityCheckResponse { response: false });
+        }
+    } else {
+        return Ok(SanityCheckResponse { response: false });
+    }
+    Ok(SanityCheckResponse { response: true })
 }
