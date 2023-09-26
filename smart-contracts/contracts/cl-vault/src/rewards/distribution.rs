@@ -20,11 +20,11 @@ use osmosis_std::types::{
     },
 };
 
-use super::helpers::Rewards;
+use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    CURRENT_REWARDS.save(deps.storage, &Rewards::new())?;
+    CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
     let msg = collect_incentives(deps.as_ref(), env)?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
@@ -53,7 +53,7 @@ pub fn handle_collect_incentives_reply(
     let response: MsgCollectIncentivesResponse = data?;
     CURRENT_REWARDS.update(
         deps.storage,
-        |mut rewards| -> Result<Rewards, ContractError> {
+        |mut rewards| -> Result<CoinList, ContractError> {
             rewards.update_rewards(response.collected_incentives)?;
             Ok(rewards)
         },
@@ -96,7 +96,7 @@ pub fn handle_collect_spread_rewards_reply(
 
 fn distribute_rewards(
     mut deps: DepsMut,
-    mut rewards: Rewards,
+    mut rewards: CoinList,
 ) -> Result<Vec<Attribute>, ContractError> {
     if rewards.is_empty() {
         return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
@@ -121,9 +121,9 @@ fn distribute_rewards(
 
     // for each user with locked tokens, we distribute some part of the rewards to them
     // get all users and their current pre-distribution rewards
-    let user_rewards: Result<Vec<(Addr, Rewards)>, ContractError> = SHARES
+    let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
         .range(deps.branch().storage, None, None, Order::Ascending)
-        .map(|v| -> Result<(Addr, Rewards), ContractError> {
+        .map(|v| -> Result<(Addr, CoinList), ContractError> {
             let (address, user_shares) = v?;
             // calculate the amount of each asset the user should get in rewards
             // we need to always round down here, so we never expect more rewards than we have
@@ -136,7 +136,7 @@ fn distribute_rewards(
     user_rewards?
         .into_iter()
         .try_for_each(|(addr, reward)| -> ContractResult<()> {
-            USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<Rewards> {
+            USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
                 if let Some(old_user_rewards) = old {
                     Ok(reward.add(old_user_rewards)?)
                 } else {

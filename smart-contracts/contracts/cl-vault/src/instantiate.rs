@@ -13,7 +13,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 use crate::helpers::must_pay_one_or_two;
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
-use crate::rewards::Rewards;
+use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
     STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
@@ -54,7 +54,7 @@ pub fn handle_instantiate(
         },
     )?;
 
-    STRATEGIST_REWARDS.save(deps.storage, &Rewards::new())?;
+    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
 
     METADATA.save(
         deps.storage,
