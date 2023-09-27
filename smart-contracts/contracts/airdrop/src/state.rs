@@ -47,6 +47,12 @@ impl AirdropConfig {
     pub fn get_config(self) -> AirdropConfig {
         self
     }
+    pub fn is_airdrop_active(&self, current_height: u64) -> bool {
+        if self.start_height <= current_height && self.end_height >= current_height {
+            return true;
+        }
+        false
+    }
 }
 
 impl UserInfo {

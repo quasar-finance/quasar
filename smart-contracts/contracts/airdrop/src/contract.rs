@@ -51,8 +51,8 @@ pub fn instantiate(
 
     // Check if the contract should not be instantiated due to an invalid airdrop window
     if msg.config.start_height != 0
-        && msg.config.end_height != 0
-        && msg.config.total_claimed != Uint128::zero()
+        || msg.config.end_height != 0
+        || msg.config.total_claimed != Uint128::zero()
     {
         return Err(AirdropErrors::InvalidAirdropWindow {});
     }

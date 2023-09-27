@@ -33,6 +33,12 @@ pub fn execute_update_airdrop_config(
     // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
+    if current_airdrop_config.is_airdrop_active(env.block.height) {
+        return Err(AirdropErrors::Std(StdError::GenericErr {
+            msg: "Failed to execute update as airdrop is active".to_string(),
+        }));
+    }
+
     // Check if an airdrop has been executed on the contract and if the update is allowed
     if current_airdrop_config.end_height != 0
         && env.block.height > current_airdrop_config.end_height
