@@ -9,15 +9,31 @@ use crate::helpers::{
 use crate::state::{AirdropConfig, UserInfo, AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
+/// Updates the airdrop configuration of the contract.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `env` - The current contract execution environment.
+/// * `config` - The new airdrop configuration to be set.
+///
+/// # Errors
+///
+/// Returns an error if the airdrop has already ended or if the new configuration is invalid.
+///
+/// # Returns
+///
+/// Returns a response indicating the success of the update operation and includes
+/// relevant attributes in the event.
 pub fn execute_update_airdrop_config(
     deps: DepsMut,
     env: Env,
     config: AirdropConfig,
 ) -> Result<Response, AirdropErrors> {
-    // load current airdrop config
+    // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
-    // check if an airdrop has been executed on the contract, if yes then return an error
+    // Check if an airdrop has been executed on the contract and if the update is allowed
     if current_airdrop_config.end_height != 0
         && env.block.height > current_airdrop_config.end_height
     {
@@ -32,7 +48,7 @@ pub fn execute_update_airdrop_config(
     // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &config)?;
 
-    // Return a default response to indicate success
+    // Build attributes for the event
     let attributes: Vec<Attribute> = vec![
         Attribute {
             key: "description".to_string(),
@@ -59,10 +75,29 @@ pub fn execute_update_airdrop_config(
             value: config.end_height.to_string(),
         },
     ];
+
+    // Return a default response to indicate success with an "update_airdrop_config" event
     Ok(Response::default()
         .add_event(Event::new("update_airdrop_config").add_attributes(attributes)))
 }
 
+/// Adds new users and their respective amounts to the airdrop configuration.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `users` - A vector of user addresses to be added.
+/// * `amounts` - A vector of amounts to be allocated to each user.
+///
+/// # Errors
+///
+/// Returns an error if the airdrop window is not open, the number of users and amounts provided do not match,
+/// or if any of the provided users already have existing claims or allocations.
+///
+/// # Returns
+///
+/// Returns a response indicating the success of the addition operation and includes relevant attributes
+/// in the event.
 pub fn execute_add_users(
     deps: DepsMut,
     users: Vec<String>,
@@ -83,7 +118,9 @@ pub fn execute_add_users(
         }));
     }
 
+    // Initialize an empty vector to store attributes for the event
     let mut attributes: Vec<Attribute> = Vec::new();
+
     // Loop through the provided users and amounts
     for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
         // Validate the user's address
@@ -92,6 +129,7 @@ pub fn execute_add_users(
         // Validate that the amount is not zero
         validate_amount(*user_and_amount.1, index)?;
 
+        // Attempt to load user_info from storage
         let maybe_user_info = USER_INFO.may_load(deps.storage, user_and_amount.0.clone())?;
 
         // Check if the user_info exists (is not empty)
@@ -108,6 +146,8 @@ pub fn execute_add_users(
                 claimed_flag: false,
             };
             USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
+
+            // Add user and amount to attributes for the event
             attributes.push(Attribute {
                 key: "address".to_string(),
                 value: user_and_amount.0.to_string(),
@@ -115,7 +155,7 @@ pub fn execute_add_users(
             attributes.push(Attribute {
                 key: "amount".to_string(),
                 value: user_and_amount.1.to_string(),
-            })
+            });
         }
     }
 
@@ -125,10 +165,27 @@ pub fn execute_add_users(
         current_airdrop_config.airdrop_amount,
     )?;
 
-    // Return a default response if all checks pass
+    // Return a default response if all checks pass with an "airdrop_add_users" event
     Ok(Response::default().add_event(Event::new("airdrop_add_users").add_attributes(attributes)))
 }
 
+/// Sets or updates the allocation of claimable amounts for a list of users in the airdrop configuration.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `users` - A vector of user addresses to set or update allocations for.
+/// * `amounts` - A vector of amounts to be allocated to each user.
+///
+/// # Errors
+///
+/// Returns an error if the airdrop window is not open (start_height or end_height not zero),
+/// the number of users and amounts provided do not match, or if any of the provided users have claimed their allocations.
+///
+/// # Returns
+///
+/// Returns a response indicating the success of the set/update operation and includes relevant attributes
+/// in the event.
 pub fn execute_set_users(
     deps: DepsMut,
     users: Vec<String>,
@@ -149,7 +206,9 @@ pub fn execute_set_users(
         }));
     }
 
+    // Initialize an empty vector to store attributes for the event
     let mut attributes: Vec<Attribute> = Vec::new();
+
     for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
         // Validate the user's address
         deps.api.addr_validate(user_and_amount.0)?;
@@ -168,6 +227,8 @@ pub fn execute_set_users(
                 claimed_flag: false,
             };
             USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
+
+            // Add user and amount to attributes for the event
             attributes.push(Attribute {
                 key: "address".to_string(),
                 value: user_and_amount.0.to_string(),
@@ -185,10 +246,25 @@ pub fn execute_set_users(
         current_airdrop_config.airdrop_amount,
     )?;
 
-    // Return a default response if all checks pass
+    // Return a default response if all checks pass with an "airdrop_set_users" event
     Ok(Response::default().add_event(Event::new("airdrop_set_users").add_attributes(attributes)))
 }
 
+/// Removes specified users from the airdrop configuration if they have not claimed their allocations.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `users` - A vector of user addresses to remove from the airdrop configuration.
+///
+/// # Errors
+///
+/// Returns an error if the airdrop window is not open (start_height or end_height not zero).
+///
+/// # Returns
+///
+/// Returns a response indicating the success of the removal operation and includes relevant attributes
+/// in the event for each removed user.
 pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Response, AirdropErrors> {
     // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
@@ -198,8 +274,10 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
+    // Initialize vectors to store removed users and attributes for the event
     let mut removed_users: Vec<String> = Vec::new();
     let mut attributes: Vec<Attribute> = Vec::new();
+
     // Iterate through the list of users to be removed
     for user in users.iter() {
         // Validate the user's address
@@ -210,9 +288,13 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
 
         // Check if the claimed flag is false, indicating that the user has not claimed
         if !user_info.get_claimed_flag() {
+            // Add the user's address to the list of removed users
             removed_users.push(user.to_string());
+
             // Remove the user's entry from the USER_INFO map
             USER_INFO.remove(deps.storage, user.to_string());
+
+            // Add user address as an attribute for the event
             attributes.push(Attribute {
                 key: "address".to_string(),
                 value: user.to_string(),
@@ -220,13 +302,29 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
         }
     }
 
-    // Return a default response if all checks pass
+    // Return a default response if all checks pass with an "airdrop_remove_users" event
     Ok(
         Response::default()
             .add_event(Event::new("airdrop_remove_users").add_attributes(attributes)),
     )
 }
 
+/// Withdraws airdrop funds to the specified address after the airdrop window has ended.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage, external data, and assets.
+/// * `env` - Environment information including the current block height.
+/// * `withdraw_address` - The address to which the airdrop funds will be withdrawn.
+///
+/// # Errors
+///
+/// Returns an error if the current block height is not within the airdrop window or the window is open-ended.
+/// Also returns an error if the withdrawal address is invalid.
+///
+/// # Returns
+///
+/// Returns a response indicating the success of the withdrawal and includes attributes in the response for tracking.
 pub fn execute_withdraw_funds(
     deps: DepsMut,
     env: Env,
@@ -246,7 +344,10 @@ pub fn execute_withdraw_funds(
     // Validate the withdrawal address
     deps.api.addr_validate(&withdraw_address)?;
 
+    // Load the current airdrop configuration again to ensure consistency
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
+
+    // Query the contract's balance of the airdrop asset
     let contract_balance = current_airdrop_config
         .airdrop_asset
         .query_balance(&deps.querier, &env.contract.address)?;

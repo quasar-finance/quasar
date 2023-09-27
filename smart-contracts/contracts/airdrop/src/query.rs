@@ -6,6 +6,15 @@ use cosmwasm_std::{Deps, Env, Order, StdResult};
 use crate::msg::{ConfigResponse, ContractStateResponse, SanityCheckResponse, UserInfoResponse};
 use crate::state::{UserInfo, AIRDROP_CONFIG, USER_INFO};
 
+/// Queries and returns the current airdrop configuration.
+///
+/// # Arguments
+///
+/// * `deps` - Deps is a struct providing access to the contract's dependencies like storage.
+///
+/// # Returns
+///
+/// Returns a `ConfigResponse` containing the current airdrop configuration.
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config = AIRDROP_CONFIG.load(deps.storage)?;
     Ok(ConfigResponse {
@@ -13,12 +22,31 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     })
 }
 
+/// Queries and returns the information of a specific user.
+///
+/// # Arguments
+///
+/// * `deps` - Deps is a struct providing access to the contract's dependencies like storage.
+/// * `user` - The address of the user for which to retrieve information.
+///
+/// # Returns
+///
+/// Returns a `UserInfoResponse` containing the user's information.
 pub fn query_user(deps: Deps, user: String) -> StdResult<UserInfoResponse> {
     let user_addr = deps.api.addr_validate(&user)?;
     let user_info = USER_INFO.load(deps.storage, user_addr.to_string())?;
     Ok(UserInfoResponse { user_info })
 }
 
+/// Queries and returns the entire contract state, including airdrop configuration and user information.
+///
+/// # Arguments
+///
+/// * `deps` - Deps is a struct providing access to the contract's dependencies like storage.
+///
+/// # Returns
+///
+/// Returns a `ContractStateResponse` containing the airdrop configuration and user information.
 pub fn query_contract_state(deps: Deps) -> StdResult<ContractStateResponse> {
     let config = AIRDROP_CONFIG.load(deps.storage)?;
     let mut user_infos: Vec<(String, UserInfo)> = Vec::new();
@@ -32,6 +60,16 @@ pub fn query_contract_state(deps: Deps) -> StdResult<ContractStateResponse> {
     })
 }
 
+/// Performs a sanity check to verify if there are sufficient funds for airdrop payments.
+///
+/// # Arguments
+///
+/// * `deps` - Deps is a struct providing access to the contract's dependencies like storage and querier.
+/// * `env` - Environment information.
+///
+/// # Returns
+///
+/// Returns a `SanityCheckResponse` indicating whether there are sufficient funds for airdrop payments.
 pub fn query_sanity_check(deps: Deps, env: Env) -> StdResult<SanityCheckResponse> {
     // Check if the airdrop amount is sufficient to supply all users
     let airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;

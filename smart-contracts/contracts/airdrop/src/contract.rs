@@ -21,6 +21,24 @@ use crate::users::execute_claim;
 const CONTRACT_NAME: &str = "quasar_airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Instantiates the airdrop contract with the provided configuration.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `_env` - Environment information, not used in this function.
+/// * `_info` - Message sender's information, not used in this function.
+/// * `msg` - Instantiate message containing the airdrop configuration.
+///
+/// # Errors
+///
+/// Returns an error if the airdrop configuration is invalid, specifically if start height,
+/// end height, and total claimed are not set to zero.
+///
+/// # Returns
+///
+/// Returns a response indicating the success of contract instantiation and includes attributes
+/// describing the airdrop configuration.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -31,8 +49,7 @@ pub fn instantiate(
     // Set the contract version in storage
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    // do not instantiate the contract if start height or end height is not set to zero
-    // and total claimed is not zero
+    // Check if the contract should not be instantiated due to an invalid airdrop window
     if msg.config.start_height != 0
         && msg.config.end_height != 0
         && msg.config.total_claimed != Uint128::zero()
@@ -43,7 +60,7 @@ pub fn instantiate(
     // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &msg.config)?;
 
-    // Return a default response to indicate success
+    // Create attributes for tracking the airdrop configuration
     let attributes: Vec<Attribute> = vec![
         Attribute {
             key: "description".to_string(),
@@ -70,10 +87,24 @@ pub fn instantiate(
             value: msg.config.end_height.to_string(),
         },
     ];
+
+    // Return a response indicating successful contract instantiation with attributes
     Ok(Response::default()
         .add_event(Event::new("instantiate_airdrop_contract").add_attributes(attributes)))
 }
 
+/// Executes contract operations based on the received message.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `env` - Environment information.
+/// * `info` - Message sender's information.
+/// * `msg` - Execute message to determine the operation.
+///
+/// # Returns
+///
+/// Returns a response based on the executed operation or an error if the operation fails.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
@@ -108,6 +139,17 @@ pub fn execute(
     }
 }
 
+/// Queries contract state based on the received query message.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `env` - Environment information.
+/// * `msg` - Query message to determine the requested information.
+///
+/// # Returns
+///
+/// Returns a binary response containing the queried information or an error if the query fails.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -118,12 +160,34 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+/// Handles replies from external contracts.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies to access storage and external data.
+/// * `_env` - Environment information, not used in this function.
+/// * `msg` - Reply message containing the reply ID.
+///
+/// # Returns
+///
+/// Returns a response based on the received reply or an error if the reply handling fails.
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, AirdropErrors> {
     let address = REPLY_MAP.load(deps.storage, msg.id)?;
     handle_reply(deps, address)
 }
 
+/// Migrates the contract to a new version (not implemented).
+///
+/// # Arguments
+///
+/// * `_deps` - Dependencies to access storage and external data, not used in this function.
+/// * `_env` - Environment information, not used in this function.
+/// * `_msg` - Migrate message, not used in this function.
+///
+/// # Returns
+///
+/// Returns a response indicating a successful migration (not implemented).
 #[entry_point]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, AirdropErrors> {
     Ok(Response::new().add_attribute("migrate", "successful"))

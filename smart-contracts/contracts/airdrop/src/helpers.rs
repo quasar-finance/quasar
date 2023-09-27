@@ -5,6 +5,17 @@ use cosmwasm_std::{
 use crate::state::{AirdropConfig, AIRDROP_CONFIG, REPLY_MAP, USER_INFO};
 use crate::AirdropErrors;
 
+/// Checks if the sender is the contract admin. Returns an error if not authorized.
+///
+/// # Arguments
+///
+/// * `querier` - QuerierWrapper to query contract admin information.
+/// * `env` - Environment information.
+/// * `sus_admin` - Address of the sender.
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the sender is authorized as the contract admin, otherwise returns an Unauthorized error.
 pub fn is_contract_admin(
     querier: &QuerierWrapper,
     env: &Env,
@@ -31,6 +42,17 @@ pub fn is_contract_admin(
     Ok(())
 }
 
+/// Adds a reply to the storage and returns a SubMsg containing the reply.
+///
+/// # Arguments
+///
+/// * `storage` - Mutable storage to save the reply mapping.
+/// * `msg` - CosmosMsg to be used as a reply.
+/// * `user` - Address of the user to associate with the reply.
+///
+/// # Returns
+///
+/// Returns a SubMsg containing the reply message and the associated reply ID.
 pub fn add_reply(
     storage: &mut dyn Storage,
     msg: CosmosMsg,
@@ -48,6 +70,17 @@ pub fn add_reply(
     Ok(SubMsg::reply_on_success(msg, id))
 }
 
+/// Checks if the total claimable amount exceeds the airdrop amount.
+///
+/// # Arguments
+///
+/// * `total_in_user_info` - Total claimable amount from all users.
+/// * `current_airdrop_amount` - Current airdrop amount in the contract.
+///
+/// # Returns
+///
+/// Returns a default response if the total claimable amount does not exceed the airdrop amount,
+/// otherwise returns an error indicating insufficient funds.
 pub fn check_amounts_and_airdrop_size(
     total_in_user_info: Uint128,
     current_airdrop_amount: Uint128,
@@ -64,8 +97,18 @@ pub fn check_amounts_and_airdrop_size(
     Ok(Response::default())
 }
 
+/// Validates that an amount is not zero.
+///
+/// # Arguments
+///
+/// * `amount` - Amount to validate.
+/// * `index` - Index of the amount in a list (used for error message).
+///
+/// # Returns
+///
+/// Returns a default response if the amount is not zero, otherwise returns an error indicating a zero amount.
 pub fn validate_amount(amount: Uint128, index: usize) -> Result<Response, AirdropErrors> {
-    // Check if the total claimable amount exceeds the airdrop amount
+    // Check if the amount is not zero
     if amount == Uint128::zero() {
         return Err(AirdropErrors::Std(StdError::GenericErr {
             msg: "Amount at index :".to_string() + &*index.to_string() + &*"is zero".to_string(),
@@ -74,6 +117,19 @@ pub fn validate_amount(amount: Uint128, index: usize) -> Result<Response, Airdro
     Ok(Response::default())
 }
 
+/// Validates and checks the airdrop configuration update.
+///
+/// # Arguments
+///
+/// * `config` - New airdrop configuration to validate.
+/// * `storage` - Storage to access contract state.
+/// * `querier` - QuerierWrapper to query contract state.
+/// * `env` - Environment information.
+///
+/// # Returns
+///
+/// Returns a default response if the configuration update is valid, otherwise returns an error
+/// indicating the reason for the validation failure.
 pub fn validate_update_config(
     config: AirdropConfig,
     storage: &dyn Storage,
@@ -123,6 +179,15 @@ pub fn validate_update_config(
     Ok(Response::default())
 }
 
+/// Calculates the total claimable amount from all users.
+///
+/// # Arguments
+///
+/// * `storage` - Storage to access user information.
+///
+/// # Returns
+///
+/// Returns the total claimable amount from all users.
 pub fn get_total_in_user_info(storage: &dyn Storage) -> Uint128 {
     let mut total_claimable_amount = Uint128::zero();
 
