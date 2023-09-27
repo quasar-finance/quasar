@@ -134,7 +134,6 @@ mod tests {
 
         // Use create_amount0 to sum over the get_vault_position_assets() query
         let create_amount0 = Uint128::from_str(&create_position_attrs[0].value).unwrap();
-        // TODO: Optimize this condition
         if vault_position_assets_before.token0.amount != Uint128::zero()
             && vault_position_assets_after.token0.amount != Uint128::zero()
         {
@@ -151,7 +150,6 @@ mod tests {
 
         // Use create_amount1 to sum over the get_vault_position_assets() query
         let create_amount1 = Uint128::from_str(&create_position_attrs[1].value).unwrap();
-        // TODO: Optimize this condition
         if vault_position_assets_before.token1.amount != Uint128::zero()
             && vault_position_assets_after.token1.amount != Uint128::zero()
         {
@@ -241,10 +239,9 @@ mod tests {
             .checked_sub(withdraw_amount0)
             .unwrap();
         let right = vault_position_assets_after.token0.amount;
-        // TODO: Optimize this assert
         assert!(
-            (left >= right && left <= right + Uint128::from(1u128))
-                || (left <= right && left + Uint128::from(1u128) >= right),
+            (left >= right && left <= right + Uint128::one())
+                || (left <= right && left + Uint128::one() >= right),
             "Left and Right are not within the +1/-1 range. Left: {}, Right: {}",
             left,
             right
@@ -264,10 +261,9 @@ mod tests {
             .checked_sub(withdraw_amount1)
             .unwrap();
         let right = vault_position_assets_after.token1.amount;
-        // TODO: Optimize this assert
         assert!(
-            (left >= right && left <= right + Uint128::from(1u128))
-                || (left <= right && left + Uint128::from(1u128) >= right),
+            (left >= right && left <= right + Uint128::one())
+                || (left <= right && left + Uint128::one() >= right),
             "Left and Right are not within the +1/-1 range. Left: {}, Right: {}",
             left,
             right
