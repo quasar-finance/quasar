@@ -146,6 +146,9 @@ pub enum ExecuteMsg {
     ForceUnbond {
         addresses: Vec<String>,
     },
+    ForceClaim {
+        addresses: Vec<String>,
+    },
 }
 
 #[cw_serde]

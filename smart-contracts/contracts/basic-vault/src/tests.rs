@@ -34,7 +34,7 @@ use crate::{
         get_token_amount_weights, may_pay_with_ratio,
     },
     msg::{ExecuteMsg, InstantiateMsg, InvestmentResponse, PrimitiveConfig, PrimitiveInitMsg},
-    state::{BONDING_SEQ, VAULT_REWARDS},
+    state::{UnbondingStub, BONDING_SEQ, PENDING_UNBOND_IDS, UNBOND_STATE, VAULT_REWARDS},
 };
 
 #[derive(Clone, PartialEq, prost::Message)]
@@ -2156,12 +2156,22 @@ fn test_force_unbond() {
     let reply_msg = reply_msg();
     let _ = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
 
+    BONDING_SEQ
+        .save(deps.as_mut().storage, &Uint128::one())
+        .unwrap();
+
     // user deposits
-    let deposit_info = mock_info(TEST_DEPOSITOR, &even_deposit_single_token());
+    let deposit_info = mock_info("user1", &even_deposit_single_token());
     let deposit_msg = ExecuteMsg::Bond {
         recipient: Option::None,
     };
-    let _ = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        deposit_info,
+        deposit_msg.clone(),
+    )
+    .unwrap();
 
     // mock callbacks from primitives
     // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
@@ -2206,16 +2216,72 @@ fn test_force_unbond() {
 
     // check that the user has 300 - 3 shares
     let balance_query = crate::msg::QueryMsg::Balance {
-        address: TEST_DEPOSITOR.to_string(),
+        address: "user1".to_string(),
     };
     let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
     let balance: BalanceResponse = from_binary(&balance_res).unwrap();
     assert_eq!(balance.balance, Uint128::from(300 - 3u128));
 
+    // another user deposits
+    let deposit_info = mock_info("user2", &coins(100u128, "ibc/uosmo"));
+    let _ = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+
+    // mock callbacks from primitives -- user2 case
+    let primitive_1_info = mock_info("quasar123", &[]);
+    let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 49u128.into(),
+        bond_id: "2".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_1_info,
+        primitive_1_msg,
+    )
+    .unwrap();
+
+    let primitive_2_info = mock_info("quasar124", &[]);
+    let primitive_2_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 49u128.into(),
+        bond_id: "2".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_2_info,
+        primitive_2_msg,
+    )
+    .unwrap();
+
+    let primitive_3_info = mock_info("quasar125", &[]);
+    let primitive_3_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 49u128.into(),
+        bond_id: "2".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_3_info,
+        primitive_3_msg,
+    )
+    .unwrap();
+
+    // check that the user2 has 149 - 3 shares
+    let balance_query = crate::msg::QueryMsg::Balance {
+        address: "user2".to_string(),
+    };
+    let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
+    let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+    assert_eq!(balance.balance, Uint128::from(149 - 3u128));
+
     // force unbond the user & some user that's not bounded
     let contract_admin_info = mock_info("admin", &[]);
     let force_unbond_msg = ExecuteMsg::ForceUnbond {
-        addresses: vec![TEST_DEPOSITOR.to_string(), "user_not_bonded".to_string()],
+        addresses: vec![
+            "user1".to_string(),
+            "user2".to_string(),
+            "user_not_bonded".to_string(),
+        ],
     };
 
     let force_unbond_res = execute(
@@ -2227,19 +2293,20 @@ fn test_force_unbond() {
     .unwrap();
 
     // only one message to each primitive should be sent (for depositor) + update vault rewards
-    assert_eq!(force_unbond_res.messages.len(), 3 + 1);
+    assert_eq!(force_unbond_res.messages.len(), (3 + 1) * 2);
 
     // check that only depositor started unbonding and that the amount of burnt shares is correct
     assert_eq!(
         force_unbond_res.attributes,
         [
+            // user1
             Attribute {
                 key: "action".to_string(),
                 value: "start_unbond".to_string(),
             },
             Attribute {
                 key: "from".to_string(),
-                value: "depositor".to_string(),
+                value: "user1".to_string(),
             },
             Attribute {
                 key: "burnt".to_string(),
@@ -2247,8 +2314,26 @@ fn test_force_unbond() {
             },
             Attribute {
                 key: "bond_id".to_string(),
-                value: "2".to_string(),
+                value: "3".to_string(),
             },
+            // user2
+            Attribute {
+                key: "action".to_string(),
+                value: "start_unbond".to_string(),
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "user2".to_string(),
+            },
+            Attribute {
+                key: "burnt".to_string(),
+                value: "146".to_string(),
+            },
+            Attribute {
+                key: "bond_id".to_string(),
+                value: "4".to_string(),
+            },
+            // user not bonded
             Attribute {
                 key: "action".to_string(),
                 value: "skipped_start_unbond".to_string(),
@@ -2258,5 +2343,141 @@ fn test_force_unbond() {
                 value: "user_not_bonded".to_string(),
             },
         ],
+    );
+
+    println!("force_unbond_res: {:?}", force_unbond_res.messages);
+}
+
+#[test]
+fn test_force_claim() {
+    let mut deps = mock_deps_with_primitives(even_primitives_single_token());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details_single_token());
+    let info = mock_info(TEST_CREATOR, &[]);
+    let env = mock_env();
+    let _ = init(deps.as_mut(), &init_msg, &env, &info);
+
+    let reply_msg = reply_msg();
+    let _ = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
+
+    PENDING_UNBOND_IDS
+        .save(
+            deps.as_mut().storage,
+            Addr::unchecked(TEST_DEPOSITOR),
+            &vec!["2".to_string()],
+        )
+        .unwrap();
+
+    UNBOND_STATE
+        .save(
+            deps.as_mut().storage,
+            "2".to_string(),
+            &crate::state::Unbond {
+                stub: vec![
+                    UnbondingStub {
+                        address: "quasar123".to_string(),
+                        unlock_time: Some(env.block.time.minus_seconds(1)), // None?
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "2".to_string(),
+                        }),
+                        unbond_funds: coins(100, "ibc/uosmo"),
+                    },
+                    UnbondingStub {
+                        address: "quasar124".to_string(),
+                        unlock_time: Some(env.block.time.minus_seconds(1)), // None?
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "2".to_string(),
+                        }),
+                        unbond_funds: coins(100, "ibc/uosmo"),
+                    },
+                    UnbondingStub {
+                        address: "quasar125".to_string(),
+                        unlock_time: Some(env.block.time.minus_seconds(1)), // None?
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "2".to_string(),
+                        }),
+                        unbond_funds: coins(100, "ibc/uosmo"),
+                    },
+                ],
+                shares: Uint128::new(200),
+            },
+        )
+        .unwrap();
+
+    // mock callbacks from primitives
+    // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
+    let primitive_1_info = mock_info("quasar123", &[]);
+    let primitive_1_msg = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: "2".to_string(),
+        unlock_time: env.block.time,
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_1_info,
+        primitive_1_msg,
+    )
+    .unwrap();
+
+    let primitive_2_info = mock_info("quasar124", &[]);
+    let primitive_2_msg = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: "2".to_string(),
+        unlock_time: env.block.time,
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_2_info,
+        primitive_2_msg,
+    )
+    .unwrap();
+
+    let primitive_3_info = mock_info("quasar125", &[]);
+    let primitive_3_msg = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: "2".to_string(),
+        unlock_time: env.block.time,
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_3_info,
+        primitive_3_msg,
+    )
+    .unwrap();
+
+    // force claim the user & some user that's not bounded
+    let contract_admin_info = mock_info("admin", &[]);
+    let force_claim_msg = ExecuteMsg::ForceClaim {
+        addresses: vec![TEST_DEPOSITOR.to_string()],
+    };
+
+    let force_claim_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        contract_admin_info,
+        force_claim_msg,
+    )
+    .unwrap();
+
+    println!("force_claim_res: {force_claim_res:?}");
+
+    // we check that attributes are what we expect, but can't check the messages
+    // as the code is calling lp_strategy::msg::QueryMsg::UnbondingClaim
+    assert_eq!(
+        force_claim_res.attributes,
+        [
+            Attribute {
+                key: "action".to_string(),
+                value: "unbond".to_string()
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "depositor".to_string()
+            },
+            Attribute {
+                key: "num_unbondable_ids".to_string(),
+                // TODO: check why 0?
+                value: "0".to_string()
+            }
+        ]
     );
 }

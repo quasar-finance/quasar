@@ -20,7 +20,7 @@ use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{bond, claim, execute_force_unbond, unbond, update_cap};
+use crate::execute::{bond, claim, execute_force_claim, execute_force_unbond, unbond, update_cap};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
@@ -264,6 +264,7 @@ pub fn execute(
             )
         }
         ExecuteMsg::ForceUnbond { addresses } => execute_force_unbond(deps, env, info, addresses),
+        ExecuteMsg::ForceClaim { addresses } => execute_force_claim(deps, env, info, addresses),
     }
 }
 

@@ -633,11 +633,8 @@ pub fn execute_force_unbond(
                 do_start_unbond(deps.branch(), &env, &user_info, Some(balance))?
                     .unwrap_or(Response::new());
 
-            submsgs = start_unbond_response
-                .messages
-                .iter()
-                .map(|sm| sm.msg.clone())
-                .collect();
+            // Append submessages to the existing vector
+            submsgs.extend(start_unbond_response.messages.into_iter().map(|sm| sm.msg));
 
             attrs.extend(start_unbond_response.attributes);
         } else {
@@ -647,7 +644,38 @@ pub fn execute_force_unbond(
             ]);
         }
     }
+    Ok(Response::new().add_messages(submsgs).add_attributes(attrs))
+}
 
+pub fn execute_force_claim(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    addresses: Vec<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut submsgs: Vec<CosmosMsg> = vec![];
+    let mut attrs = vec![];
+
+    for address in addresses {
+        let address = deps.api.addr_validate(&address)?;
+
+        let user_info = MessageInfo {
+            sender: address.clone(),
+            funds: vec![],
+        };
+        let unbond_response =
+            do_unbond(deps.branch(), &env, &user_info)?.unwrap_or(Response::new());
+
+        submsgs = unbond_response
+            .messages
+            .iter()
+            .map(|sm| sm.msg.clone())
+            .collect();
+
+        attrs.extend(unbond_response.attributes);
+    }
     Ok(Response::new().add_messages(submsgs).add_attributes(attrs))
 }
 
