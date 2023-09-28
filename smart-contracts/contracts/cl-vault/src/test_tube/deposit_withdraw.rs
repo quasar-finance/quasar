@@ -185,6 +185,10 @@ mod tests {
 
         let wasm = Wasm::new(&app);
 
+        let vault_assets_before: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
+
         let _ = wasm
             .execute(
                 contract_address.as_str(),
@@ -241,7 +245,7 @@ mod tests {
         );
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(15000u128),
+            Uint128::from(1516u128),
             "0.001"
         );
 
@@ -254,21 +258,38 @@ mod tests {
             )
             .unwrap();
         assert_approx_eq!(
-            user_assets_again.balances[1].amount,
+            user_assets_again.balances[0].amount,
             Uint128::from(15000u128),
             "0.001"
         );
         assert_approx_eq!(
             user_assets_again.balances[1].amount,
-            Uint128::from(15000u128),
+            Uint128::from(1516u128),
             "0.001"
         );
 
         let vault_assets: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
-        assert_eq!(vault_assets.token0.amount, Uint128::from(5000u128));
-        assert_eq!(vault_assets.token1.amount, Uint128::from(5000u128));
+        assert_approx_eq!(
+            vault_assets.token0.amount,
+            vault_assets_before
+                .token0
+                .amount
+                .checked_add(Uint128::from(15000u128))
+                .unwrap(),
+            "0.001"
+        );
+        // again we get refunded so we only expect around 500 to deposit here
+        assert_approx_eq!(
+            vault_assets.token1.amount,
+            vault_assets_before
+                .token1
+                .amount
+                .checked_add(Uint128::from(1516u128))
+                .unwrap(),
+            "0.01"
+        );
 
         let _withdraw = wasm
             .execute(
@@ -296,6 +317,10 @@ mod tests {
             .unwrap();
 
         let wasm = Wasm::new(&app);
+
+        let vault_assets_before: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
 
         let deposit = wasm
             .execute(
@@ -329,14 +354,15 @@ mod tests {
             )
             .unwrap();
         assert_approx_eq!(
-            user_assets.balances[1].amount,
+            user_assets.balances[0].amount,
             Uint128::from(5000u128),
             "0.001"
         );
+        // we get refunded so we only expect around 500 to deposit here
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(5000u128),
-            "0.001"
+            Uint128::from(500u128),
+            "0.01"
         );
 
         let user_assets_again: AssetsBalanceResponse = wasm
@@ -347,20 +373,40 @@ mod tests {
                 },
             )
             .unwrap();
-        assert_eq!(
+        assert_approx_eq!(
             user_assets_again.balances[0].amount,
-            Uint128::from(5000u128)
+            Uint128::from(5000u128),
+            "0.001"
         );
-        assert_eq!(
+        // again we get refunded so we only expect around 500 to deposit here
+        assert_approx_eq!(
             user_assets_again.balances[1].amount,
-            Uint128::from(5000u128)
+            Uint128::from(500u128),
+            "0.01"
         );
 
         let vault_assets: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
-        assert_eq!(vault_assets.token0.amount, Uint128::from(5000u128));
-        assert_eq!(vault_assets.token1.amount, Uint128::from(5000u128));
+        assert_approx_eq!(
+            vault_assets.token0.amount,
+            vault_assets_before
+                .token0
+                .amount
+                .checked_add(Uint128::from(5000u128))
+                .unwrap(),
+            "0.001"
+        );
+        // again we get refunded so we only expect around 500 to deposit here
+        assert_approx_eq!(
+            vault_assets.token1.amount,
+            vault_assets_before
+                .token1
+                .amount
+                .checked_add(Uint128::from(500u128))
+                .unwrap(),
+            "0.01"
+        );
 
         let withdraw = wasm
             .execute(

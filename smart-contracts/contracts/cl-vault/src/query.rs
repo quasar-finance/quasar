@@ -1,3 +1,4 @@
+use crate::debug;
 use crate::helpers::get_unused_balances;
 use crate::rewards::CoinList;
 use crate::vault::concentrated_liquidity::get_position;
@@ -167,6 +168,7 @@ pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsRes
         .asset0
         .map(|c| c.try_into().unwrap())
         .unwrap_or(coin(0, pool.token0));
+
     token0 = Coin {
         denom: token0.denom.clone(),
         amount: token0
@@ -178,6 +180,7 @@ pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsRes
         .asset1
         .map(|c| c.try_into().unwrap())
         .unwrap_or(coin(0, pool.token1));
+
     token1 = Coin {
         denom: token1.denom.clone(),
         amount: token1
