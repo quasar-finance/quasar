@@ -193,7 +193,7 @@ pub fn get_total_in_user_info(storage: &dyn Storage) -> Uint128 {
 
     for res in USER_INFO.range(storage, None, None, Order::Ascending) {
         let claimed = res.as_ref().unwrap().1.get_claimed_flag();
-        if claimed {
+        if !claimed {
             total_claimable_amount += res.unwrap().1.get_claimable_amount()
         }
     }
