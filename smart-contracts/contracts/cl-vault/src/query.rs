@@ -1,3 +1,5 @@
+use crate::helpers::get_unused_balances;
+use crate::rewards::CoinList;
 use crate::vault::concentrated_liquidity::get_position;
 use crate::{
     error::ContractResult,
@@ -7,7 +9,7 @@ use crate::{
     },
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -38,7 +40,12 @@ pub struct PositionResponse {
 }
 
 #[cw_serde]
-pub struct UserBalanceResponse {
+pub struct AssetsBalanceResponse {
+    pub balances: Vec<Coin>,
+}
+
+#[cw_serde]
+pub struct UserSharesBalanceResponse {
     pub balance: Uint128,
 }
 
@@ -105,11 +112,41 @@ pub fn query_position(deps: Deps) -> ContractResult<PositionResponse> {
         position_ids: vec![position_id],
     })
 }
-pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
+
+pub fn query_assets_from_shares(
+    deps: Deps,
+    env: Env,
+    shares: Uint128,
+) -> ContractResult<AssetsBalanceResponse> {
+    let vault_supply = query_total_vault_token_supply(deps)?.total;
+    let vault_assets = query_total_assets(deps, env)?;
+
+    let vault_balance = CoinList::from_coins(vec![vault_assets.token0, vault_assets.token1]);
+
+    let assets_from_shares = vault_balance.mul_ratio(Decimal::from_ratio(shares, vault_supply));
+
+    Ok(AssetsBalanceResponse {
+        balances: assets_from_shares.coins(),
+    })
+}
+
+/// User assets is the users assets EXCLUDING any rewards claimable by that user
+pub fn query_user_assets(
+    deps: Deps,
+    env: Env,
+    user: String,
+) -> ContractResult<AssetsBalanceResponse> {
+    let user_shares = query_user_balance(deps, user)?.balance;
+    let user_assets = query_assets_from_shares(deps, env, user_shares)?;
+
+    Ok(user_assets)
+}
+
+pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserSharesBalanceResponse> {
     let balance = SHARES
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?
         .unwrap_or(Uint128::zero());
-    Ok(UserBalanceResponse { balance })
+    Ok(UserSharesBalanceResponse { balance })
 }
 
 pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserRewardsResponse> {
@@ -119,19 +156,38 @@ pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserReward
     Ok(UserRewardsResponse { rewards })
 }
 
-pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
+/// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users
+pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
     let position = get_position(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
-    Ok(TotalAssetsResponse {
-        token0: position
-            .asset0
-            .map(|c| c.try_into().unwrap())
-            .unwrap_or(coin(0, pool.token0)),
-        token1: position
-            .asset1
-            .map(|c| c.try_into().unwrap())
-            .unwrap_or(coin(0, pool.token1)),
-    })
+    let unused_balance = get_unused_balances(deps.storage, &deps.querier, &env)?;
+
+    // add token0 unused balance to what's in the position
+    let mut token0 = position
+        .asset0
+        .map(|c| c.try_into().unwrap())
+        .unwrap_or(coin(0, pool.token0));
+
+    token0 = Coin {
+        denom: token0.denom.clone(),
+        amount: token0
+            .amount
+            .checked_add(unused_balance.find_coin(token0.denom).amount)?,
+    };
+
+    let mut token1 = position
+        .asset1
+        .map(|c| c.try_into().unwrap())
+        .unwrap_or(coin(0, pool.token1));
+
+    token1 = Coin {
+        denom: token1.denom.clone(),
+        amount: token1
+            .amount
+            .checked_add(unused_balance.find_coin(token1.denom).amount)?,
+    };
+
+    Ok(TotalAssetsResponse { token0, token1 })
 }
 
 pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTokenSupplyResponse> {

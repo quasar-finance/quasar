@@ -146,7 +146,7 @@ mod tests {
             )
             .unwrap();
 
-        let res = wasm
+        let _res = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {}),

@@ -21,6 +21,8 @@ pub type QuasarMultiHopRouterApp = App<
     DistributionKeeper,
 >;
 
+type OnFailFunction<T> = fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T;
+
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
 #[derive(Derivative)]
@@ -236,7 +238,7 @@ impl QuasarVaultSuite {
     pub fn verify_list_routes<T>(
         &self,
         expected: &[(RouteId, Route)],
-        on_fail: fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T,
+        on_fail: OnFailFunction<T>,
         on_succes: T,
     ) -> AnyResult<T> {
         let res = self.query::<ListRoutesResponse>(QueryMsg::ListRoutes {})?;

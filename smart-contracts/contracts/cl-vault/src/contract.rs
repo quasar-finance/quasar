@@ -2,10 +2,11 @@ use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg, MigrateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_info, query_metadata, query_pool, query_position, query_total_assets,
-    query_total_vault_token_supply, query_user_balance, query_user_rewards,
+    query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
+    query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
+    query_user_rewards, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -19,7 +20,7 @@ use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
 };
 use crate::vault::range::{
-    execute_update_range, handle_initial_create_position_reply,
+    execute_update_range, get_range_admin, handle_initial_create_position_reply,
     handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
     handle_withdraw_position_reply,
 };
@@ -86,7 +87,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {
@@ -94,15 +95,19 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
+        cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: shares } => {
+            Ok(to_binary(&query_assets_from_shares(deps, env, shares)?)?)
+        }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_binary(&query_total_assets(deps)?)?)
+            Ok(to_binary(&query_total_assets(deps, env)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
+        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: shares } => {
+            Ok(to_binary(&query_assets_from_shares(deps, env, shares)?)?)
+        }
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
             crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
@@ -112,11 +117,19 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                 crate::msg::UserBalanceQueryMsg::UserRewards { user } => {
                     Ok(to_binary(&query_user_rewards(deps, user)?)?)
                 }
+                crate::msg::UserBalanceQueryMsg::UserAssetsBalance { user } => {
+                    Ok(to_binary(&query_user_assets(deps, env, user)?)?)
+                }
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
                 crate::msg::ClQueryMsg::Position {} => Ok(to_binary(&query_position(deps)?)?),
-                crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
+                crate::msg::ClQueryMsg::RangeAdmin {} => {
+                    let range_admin = get_range_admin(deps)?;
+                    Ok(to_binary(&RangeAdminResponse {
+                        address: range_admin.to_string(),
+                    })?)
+                }
             },
         },
     }

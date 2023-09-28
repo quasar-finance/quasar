@@ -181,7 +181,7 @@ mod test {
         .unwrap();
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _result = wasm
             .execute(
@@ -267,6 +267,6 @@ mod test {
             token_min_amount0: "0".to_string(),
             token_min_amount1: "0".to_string(),
         };
-        let position = cl.create_position(initial_position, &alice).unwrap();
+        let _position = cl.create_position(initial_position, &alice).unwrap();
     }
 }
