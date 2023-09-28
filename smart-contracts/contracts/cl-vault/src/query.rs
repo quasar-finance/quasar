@@ -1,4 +1,3 @@
-use crate::debug;
 use crate::helpers::get_unused_balances;
 use crate::rewards::CoinList;
 use crate::vault::concentrated_liquidity::get_position;
@@ -10,7 +9,7 @@ use crate::{
     },
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Decimal256, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 

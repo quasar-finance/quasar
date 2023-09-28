@@ -57,7 +57,7 @@ mod tests {
                 )),
             )
             .unwrap();
-        let position = ConcentratedLiquidity::new(&app)
+        let _position = ConcentratedLiquidity::new(&app)
             .query_position_by_id(&PositionByIdRequest {
                 position_id: pos_id.position_ids[0],
             })
@@ -77,7 +77,7 @@ mod tests {
         )
         .unwrap();
 
-        let res = wasm
+        let _res = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
@@ -124,7 +124,7 @@ mod tests {
             )
             .unwrap();
 
-        let balances = bank
+        let _balances = bank
             .query_all_balances(&QueryAllBalancesRequest {
                 address: contract_address.to_string(),
                 pagination: None,
@@ -138,14 +138,14 @@ mod tests {
                 )),
             )
             .unwrap();
-        let position = ConcentratedLiquidity::new(&app)
+        let _position = ConcentratedLiquidity::new(&app)
             .query_position_by_id(&PositionByIdRequest {
                 position_id: pos_id.position_ids[0],
             })
             .unwrap();
         // This amount should decrease the amount of shares we get back
 
-        let withdraw = wasm
+        let _withdraw = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
@@ -157,7 +157,7 @@ mod tests {
             )
             .unwrap();
 
-        let withdraw = wasm
+        let _withdraw = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
@@ -322,7 +322,7 @@ mod tests {
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
-        let deposit = wasm
+        let _deposit = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
@@ -408,7 +408,7 @@ mod tests {
             "0.01"
         );
 
-        let withdraw = wasm
+        let _withdraw = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
