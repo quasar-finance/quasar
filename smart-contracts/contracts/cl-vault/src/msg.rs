@@ -47,12 +47,50 @@ pub enum AdminExtensionExecuteMsg {
 
 #[cw_serde]
 pub struct ModifyRangeMsg {
-    /// The new lower bound of the range, this is converted to an 18 precision digit decimal
-    pub lower_price: Decimal,
-    /// The new upper bound of the range, this is converted to an 18 precision digit decimal
-    pub upper_price: Decimal,
-    /// max position slippage
-    pub max_slippage: Decimal,
+    msg: ModifyRange
+}
+
+/// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position
+/// increasing or decreasing the relative percentage a position has in the vault and creating and deleting a position.
+/// Decreasing the percentage of a position to 0 is not allowed. DeletePosition should be used there.
+#[cw_serde]
+pub enum ModifyRange {
+    /// Move the range of a current position
+    MovePosition{
+        old_position_id: u64,
+         /// The new lower bound of the range, this is converted to an 18 precision digit decimal
+        new_lower_price: Decimal,
+        /// The new upper bound of the range, this is converted to an 18 precision digit decimal
+        new_upper_price: Decimal,
+        /// max position movement slippage
+        max_slippage: Decimal,
+    },
+    /// Increase or Decrease which percentage of the vault a range is
+    ModifyPercentage{
+        /// the position_id of the position to change percentage of
+        position_id: u64,
+        /// The old percentage at which the position was set, this might be different from the actual current percentage
+        /// of that position due to IL
+        old_percentage: Decimal,
+        /// The new percentage to set the position at, Increasing requires free balance in the contract.
+        /// Decreasing generates free balance in the contract 
+        new_percentage: Decimal,
+    },
+    /// Create a new position. This consumes all free balance up to max_percentage current free balance
+    CreatePosition{
+        /// The lower price of the new position
+        lower_price: Decimal,
+        /// The upper price of the new position
+        upper_price: Decimal,
+        /// max position movement slippage
+        max_slippage: Decimal,
+        /// the max percentage this new position can take
+        max_percentage: Option<Decimal>
+    },
+    DeletePosition {
+        /// delete the position under position_id
+        position_id: u64
+    }
 }
 
 #[cw_serde]
