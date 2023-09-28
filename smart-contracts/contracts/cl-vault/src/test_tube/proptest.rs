@@ -19,7 +19,7 @@ mod tests {
         math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PositionResponse, TotalVaultTokenSupplyResponse},
-        query::{TotalAssetsResponse, UserBalanceResponse},
+        query::{TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::initialize::initialize::init_test_contract,
     };
 
@@ -340,7 +340,7 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
         account: &SigningAccount,
-    ) -> UserBalanceResponse {
+    ) -> UserSharesBalanceResponse {
         wasm.query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(

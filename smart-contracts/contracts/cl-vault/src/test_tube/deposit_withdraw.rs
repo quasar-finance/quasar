@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, Coin};
+    use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
 
     use osmosis_std::types::{
         cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest},
@@ -10,7 +10,9 @@ mod tests {
 
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-        query::{PositionResponse, UserBalanceResponse},
+        query::{
+            AssetsBalanceResponse, PositionResponse, TotalAssetsResponse, UserSharesBalanceResponse,
+        },
         test_tube::default_init,
     };
 
@@ -32,14 +34,6 @@ mod tests {
             .unwrap();
 
         let bank = Bank::new(&app);
-        // our initial balance, 89874uosmo
-        let balances = bank
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-
         let wasm = Wasm::new(&app);
 
         // depositing
@@ -109,7 +103,7 @@ mod tests {
         //     )
         //     .unwrap();
 
-        let alice_shares: UserBalanceResponse = wasm
+        let alice_shares: UserSharesBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -119,7 +113,7 @@ mod tests {
                 )),
             )
             .unwrap();
-        let bob_shares: UserBalanceResponse = wasm
+        let bob_shares: UserSharesBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -218,7 +212,7 @@ mod tests {
             )
             .unwrap();
 
-        let shares: UserBalanceResponse = wasm
+        let shares: UserSharesBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -229,6 +223,52 @@ mod tests {
             )
             .unwrap();
         assert!(!shares.balance.is_zero());
+
+        let user_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: alice.address(),
+                    },
+                )),
+            )
+            .unwrap();
+        assert_approx_eq!(
+            user_assets.balances[0].amount,
+            Uint128::from(15000u128),
+            "0.001"
+        );
+        assert_approx_eq!(
+            user_assets.balances[1].amount,
+            Uint128::from(15000u128),
+            "0.001"
+        );
+
+        let user_assets_again: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: shares.balance,
+                },
+            )
+            .unwrap();
+        assert_approx_eq!(
+            user_assets_again.balances[1].amount,
+            Uint128::from(15000u128),
+            "0.001"
+        );
+        assert_approx_eq!(
+            user_assets_again.balances[1].amount,
+            Uint128::from(15000u128),
+            "0.001"
+        );
+
+        let vault_assets: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
+        assert_eq!(vault_assets.token0.amount, Uint128::from(5000u128));
+        assert_eq!(vault_assets.token1.amount, Uint128::from(5000u128));
 
         let _withdraw = wasm
             .execute(
@@ -266,7 +306,7 @@ mod tests {
             )
             .unwrap();
 
-        let shares: UserBalanceResponse = wasm
+        let shares: UserSharesBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -277,6 +317,50 @@ mod tests {
             )
             .unwrap();
         assert!(!shares.balance.is_zero());
+
+        let user_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: alice.address(),
+                    },
+                )),
+            )
+            .unwrap();
+        assert_approx_eq!(
+            user_assets.balances[1].amount,
+            Uint128::from(5000u128),
+            "0.001"
+        );
+        assert_approx_eq!(
+            user_assets.balances[1].amount,
+            Uint128::from(5000u128),
+            "0.001"
+        );
+
+        let user_assets_again: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: shares.balance,
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            user_assets_again.balances[0].amount,
+            Uint128::from(5000u128)
+        );
+        assert_eq!(
+            user_assets_again.balances[1].amount,
+            Uint128::from(5000u128)
+        );
+
+        let vault_assets: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
+        assert_eq!(vault_assets.token0.amount, Uint128::from(5000u128));
+        assert_eq!(vault_assets.token1.amount, Uint128::from(5000u128));
 
         let withdraw = wasm
             .execute(

@@ -3,7 +3,10 @@ use cosmwasm_std::Decimal;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
-    query::{PoolResponse, PositionResponse, RangeAdminResponse},
+    query::{
+        AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
+        UserRewardsResponse, UserSharesBalanceResponse,
+    },
     state::VaultConfig,
 };
 
@@ -73,8 +76,13 @@ pub enum ExtensionQueryMsg {
 
 /// Extension query messages for user balance related queries
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum UserBalanceQueryMsg {
+    #[returns(UserSharesBalanceResponse)]
     UserSharesBalance { user: String },
+    #[returns(AssetsBalanceResponse)]
+    UserAssetsBalance { user: String },
+    #[returns(UserRewardsResponse)]
     UserRewards { user: String },
 }
 
