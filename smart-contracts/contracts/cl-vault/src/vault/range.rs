@@ -14,8 +14,8 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::get_unused_balances,
     helpers::get_twap_price,
+    helpers::get_unused_balances,
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
