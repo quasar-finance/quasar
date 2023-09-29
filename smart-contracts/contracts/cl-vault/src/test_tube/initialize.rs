@@ -148,6 +148,9 @@ pub mod initialize {
         )
         .unwrap();
 
+        // increment the app time for twaps to function
+        app.increase_time(1000000);
+
         let instantiate_msg = InstantiateMsg {
             admin: admin.address(),
             pool_id: pool.id,

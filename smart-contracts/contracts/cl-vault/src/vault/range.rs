@@ -15,7 +15,7 @@ use osmosis_std::types::osmosis::{
 
 use crate::{
     helpers::get_unused_balances,
-    helpers::{get_spot_price, get_twap_price},
+    helpers::get_twap_price,
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
@@ -51,6 +51,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn execute_update_range(
     deps: DepsMut,
     env: Env,
@@ -88,6 +89,7 @@ pub fn execute_update_range(
 /// * so how much of each asset given liq would we have at current price
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
+#[allow(clippy::too_many_arguments)]
 pub fn execute_update_range_ticks(
     deps: DepsMut,
     env: Env,
@@ -274,6 +276,7 @@ pub fn handle_initial_create_position_reply(
 /// this function assumes that we are swapping and depositing into a valid range
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
+#[allow(clippy::too_many_arguments)]
 pub fn do_swap_deposit_merge(
     deps: DepsMut,
     env: Env,
