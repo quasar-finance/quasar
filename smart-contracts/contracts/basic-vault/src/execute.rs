@@ -605,7 +605,7 @@ pub fn update_cap(
         .add_attribute("success", "true"))
 }
 
-pub fn execute_force_unbond(
+pub fn force_unbond(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -613,8 +613,7 @@ pub fn execute_force_unbond(
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
     is_contract_admin(&deps.querier, &env, &info.sender)?;
-    let mut submsgs: Vec<CosmosMsg> = vec![];
-    let mut attrs = vec![];
+    let mut res = Response::new();
     let investment = INVESTMENT.load(deps.as_ref().storage)?;
 
     for address in addresses {
@@ -633,21 +632,25 @@ pub fn execute_force_unbond(
                 do_start_unbond(deps.branch(), &env, &user_info, Some(balance))?
                     .unwrap_or(Response::new());
 
-            // Append submessages to the existing vector
-            submsgs.extend(start_unbond_response.messages.into_iter().map(|sm| sm.msg));
+            let start_unbond_msgs = start_unbond_response
+                .messages
+                .iter()
+                .map(|sm| sm.msg.clone());
 
-            attrs.extend(start_unbond_response.attributes);
+            res = res
+                .add_messages(start_unbond_msgs)
+                .add_attributes(start_unbond_response.attributes);
         } else {
-            attrs.extend(vec![
+            res = res.add_attributes(vec![
                 attr("action", "skipped_start_unbond"),
                 attr("from", address.to_string()),
             ]);
         }
     }
-    Ok(Response::new().add_messages(submsgs).add_attributes(attrs))
+    Ok(res)
 }
 
-pub fn execute_force_claim(
+pub fn force_claim(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,

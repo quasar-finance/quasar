@@ -2224,7 +2224,13 @@ fn test_force_unbond() {
 
     // another user deposits
     let deposit_info = mock_info("user2", &coins(100u128, "ibc/uosmo"));
-    let _ = execute(deps.as_mut(), env.clone(), deposit_info, deposit_msg).unwrap();
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        deposit_info.clone(),
+        deposit_msg,
+    )
+    .unwrap();
 
     // mock callbacks from primitives -- user2 case
     let primitive_1_info = mock_info("quasar123", &[]);
@@ -2292,10 +2298,10 @@ fn test_force_unbond() {
     )
     .unwrap();
 
-    // only one message to each primitive should be sent (for depositor) + update vault rewards
+    // two messages to each primitive should be sent (for user1 & user2) + update vault rewards twice
     assert_eq!(force_unbond_res.messages.len(), (3 + 1) * 2);
 
-    // check that only depositor started unbonding and that the amount of burnt shares is correct
+    // check that only user1 & user2 started unbonding and that the amount of burnt shares is correct
     assert_eq!(
         force_unbond_res.attributes,
         [
@@ -2344,8 +2350,6 @@ fn test_force_unbond() {
             },
         ],
     );
-
-    println!("force_unbond_res: {:?}", force_unbond_res.messages);
 }
 
 #[test]
