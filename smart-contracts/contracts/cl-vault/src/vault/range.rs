@@ -58,6 +58,7 @@ pub fn execute_update_range(
     lower_price: Decimal,
     upper_price: Decimal,
     max_slippage: Decimal,
+    percent_of_swappable_funds_to_use: Decimal,
 ) -> Result<Response, ContractError> {
     let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
     let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
@@ -69,6 +70,7 @@ pub fn execute_update_range(
         lower_tick.try_into().unwrap(),
         upper_tick.try_into().unwrap(),
         max_slippage,
+        percent_of_swappable_funds_to_use,
     )
 }
 
@@ -84,6 +86,7 @@ pub fn execute_update_range_ticks(
     lower_tick: i64,
     upper_tick: i64,
     max_slippage: Decimal,
+    percent_of_swappable_funds_to_use: Decimal,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
@@ -109,6 +112,7 @@ pub fn execute_update_range_ticks(
             upper_tick,
             new_range_position_ids: vec![],
             max_slippage,
+            percent_of_swappable_funds_to_use,
         }),
     )?;
 
@@ -190,6 +194,7 @@ pub fn handle_withdraw_position_reply(
             modify_range_state.upper_tick,
             (amount0, amount1),
             None, // we just withdrew our only position
+            modify_range_state.percent_of_swappable_funds_to_use,
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
@@ -224,6 +229,7 @@ pub fn handle_initial_create_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
+    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     // target range for our imminent swap
     // taking from response message is important because they may differ from the ones in our request
@@ -248,6 +254,7 @@ pub fn handle_initial_create_position_reply(
         target_upper_tick,
         refunded_amounts,
         Some(create_position_message.position_id),
+        modify_range_state.percent_of_swappable_funds_to_use,
     )
 }
 
@@ -261,12 +268,22 @@ pub fn do_swap_deposit_merge(
     target_upper_tick: i64,
     refunded_amounts: (Uint128, Uint128),
     position_id: Option<u64>,
+    percent_of_swappable_funds_to_use: Decimal,
 ) -> Result<Response, ContractError> {
     if SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
 
-    let (balance0, balance1) = refunded_amounts;
+    let (balance0, balance1) = (
+        refunded_amounts.0.checked_multiply_ratio(
+            percent_of_swappable_funds_to_use.numerator(),
+            percent_of_swappable_funds_to_use.denominator(),
+        )?,
+        refunded_amounts.1.checked_multiply_ratio(
+            percent_of_swappable_funds_to_use.numerator(),
+            percent_of_swappable_funds_to_use.denominator(),
+        )?,
+    );
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
@@ -339,6 +356,7 @@ pub fn do_swap_deposit_merge(
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             pool_config.token0,

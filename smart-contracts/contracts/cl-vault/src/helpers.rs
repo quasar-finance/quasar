@@ -55,6 +55,19 @@ pub fn get_spot_price(
     Ok(Decimal::from_str(&spot_price.spot_price)?)
 }
 
+// pub fn get_twap_price(
+//     storage: &dyn Storage,
+//     querier: &QuerierWrapper,
+// ) -> Result<Decimal, ContractError> {
+//     let pool_config = POOL_CONFIG.load(storage)?;
+
+//     let pm_querier = PoolmanagerQuerier::new(querier);
+//     let twap_price =
+//         pm_querier
+
+//     Ok(Decimal::from_str(&twap_price.twap_price)?)
+// }
+
 // /// get_liquidity_needed_for_tokens
 // ///
 // /// this function calculates the liquidity needed for depositing token0 and quote token amounts respectively and returns both.
