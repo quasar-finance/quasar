@@ -295,6 +295,8 @@ mod tests {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
                         max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
                     },
                 )),
                 &[],

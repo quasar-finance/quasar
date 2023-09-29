@@ -246,6 +246,8 @@ pub mod initialize {
                         lower_price: Decimal::from_str("0.993").unwrap(),
                         upper_price: Decimal::from_str("1.002").unwrap(),
                         max_slippage: Decimal::permille(5),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
                     },
                 )),
                 &[],

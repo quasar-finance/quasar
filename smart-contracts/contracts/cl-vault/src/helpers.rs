@@ -60,12 +60,13 @@ pub fn get_spot_price(
 pub fn get_twap_price(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    env: Env,
+    env: &Env,
+    twap_window_seconds: u64,
 ) -> Result<Decimal, ContractError> {
     let pool_config = POOL_CONFIG.load(storage)?;
 
     let twap_querier = TwapQuerier::new(querier);
-    let start_of_window = (env.block.time.minus_seconds(45));
+    let start_of_window = env.block.time.minus_seconds(twap_window_seconds);
     let twap_price = twap_querier.arithmetic_twap_to_now(
         pool_config.pool_id,
         pool_config.token0,

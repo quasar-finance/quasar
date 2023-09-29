@@ -32,6 +32,9 @@ pub enum ContractError {
     #[error("Modify range state item not found")]
     ModifyRangeStateNotFound,
 
+    #[error("ratio_of_swappable_funds_to_use should be >0 and <=1")]
+    InvalidRatioOfSwappableFundsToUse,
+
     #[error("Cannot do two swaps at the same time")]
     SwapInProgress,
 
