@@ -14,8 +14,8 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::get_spot_price,
     helpers::get_unused_balances,
+    helpers::{get_spot_price, get_twap_price},
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
@@ -355,17 +355,16 @@ pub fn do_swap_deposit_merge(
     };
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    let spot_price = get_spot_price(deps.storage, &deps.querier)?;
-    let twap_price = get_twap_price(deps.storage, &deps.querier)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, env)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             pool_config.token0,
-            swap_amount.checked_multiply_ratio(spot_price.numerator(), spot_price.denominator()),
+            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
             balance0.checked_sub(swap_amount)?,
         ),
         SwapDirection::OneToZero => (
             pool_config.token1,
-            swap_amount.checked_multiply_ratio(spot_price.denominator(), spot_price.numerator()),
+            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
             balance1.checked_sub(swap_amount)?,
         ),
     };
