@@ -73,7 +73,7 @@ pub fn get_twap_price(
         pool_config.token1,
         Some(OsmoTimestamp {
             seconds: start_of_window.seconds().try_into().unwrap(), // this would never fail
-            nanos: start_of_window.nanos().try_into().unwrap(),
+            nanos: 0,                                               // is this correct?
         }),
     )?;
 
