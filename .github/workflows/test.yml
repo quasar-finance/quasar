@@ -58,9 +58,6 @@ jobs:
       - name: Run unit-tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test --lib
-      - name: Run vault-tests
-        if: env.GIT_DIFF
-        run: cd smart-contracts && cargo test --lib -p basic-vault
       # - name: Compile wasm code
       #   uses: docker://cosmwasm/rust-optimizer:0.12.6
       #   with:
