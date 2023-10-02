@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
+    use std::str::FromStr;
+
+    use cosmwasm_std::{assert_approx_eq, Addr, Attribute, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
@@ -23,20 +25,18 @@ mod tests {
         test_tube::initialize::initialize::init_test_contract,
     };
 
+    // SETTINGS
+
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
+    const MAX_PERCENTAGE: f64 = 100.0;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
-    const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
+    const DENOM_BASE: &str = "ZZZZZ";
     const DENOM_QUOTE: &str =
-        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858";
+    const DENOM_FEE: &str = "uosmo"; // You cant change that
 
-    #[derive(Clone, Copy, Debug)]
-    enum Action {
-        Deposit,
-        Withdraw,
-        Swap,
-        UpdateRange,
-    }
+    // WORKFLOWS
 
     fn deposit(
         wasm: &Wasm<OsmosisTestApp>,
@@ -90,13 +90,13 @@ mod tests {
             return;
         }
 
-        // // Before queries
-        // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
-        //     get_vault_shares_balance(wasm, contract_address);
-        // let vault_position_assets_before: TotalAssetsResponse =
-        //     get_vault_position_assets(wasm, contract_address);
-        // let user_shares_balance_before: UserBalanceResponse =
-        //     get_user_shares_balance(wasm, contract_address, account);
+        // Before queries
+        let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
+            get_vault_shares_balance(wasm, contract_address);
+        let vault_position_assets_before: TotalAssetsResponse =
+            get_vault_position_assets(wasm, contract_address);
+        let user_shares_balance_before: UserBalanceResponse =
+            get_user_shares_balance(wasm, contract_address, account);
 
         // Execute deposit
         let create_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -108,55 +108,67 @@ mod tests {
             )
             .unwrap();
 
+        // After queries
+        let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
+            get_vault_shares_balance(wasm, contract_address);
+        let vault_position_assets_after: TotalAssetsResponse =
+            get_vault_position_assets(wasm, contract_address);
+        let user_shares_balance_after: UserBalanceResponse =
+            get_user_shares_balance(wasm, contract_address, account);
+
+        // Assert Total Vault Shares using tf_mint_amount to sum over the get_vault_shares_balance() query before and after
+        let tf_mint_attrs =
+            get_event_attributes_by_ty_and_key(&create_position, "tf_mint", vec!["amount"]);
+        let tf_mint_amount = get_event_value_amount_numeric(&tf_mint_attrs[0].value);
+        assert_eq!(
+            vault_shares_balance_before.total + Uint128::new(tf_mint_amount),
+            vault_shares_balance_after.total
+        );
+
         // Find the event with "ty": "create_position" and collect the relevant attributes
-        let _create_position_attrs = get_event_attributes_by_ty_and_key(
+        let create_position_attrs = get_event_attributes_by_ty_and_key(
             &create_position,
             "create_position",
-            vec!["liquidity", "amount0", "amount1"],
+            vec!["amount0", "amount1"], // TODO: Maybe we should assert also the "liquidity"
         );
-        // let create_amount0 = get_event_value_amount_numeric(&create_position_attrs[1].value);
-        // let create_amount1 = get_event_value_amount_numeric(&create_position_attrs[2].value);
-
-        // // Find the event with "ty": "tf_mint" and collect the relevant attributes
-        // let tf_mint_attrs =
-        //     get_event_attributes_by_ty_and_key(&create_position, "tf_mint", vec!["amount"]);
-        // let tf_mint_amount = get_event_value_amount_numeric(&tf_mint_attrs[0].value);
-
-        // // After queries
-        // let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
-        //     get_vault_shares_balance(wasm, contract_address);
-        // let vault_position_assets_after: TotalAssetsResponse =
-        //     get_vault_position_assets(wasm, contract_address);
-        // let user_shares_balance_after: UserBalanceResponse =
-        //     get_user_shares_balance(wasm, contract_address, account);
-
-        // // Use create_position_attrs[0].value to sum over the get_vault_shares_balance() query
-        // let liquidity_created_uint_floor =
-        //     Decimal256::from_str(create_position_attrs[0].value.as_str())
-        //         .unwrap()
-        //         .to_uint_floor();
-        // let liquidity_created = Uint128::try_from(liquidity_created_uint_floor).unwrap();
-        // assert_eq!(
-        //     vault_shares_balance_before.total + liquidity_created,
-        //     vault_shares_balance_after.total
-        // );
 
         // Use create_amount0 to sum over the get_vault_position_assets() query
-        // assert_eq!(
-        //     vault_position_assets_before.token0.amount + Uint128::new(create_amount0),
-        //     vault_position_assets_after.token0.amount
-        // );
-        // Use create_amount1 to sum over the get_vault_position_assets() query
-        // assert_eq!(
-        //     vault_position_assets_before.token1.amount + Uint128::new(create_amount1),
-        //     vault_position_assets_after.token1.amount
-        // );
+        let create_amount0 = Uint128::from_str(&create_position_attrs[0].value).unwrap();
+        if vault_position_assets_before.token0.amount != Uint128::zero()
+            && vault_position_assets_after.token0.amount != Uint128::zero()
+        {
+            assert_approx_eq!(
+                vault_position_assets_before
+                    .token0
+                    .amount
+                    .checked_add(create_amount0)
+                    .unwrap(),
+                vault_position_assets_after.token0.amount,
+                "0.002" // TODO: Optimize this assert
+            );
+        }
 
-        // Use tf_mint_amount to sum over the accounts_shares_balance for the depositing address
-        // assert_eq!(
-        //     user_shares_balance_before.balance + Uint128::new(tf_mint_amount),
-        //     user_shares_balance_after.balance
-        // );
+        // Use create_amount1 to sum over the get_vault_position_assets() query
+        let create_amount1 = Uint128::from_str(&create_position_attrs[1].value).unwrap();
+        if vault_position_assets_before.token1.amount != Uint128::zero()
+            && vault_position_assets_after.token1.amount != Uint128::zero()
+        {
+            assert_approx_eq!(
+                vault_position_assets_before
+                    .token1
+                    .amount
+                    .checked_add(create_amount1)
+                    .unwrap(),
+                vault_position_assets_after.token1.amount,
+                "0.002" // TODO: Optimize this assert
+            );
+        }
+
+        // Assert User Shares Balance using tf_mint_amount to sum with previous balance and compare to current
+        assert_eq!(
+            user_shares_balance_before.balance + Uint128::new(tf_mint_amount),
+            user_shares_balance_after.balance
+        );
     }
 
     fn withdraw(
@@ -165,16 +177,16 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
+        let balance = get_user_shares_balance(wasm, contract_address, account);
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
-        // // Before queries
-        // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
-        //     get_vault_shares_balance(wasm, contract_address);
-        // let vault_position_assets_before: TotalAssetsResponse =
-        //     get_vault_position_assets(wasm, contract_address);
-        // let user_shares_balance_before: UserBalanceResponse =
-        //     get_user_shares_balance(wasm, contract_address, account);
+        // Before queries
+        let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
+            get_vault_shares_balance(wasm, contract_address);
+        let vault_position_assets_before: TotalAssetsResponse =
+            get_vault_position_assets(wasm, contract_address);
+        let user_shares_balance_before: UserBalanceResponse =
+            get_user_shares_balance(wasm, contract_address, account);
 
         // Execute withdraw
         let withdraw_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -189,74 +201,101 @@ mod tests {
             )
             .unwrap();
 
+        // After queries
+        let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
+            get_vault_shares_balance(wasm, contract_address);
+        let vault_position_assets_after: TotalAssetsResponse =
+            get_vault_position_assets(wasm, contract_address);
+        let user_shares_balance_after: UserBalanceResponse =
+            get_user_shares_balance(wasm, contract_address, account);
+
+        // Assert Total Vault Shares using tf_burn_amount to sub over the total_vault_shares_balance
+        let tf_burn_attrs =
+            get_event_attributes_by_ty_and_key(&withdraw_position, "tf_burn", vec!["amount"]);
+        let tf_burn_amount = get_event_value_amount_numeric(&tf_burn_attrs[0].value);
+        assert_eq!(
+            vault_shares_balance_before.total - Uint128::new(tf_burn_amount),
+            vault_shares_balance_after.total
+        );
+
         // Find the event with "ty": "withdraw_position" and collect the relevant attributes
-        let _withdraw_position_attrs = get_event_attributes_by_ty_and_key(
+        let withdraw_position_attrs = get_event_attributes_by_ty_and_key(
             &withdraw_position,
             "withdraw_position",
-            vec!["liquidity", "amount0", "amount1"],
+            vec!["amount0", "amount1"], // TODO: Maybe we should assert also the "liquidity"
         );
-        //let withdraw_amount0 = get_event_value_amount_numeric(&withdraw_position_attrs[1].value); TODO this shouldnt pass trough get_event_value_amount_numeric as it is: -55190706220
-        //let withdraw_amount1 = get_event_value_amount_numeric(&withdraw_position_attrs[2].value);
 
-        // Find the event with "ty": "tf_burn" and collect the relevant attributes
-        // let tf_burn_attrs =
-        //     get_event_attributes_by_ty_and_key(&withdraw_position, "tf_burn", vec!["amount"]);
-        // let tf_burn_amount = get_event_value_amount_numeric(&tf_burn_attrs[0].value);
+        // Use withdraw_amount0 to sub over the total_vault_denom_balance
+        let withdraw_amount0 = Uint128::from_str(
+            &withdraw_position_attrs[0]
+                .value
+                .trim_start_matches("-")
+                .to_string(),
+        )
+        .unwrap();
+        let left = vault_position_assets_before
+            .token0
+            .amount
+            .checked_sub(withdraw_amount0)
+            .unwrap();
+        let right = vault_position_assets_after.token0.amount;
+        assert!(
+            (left >= right && left <= right + Uint128::one())
+                || (left <= right && left + Uint128::one() >= right),
+            "Left and Right are not within the +1/-1 range. Left: {}, Right: {}",
+            left,
+            right
+        );
 
-        // // After queries
-        // let vault_shares_balance_after: TotalVaultTokenSupplyResponse =
-        //     get_vault_shares_balance(wasm, contract_address);
-        // let vault_position_assets_after: TotalAssetsResponse =
-        //     get_vault_position_assets(wasm, contract_address);
-        // let user_shares_balance_after: UserBalanceResponse =
-        //     get_user_shares_balance(wasm, contract_address, account);
+        // Use withdraw_amount1 to sub over the total_vault_denom_balance
+        let withdraw_amount1 = Uint128::from_str(
+            &withdraw_position_attrs[1]
+                .value
+                .trim_start_matches("-")
+                .to_string(),
+        )
+        .unwrap();
+        let left = vault_position_assets_before
+            .token1
+            .amount
+            .checked_sub(withdraw_amount1)
+            .unwrap();
+        let right = vault_position_assets_after.token1.amount;
+        assert!(
+            (left >= right && left <= right + Uint128::one())
+                || (left <= right && left + Uint128::one() >= right),
+            "Left and Right are not within the +1/-1 range. Left: {}, Right: {}",
+            left,
+            right
+        );
 
-        // Use withdraw_position_attrs[0].value to sub over the total_vault_shares_balance
-        // let liquidity_withdrawn_uint_floor =
-        //     Decimal256::from_str(withdraw_position_attrs[0].value.as_str())
-        //         .unwrap()
-        //         .to_uint_floor();
-        //let liquidity_withdrawn = Uint128::try_from(liquidity_withdrawn_uint_floor).unwrap();
-        // assert_eq!(
-        //     vault_shares_balance_before.total + liquidity_withdrawn,
-        //     vault_shares_balance_after.total
-        // );
-
-        // Use withdraw_amount0 to sub over the total_vault_denom_balance ??? maybe this is not needed
-        // assert_eq!(
-        //     vault_position_assets_before.token0.amount + Uint128::new(withdraw_amount0),
-        //     vault_position_assets_after.token0.amount
-        // );
-        // Use withdraw_amount1 to sub over the total_vault_denom_balance ??? maybe this is not needed
-        // assert_eq!(
-        //     vault_position_assets_before.token1.amount + Uint128::new(withdraw_amount1),
-        //     vault_position_assets_after.token1.amount
-        // );
-
-        // Use tf_burn_amount to sub over the accounts_shares_balance for the depositing address
-        // assert_eq!(
-        //     user_shares_balance_before.balance - Uint128::new(tf_burn_amount),
-        //     user_shares_balance_after.balance
-        // );
+        // Assert User Shares Balance using tf_burn_amount to subtract from previous balance and compare to current
+        assert_eq!(
+            user_shares_balance_before
+                .balance
+                .checked_sub(Uint128::new(tf_burn_amount))
+                .unwrap(),
+            user_shares_balance_after.balance
+        );
     }
 
-    fn swap(
-        _wasm: &Wasm<OsmosisTestApp>,
-        bank: &Bank<OsmosisTestApp>,
-        _contract_address: &Addr,
-        account: &SigningAccount,
-        percentage: f64,
-        _cl_pool_id: u64,
-    ) {
-        let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
-        let balance_str = balance_response.balance.unwrap().amount;
-        let balance_f64: f64 = balance_str.parse().expect("Failed to parse balance to f64");
-        let _amount = (balance_f64 * (percentage / 100.0)).round() as u128;
+    // fn swap(
+    //     _wasm: &Wasm<OsmosisTestApp>,
+    //     bank: &Bank<OsmosisTestApp>,
+    //     _contract_address: &Addr,
+    //     account: &SigningAccount,
+    //     percentage: f64,
+    //     _cl_pool_id: u64,
+    // ) {
+    //     let balance_response = get_user_denom_balance(bank, account, DENOM_BASE);
+    //     let balance_str = balance_response.balance.unwrap().amount;
+    //     let balance_f64: f64 = balance_str.parse().expect("Failed to parse balance to f64");
+    //     let _amount = (balance_f64 * (percentage / 100.0)).round() as u128;
 
-        // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
+    //     // TODO: Check user bank denom balance is not zero and enough accordingly to amount_u128
 
-        // TODO: Implement swap strategy
-    }
+    //     // TODO: Implement swap strategy
+    // }
 
     fn update_range(
         wasm: &Wasm<OsmosisTestApp>,
@@ -265,18 +304,16 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
-        let (current_lower_tick, current_upper_tick) =
-            get_position_ticks(wasm, cl, contract_address);
-        let (current_lower_price, current_upper_price) = (
-            tick_to_price(current_lower_tick).unwrap(),
-            tick_to_price(current_upper_tick).unwrap(),
+        // Before queries
+        let (lower_tick_before, upper_tick_before) = get_position_ticks(wasm, cl, contract_address);
+        let (lower_price_before, upper_price_before) = (
+            tick_to_price(lower_tick_before).unwrap(),
+            tick_to_price(upper_tick_before).unwrap(),
         );
-        let clp_u128: Uint128 = current_lower_price.atomics().try_into().unwrap();
-        let cup_u128: Uint128 = current_upper_price.atomics().try_into().unwrap();
+        let clp_u128: Uint128 = lower_price_before.atomics().try_into().unwrap();
+        let cup_u128: Uint128 = upper_price_before.atomics().try_into().unwrap();
 
         // Create new range ticks based on previous ticks by percentage variation
-        // TODO: 1. Use also negative values, and maybe a random generated value for the lower and another one for upper instead of the same unique percentage
-        // TODO: 2. Creating them in a range of min/max accepted by Osmosis CL module
         let percentage_factor = percentage / 100.0;
         let new_lower_price = (clp_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
         let new_upper_price = (cup_u128.u128() as f64 * (1.0 + percentage_factor)).round() as u128;
@@ -294,13 +331,26 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                        max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        max_slippage: Decimal::bps(5),
                     },
                 )),
                 &[],
                 admin_account,
             )
             .unwrap();
+
+        // After queries
+        let (lower_tick_after, upper_tick_after) = get_position_ticks(wasm, cl, contract_address);
+        let (lower_price_after, upper_price_after) = (
+            tick_to_price(lower_tick_after).unwrap(),
+            tick_to_price(upper_tick_after).unwrap(),
+        );
+        let alp_u128: Uint128 = lower_price_after.atomics().try_into().unwrap();
+        let aup_u128: Uint128 = upper_price_after.atomics().try_into().unwrap();
+
+        // As we do before we get ticks, convert to price and compare the before with after
+        assert_approx_eq!(alp_u128, Uint128::new(new_lower_price), "0.000001"); // TODO: Optimize this, maybe changing with assert_eq with rounding on the left arg
+        assert_approx_eq!(aup_u128, Uint128::new(new_upper_price), "0.000001"); // TODO: Optimize this
     }
 
     // GETTERS
@@ -357,8 +407,7 @@ mod tests {
         cl: &ConcentratedLiquidity<OsmosisTestApp>,
         contract_address: &Addr,
     ) -> (i64, i64) {
-        // query_position will return a Vec of position_ids
-        let position_response: PositionResponse = wasm
+        let current_position: PositionResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
@@ -367,20 +416,20 @@ mod tests {
             )
             .unwrap();
 
-        // TODO Use those to take the latest one? or what?
-        let position = cl
+        // Assert we have only one positoin
+        assert!(current_position.position_ids.len() == 1);
+
+        let single_position = cl
             .query_position_by_id(&PositionByIdRequest {
-                position_id: position_response.position_ids[0],
+                position_id: current_position.position_ids[0],
             })
             .unwrap()
             .position
             .unwrap()
-            .position;
+            .position
+            .unwrap();
 
-        match position {
-            Some(position) => (position.lower_tick, position.upper_tick),
-            None => panic!("Position not found"),
-        }
+        (single_position.lower_tick, single_position.upper_tick)
     }
 
     // HELPERS
@@ -408,43 +457,20 @@ mod tests {
         numeric_part.parse::<u128>().unwrap()
     }
 
-    // ASSERT METHODS
-
-    // TODO: REMOVE THIS DEPRECATED
-    /*fn assert_deposit_withdraw(
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_address: &Addr,
-        accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: HashMap<String, Uint128>,
-    ) {
-        // TODO: multi-query foreach user created previously
-        for account in accounts {
-            let shares = get_user_shares_balance(wasm, contract_address, account);
-
-            // Check that the current account iterated shares balance is the same we expect from Hashmap
-            assert_eq!(
-                shares.balance,
-                accounts_shares_balance.get(&account.address()).unwrap()
-            );
-        }
-    }*/
-
-    /*
-    fn assert_swap() {
-        todo!()
-    }
-
-    fn assert_update_range() {
-        todo!()
-    }
-    */
-
     // COMPOSE STRATEGY
+
+    // Actions enum
+    #[derive(Clone, Copy, Debug)]
+    enum Action {
+        Deposit,
+        Withdraw,
+        // Swap,
+        UpdateRange,
+    }
 
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
-        // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in 1i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -1_000_000i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -454,7 +480,7 @@ mod tests {
         fn get_strategy_list()(list in prop::collection::vec(prop_oneof![
             Just(Action::Deposit),
             Just(Action::Withdraw),
-            //Just(Action::Swap),
+            // Just(Action::Swap),
             Just(Action::UpdateRange),
         ], ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<Action> {
             list
@@ -464,7 +490,7 @@ mod tests {
     // get_percentage generates a list of random percentages used to calculate deposit_amount,
     // withdraw_amount, and newers lower and upper ticks based on the previous values
     prop_compose! {
-        fn get_percentage_list()(list in prop::collection::vec(1.0..100.0, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
+        fn get_percentage_list()(list in prop::collection::vec(1.0..MAX_PERCENTAGE, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
             list
         }
     }
@@ -488,7 +514,7 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
+            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
@@ -524,7 +550,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000, DENOM_FEE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
@@ -535,24 +561,20 @@ mod tests {
                 deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00);
             }
 
-            // Iterate iterations times
+            // Iterate ITERATIONS_NUMBER times
             for i in 0..ITERATIONS_NUMBER {
                 match actions[i] {
                     Action::Deposit => {
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Withdraw => {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
-                    Action::Swap => {
-                        swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                        //assert_swap(); // todo!()
-                    },
+                    // Action::Swap => {
+                    //     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                    // },
                     Action::UpdateRange => {
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
                     },
                 }
             }
