@@ -74,7 +74,18 @@ pub fn execute(
                     lower_price,
                     upper_price,
                     max_slippage,
-                }) => execute_update_range(deps, env, info, lower_price, upper_price, max_slippage),
+                    ratio_of_swappable_funds_to_use,
+                    twap_window_seconds,
+                }) => execute_update_range(
+                    deps,
+                    env,
+                    info,
+                    lower_price,
+                    upper_price,
+                    max_slippage,
+                    ratio_of_swappable_funds_to_use,
+                    twap_window_seconds,
+                ),
                 crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
                     execute_distribute_rewards(deps, env)
                 }

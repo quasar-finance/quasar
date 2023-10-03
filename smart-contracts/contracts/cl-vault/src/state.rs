@@ -101,6 +101,10 @@ pub struct ModifyRangeState {
     pub max_slippage: Decimal,
     // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
+    // the percent of funds to try for the next swap
+    pub ratio_of_swappable_funds_to_use: Decimal,
+    // the twap window to use for the swap in seconds
+    pub twap_window_seconds: u64,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

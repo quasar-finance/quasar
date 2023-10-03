@@ -148,6 +148,9 @@ pub mod initialize {
         )
         .unwrap();
 
+        // increment the app time for twaps to function
+        app.increase_time(1000000);
+
         let instantiate_msg = InstantiateMsg {
             admin: admin.address(),
             pool_id: pool.id,
@@ -246,6 +249,8 @@ pub mod initialize {
                         lower_price: Decimal::from_str("0.993").unwrap(),
                         upper_price: Decimal::from_str("1.002").unwrap(),
                         max_slippage: Decimal::permille(5),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
                     },
                 )),
                 &[],

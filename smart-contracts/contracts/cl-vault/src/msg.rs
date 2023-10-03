@@ -56,6 +56,10 @@ pub struct ModifyRangeMsg {
     pub upper_price: Decimal,
     /// max position slippage
     pub max_slippage: Decimal,
+    /// desired percent of funds to use during the swap step
+    pub ratio_of_swappable_funds_to_use: Decimal,
+    /// twap window to use in seconds
+    pub twap_window_seconds: u64,
 }
 
 #[cw_serde]
