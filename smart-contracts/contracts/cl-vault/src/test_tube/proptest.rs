@@ -479,7 +479,10 @@ mod tests {
     }
 
     fn get_cases() -> u32 {
-        std::env::var("PROPTEST_CASES").unwrap_or("256".to_string()).parse().unwrap()
+        std::env::var("PROPTEST_CASES")
+            .unwrap_or("256".to_string())
+            .parse()
+            .unwrap()
     }
 
     // TESTS
