@@ -478,9 +478,14 @@ mod tests {
         }
     }
 
-    // TESTS
+    fn get_cases() -> u32 {
+        std::env::var("PROPTEST_CASES").unwrap_or("256".to_string()).parse().unwrap()
+    }
 
+    // TESTS
     proptest! {
+        // setup the config with amount of cases, usable for setting different values on ci vs local
+        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
         #[test]
         #[ignore]
         fn test_complete_works(

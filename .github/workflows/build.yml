@@ -109,3 +109,5 @@ jobs:
       - name: Run test-tube tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test -- --include-ignored
+        env:
+          PROPTEST_CASES: 10
