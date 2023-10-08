@@ -23,6 +23,121 @@ mod test {
 
     use prost::Message;
 
+    #[test]
+    #[ignore]
+    fn move_range_partial_swap_works() {
+        let (app, contract, cl_pool_id, admin) = init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(1_000_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uosmo".to_string(),
+                denom1: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -1000,
+            0,
+            vec![
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+                v1beta1::Coin {
+                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                    amount: "140000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        );
+        let alice = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
+            ])
+            .unwrap();
+
+        let wasm = Wasm::new(&app);
+        let cl = ConcentratedLiquidity::new(&app);
+
+        // do a swap to move the cur tick
+        let pm = PoolManager::new(&app);
+        pm.swap_exact_amount_in(
+            MsgSwapExactAmountIn {
+                sender: alice.address(),
+                routes: vec![SwapAmountInRoute {
+                    pool_id: cl_pool_id,
+                    token_out_denom: "uosmo".to_string(),
+                }],
+                token_in: Some(v1beta1::Coin {
+                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                    amount: "100000000000".to_string(),
+                }),
+                token_out_min_amount: "1".to_string(),
+            },
+            &alice,
+        )
+        .unwrap();
+
+        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        println!("{:?}", pool);
+
+
+        // move the position completely out of range so we have the same situation as we see on mainnet
+        let _result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("1.0001").unwrap(),
+                        upper_price: Decimal::from_str("1.0002").unwrap(),
+                        max_slippage: Decimal::permille(5),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+            let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+            let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+            println!("{:?}", pool);
+
+        // deposit 2 million usdc from alice
+        let _result = wasm.execute(
+            contract.as_str(),
+            &ExecuteMsg::ExactDeposit { recipient: None },
+            &[coin(2_000_000_000_000, "uosmo")],
+            &admin,
+        ).unwrap();
+
+        // now do a partial swap
+        let result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("0.9992").unwrap(),
+                        upper_price: Decimal::from_str("1.0043").unwrap(),
+                        max_slippage: Decimal::permille(5),
+                        ratio_of_swappable_funds_to_use: Decimal::percent(5),
+                        twap_window_seconds: 45,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+        println!("{:?}", result);
+    }
+
     // #[test]
     // #[ignore]
     fn move_range_works() {
