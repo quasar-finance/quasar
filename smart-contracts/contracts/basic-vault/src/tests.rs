@@ -2379,7 +2379,7 @@ fn test_force_claim() {
                 stub: vec![
                     UnbondingStub {
                         address: "quasar123".to_string(),
-                        unlock_time: Some(env.block.time.minus_seconds(1)), // None?
+                        unlock_time: Some(env.block.time.minus_seconds(1)),
                         unbond_response: Some(UnbondResponse {
                             unbond_id: "2".to_string(),
                         }),
@@ -2387,7 +2387,7 @@ fn test_force_claim() {
                     },
                     UnbondingStub {
                         address: "quasar124".to_string(),
-                        unlock_time: Some(env.block.time.minus_seconds(1)), // None?
+                        unlock_time: Some(env.block.time.minus_seconds(1)),
                         unbond_response: Some(UnbondResponse {
                             unbond_id: "2".to_string(),
                         }),
@@ -2395,7 +2395,7 @@ fn test_force_claim() {
                     },
                     UnbondingStub {
                         address: "quasar125".to_string(),
-                        unlock_time: Some(env.block.time.minus_seconds(1)), // None?
+                        unlock_time: Some(env.block.time.minus_seconds(1)),
                         unbond_response: Some(UnbondResponse {
                             unbond_id: "2".to_string(),
                         }),

@@ -23,9 +23,9 @@ const (
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
 	basicVaultStrategyContractPath       = "../../../../smart-contracts/artifacts/basic_vault-aarch64.wasm"
 	vaultRewardsContractPath             = "../../../../smart-contracts/artifacts/vault_rewards-aarch64.wasm"
-	osmosisPool1Path                     = "../_utils/pools/low_liquidity/balancer_pool1.json"
-	osmosisPool2Path                     = "../_utils/pools/low_liquidity/balancer_pool2.json"
-	osmosisPool3Path                     = "../_utils/pools/low_liquidity/balancer_pool3.json"
+	osmosisPool1Path                     = "../_utils/pools/high_liquidity/balancer_pool1.json"
+	osmosisPool2Path                     = "../_utils/pools/high_liquidity/balancer_pool2.json"
+	osmosisPool3Path                     = "../_utils/pools/high_liquidity/balancer_pool3.json"
 )
 
 var (
@@ -42,22 +42,6 @@ var (
 	}
 	init3 = map[string]any{
 		"lock_period": 6, "pool_id": 3, "pool_denom": "gamm/pool/3", "base_denom": "uosmo",
-		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "fakestake",
-		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
-	}
-	// Exit
-	init4 = map[string]any{
-		"lock_period": 6, "pool_id": 4, "pool_denom": "gamm/pool/4", "base_denom": "uosmo",
-		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "stake1",
-		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
-	}
-	init5 = map[string]any{
-		"lock_period": 6, "pool_id": 5, "pool_denom": "gamm/pool/5", "base_denom": "uosmo",
-		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "usdc",
-		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
-	}
-	init6 = map[string]any{
-		"lock_period": 6, "pool_id": 6, "pool_denom": "gamm/pool/6", "base_denom": "uosmo",
 		"local_denom": "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518", "quote_denom": "fakestake",
 		"return_source_channel": "channel-0", "transfer_channel": "channel-0", "expected_connection": "connection-0",
 	}
@@ -124,9 +108,6 @@ func (s *WasmdTestSuite) SetupSuite() {
 
 	// Set up an account in quasar chain for contract deployment
 	s.ContractsDeploymentWallet = s.CreateUserAndFund(ctx, s.Quasar(), StartingTokenAmount)
-
-	// Create Pools twice in order to create them in a range from poolId 1 to 6 for both test cases as Join and Exit
-	s.CreatePools(ctx)
 	s.CreatePools(ctx)
 }
 
@@ -135,112 +116,16 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	ctx := context.Background()
 	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init1, init2, init3})
 
-	// create user and check his balance
 	acc1 := s.createUserAndCheckBalances(ctx, 10_000_000)
 	acc2 := s.createUserAndCheckBalances(ctx, 20_000_000)
+	acc3 := s.createUserAndCheckBalances(ctx, 100_000_000)
 
-	t.Log("Execute 1st bond transaction, for user 1")
-	s.executeBond(ctx, acc1, basicVaultAddress, 10_000_000)
+	user1 := acc1.Bech32Address(s.Quasar().Config().Bech32Prefix)
+	t.Log("Get user1 addr", user1)
 
-	t.Log("Execute 2nd bond transaction, for user 2")
-	s.executeBond(ctx, acc2, basicVaultAddress, 20_000_000)
+	user2 := acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)
+	t.Log("Get user2 addr", user2)
 
-	t.Log("Execute first clear cache")
-	s.executeClearCache(ctx, basicVaultAddress)
-
-	t.Log("Check that the user1 shares balance is 10 OSMO")
-	balance1 := s.getUserSharesBalance(ctx, acc1, basicVaultAddress)
-	s.Require().Equal(int64(10_000_000-1), balance1)
-
-	t.Log("Check that the user2 shares balance is 20 OSMO")
-	balance2 := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
-	s.Require().Equal(int64(20_000_000-1), balance2)
-
-	t.Log("Get the counterparty ICA osmo1 addresses for each one of the primitive and check their uosmo balances after executing bond that failed")
-	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-
-	t.Log("Check uOSMO balance of the primitives looking for BOND_AMOUNT/3 on each one of them")
-	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(BondAmount/3, balanceIca1)
-	balanceIca2, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(BondAmount/3, balanceIca2)
-	balanceIca3, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(BondAmount/3, balanceIca3)
-
-	t.Log("Query trapped errors for each one of the primitives")
-	trappedErrors := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-
-	t.Log("Parsing trapped errors to obtain seq number and channel id and checking length of each is 1")
-	seqError1, channelIdError1 := helpers.ParseTrappedError(trappedErrors[0])
-	seqError2, channelIdError2 := helpers.ParseTrappedError(trappedErrors[1])
-	seqError3, channelIdError3 := helpers.ParseTrappedError(trappedErrors[2])
-	s.Require().Equal(1, len(trappedErrors[0]))
-	s.Require().Equal(1, len(trappedErrors[1]))
-	s.Require().Equal(1, len(trappedErrors[2]))
-
-	t.Log("Execute retry endpoints against each one of the primitives to enqueue previously failed join pools")
-	s.executeRetry(
-		ctx,
-		acc2,
-		[]string{lpAddresses[0], lpAddresses[1], lpAddresses[2]},
-		[]uint64{seqError1, seqError2, seqError3},
-		[]string{channelIdError1, channelIdError2, channelIdError3},
-	)
-
-	t.Log("Query again trapped errors for each one of the primitives")
-	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-	s.Require().Equal(0, len(trappedErrorsAfter[0]))
-	s.Require().Equal(0, len(trappedErrorsAfter[1]))
-	s.Require().Equal(0, len(trappedErrorsAfter[2]))
-
-	t.Log("Execute second bond transaction, this should work and also trigger the join_pool we enqueued previously via retry endpoint")
-	s.executeBond(ctx, acc2, basicVaultAddress, 10_000_000)
-	t.Log("Execute third clear cache to perform the joinPool on the osmosis side")
-	s.executeClearCache(ctx, basicVaultAddress)
-
-	t.Log("Query again trapped errors for each one of the primitives")
-	trappedErrorsAfterSecondBond := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[0]))
-	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[1]))
-	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[2]))
-
-	t.Log("Check that the user shares balance is ~20 as both join pools should have worked")
-	balanceAfter := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
-	s.Require().Equal(BondAmount*2-1-1, balanceAfter)
-
-	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
-	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(int64(0), balanceIca1After)
-	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(int64(0), balanceIca2After)
-	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(int64(0), balanceIca3After)
-}
-
-func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
-	t := s.T()
-	ctx := context.Background()
-	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init4, init5, init6})
-
-	acc := s.createUserAndCheckBalances(ctx, 10_000_000)
-
-	t.Log("Execute first bond transaction, this should work")
-	s.executeBond(ctx, acc, basicVaultAddress, 10_000_000)
-
-	t.Log("Execute first clear cache to perform the joinPool on the osmosis side")
-	s.executeClearCache(ctx, basicVaultAddress)
-
-	t.Log("Check that the user shares balance is ~10 as the joinPool should have worked")
-	balance := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
-	s.Require().True(int64(9999999) == balance)
-
-	t.Log("Get ICA addresses for each one of the primitive")
 	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
 
 	t.Log("uosmo balance of the primitives should be 0")
@@ -254,84 +139,84 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	s.Require().NoError(err)
 	s.Require().Equal(int64(0), balanceIca3)
 
-	t.Log("Query trapped errors for each primitive & check length should be 0")
-	trappedErrors := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-	s.Require().Equal(0, len(trappedErrors[0]))
-	s.Require().Equal(0, len(trappedErrors[1]))
-	s.Require().Equal(0, len(trappedErrors[2]))
+	// bond 3 users, 1 stays bonded so pool is not emptied
+	s.executeBond(ctx, acc3, basicVaultAddress, 100_000_000)
 
-	t.Log("Execute unbond, this should work")
-	s.executeUnbond(ctx, acc, basicVaultAddress)
-
-	t.Log("Execute second clear cache to perform the begin unlocking on osmosis")
+	t.Log("Execute first clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Execute claim before ICA/ICQ. Claim should fail due to slippage")
-	s.executeClaim(ctx, acc, basicVaultAddress)
+	s.executeBond(ctx, acc1, basicVaultAddress, 10_000_000)
 
-	t.Log("Execute third clear cache")
+	t.Log("Execute first clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Query trapped errors for each one of the primitives")
-	trappedErrorsAfterClaim := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+	s.executeBond(ctx, acc2, basicVaultAddress, 20_000_000)
 
-	t.Log("Parsing trapped errors to obtain seq number and channel id and checking length of each is 1")
-	seqError1Claim, channelIdError1Claim := helpers.ParseTrappedError(trappedErrorsAfterClaim[0])
-	seqError2Claim, channelIdError2Claim := helpers.ParseTrappedError(trappedErrorsAfterClaim[1])
-	seqError3Claim, channelIdError3Claim := helpers.ParseTrappedError(trappedErrorsAfterClaim[2])
-	s.Require().Equal(1, len(trappedErrorsAfterClaim[0]))
-	s.Require().Equal(1, len(trappedErrorsAfterClaim[1]))
-	s.Require().Equal(1, len(trappedErrorsAfterClaim[2]))
+	t.Log("Execute first clear cache")
+	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Execute retry endpoints against all primitives")
-	s.executeRetry(
+	shares3AfterBond := s.getUserSharesBalance(ctx, acc3, basicVaultAddress)
+	s.Require().Equal(int64(100_000_000-1), shares3AfterBond)
+
+	shares1AfterBond := s.getUserSharesBalance(ctx, acc1, basicVaultAddress)
+	s.Require().Equal(int64(10_050_250), shares1AfterBond) //8368200
+
+	shares2AfterBond := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
+	s.Require().Equal(int64(20_109_683), shares2AfterBond)
+
+	t.Log("Execute force unbond for both users")
+	s.executeForceUnbond(
 		ctx,
-		acc,
-		[]string{lpAddresses[0], lpAddresses[1], lpAddresses[2]},
-		[]uint64{seqError1Claim, seqError2Claim, seqError3Claim},
-		[]string{channelIdError1Claim, channelIdError2Claim, channelIdError3Claim},
+		basicVaultAddress,
+		[]string{acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
 	)
 
-	t.Log("Query again trapped errors for each one of the primitives")
-	trappedErrorsAfter := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
-	s.Require().Equal(0, len(trappedErrorsAfter[0]))
-	s.Require().Equal(0, len(trappedErrorsAfter[1]))
-	s.Require().Equal(0, len(trappedErrorsAfter[2]))
-
-	t.Log("Fund the Osmosis pools to increase pool assets amount and reduce slippage for next retry")
-	// Preparing array fo payloads to joinPools, those are magic numbers based on the test's values so any change to initial setup will cause a fail here
-	poolIds := []string{"4", "5", "6"}
-	maxAmountsIn := []string{"3876858349171stake1,6461430323493uosmo", "6461430323493uosmo,3876858349171usdc", "3876858349171fakestake,6461430323493uosmo"}
-	sharesAmountOut := []string{"99999900000000000000000000", "99999900000000000000000000", "99999900000000000000000000"}
-	s.JoinPools(ctx, poolIds, maxAmountsIn, sharesAmountOut)
-
-	t.Log("Execute fourth clear cache to perform the exit pool on osmosis")
+	t.Log("Execute first clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
-	t.Log("Check that the user shares balance is ~5 shares")
-	balanceAfter := s.getUserSharesBalance(ctx, acc, basicVaultAddress)
-	s.Require().Equal(BondAmount/2-1, balanceAfter)
+	t.Log("Check that the user1 shares balance is now 0")
+	shares1AfterUnbond := s.getUserSharesBalance(ctx, acc1, basicVaultAddress)
+	s.Require().Equal(int64(0), shares1AfterUnbond)
 
-	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
-	balanceIca1After, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(int64(0), balanceIca1After)
-	balanceIca2After, err := s.Osmosis().GetBalance(ctx, icaAddresses[1], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(int64(0), balanceIca2After)
-	balanceIca3After, err := s.Osmosis().GetBalance(ctx, icaAddresses[2], "uosmo")
-	s.Require().NoError(err)
-	s.Require().Equal(int64(0), balanceIca3After)
+	t.Log("Check that the user2 shares balance is now 0")
+	shares2AfterUnbond := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
+	s.Require().Equal(int64(0), shares2AfterUnbond)
 
-	t.Log("Check uOSMO balance of the primitives looking for ~0 on each one of them as they should be emptied")
-	balanceVault, err := s.Quasar().GetBalance(ctx, basicVaultAddress, s.OsmosisDenomInQuasar)
+	balance1BeforeClaim, err := s.Quasar().GetBalance(ctx, acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
-	s.Require().Equal(int64(1), balanceVault)
+	s.Require().Equal(balance1BeforeClaim, int64(0))
 
-	t.Log("Check uOSMO balance of the user on their wallet. Should be greater than 15")
-	userBalance, err := s.Quasar().GetBalance(ctx, acc.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	balance2BeforeClaim, err := s.Quasar().GetBalance(ctx, acc2.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
-	s.Require().True(userBalance > int64(14_999_999))
+	s.Require().Equal(balance2BeforeClaim, int64(0))
+
+	//s.executeClaim(ctx, acc1, basicVaultAddress)
+	//s.executeClaim(ctx, acc2, basicVaultAddress)
+
+	t.Log("Execute force claim for both users")
+	s.executeForceClaim(
+		ctx,
+		basicVaultAddress,
+		[]string{acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
+	)
+
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	t.Log("Execute clear cache")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	trappedErrorsAfterSecondBond := s.getTrappedErrors(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[0]))
+	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[1]))
+	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[2]))
+
+	balance1AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(9_937_767), balance1AfterWithdraw)
+
+	balance2AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc2.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(21_548_481), balance2AfterWithdraw)
 }
 
 func (s *WasmdTestSuite) deployContracts(ctx context.Context, inits []map[string]any) (string, []string) {
@@ -431,8 +316,8 @@ func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basic
 		nil,
 	)
 
-	t.Log("Wait 3 blocks on quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
-	err := testutil.WaitForBlocks(ctx, 3, s.Quasar(), s.Osmosis())
+	t.Log("Wait 5 blocks on quasar and osmosis to settle up ICA packet transfer and the IBC transfer (bond)")
+	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 }
 
@@ -466,8 +351,8 @@ func (s *WasmdTestSuite) executeClaim(ctx context.Context, acc *ibc.Wallet, basi
 		map[string]any{"claim": map[string]any{}},
 		nil,
 	)
-	t.Log("Wait 3 block on quasar and osmosis to settle up ICA packet claim and the IBC transfer (claim)")
-	err := testutil.WaitForBlocks(ctx, 3, s.Quasar(), s.Osmosis())
+	t.Log("Wait 5 block on quasar and osmosis to settle up ICA packet claim and the IBC transfer (claim)")
+	err := testutil.WaitForBlocks(ctx, 5, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 }
 
@@ -496,21 +381,32 @@ func (s *WasmdTestSuite) executeSandwichAttackJoin(ctx context.Context) {
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
 }
 
-func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
-	for i := range seqs {
-		s.ExecuteContract(
-			ctx,
-			s.Quasar(),
-			acc.KeyName,
-			lpAddresses[i],
-			sdk.NewCoins(), // empty amount
-			map[string]any{"retry": map[string]any{
-				"seq":     seqs[i],
-				"channel": chans[i],
-			}},
-			nil,
-		)
-	}
+func (s *WasmdTestSuite) executeForceUnbond(ctx context.Context, basicVaultAddress string, accs []string) {
+	s.ExecuteContract(
+		ctx,
+		s.Quasar(),
+		s.ContractsDeploymentWallet.KeyName,
+		basicVaultAddress,
+		sdk.NewCoins(), // empty amount
+		map[string]any{"force_unbond": map[string]any{
+			"addresses": accs,
+		}},
+		nil,
+	)
+}
+
+func (s *WasmdTestSuite) executeForceClaim(ctx context.Context, basicVaultAddress string, accs []string) {
+	s.ExecuteContract(
+		ctx,
+		s.Quasar(),
+		s.ContractsDeploymentWallet.KeyName,
+		basicVaultAddress,
+		sdk.NewCoins(), // empty amount
+		map[string]any{"force_claim": map[string]any{
+			"addresses": accs,
+		}},
+		nil,
+	)
 }
 
 func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) int64 {
