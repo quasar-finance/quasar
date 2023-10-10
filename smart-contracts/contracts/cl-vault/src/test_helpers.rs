@@ -9,6 +9,7 @@ use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySuppl
 
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceResponse};
+use osmosis_std::types::osmosis::twap::v1beta1::ArithmeticTwapToNowResponse;
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::concentratedliquidity::v1beta1::{
@@ -119,6 +120,14 @@ impl Querier for QuasarQuerier {
                     QuerierResult::Ok(CwContractResult::Ok(
                         to_binary(&SpotPriceResponse {
                             spot_price: tick_to_price(self.current_tick).unwrap().to_string(),
+                        })
+                        .unwrap(),
+                    ))
+                }
+                "/osmosis.twap.v1beta1.Query/ArithmeticTwapToNow" => {
+                    QuerierResult::Ok(CwContractResult::Ok(
+                        to_binary(&ArithmeticTwapToNowResponse {
+                            arithmetic_twap: tick_to_price(self.current_tick).unwrap().to_string(),
                         })
                         .unwrap(),
                     ))

@@ -10,7 +10,9 @@ use cosmwasm_std::{
     QuerierWrapper, Storage, Uint128, Uint256,
 };
 
+use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
@@ -53,6 +55,29 @@ pub fn get_spot_price(
         pm_querier.spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?;
 
     Ok(Decimal::from_str(&spot_price.spot_price)?)
+}
+
+pub fn get_twap_price(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    env: &Env,
+    twap_window_seconds: u64,
+) -> Result<Decimal, ContractError> {
+    let pool_config = POOL_CONFIG.load(storage)?;
+
+    let twap_querier = TwapQuerier::new(querier);
+    let start_of_window = env.block.time.minus_seconds(twap_window_seconds);
+    let twap_price = twap_querier.arithmetic_twap_to_now(
+        pool_config.pool_id,
+        pool_config.token0,
+        pool_config.token1,
+        Some(OsmoTimestamp {
+            seconds: start_of_window.seconds().try_into().unwrap(), // this would never fail
+            nanos: 0,                                               // is this correct?
+        }),
+    )?;
+
+    Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
 }
 
 // /// get_liquidity_needed_for_tokens
