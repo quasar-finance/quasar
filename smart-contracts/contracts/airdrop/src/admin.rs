@@ -369,3 +369,91 @@ pub fn execute_withdraw_funds(
         ("amount", &contract_balance.to_string()),
     ]))
 }
+
+// Import necessary modules for testing
+#[cfg(test)]
+mod tests {
+    // Import the necessary items for testing
+    use super::*;
+    use cosmwasm_std::{Addr, Coin};
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cw_asset::AssetInfo;
+
+    use crate::contract::instantiate;
+    use crate::msg::InstantiateMsg;
+
+    // Define a helper function to create a mock contract configuration
+    fn mock_config_1() -> AirdropConfig {
+        AirdropConfig {
+            airdrop_description: "Test Airdrop".to_string(),
+            airdrop_amount: Uint128::new(1000000), // Adjust this value as needed
+            airdrop_asset: AssetInfo::Native("uqsr".parse().unwrap()),
+            total_claimed: Uint128::new(0),
+            start_height: 12346, // Adjust this value as needed
+            end_height: 14567,   // Adjust this value as needed
+        }
+    }
+
+    // Define a helper function to create a mock contract configuration
+    fn mock_config_2() -> AirdropConfig {
+        AirdropConfig {
+            airdrop_description: "Test Airdrop".to_string(),
+            airdrop_amount: Uint128::new(1000000), // Adjust this value as needed
+            airdrop_asset: AssetInfo::Native("uqsr".parse().unwrap()),
+            total_claimed: Uint128::new(0),
+            start_height: 0, // Adjust this value as needed
+            end_height: 0,   // Adjust this value as needed
+        }
+    }
+
+    // Define a test case for updating the airdrop configuration
+    #[test]
+    fn test_execute_update_airdrop_config() {
+        // Create mock dependencies, environment, and config
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("admin", &[Coin::new(100000000, "uqsr")]);
+        let config = mock_config_1();
+
+        // Execute the instantiate function to set up the initial state (if needed)
+        let instantiate_msg_1 = InstantiateMsg { config: config.clone() };
+        instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg_1).unwrap_err();
+
+        // instantiate with a correct config
+        let instantiate_msg_2 = InstantiateMsg{config: mock_config_2()};
+        instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg_2).unwrap();
+
+        // try to update config with wrong conditions
+        execute_update_airdrop_config(deps.as_mut(), env.clone(), config.clone()).unwrap_err();
+
+        // add users to the airdrop
+        let users: Vec<String> = vec!["user1".to_string(), "user2".to_string(), "user3".to_string()];
+        let amounts: Vec<Uint128> = vec![Uint128::new(330000), Uint128::new(330000), Uint128::new(330000)];
+        let add_users_response = execute_add_users(deps.as_mut(), users, amounts).unwrap();
+        assert_eq!(add_users_response.events[0].attributes.len(), 6);
+
+        // set a user so that the total is higher than airdrop size
+        let users: Vec<String> = vec!["user1".to_string()];
+        let amounts: Vec<Uint128> = vec![Uint128::new(630000)];
+        execute_set_users(deps.as_mut(), users, amounts).unwrap_err();
+
+        // set a user so that the total is lower than airdrop size
+        let users: Vec<String> = vec!["user1".to_string(), "user2".to_string()];
+        let amounts: Vec<Uint128> = vec![Uint128::new(230000), Uint128::new(430000)];
+        let set_users_response = execute_set_users(deps.as_mut(), users, amounts).unwrap();
+        assert_eq!(set_users_response.events[0].attributes.len(), 4);
+
+        // update the airdrop config with
+        let new_balance: Vec<Coin> = vec![Coin{denom: "uqsr".to_string(), amount: Uint128::new(1000000)}];
+        let address = Addr::unchecked("cosmos2contract");
+        deps.querier.update_balance(address, new_balance);
+        let execute_response = execute_update_airdrop_config(deps.as_mut(), env.clone(), config.clone()).unwrap();
+
+        // Ensure that the response is successful
+        assert_eq!(execute_response.events[0].attributes.len(), 6); // Check for expected attributes
+
+        // Verify that the new configuration is stored
+        let stored_config = AIRDROP_CONFIG.load(deps.as_ref().storage);
+        assert_eq!(stored_config.unwrap(), config);
+    }
+}

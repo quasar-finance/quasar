@@ -204,7 +204,8 @@ pub fn get_total_in_user_info(storage: &dyn Storage) -> Uint128 {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{Coin, Empty};
+    use cosmwasm_std::testing::{mock_dependencies, MockQuerier, mock_env, mock_info};
 
     use crate::state::UserInfo;
 
@@ -243,4 +244,30 @@ mod tests {
         // Check the result against the expected total claimable amount
         assert_eq!(total_claimable_amount, Uint128::new(300));
     }
+
+    #[test]
+    fn test_validate_amount() {
+        let err = validate_amount(Uint128::new(0), 1).unwrap_err();
+        assert_eq!(AirdropErrors::Std(StdError::GenericErr {
+            msg: "Amount at index :".to_string() + &*1.to_string() + &*"is zero".to_string(),
+        }), err);
+        let resp = validate_amount(Uint128::new(10), 1).unwrap();
+        assert_eq!(Response::default(), resp);
+    }
+
+    // #[test]
+    // fn test_is_contract_admin() {
+    //     let mut deps = mock_dependencies();
+    //     let env = mock_env();
+    //     let info = mock_info("admin", &[Coin::new(100000000, "uqsr")]);
+    //
+    //
+    //     let qx: MockQuerier<Empty> = MockQuerier::new(&[]);
+    //     let q = QuerierWrapper::new(&qx);
+    //
+    //
+    //
+    //     let a= is_contract_admin(&q, &env, &Addr::unchecked("admin"));
+    //     println!("{:?}", a);
+    // }
 }
