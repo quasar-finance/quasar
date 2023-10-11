@@ -127,6 +127,9 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	t.Log("Get user2 addr", user2)
 
 	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
+	t.Log("Primitive1 address", lpAddresses[0])
+	t.Log("Primitive2 address", lpAddresses[1])
+	t.Log("Primitive3 address", lpAddresses[2])
 
 	t.Log("uosmo balance of the primitives should be 0")
 	balanceIca1, err := s.Osmosis().GetBalance(ctx, icaAddresses[0], "uosmo")
@@ -201,6 +204,13 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	)
 
 	s.executeClearCache(ctx, basicVaultAddress)
+
+	t.Log("Execute second force claim for both users")
+	s.executeForceClaim(
+		ctx,
+		basicVaultAddress,
+		[]string{acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
+	)
 
 	t.Log("Execute clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
