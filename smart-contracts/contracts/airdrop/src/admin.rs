@@ -375,8 +375,8 @@ pub fn execute_withdraw_funds(
 mod tests {
     // Import the necessary items for testing
     use super::*;
-    use cosmwasm_std::{Addr, Coin};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{Addr, Coin};
     use cw_asset::AssetInfo;
 
     use crate::contract::instantiate;
@@ -416,19 +416,31 @@ mod tests {
         let config = mock_config_1();
 
         // Execute the instantiate function to set up the initial state (if needed)
-        let instantiate_msg_1 = InstantiateMsg { config: config.clone() };
+        let instantiate_msg_1 = InstantiateMsg {
+            config: config.clone(),
+        };
         instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg_1).unwrap_err();
 
         // instantiate with a correct config
-        let instantiate_msg_2 = InstantiateMsg{config: mock_config_2()};
+        let instantiate_msg_2 = InstantiateMsg {
+            config: mock_config_2(),
+        };
         instantiate(deps.as_mut(), env.clone(), info.clone(), instantiate_msg_2).unwrap();
 
         // try to update config with wrong conditions
         execute_update_airdrop_config(deps.as_mut(), env.clone(), config.clone()).unwrap_err();
 
         // add users to the airdrop
-        let users: Vec<String> = vec!["user1".to_string(), "user2".to_string(), "user3".to_string()];
-        let amounts: Vec<Uint128> = vec![Uint128::new(330000), Uint128::new(330000), Uint128::new(330000)];
+        let users: Vec<String> = vec![
+            "user1".to_string(),
+            "user2".to_string(),
+            "user3".to_string(),
+        ];
+        let amounts: Vec<Uint128> = vec![
+            Uint128::new(330000),
+            Uint128::new(330000),
+            Uint128::new(330000),
+        ];
         let add_users_response = execute_add_users(deps.as_mut(), users, amounts).unwrap();
         assert_eq!(add_users_response.events[0].attributes.len(), 6);
 
@@ -437,17 +449,36 @@ mod tests {
         let amounts: Vec<Uint128> = vec![Uint128::new(630000)];
         execute_set_users(deps.as_mut(), users, amounts).unwrap_err();
 
-        // set a user so that the total is lower than airdrop size
+        // set users with new values and the amount should be less than the airdrop size
         let users: Vec<String> = vec!["user1".to_string(), "user2".to_string()];
         let amounts: Vec<Uint128> = vec![Uint128::new(230000), Uint128::new(430000)];
         let set_users_response = execute_set_users(deps.as_mut(), users, amounts).unwrap();
         assert_eq!(set_users_response.events[0].attributes.len(), 4);
 
+        // remove user1 which should be successful
+        let users: Vec<String> = vec!["user1".to_string()];
+        let set_users_response = execute_remove_users(deps.as_mut(), users).unwrap();
+        assert_eq!(set_users_response.events[0].attributes.len(), 1);
+
+        // remove user4 which should result into an error
+        let users: Vec<String> = vec!["user4".to_string()];
+        execute_remove_users(deps.as_mut(), users).unwrap_err();
+
+        // add the user1 again
+        let users: Vec<String> = vec!["user1".to_string()];
+        let amounts: Vec<Uint128> = vec![Uint128::new(230000)];
+        let set_users_response = execute_add_users(deps.as_mut(), users, amounts).unwrap();
+        assert_eq!(set_users_response.events[0].attributes.len(), 2);
+
         // update the airdrop config with
-        let new_balance: Vec<Coin> = vec![Coin{denom: "uqsr".to_string(), amount: Uint128::new(1000000)}];
+        let new_balance: Vec<Coin> = vec![Coin {
+            denom: "uqsr".to_string(),
+            amount: Uint128::new(1000000),
+        }];
         let address = Addr::unchecked("cosmos2contract");
         deps.querier.update_balance(address, new_balance);
-        let execute_response = execute_update_airdrop_config(deps.as_mut(), env.clone(), config.clone()).unwrap();
+        let execute_response =
+            execute_update_airdrop_config(deps.as_mut(), env.clone(), config.clone()).unwrap();
 
         // Ensure that the response is successful
         assert_eq!(execute_response.events[0].attributes.len(), 6); // Check for expected attributes

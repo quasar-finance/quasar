@@ -60,6 +60,7 @@ if [ $platform = 'linux' ]; then
 elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
+	sed -i'.original' -e 's/query_gas_limit = 300000/query_gas_limit = 10000000/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uatom"/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
 	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml
