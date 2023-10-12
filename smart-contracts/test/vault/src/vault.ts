@@ -14,7 +14,7 @@ let stdFee: StdFee = {
   gas: '1300000',
 }
 
-async function getVault(from: WalletOwners, vaultAddress: string) {
+export async function getVault(from: WalletOwners, vaultAddress: string) {
   let [signingClient, wallet] = await getWallet(from)
   let address = (await wallet.getAccounts())[0].address
 
