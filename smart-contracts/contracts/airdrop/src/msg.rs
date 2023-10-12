@@ -56,6 +56,9 @@ pub enum QueryMsg {
 
     #[returns(SanityCheckResponse)]
     SanityCheckQuery {},
+
+    #[returns(UsersStatsResponse)]
+    UsersStatsQuery {},
 }
 
 #[cw_serde]
@@ -77,4 +80,11 @@ pub struct ContractStateResponse {
 #[cw_serde]
 pub struct SanityCheckResponse {
     pub response: bool,
+}
+
+#[cw_serde]
+pub struct UsersStatsResponse {
+    pub claimed_users_count: u64,
+    pub unclaimed_users_count: u64,
+    pub total_users_count: u64,
 }

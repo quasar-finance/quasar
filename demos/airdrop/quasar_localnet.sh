@@ -12,7 +12,7 @@ BOB="harvest ill mean warfare gospel slide tragic palace model excess surprise d
 USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
 
-ALICE_GENESIS_COINS=20000token,200000000stake,1000000000000000uqsr
+ALICE_GENESIS_COINS=20000token,200000000stake,100000000000000000uqsr
 BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
 USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr
 USER_2_GENESIS_COINS=10000000000stake,10000000000uqsr
@@ -60,7 +60,7 @@ if [ $platform = 'linux' ]; then
 elif [ $platform = 'macos' ]; then
 	sed -i'.original' -e 's/enable = false/enable = true/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's/swagger = false/swagger = true/g' $HOME_QSR/config/app.toml
-	sed -i'.original' -e 's/query_gas_limit = 300000/query_gas_limit = 10000000/g' $HOME_QSR/config/app.toml
+	sed -i'.original' -e 's/query_gas_limit = 300000/query_gas_limit = 100000000/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's/minimum-gas-prices = ""/minimum-gas-prices = "0uatom"/g' $HOME_QSR/config/app.toml
 	sed -i'.original' -e 's+laddr = "tcp://127.0.0.1:26657"+laddr = "tcp://127.0.0.1:26659"+g' $HOME_QSR/config/config.toml
 	sed -i'.original' -e 's+node = "tcp://localhost:26657"+node = "tcp://localhost:26659"+g' $HOME_QSR/config/client.toml

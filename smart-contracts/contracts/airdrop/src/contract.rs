@@ -12,7 +12,9 @@ use crate::admin::{
 use crate::error::AirdropErrors;
 use crate::helpers::is_contract_admin;
 use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::query::{query_config, query_contract_state, query_sanity_check, query_user};
+use crate::query::{
+    query_config, query_contract_state, query_sanity_check, query_user, query_users_stats,
+};
 use crate::reply::handle_reply;
 use crate::state::{AIRDROP_CONFIG, REPLY_MAP};
 use crate::users::execute_claim;
@@ -157,6 +159,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::UserInfoQuery { user } => to_binary(&query_user(deps, user)?),
         QueryMsg::ContractStateQuery {} => to_binary(&query_contract_state(deps)?),
         QueryMsg::SanityCheckQuery {} => to_binary(&query_sanity_check(deps, env)?),
+        QueryMsg::UsersStatsQuery {} => to_binary(&query_users_stats(deps)?),
     }
 }
 

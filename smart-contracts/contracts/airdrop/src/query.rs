@@ -3,7 +3,10 @@ use std::string::String;
 use crate::helpers::get_total_in_user_info;
 use cosmwasm_std::{Deps, Env, Order, StdResult};
 
-use crate::msg::{ConfigResponse, ContractStateResponse, SanityCheckResponse, UserInfoResponse};
+use crate::msg::{
+    ConfigResponse, ContractStateResponse, SanityCheckResponse, UserInfoResponse,
+    UsersStatsResponse,
+};
 use crate::state::{UserInfo, AIRDROP_CONFIG, USER_INFO};
 
 /// Queries and returns the current airdrop configuration.
@@ -88,4 +91,41 @@ pub fn query_sanity_check(deps: Deps, env: Env) -> StdResult<SanityCheckResponse
         return Ok(SanityCheckResponse { response: false });
     }
     Ok(SanityCheckResponse { response: true })
+}
+
+/// Query user statistics including the number of claimed and unclaimed users.
+///
+/// # Arguments
+///
+/// - `deps`: A reference to the dependencies needed for the query.
+///
+/// # Returns
+///
+/// A result containing a `UsersStatsResponse`, which includes the counts of
+/// claimed and unclaimed users, and the total number of users.
+///
+/// # Errors
+///
+/// This function returns a `StdResult` that can hold a `CosmosSDK` error.
+///
+pub fn query_users_stats(deps: Deps) -> StdResult<UsersStatsResponse> {
+    // Initialize counters for claimed and total users.
+    let mut claimed_users_count = 0u64;
+    let mut total_users_count = 0u64;
+
+    // Iterate through user info and count claimed and total users.
+    for res in USER_INFO.range(deps.storage, None, None, Order::Ascending) {
+        let claimed = res.as_ref().unwrap().1.get_claimed_flag();
+        if claimed {
+            claimed_users_count += 1;
+        }
+        total_users_count += 1;
+    }
+
+    // Create and return the UsersStatsResponse.
+    Ok(UsersStatsResponse {
+        claimed_users_count,
+        unclaimed_users_count: total_users_count - claimed_users_count,
+        total_users_count,
+    })
 }

@@ -120,7 +120,7 @@ pub fn execute_add_users(
     // Check if the number of users and amounts provided match
     if users.len() != amounts.len() {
         return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Deposit amount weight for primitive is zero".to_string(),
+            msg: "Fails as users and amount array do not have same number of elements".to_string(),
         }));
     }
 
@@ -208,7 +208,7 @@ pub fn execute_set_users(
     // Check if the number of users and amounts provided match
     if users.len() != amounts.len() {
         return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Deposit amount weight for primitive is zero".to_string(),
+            msg: "Fails as users and amount array do not have same number of elements".to_string(),
         }));
     }
 
