@@ -14,7 +14,7 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::get_spot_price,
+    helpers::get_twap_price,
     helpers::get_unused_balances,
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
@@ -47,10 +47,11 @@ fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), Co
     Ok(())
 }
 
-fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
+pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn execute_update_range(
     deps: DepsMut,
     env: Env,
@@ -58,9 +59,18 @@ pub fn execute_update_range(
     lower_price: Decimal,
     upper_price: Decimal,
     max_slippage: Decimal,
+    ratio_of_swappable_funds_to_use: Decimal,
+    twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
     let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
     let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
+
+    // validate ratio of swappable funds to use
+    if ratio_of_swappable_funds_to_use > Decimal::one()
+        || ratio_of_swappable_funds_to_use <= Decimal::zero()
+    {
+        return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
+    }
 
     execute_update_range_ticks(
         deps,
@@ -69,6 +79,8 @@ pub fn execute_update_range(
         lower_tick.try_into().unwrap(),
         upper_tick.try_into().unwrap(),
         max_slippage,
+        ratio_of_swappable_funds_to_use,
+        twap_window_seconds,
     )
 }
 
@@ -77,6 +89,7 @@ pub fn execute_update_range(
 /// * so how much of each asset given liq would we have at current price
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
+#[allow(clippy::too_many_arguments)]
 pub fn execute_update_range_ticks(
     deps: DepsMut,
     env: Env,
@@ -84,6 +97,8 @@ pub fn execute_update_range_ticks(
     lower_tick: i64,
     upper_tick: i64,
     max_slippage: Decimal,
+    ratio_of_swappable_funds_to_use: Decimal,
+    twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
@@ -109,6 +124,8 @@ pub fn execute_update_range_ticks(
             upper_tick,
             new_range_position_ids: vec![],
             max_slippage,
+            ratio_of_swappable_funds_to_use,
+            twap_window_seconds,
         }),
     )?;
 
@@ -190,6 +207,8 @@ pub fn handle_withdraw_position_reply(
             modify_range_state.upper_tick,
             (amount0, amount1),
             None, // we just withdrew our only position
+            modify_range_state.ratio_of_swappable_funds_to_use,
+            modify_range_state.twap_window_seconds,
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
@@ -224,6 +243,7 @@ pub fn handle_initial_create_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
+    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     // target range for our imminent swap
     // taking from response message is important because they may differ from the ones in our request
@@ -248,12 +268,15 @@ pub fn handle_initial_create_position_reply(
         target_upper_tick,
         refunded_amounts,
         Some(create_position_message.position_id),
+        modify_range_state.ratio_of_swappable_funds_to_use,
+        modify_range_state.twap_window_seconds,
     )
 }
 
 /// this function assumes that we are swapping and depositing into a valid range
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
+#[allow(clippy::too_many_arguments)]
 pub fn do_swap_deposit_merge(
     deps: DepsMut,
     env: Env,
@@ -261,12 +284,23 @@ pub fn do_swap_deposit_merge(
     target_upper_tick: i64,
     refunded_amounts: (Uint128, Uint128),
     position_id: Option<u64>,
+    ratio_of_swappable_funds_to_use: Decimal,
+    twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
     if SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
 
-    let (balance0, balance1) = refunded_amounts;
+    let (balance0, balance1) = (
+        refunded_amounts.0.checked_multiply_ratio(
+            ratio_of_swappable_funds_to_use.numerator(),
+            ratio_of_swappable_funds_to_use.denominator(),
+        )?,
+        refunded_amounts.1.checked_multiply_ratio(
+            ratio_of_swappable_funds_to_use.numerator(),
+            ratio_of_swappable_funds_to_use.denominator(),
+        )?,
+    );
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
@@ -338,16 +372,16 @@ pub fn do_swap_deposit_merge(
     };
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    let spot_price = get_spot_price(deps.storage, &deps.querier)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             pool_config.token0,
-            swap_amount.checked_multiply_ratio(spot_price.numerator(), spot_price.denominator()),
+            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
             balance0.checked_sub(swap_amount)?,
         ),
         SwapDirection::OneToZero => (
             pool_config.token1,
-            swap_amount.checked_multiply_ratio(spot_price.denominator(), spot_price.numerator()),
+            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
             balance1.checked_sub(swap_amount)?,
         ),
     };
@@ -567,7 +601,7 @@ mod tests {
 
         RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        assert_eq!(super::_get_range_admin(deps.as_ref()).unwrap(), info.sender);
+        assert_eq!(super::get_range_admin(deps.as_ref()).unwrap(), info.sender);
     }
 
     #[test]
@@ -587,6 +621,8 @@ mod tests {
             lower_price,
             upper_price,
             max_slippage,
+            Decimal::one(),
+            45,
         )
         .unwrap();
 
@@ -621,6 +657,8 @@ mod tests {
                     upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
                     new_range_position_ids: vec![],
                     max_slippage: Decimal::zero(),
+                    ratio_of_swappable_funds_to_use: Decimal::one(),
+                    twap_window_seconds: 45,
                 }),
             )
             .unwrap();
@@ -680,6 +718,8 @@ mod tests {
                     upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
                     new_range_position_ids: vec![],
                     max_slippage: Decimal::zero(),
+                    ratio_of_swappable_funds_to_use: Decimal::one(),
+                    twap_window_seconds: 45,
                 }),
             )
             .unwrap();

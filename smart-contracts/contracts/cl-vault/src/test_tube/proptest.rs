@@ -19,7 +19,7 @@ mod tests {
         math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PositionResponse, TotalVaultTokenSupplyResponse},
-        query::{TotalAssetsResponse, UserBalanceResponse},
+        query::{TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::initialize::initialize::init_test_contract,
     };
 
@@ -295,6 +295,8 @@ mod tests {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
                         max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
                     },
                 )),
                 &[],
@@ -340,7 +342,7 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
         account: &SigningAccount,
-    ) -> UserBalanceResponse {
+    ) -> UserSharesBalanceResponse {
         wasm.query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -476,9 +478,17 @@ mod tests {
         }
     }
 
-    // TESTS
+    fn get_cases() -> u32 {
+        std::env::var("PROPTEST_CASES")
+            .unwrap_or("256".to_string())
+            .parse()
+            .unwrap()
+    }
 
+    // TESTS
     proptest! {
+        // setup the config with amount of cases, usable for setting different values on ci vs local
+        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
         #[test]
         #[ignore]
         fn test_complete_works(

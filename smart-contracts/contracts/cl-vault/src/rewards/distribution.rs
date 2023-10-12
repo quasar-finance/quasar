@@ -127,7 +127,7 @@ fn distribute_rewards(
             let (address, user_shares) = v?;
             // calculate the amount of each asset the user should get in rewards
             // we need to always round down here, so we never expect more rewards than we have
-            let user_rewards = rewards.ratio(Decimal::from_ratio(user_shares, total_shares));
+            let user_rewards = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
             Ok((address, user_rewards))
         })
         .collect();
