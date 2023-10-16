@@ -62,7 +62,6 @@ mod test {
             .unwrap();
 
         let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
 
         // do a swap to move the cur tick
         let pm = PoolManager::new(&app);
@@ -83,12 +82,7 @@ mod test {
         )
         .unwrap();
 
-        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
-        println!("{:?}", pool);
-
-
-        // move the position completely out of range so we have the same situation as we see on mainnet
+        // move the position completely out of range so we 100% in one asset
         let _result = wasm
             .execute(
                 contract.as_str(),
@@ -106,11 +100,7 @@ mod test {
             )
             .unwrap();
 
-            let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-            let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
-            println!("{:?}", pool);
-
-        // deposit 2 million usdc from alice
+        // deposit 2 million uosmo from alice
         let _result = wasm.execute(
             contract.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None },
@@ -118,7 +108,7 @@ mod test {
             &admin,
         ).unwrap();
 
-        // now do a partial swap
+        // now do a partial swap during the range movement
         let result = wasm
             .execute(
                 contract.as_str(),
@@ -135,7 +125,9 @@ mod test {
                 &admin,
             )
             .unwrap();
-        println!("{:?}", result);
+        // for asserting the result, to this new position we expect to swap 13961732009 uosmo to 13960467092 uatom
+        // which is about equal to get_single_sided_deposit_0_to_1_swap_amount(balance0 * 0.005) 
+        assert_eq!(result.events.iter().find(|e| e.ty == "token_swapped").unwrap().attributes.iter().find(|a| a.key == "tokens_in").unwrap().value, "13961732009uosmo")
     }
 
     // #[test]
