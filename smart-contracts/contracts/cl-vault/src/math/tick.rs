@@ -92,9 +92,6 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
         return Ok(0i128);
     }
 
-    // TODO: move this to instantiate?
-    build_tick_exp_cache(storage)?;
-
     let mut geo_spacing;
     if price > Decimal256::one() {
         let mut index = 0i64;
@@ -165,7 +162,7 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     }
 }
 
-fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
+pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
     // Build positive indices
     let mut max_price = Decimal256::one();
     let mut cur_exp_index = 0i64;
@@ -225,6 +222,8 @@ mod tests {
     #[test]
     fn test_test_tube_tick_to_price() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let tick_index = 27445000_i128;
         let _expected_price = Decimal256::from_str("30352").unwrap();
@@ -349,6 +348,8 @@ mod tests {
     #[test]
     fn test_price_to_tick() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let mut price = Decimal256::from_str("30352").unwrap();
         let mut expected_tick_index = 38035200;
