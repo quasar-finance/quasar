@@ -30,12 +30,16 @@ mod test {
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000_000, "uosmo"),
-                Coin::new(1_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
+                Coin::new(
+                    1_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
                 denom0: "uosmo".to_string(),
-                denom1: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                denom1: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                    .to_string(),
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
             },
@@ -47,7 +51,8 @@ mod test {
                     amount: "1000000000000".to_string(),
                 },
                 v1beta1::Coin {
-                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                        .to_string(),
                     amount: "140000000000".to_string(),
                 },
             ],
@@ -57,7 +62,10 @@ mod test {
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000_000, "uosmo"),
-                Coin::new(1_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
+                Coin::new(
+                    1_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
             ])
             .unwrap();
 
@@ -73,7 +81,8 @@ mod test {
                     token_out_denom: "uosmo".to_string(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                        .to_string(),
                     amount: "100000000000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
@@ -101,12 +110,14 @@ mod test {
             .unwrap();
 
         // deposit 2 million uosmo from alice
-        let _result = wasm.execute(
-            contract.as_str(),
-            &ExecuteMsg::ExactDeposit { recipient: None },
-            &[coin(2_000_000_000_000, "uosmo")],
-            &admin,
-        ).unwrap();
+        let _result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[coin(2_000_000_000_000, "uosmo")],
+                &admin,
+            )
+            .unwrap();
 
         // now do a partial swap during the range movement
         let result = wasm
@@ -126,8 +137,20 @@ mod test {
             )
             .unwrap();
         // for asserting the result, to this new position we expect to swap 13961732009 uosmo to 13960467092 uatom
-        // which is about equal to get_single_sided_deposit_0_to_1_swap_amount(balance0 * 0.005) 
-        assert_eq!(result.events.iter().find(|e| e.ty == "token_swapped").unwrap().attributes.iter().find(|a| a.key == "tokens_in").unwrap().value, "13961732009uosmo")
+        // which is about equal to get_single_sided_deposit_0_to_1_swap_amount(balance0 * 0.005)
+        assert_eq!(
+            result
+                .events
+                .iter()
+                .find(|e| e.ty == "token_swapped")
+                .unwrap()
+                .attributes
+                .iter()
+                .find(|a| a.key == "tokens_in")
+                .unwrap()
+                .value,
+            "13961732009uosmo"
+        )
     }
 
     // #[test]
