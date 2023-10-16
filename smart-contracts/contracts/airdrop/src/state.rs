@@ -15,6 +15,7 @@ pub const REPLY_MAP: Map<u64, String> = Map::new("reply_map");
 
 #[cw_serde]
 pub struct AirdropConfig {
+    pub airdrop_title: String,
     /// every airdrop contains a description of it
     pub airdrop_description: String,
     /// token amount to be airdropped

@@ -13,7 +13,7 @@ RES=$($BINARY tx wasm store artifacts/airdrop-aarch64.wasm --from $ACCOUNT_NAME 
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got airdrop CODE_ID = $CODE_ID"
 
-INIT='{"config": {"airdrop_amount": "11000000000","airdrop_asset": {"native": "uqsr"},"airdrop_description": "Test description","end_height": 0,"start_height": 0,"total_claimed": "0"}}'
+INIT='{"config": {"airdrop_amount": "11000000000","airdrop_asset": {"native": "uqsr"},"airdrop_title":"Test Title","airdrop_description": "Test description","end_height": 0,"start_height": 0,"total_claimed": "0"}}'
 
 echo "Deploying airdrop contract"
 OUT1=$($BINARY tx wasm instantiate $CODE_ID "$INIT" --from $ACCOUNT_NAME --keyring-backend test --label "primitive-1" -b block -y --admin $ACCOUNT_ADDRESS --chain-id $CHAIN_ID --gas 7000000 --fees 10000uqsr)
@@ -51,7 +51,7 @@ quasarnoded q bank balances $ADDR1
 AIRDROP_START_HEIGHT=15
 AIRDROP_END_HEIGHT=25
 echo "starting airdrop (but it will start form the given height in future)"
-quasarnoded tx wasm execute $ADDR1 '{ "admin" :{"update_airdrop_config": {"airdrop_amount": "11000000000","airdrop_asset": {"native": "uqsr"},"airdrop_description": "Test description","end_height": '$AIRDROP_END_HEIGHT',"start_height": '$AIRDROP_START_HEIGHT',"total_claimed": "0"}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
+quasarnoded tx wasm execute $ADDR1 '{ "admin" :{"update_airdrop_config": {"airdrop_amount": "11000000000","airdrop_asset": {"native": "uqsr"},"airdrop_title":"Test Title","airdrop_description": "Test description","end_height": '$AIRDROP_END_HEIGHT',"start_height": '$AIRDROP_START_HEIGHT',"total_claimed": "0"}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
