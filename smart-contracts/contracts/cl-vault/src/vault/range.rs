@@ -571,6 +571,7 @@ mod tests {
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
+        math::tick::build_tick_exp_cache,
         rewards::CoinList,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
@@ -608,6 +609,7 @@ mod tests {
     fn test_execute_update_range() {
         let info = mock_info("addr0000", &[]);
         let mut deps = mock_deps_with_querier(&info);
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
         let env = mock_env();
         let lower_price = Decimal::from_str("100").unwrap();
