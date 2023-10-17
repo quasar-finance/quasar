@@ -385,6 +385,7 @@ mod tests {
     // Define a helper function to create a mock contract configuration
     fn mock_config_1() -> AirdropConfig {
         AirdropConfig {
+            airdrop_title: "Test Title".to_string(),
             airdrop_description: "Test Airdrop".to_string(),
             airdrop_amount: Uint128::new(1000000), // Adjust this value as needed
             airdrop_asset: AssetInfo::Native("uqsr".parse().unwrap()),
@@ -397,6 +398,7 @@ mod tests {
     // Define a helper function to create a mock contract configuration
     fn mock_config_2() -> AirdropConfig {
         AirdropConfig {
+            airdrop_title: "Test Title".to_string(),
             airdrop_description: "Test Airdrop".to_string(),
             airdrop_amount: Uint128::new(1000000), // Adjust this value as needed
             airdrop_asset: AssetInfo::Native("uqsr".parse().unwrap()),
