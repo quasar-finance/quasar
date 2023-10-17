@@ -480,8 +480,8 @@ mod tests {
 
     #[test]
     fn test_tick_to_price_to_tick() {
-        let lower = -7500000;
-        let upper = -7000000;
+        let lower = 220000;
+        let upper = 210000;
         let upper_price = tick_to_price(lower).unwrap();
         let lower_price = tick_to_price(upper).unwrap();
         println!("upper price: {}", upper_price);

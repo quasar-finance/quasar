@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, coin, to_binary, Attribute, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, Uint128, WasmMsg,
+    attr, coin, to_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;
@@ -658,8 +658,7 @@ pub fn force_claim(
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
     is_contract_admin(&deps.querier, &env, &info.sender)?;
-    let mut submsgs: Vec<CosmosMsg> = vec![];
-    let mut attrs = vec![];
+    let mut res = Response::new();
 
     for address in addresses {
         let address = deps.api.addr_validate(&address)?;
@@ -671,15 +670,13 @@ pub fn force_claim(
         let unbond_response =
             do_unbond(deps.branch(), &env, &user_info)?.unwrap_or(Response::new());
 
-        submsgs = unbond_response
-            .messages
-            .iter()
-            .map(|sm| sm.msg.clone())
-            .collect();
+        let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
 
-        attrs.extend(unbond_response.attributes);
+        res = res
+            .add_messages(unbond_msgs)
+            .add_attributes(unbond_response.attributes);
     }
-    Ok(Response::new().add_messages(submsgs).add_attributes(attrs))
+    Ok(res)
 }
 
 #[cfg(test)]
