@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	StartingTokenAmount            int64 = 100_000_000_000
+	StartingTokenAmount            int64 = 1_000_000_000_000
 	BondAmount                     int64 = 10_000_000
 	SharesAmount                   int64 = 10_000_000
 	lpStrategyContractPath               = "../../../../smart-contracts/artifacts/lp_strategy-aarch64.wasm"
@@ -118,13 +118,11 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 
 	acc1 := s.createUserAndCheckBalances(ctx, 10_000_000)
 	acc2 := s.createUserAndCheckBalances(ctx, 20_000_000)
-	acc3 := s.createUserAndCheckBalances(ctx, 100_000_000)
-
-	user1 := acc1.Bech32Address(s.Quasar().Config().Bech32Prefix)
-	t.Log("Get user1 addr", user1)
-
-	user2 := acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)
-	t.Log("Get user2 addr", user2)
+	acc4 := s.createUserAndCheckBalances(ctx, 30_000_000)
+	acc5 := s.createUserAndCheckBalances(ctx, 40_000_000)
+	acc6 := s.createUserAndCheckBalances(ctx, 50_000_000)
+	// the smaller this number is, the less accurate the osmo returned to quasar addresses.
+	acc3 := s.createUserAndCheckBalances(ctx, 1_000_000_000)
 
 	icaAddresses := s.getPrimitiveIcaAddresses(ctx, []string{lpAddresses[0], lpAddresses[1], lpAddresses[2]})
 	t.Log("Primitive1 address", lpAddresses[0])
@@ -142,39 +140,69 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	s.Require().NoError(err)
 	s.Require().Equal(int64(0), balanceIca3)
 
-	// bond 3 users, 1 stays bonded so pool is not emptied
-	s.executeBond(ctx, acc3, basicVaultAddress, 100_000_000)
+	// bond 6 users, 1 stays bonded so pool is not emptied
+	s.executeBond(ctx, acc3, basicVaultAddress, 1_000_000_000)
 
-	t.Log("Execute first clear cache")
+	t.Log("Execute clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
 	s.executeBond(ctx, acc1, basicVaultAddress, 10_000_000)
 
-	t.Log("Execute first clear cache")
+	t.Log("Execute clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
 	s.executeBond(ctx, acc2, basicVaultAddress, 20_000_000)
 
-	t.Log("Execute first clear cache")
+	t.Log("Execute clear cache")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	s.executeBond(ctx, acc4, basicVaultAddress, 30_000_000)
+
+	t.Log("Execute clear cache")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	s.executeBond(ctx, acc5, basicVaultAddress, 40_000_000)
+
+	t.Log("Execute clear cache")
+	s.executeClearCache(ctx, basicVaultAddress)
+
+	s.executeBond(ctx, acc6, basicVaultAddress, 50_000_000)
+
+	t.Log("Execute clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
 	shares3AfterBond := s.getUserSharesBalance(ctx, acc3, basicVaultAddress)
-	s.Require().Equal(int64(100_000_000-1), shares3AfterBond)
+	s.Require().Equal(int64(1_000_000_000-1), shares3AfterBond)
 
 	shares1AfterBond := s.getUserSharesBalance(ctx, acc1, basicVaultAddress)
-	s.Require().Equal(int64(10_050_250), shares1AfterBond) //8368200
+	s.Require().Equal(int64(10_050_249), shares1AfterBond)
 
 	shares2AfterBond := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
-	s.Require().Equal(int64(20_109_683), shares2AfterBond)
+	s.Require().Equal(int64(20_101_499), shares2AfterBond) // 20101499
 
-	t.Log("Execute force unbond for both users")
+	shares4AfterBond := s.getUserSharesBalance(ctx, acc4, basicVaultAddress)
+	s.Require().Equal(int64(30_155_191), shares4AfterBond) // 30155191
+
+	shares5AfterBond := s.getUserSharesBalance(ctx, acc5, basicVaultAddress)
+	s.Require().Equal(int64(40_212_643), shares5AfterBond) // 40212643
+
+	shares6AfterBond := s.getUserSharesBalance(ctx, acc6, basicVaultAddress)
+	s.Require().Equal(int64(50_274_988), shares6AfterBond) // 50274988
+
+	t.Log("Execute force unbond for all users")
 	s.executeForceUnbond(
 		ctx,
 		basicVaultAddress,
-		[]string{acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
+		[]string{
+			acc1.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc2.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc4.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc5.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc6.Bech32Address(s.Quasar().Config().Bech32Prefix),
+		},
 	)
 
-	t.Log("Execute first clear cache")
+	t.Log("Execute clear cache")
 	s.executeClearCache(ctx, basicVaultAddress)
 
 	t.Log("Check that the user1 shares balance is now 0")
@@ -185,6 +213,18 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	shares2AfterUnbond := s.getUserSharesBalance(ctx, acc2, basicVaultAddress)
 	s.Require().Equal(int64(0), shares2AfterUnbond)
 
+	t.Log("Check that the user4 shares balance is now 0")
+	shares4AfterUnbond := s.getUserSharesBalance(ctx, acc4, basicVaultAddress)
+	s.Require().Equal(int64(0), shares4AfterUnbond)
+
+	t.Log("Check that the user5 shares balance is now 0")
+	shares5AfterUnbond := s.getUserSharesBalance(ctx, acc5, basicVaultAddress)
+	s.Require().Equal(int64(0), shares5AfterUnbond)
+
+	t.Log("Check that the user6 shares balance is now 0")
+	shares6AfterUnbond := s.getUserSharesBalance(ctx, acc6, basicVaultAddress)
+	s.Require().Equal(int64(0), shares6AfterUnbond)
+
 	balance1BeforeClaim, err := s.Quasar().GetBalance(ctx, acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
 	s.Require().Equal(balance1BeforeClaim, int64(0))
@@ -193,23 +233,29 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	s.Require().NoError(err)
 	s.Require().Equal(balance2BeforeClaim, int64(0))
 
-	//s.executeClaim(ctx, acc1, basicVaultAddress)
-	//s.executeClaim(ctx, acc2, basicVaultAddress)
+	balance4BeforeClaim, err := s.Quasar().GetBalance(ctx, acc4.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(balance4BeforeClaim, int64(0))
 
-	t.Log("Execute force claim for both users")
+	balance5BeforeClaim, err := s.Quasar().GetBalance(ctx, acc5.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(balance5BeforeClaim, int64(0))
+
+	balance6BeforeClaim, err := s.Quasar().GetBalance(ctx, acc6.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(balance6BeforeClaim, int64(0))
+
+	t.Log("Execute force claim for all users")
 	s.executeForceClaim(
 		ctx,
 		basicVaultAddress,
-		[]string{acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
-	)
-
-	s.executeClearCache(ctx, basicVaultAddress)
-
-	t.Log("Execute second force claim for both users")
-	s.executeForceClaim(
-		ctx,
-		basicVaultAddress,
-		[]string{acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
+		[]string{
+			acc1.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc2.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc4.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc5.Bech32Address(s.Quasar().Config().Bech32Prefix),
+			acc6.Bech32Address(s.Quasar().Config().Bech32Prefix),
+		},
 	)
 
 	t.Log("Execute clear cache")
@@ -220,13 +266,34 @@ func (s *WasmdTestSuite) TestVaultContract_ForceUnbond() {
 	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[1]))
 	s.Require().Equal(0, len(trappedErrorsAfterSecondBond[2]))
 
+	// TODO: this should not be necessary to do, but we've seen this in mainnet where two claims are needed to claim funds
+	t.Log("Execute force claim for acc2 only")
+	s.executeForceClaim(
+		ctx,
+		basicVaultAddress,
+		[]string{acc2.Bech32Address(s.Quasar().Config().Bech32Prefix)},
+	)
+	s.executeClearCache(ctx, basicVaultAddress)
+
 	balance1AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc1.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
-	s.Require().Equal(int64(9_937_767), balance1AfterWithdraw)
+	s.Require().Equal(int64(9_943_122), balance1AfterWithdraw) // 10
 
 	balance2AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc2.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
 	s.Require().NoError(err)
-	s.Require().Equal(int64(21_548_481), balance2AfterWithdraw)
+	s.Require().Equal(int64(20_062_455), balance2AfterWithdraw) // 20
+
+	balance4AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc4.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(30_636_477), balance4AfterWithdraw) // 30
+
+	balance5AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc5.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(41_984_196), balance5AfterWithdraw) // 40
+
+	balance6AfterWithdraw, err := s.Quasar().GetBalance(ctx, acc6.Bech32Address(s.Quasar().Config().Bech32Prefix), s.OsmosisDenomInQuasar)
+	s.Require().NoError(err)
+	s.Require().Equal(int64(54_499_554), balance6AfterWithdraw) // 50
 }
 
 func (s *WasmdTestSuite) deployContracts(ctx context.Context, inits []map[string]any) (string, []string) {
@@ -293,7 +360,7 @@ func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context, amount 
 	t := s.T()
 
 	t.Log("Create testing account on Quasar chain with some QSR tokens for fees")
-	acc := s.CreateUserAndFund(ctx, s.Quasar(), 10_000_000) // unused qsr, just for tx fees
+	acc := s.CreateUserAndFund(ctx, s.Quasar(), 100_000_000) // unused qsr, just for tx fees
 
 	t.Log("Fund testing account with uosmo via IBC transfer from Osmosis chain Treasury account")
 	walletAmount := ibc.WalletAmount{Address: acc.Bech32Address(s.Quasar().Config().Bech32Prefix), Denom: s.Osmosis().Config().Denom, Amount: amount}
@@ -380,7 +447,7 @@ func (s *WasmdTestSuite) executeClearCache(ctx context.Context, basicVaultAddres
 	)
 
 	t.Log("Wait for quasar and osmosis to settle up ICA packet transfer and the IBC transfer (clear_cache)")
-	err := testutil.WaitForBlocks(ctx, 15, s.Quasar(), s.Osmosis())
+	err := testutil.WaitForBlocks(ctx, 12, s.Quasar(), s.Osmosis())
 	s.Require().NoError(err)
 }
 
