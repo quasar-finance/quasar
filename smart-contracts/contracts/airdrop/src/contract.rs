@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply,
-    Response, StdResult, Uint128,
+    entry_point, to_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::msg::MigrateMsg;
@@ -13,10 +13,9 @@ use crate::error::AirdropErrors;
 use crate::helpers::is_contract_admin;
 use crate::msg::{AdminExecuteMsg, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::query::{
-    query_config, query_contract_state, query_sanity_check, query_user, query_users_stats,
+    query_airdrop_readiness, query_config, query_contract_state, query_user, query_users_stats,
 };
-use crate::reply::handle_reply;
-use crate::state::{AIRDROP_CONFIG, REPLY_MAP};
+use crate::state::AIRDROP_CONFIG;
 use crate::users::execute_claim;
 
 // version info for migration info
@@ -62,37 +61,28 @@ pub fn instantiate(
     // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &msg.config)?;
 
-    // Create attributes for tracking the airdrop configuration
-    let attributes: Vec<Attribute> = vec![
-        Attribute {
-            key: "description".to_string(),
-            value: msg.config.airdrop_description.to_string(),
-        },
-        Attribute {
-            key: "airdrop_amount".to_string(),
-            value: msg.config.airdrop_amount.to_string(),
-        },
-        Attribute {
-            key: "airdrop_asset".to_string(),
-            value: msg.config.airdrop_asset.to_string(),
-        },
-        Attribute {
-            key: "claimed".to_string(),
-            value: msg.config.total_claimed.to_string(),
-        },
-        Attribute {
-            key: "start_height".to_string(),
-            value: msg.config.start_height.to_string(),
-        },
-        Attribute {
-            key: "end_height".to_string(),
-            value: msg.config.end_height.to_string(),
-        },
-    ];
-
     // Return a response indicating successful contract instantiation with attributes
-    Ok(Response::default()
-        .add_event(Event::new("instantiate_airdrop_contract").add_attributes(attributes)))
+    Ok(Response::new().add_event(
+        Event::new("instantiate_airdrop_contract")
+            .add_attribute(
+                "description".to_string(),
+                msg.config.airdrop_description.to_string(),
+            )
+            .add_attribute(
+                "airdrop_amount".to_string(),
+                msg.config.airdrop_amount.to_string(),
+            )
+            .add_attribute(
+                "airdrop_asset".to_string(),
+                msg.config.airdrop_asset.to_string(),
+            )
+            .add_attribute("claimed".to_string(), msg.config.total_claimed.to_string())
+            .add_attribute(
+                "start_height".to_string(),
+                msg.config.start_height.to_string(),
+            )
+            .add_attribute("end_height".to_string(), msg.config.end_height.to_string()),
+    ))
 }
 
 /// Executes contract operations based on the received message.
@@ -158,26 +148,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::AirdropConfigQuery {} => to_binary(&query_config(deps)?),
         QueryMsg::UserInfoQuery { user } => to_binary(&query_user(deps, user)?),
         QueryMsg::ContractStateQuery {} => to_binary(&query_contract_state(deps)?),
-        QueryMsg::SanityCheckQuery {} => to_binary(&query_sanity_check(deps, env)?),
+        QueryMsg::SanityCheckQuery {} => to_binary(&query_airdrop_readiness(deps, env)?),
         QueryMsg::UsersStatsQuery {} => to_binary(&query_users_stats(deps)?),
     }
-}
-
-/// Handles replies from external contracts.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies to access storage and external data.
-/// * `_env` - Environment information, not used in this function.
-/// * `msg` - Reply message containing the reply ID.
-///
-/// # Returns
-///
-/// Returns a response based on the received reply or an error if the reply handling fails.
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, AirdropErrors> {
-    let address = REPLY_MAP.load(deps.storage, msg.id)?;
-    handle_reply(deps, address)
 }
 
 /// Migrates the contract to a new version (not implemented).

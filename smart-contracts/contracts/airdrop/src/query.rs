@@ -73,7 +73,7 @@ pub fn query_contract_state(deps: Deps) -> StdResult<ContractStateResponse> {
 /// # Returns
 ///
 /// Returns a `SanityCheckResponse` indicating whether there are sufficient funds for airdrop payments.
-pub fn query_sanity_check(deps: Deps, env: Env) -> StdResult<SanityCheckResponse> {
+pub fn query_airdrop_readiness(deps: Deps, env: Env) -> StdResult<SanityCheckResponse> {
     // Check if the airdrop amount is sufficient to supply all users
     let airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
     if airdrop_config.airdrop_amount >= get_total_in_user_info(deps.storage) {

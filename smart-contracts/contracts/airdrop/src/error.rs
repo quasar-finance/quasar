@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{StdError, Uint128};
 use cw_asset::AssetError;
 use thiserror::Error;
 
@@ -31,9 +31,30 @@ pub enum AirdropErrors {
     #[error("Already claimed")]
     AlreadyClaimed {},
 
-    #[error("Already exists")]
-    AlreadyExists {},
+    #[error("Already exists : {user:?}")]
+    AlreadyExists { user: String },
 
-    #[error("Insufficient funds in contract account")]
-    InsufficientFundsInContractAccount {},
+    #[error("Invalid change in airdrop config")]
+    InvalidChangeInAirdropConfig {},
+
+    #[error("Insufficient funds in contract account. Balance: {balance:?}")]
+    InsufficientFundsInContractAccount { balance: Uint128 },
+
+    #[error("Total amount in the given user amounts {total_in_user_info:?} is greater than {current_airdrop_amount:?}")]
+    UserAmountIsGreaterThanTotal {
+        total_in_user_info: Uint128,
+        current_airdrop_amount: Uint128,
+    },
+
+    #[error("Failed due to config has less amount than the amount allowed to the users to claim")]
+    ConfigAmountLessThanTotalClaimable {},
+
+    #[error("Failed as total claimed is non zero")]
+    NonZeroClaimedAmount {},
+
+    #[error("Given number of users do not match the given number of amounts which results into a mismatch")]
+    UnequalLengths {},
+
+    #[error("Amount at index : {index:?} is zero")]
+    ZeroAmount { index: usize },
 }

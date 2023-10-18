@@ -1,8 +1,6 @@
-use cosmwasm_std::{
-    Addr, CosmosMsg, Env, Order, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128,
-};
+use cosmwasm_std::{Addr, Env, Order, QuerierWrapper, Response, Storage, Uint128};
 
-use crate::state::{AirdropConfig, AIRDROP_CONFIG, REPLY_MAP, USER_INFO};
+use crate::state::{AirdropConfig, AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
 /// Checks if the sender is the contract admin. Returns an error if not authorized.
@@ -42,34 +40,6 @@ pub fn is_contract_admin(
     Ok(())
 }
 
-/// Adds a reply to the storage and returns a SubMsg containing the reply.
-///
-/// # Arguments
-///
-/// * `storage` - Mutable storage to save the reply mapping.
-/// * `msg` - CosmosMsg to be used as a reply.
-/// * `user` - Address of the user to associate with the reply.
-///
-/// # Returns
-///
-/// Returns a SubMsg containing the reply message and the associated reply ID.
-pub fn add_reply(
-    storage: &mut dyn Storage,
-    msg: CosmosMsg,
-    user: Addr,
-) -> Result<SubMsg, AirdropErrors> {
-    let last = REPLY_MAP
-        .range(storage, None, None, Order::Descending)
-        .next();
-    let mut id: u64 = 0;
-    if let Some(val) = last {
-        id = val?.0 + 1;
-    }
-    REPLY_MAP.save(storage, id, &user.to_string())?;
-
-    Ok(SubMsg::reply_on_success(msg, id))
-}
-
 /// Checks if the total claimable amount exceeds the airdrop amount.
 ///
 /// # Arguments
@@ -87,12 +57,10 @@ pub fn check_amounts_and_airdrop_size(
 ) -> Result<Response, AirdropErrors> {
     // Check if the total claimable amount exceeds the airdrop amount
     if total_in_user_info > current_airdrop_amount {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Total amount in the given user amounts ".to_string()
-                + &*total_in_user_info.to_string()
-                + &*" is greater than ".to_string()
-                + &*current_airdrop_amount.to_string(),
-        }));
+        return Err(AirdropErrors::UserAmountIsGreaterThanTotal {
+            total_in_user_info,
+            current_airdrop_amount,
+        });
     }
     Ok(Response::default())
 }
@@ -110,9 +78,7 @@ pub fn check_amounts_and_airdrop_size(
 pub fn validate_amount(amount: Uint128, index: usize) -> Result<Response, AirdropErrors> {
     // Check if the amount is not zero
     if amount == Uint128::zero() {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Amount at index :".to_string() + &*index.to_string() + &*"is zero".to_string(),
-        }));
+        return Err(AirdropErrors::ZeroAmount { index });
     }
     Ok(Response::default())
 }
@@ -153,28 +119,19 @@ pub fn validate_update_config(
 
                     // Check if the contract has enough funds for the airdrop
                     if contract_balance < config.airdrop_amount {
-                        return Err(AirdropErrors::Std(StdError::GenericErr {
-                            msg:
-                            "Failed due to insufficient balance in the contract account. Balance : "
-                                .to_string()
-                                + &contract_balance.to_string(),
-                        }));
+                        return Err(AirdropErrors::InsufficientFundsInContractAccount {
+                            balance: contract_balance,
+                        });
                     }
                 } else {
-                    return Err(AirdropErrors::Std(StdError::GenericErr {
-                        msg: "Failed due to config has less amount than the amount allowed to the users to claim".to_string(),
-                    }));
+                    return Err(AirdropErrors::ConfigAmountLessThanTotalClaimable {});
                 }
             } else {
-                return Err(AirdropErrors::Std(StdError::GenericErr {
-                    msg: "Failed as the heights given do not satisfy the conditions".to_string(),
-                }));
+                return Err(AirdropErrors::InvalidAirdropWindow {});
             }
         }
     } else {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Failed as total claimed is non zero".to_string(),
-        }));
+        return Err(AirdropErrors::NonZeroClaimedAmount {});
     }
     Ok(Response::default())
 }
@@ -247,12 +204,7 @@ mod tests {
     #[test]
     fn test_validate_amount() {
         let err = validate_amount(Uint128::new(0), 1).unwrap_err();
-        assert_eq!(
-            AirdropErrors::Std(StdError::GenericErr {
-                msg: "Amount at index :".to_string() + &*1.to_string() + &*"is zero".to_string(),
-            }),
-            err
-        );
+        assert_eq!(AirdropErrors::ZeroAmount { index: 1 }, err);
         let resp = validate_amount(Uint128::new(10), 1).unwrap();
         assert_eq!(Response::default(), resp);
     }

@@ -1,6 +1,6 @@
 use std::string::String;
 
-use cosmwasm_std::{Attribute, DepsMut, Env, Event, Response, StdError, Uint128};
+use cosmwasm_std::{Attribute, DepsMut, Env, Event, Response, Uint128};
 use cw_asset::Asset;
 
 use crate::helpers::{
@@ -30,61 +30,41 @@ pub fn execute_update_airdrop_config(
     env: Env,
     config: AirdropConfig,
 ) -> Result<Response, AirdropErrors> {
-    // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     if current_airdrop_config.is_airdrop_active(env.block.height) {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Failed to execute update as airdrop is active".to_string(),
-        }));
+        return Err(AirdropErrors::InvalidChangeInAirdropConfig {});
     }
 
     // Check if an airdrop has been executed on the contract and if the update is allowed
     if current_airdrop_config.end_height != 0
         && env.block.height > current_airdrop_config.end_height
     {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Failed to execute update as it is post airdrop ending".to_string(),
-        }));
+        return Err(AirdropErrors::InvalidChangeInAirdropConfig {});
     }
 
-    // Check various conditions to validate the airdrop configuration update
     validate_update_config(config.clone(), deps.storage, deps.querier, env)?;
-
-    // Save the new airdrop configuration to storage
     AIRDROP_CONFIG.save(deps.storage, &config)?;
 
-    // Build attributes for the event
-    let attributes: Vec<Attribute> = vec![
-        Attribute {
-            key: "description".to_string(),
-            value: config.airdrop_description.to_string(),
-        },
-        Attribute {
-            key: "airdrop_amount".to_string(),
-            value: config.airdrop_amount.to_string(),
-        },
-        Attribute {
-            key: "airdrop_asset".to_string(),
-            value: config.airdrop_asset.to_string(),
-        },
-        Attribute {
-            key: "claimed".to_string(),
-            value: config.total_claimed.to_string(),
-        },
-        Attribute {
-            key: "start_height".to_string(),
-            value: config.start_height.to_string(),
-        },
-        Attribute {
-            key: "end_height".to_string(),
-            value: config.end_height.to_string(),
-        },
-    ];
-
     // Return a default response to indicate success with an "update_airdrop_config" event
-    Ok(Response::default()
-        .add_event(Event::new("update_airdrop_config").add_attributes(attributes)))
+    Ok(Response::new().add_event(
+        Event::new("update_airdrop_config")
+            .add_attribute(
+                "description".to_string(),
+                config.airdrop_description.to_string(),
+            )
+            .add_attribute(
+                "airdrop_amount".to_string(),
+                config.airdrop_amount.to_string(),
+            )
+            .add_attribute(
+                "airdrop_asset".to_string(),
+                config.airdrop_asset.to_string(),
+            )
+            .add_attribute("claimed".to_string(), config.total_claimed.to_string())
+            .add_attribute("start_height".to_string(), config.start_height.to_string())
+            .add_attribute("end_height".to_string(), config.end_height.to_string()),
+    ))
 }
 
 /// Adds new users and their respective amounts to the airdrop configuration.
@@ -109,7 +89,6 @@ pub fn execute_add_users(
     users: Vec<String>,
     amounts: Vec<Uint128>,
 ) -> Result<Response, AirdropErrors> {
-    // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Check if the current airdrop window is not open (start_height or end_height not zero)
@@ -119,12 +98,9 @@ pub fn execute_add_users(
 
     // Check if the number of users and amounts provided match
     if users.len() != amounts.len() {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Fails as users and amount array do not have same number of elements".to_string(),
-        }));
+        return Err(AirdropErrors::UnequalLengths {});
     }
 
-    // Initialize an empty vector to store attributes for the event
     let mut attributes: Vec<Attribute> = Vec::new();
 
     // Loop through the provided users and amounts
@@ -143,7 +119,9 @@ pub fn execute_add_users(
             // User info exists, perform your checks here
             if user_info.get_claimable_amount() != Uint128::zero() || user_info.get_claimed_flag() {
                 // Handle the case where user_info exists
-                return Err(AirdropErrors::AlreadyExists {});
+                return Err(AirdropErrors::AlreadyExists {
+                    user: user_and_amount.0.to_string(),
+                });
             }
         } else {
             // User info does not exist, create a new entry
@@ -165,14 +143,14 @@ pub fn execute_add_users(
         }
     }
 
-    // Check if the total claimable amount exceeds the airdrop amount
+    // config is invalid of total claimable assigned to users is greater than amount assigned to the airdrop
     check_amounts_and_airdrop_size(
         get_total_in_user_info(deps.storage),
         current_airdrop_config.airdrop_amount,
     )?;
 
     // Return a default response if all checks pass with an "airdrop_add_users" event
-    Ok(Response::default().add_event(Event::new("airdrop_add_users").add_attributes(attributes)))
+    Ok(Response::new().add_event(Event::new("airdrop_add_users").add_attributes(attributes)))
 }
 
 /// Sets or updates the allocation of claimable amounts for a list of users in the airdrop configuration.
@@ -197,7 +175,6 @@ pub fn execute_set_users(
     users: Vec<String>,
     amounts: Vec<Uint128>,
 ) -> Result<Response, AirdropErrors> {
-    // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Check if the current airdrop window is not open (start_height or end_height not zero)
@@ -207,12 +184,9 @@ pub fn execute_set_users(
 
     // Check if the number of users and amounts provided match
     if users.len() != amounts.len() {
-        return Err(AirdropErrors::Std(StdError::GenericErr {
-            msg: "Fails as users and amount array do not have same number of elements".to_string(),
-        }));
+        return Err(AirdropErrors::UnequalLengths {});
     }
 
-    // Initialize an empty vector to store attributes for the event
     let mut attributes: Vec<Attribute> = Vec::new();
 
     for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
@@ -246,14 +220,14 @@ pub fn execute_set_users(
         }
     }
 
-    // Check if the total claimable amount exceeds the airdrop amount
+    // config is invalid of total claimable assigned to users is greater than amount assigned to the airdrop
     check_amounts_and_airdrop_size(
         get_total_in_user_info(deps.storage),
         current_airdrop_config.airdrop_amount,
     )?;
 
     // Return a default response if all checks pass with an "airdrop_set_users" event
-    Ok(Response::default().add_event(Event::new("airdrop_set_users").add_attributes(attributes)))
+    Ok(Response::new().add_event(Event::new("airdrop_set_users").add_attributes(attributes)))
 }
 
 /// Removes specified users from the airdrop configuration if they have not claimed their allocations.
@@ -272,7 +246,6 @@ pub fn execute_set_users(
 /// Returns a response indicating the success of the removal operation and includes relevant attributes
 /// in the event for each removed user.
 pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Response, AirdropErrors> {
-    // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Check if the current airdrop window is not open (start_height or end_height not zero)
@@ -309,10 +282,7 @@ pub fn execute_remove_users(deps: DepsMut, users: Vec<String>) -> Result<Respons
     }
 
     // Return a default response if all checks pass with an "airdrop_remove_users" event
-    Ok(
-        Response::default()
-            .add_event(Event::new("airdrop_remove_users").add_attributes(attributes)),
-    )
+    Ok(Response::new().add_event(Event::new("airdrop_remove_users").add_attributes(attributes)))
 }
 
 /// Withdraws airdrop funds to the specified address after the airdrop window has ended.
@@ -336,7 +306,6 @@ pub fn execute_withdraw_funds(
     env: Env,
     withdraw_address: String,
 ) -> Result<Response, AirdropErrors> {
-    // Load the current airdrop configuration from storage
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Check if the current block height is within the airdrop window or the window is open-ended

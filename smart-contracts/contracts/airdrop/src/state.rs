@@ -7,7 +7,6 @@ use cw_storage_plus::{Item, Map};
 
 pub const AIRDROP_CONFIG: Item<AirdropConfig> = Item::new("airdrop_config");
 pub const USER_INFO: Map<String, UserInfo> = Map::new("user_info");
-pub const REPLY_MAP: Map<u64, String> = Map::new("reply_map");
 
 //----------------------------------------------------------------------------------------
 // Storage types
