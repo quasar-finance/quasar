@@ -7,8 +7,9 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
+	types "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types"
+	types1 "github.com/cosmos/cosmos-sdk/types"
 	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
@@ -17,7 +18,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -81,7 +81,7 @@ func (m *QueryPoolRequest) GetPoolId() uint64 {
 
 type QueryPoolResponse struct {
 	// google.protobuf.Any pool = 1 [ (cosmos_proto.accepts_interface) = "PoolI" ];
-	Pool *anypb.Any `protobuf:"bytes,1,opt,name=pool,proto3" json:"pool,omitempty"`
+	Pool *types.Any `protobuf:"bytes,1,opt,name=pool,proto3" json:"pool,omitempty"`
 }
 
 func (m *QueryPoolResponse) Reset()         { *m = QueryPoolResponse{} }
@@ -117,7 +117,7 @@ func (m *QueryPoolResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryPoolResponse proto.InternalMessageInfo
 
-func (m *QueryPoolResponse) GetPool() *anypb.Any {
+func (m *QueryPoolResponse) GetPool() *types.Any {
 	if m != nil {
 		return m.Pool
 	}
@@ -171,7 +171,7 @@ func (m *QueryPoolsRequest) GetPagination() *query.PageRequest {
 }
 
 type QueryPoolsResponse struct {
-	Pools []*anypb.Any `protobuf:"bytes,1,rep,name=pools,proto3" json:"pools,omitempty"`
+	Pools []*types.Any `protobuf:"bytes,1,rep,name=pools,proto3" json:"pools,omitempty"`
 	// pagination defines the pagination in the response.
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
@@ -209,7 +209,7 @@ func (m *QueryPoolsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryPoolsResponse proto.InternalMessageInfo
 
-func (m *QueryPoolsResponse) GetPools() []*anypb.Any {
+func (m *QueryPoolsResponse) GetPools() []*types.Any {
 	if m != nil {
 		return m.Pools
 	}
@@ -350,7 +350,7 @@ func (m *QueryPoolParamsRequest) GetPoolId() uint64 {
 }
 
 type QueryPoolParamsResponse struct {
-	Params *anypb.Any `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+	Params *types.Any `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (m *QueryPoolParamsResponse) Reset()         { *m = QueryPoolParamsResponse{} }
@@ -386,7 +386,7 @@ func (m *QueryPoolParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryPoolParamsResponse proto.InternalMessageInfo
 
-func (m *QueryPoolParamsResponse) GetParams() *anypb.Any {
+func (m *QueryPoolParamsResponse) GetParams() *types.Any {
 	if m != nil {
 		return m.Params
 	}
@@ -528,7 +528,7 @@ func (m *QueryTotalSharesRequest) GetPoolId() uint64 {
 }
 
 type QueryTotalSharesResponse struct {
-	TotalShares types.Coin `protobuf:"bytes,1,opt,name=total_shares,json=totalShares,proto3" json:"total_shares" yaml:"total_shares"`
+	TotalShares types1.Coin `protobuf:"bytes,1,opt,name=total_shares,json=totalShares,proto3" json:"total_shares" yaml:"total_shares"`
 }
 
 func (m *QueryTotalSharesResponse) Reset()         { *m = QueryTotalSharesResponse{} }
@@ -564,11 +564,11 @@ func (m *QueryTotalSharesResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryTotalSharesResponse proto.InternalMessageInfo
 
-func (m *QueryTotalSharesResponse) GetTotalShares() types.Coin {
+func (m *QueryTotalSharesResponse) GetTotalShares() types1.Coin {
 	if m != nil {
 		return m.TotalShares
 	}
-	return types.Coin{}
+	return types1.Coin{}
 }
 
 // QuerySpotPriceRequest defines the gRPC request structure for a SpotPrice
@@ -2622,7 +2622,7 @@ func (m *QueryPoolResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Pool == nil {
-				m.Pool = &anypb.Any{}
+				m.Pool = &types.Any{}
 			}
 			if err := m.Pool.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -2793,7 +2793,7 @@ func (m *QueryPoolsResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Pools = append(m.Pools, &anypb.Any{})
+			m.Pools = append(m.Pools, &types.Any{})
 			if err := m.Pools[len(m.Pools)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3102,7 +3102,7 @@ func (m *QueryPoolParamsResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Params == nil {
-				m.Params = &anypb.Any{}
+				m.Params = &types.Any{}
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3256,7 +3256,7 @@ func (m *QueryTotalPoolLiquidityResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Liquidity = append(m.Liquidity, types.Coin{})
+			m.Liquidity = append(m.Liquidity, types1.Coin{})
 			if err := m.Liquidity[len(m.Liquidity)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -4259,7 +4259,7 @@ func (m *QueryTotalLiquidityResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Liquidity = append(m.Liquidity, types.Coin{})
+			m.Liquidity = append(m.Liquidity, types1.Coin{})
 			if err := m.Liquidity[len(m.Liquidity)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

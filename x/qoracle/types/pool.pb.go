@@ -6,13 +6,13 @@ package types
 import (
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
+	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
@@ -38,7 +38,7 @@ type Pool struct {
 	Assets    github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=assets,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"assets" yaml:"token"`
 	TVL       github_com_cosmos_cosmos_sdk_types.Dec   `protobuf:"bytes,3,opt,name=tvl,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"tvl"`
 	APY       github_com_cosmos_cosmos_sdk_types.Dec   `protobuf:"bytes,4,opt,name=apy,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"apy"`
-	Raw       *anypb.Any                               `protobuf:"bytes,5,opt,name=raw,proto3" json:"raw,omitempty"`
+	Raw       *types1.Any                              `protobuf:"bytes,5,opt,name=raw,proto3" json:"raw,omitempty"`
 	UpdatedAt time.Time                                `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3,stdtime" json:"updated_at"`
 }
 
@@ -89,7 +89,7 @@ func (m *Pool) GetAssets() github_com_cosmos_cosmos_sdk_types.Coins {
 	return nil
 }
 
-func (m *Pool) GetRaw() *anypb.Any {
+func (m *Pool) GetRaw() *types1.Any {
 	if m != nil {
 		return m.Raw
 	}
@@ -465,7 +465,7 @@ func (m *Pool) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Raw == nil {
-				m.Raw = &anypb.Any{}
+				m.Raw = &types1.Any{}
 			}
 			if err := m.Raw.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

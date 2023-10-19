@@ -5,11 +5,11 @@ package types
 
 import (
 	fmt "fmt"
+	_ "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	types "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	_ "google.golang.org/protobuf/types/known/anypb"
 	io "io"
 	math "math"
 	math_bits "math/bits"

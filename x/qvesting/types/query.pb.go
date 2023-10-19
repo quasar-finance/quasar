@@ -7,6 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
+	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	query "github.com/cosmos/cosmos-sdk/types/query"
@@ -17,7 +18,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -265,7 +265,7 @@ func (m *QueryVestingAccountsRequest) GetPagination() *query.PageRequest {
 type QueryVestingAccountsResponse struct {
 	// accounts are the existing vesting accounts
 	// repeated google.protobuf.Any accounts = 1 [(cosmos_proto.accepts_interface) = "VestingAccount"];
-	Accounts []*anypb.Any `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
+	Accounts []*types1.Any `protobuf:"bytes,1,rep,name=accounts,proto3" json:"accounts,omitempty"`
 	// pagination defines the pagination in the response.
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
@@ -303,7 +303,7 @@ func (m *QueryVestingAccountsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryVestingAccountsResponse proto.InternalMessageInfo
 
-func (m *QueryVestingAccountsResponse) GetAccounts() []*anypb.Any {
+func (m *QueryVestingAccountsResponse) GetAccounts() []*types1.Any {
 	if m != nil {
 		return m.Accounts
 	}
@@ -1608,7 +1608,7 @@ func (m *QueryVestingAccountsResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Accounts = append(m.Accounts, &anypb.Any{})
+			m.Accounts = append(m.Accounts, &types1.Any{})
 			if err := m.Accounts[len(m.Accounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
