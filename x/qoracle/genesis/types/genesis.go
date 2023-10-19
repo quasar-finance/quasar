@@ -1,7 +1,7 @@
 package types
 
 import (
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	types "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )

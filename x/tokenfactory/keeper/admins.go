@@ -2,7 +2,8 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/gogo/protobuf/proto"
+	// "github.com/gogo/protobuf/proto"
+	"github.com/cosmos/gogoproto/proto" // SDK47
 
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )

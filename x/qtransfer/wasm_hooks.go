@@ -11,9 +11,9 @@ import (
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 )
@@ -142,12 +142,17 @@ func MustExtractDenomFromPacketOnRecv(packet ibcexported.PacketI) string {
 	return denom
 }
 
+// TODO - SDK47
 func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
-	if err := execMsg.ValidateBasic(); err != nil {
-		return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
-	}
-	wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
-	return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
+
+	/*
+		if err := execMsg.ValidateBasic(); err != nil {
+			return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
+		}
+		wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
+		return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
+	*/
+	return nil, nil
 }
 
 func isIcs20Packet(packet channeltypes.Packet) (isIcs20 bool, ics20data transfertypes.FungibleTokenPacketData) {

@@ -15,9 +15,9 @@ import (
 	"github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmdb "github.com/cometbft/cometbft-db"
 )
 
 func QVestingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {

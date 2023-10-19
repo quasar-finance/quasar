@@ -5,7 +5,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/gogo/protobuf/proto"
+	// proto "github.com/cosmos/gogoproto"
+	"github.com/cosmos/gogoproto/proto" // SDK47
+	// "github.com/gogo/protobuf/proto"
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 

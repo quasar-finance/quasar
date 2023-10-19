@@ -2,12 +2,12 @@ package testutils
 
 import (
 	"encoding/json"
-
-	"github.com/cosmos/cosmos-sdk/simapp"
-	ibctesting "github.com/cosmos/ibc-go/v4/testing"
+	// "github.com/cosmos/cosmos-sdk/simapp"
+	dbm "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	sims "github.com/cosmos/cosmos-sdk/testutil/sims"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/quasarlabs/quasarnode/app"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 )
 
 type TestChain struct {
@@ -26,7 +26,8 @@ func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		app.DefaultNodeHome,
 		5,
 		encCdc,
-		simapp.EmptyAppOptions{},
+		// simapp.EmptyAppOptions{},
+		sims.EmptyAppOptions{},
 		app.GetWasmEnabledProposals(),
 		app.EmptyWasmOpts,
 	)

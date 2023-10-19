@@ -10,11 +10,13 @@ import (
 	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 )
 
+var ENV_PREXIX = "QUASARNODED"
+
 // "Looks good to me. Ready for launch. LFG" -@valeyo
 func main() {
 	rootCmd, _ := cmd.NewRootCmd()
 
-	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, ENV_PREXIX, app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)

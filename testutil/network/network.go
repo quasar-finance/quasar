@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"github.com/cosmos/ibc-apps/modules/async-icq/v7/testing/simapp"
 	"testing"
 	"time"
 
@@ -9,13 +10,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	// "github.com/cosmos/cosmos-sdk/simapp"
+	sims "github.com/cosmos/cosmos-sdk/testutil/sims"
+	tmdb "github.com/cometbft/cometbft-db"
+	tmrand "github.com/cometbft/cometbft/libs/rand"
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	tmdb "github.com/tendermint/tm-db"
 
 	"github.com/quasarlabs/quasarnode/app"
 )
@@ -56,10 +58,12 @@ func DefaultConfig() network.Config {
 			return app.New(
 				val.Ctx.Logger, tmdb.NewMemDB(), nil, true, map[int64]bool{}, val.Ctx.Config.RootDir, 0,
 				encoding,
-				simapp.EmptyAppOptions{},
+				// simapp.EmptyAppOptions{},
+				sims.EmptyAppOptions{}
 				app.GetWasmEnabledProposals(),
 				app.EmptyWasmOpts,
-				baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
+				//baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
+				pruningtypes.PruningOptionNothing
 				baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 			)
 		},

@@ -10,7 +10,7 @@ import (
 	"github.com/quasarlabs/quasarnode/testutil/network"
 	"github.com/quasarlabs/quasarnode/x/epochs/client/cli"
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 )
 
 func setupNetwork(t *testing.T) *network.Network {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,7 +22,6 @@ import (
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 var (
@@ -123,10 +123,12 @@ func NewAppModule(
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 }
 
+/*
 // Route implements the AppModule interface
 func (AppModule) Route() sdk.Route {
 	return sdk.NewRoute(types.RouterKey, nil)
 }
+*/
 
 // NewHandler implements the AppModule interface
 func (AppModule) NewHandler() sdk.Handler {
@@ -138,10 +140,12 @@ func (AppModule) QuerierRoute() string {
 	return types.QuerierRoute
 }
 
+/*
 // LegacyQuerierHandler implements the AppModule interface
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return nil
 }
+*/
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.

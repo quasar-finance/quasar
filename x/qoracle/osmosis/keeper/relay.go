@@ -4,9 +4,11 @@ import (
 	//	"cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
 	// sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
@@ -14,8 +16,6 @@ import (
 	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/utils"
-	icqtypes "github.com/strangelove-ventures/async-icq/v4/types"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
 // Param request

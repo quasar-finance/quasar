@@ -6,8 +6,8 @@ import (
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
 	minttypes "github.com/quasarlabs/quasarnode/osmosis/mint/types"
 	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
-	icqtypes "github.com/strangelove-ventures/async-icq/v4/types"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 
 const (

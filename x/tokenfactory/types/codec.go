@@ -3,10 +3,8 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	// authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
-
+	authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
 	// this line is used by starport scaffolding # 1
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
@@ -40,8 +38,9 @@ func init() {
 	// used to properly serialize MsgGrant and MsgExec instances
 	// Note: these 3 are inlines from authz/codec in 0.46 so we can be compatible with 0.45
 	sdk.RegisterLegacyAminoCodec(amino)
-	cryptocodec.RegisterCrypto(amino)
-	codec.RegisterEvidences(amino)
+	// cryptocodec.RegisterCrypto(amino)
+	RegisterCodec(authzcodec.Amino)
+	// codec.RegisterEvidences(amino)
 
 	amino.Seal()
 }
