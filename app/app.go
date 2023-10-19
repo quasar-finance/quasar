@@ -1,9 +1,13 @@
 package app
 
 import (
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
@@ -961,6 +965,16 @@ func New(
 	// app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
+
+	// REFLECTION - SDK47
+
+	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
+
+	reflectionSvc, err := runtimeservices.NewReflectionService()
+	if err != nil {
+		panic(err)
+	}
+	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
 	app.setupUpgradeHandlers()
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
