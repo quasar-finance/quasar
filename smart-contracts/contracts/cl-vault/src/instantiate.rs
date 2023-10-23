@@ -15,7 +15,7 @@ use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
+    Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
     STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
@@ -115,11 +115,12 @@ pub fn handle_instantiate_create_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = data.try_into()?;
-    POSITION.save(
+    POSITIONS.save(
         deps.storage,
-        &Position {
+        &vec![Position {
             position_id: response.position_id,
-        },
+            ratio: Uint128::one(),
+        }],
     )?;
 
     let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);
