@@ -1,7 +1,8 @@
 use cosmwasm_std::{Addr, Env, Order, QuerierWrapper, Response, Storage, Uint128};
 
+use crate::error::AirdropErrors;
+use crate::msg::User;
 use crate::state::{AirdropConfig, AIRDROP_CONFIG, USER_INFO};
-use crate::AirdropErrors;
 
 /// Checks if the sender is the contract admin. Returns an error if not authorized.
 ///
@@ -75,10 +76,12 @@ pub fn check_amounts_and_airdrop_size(
 /// # Returns
 ///
 /// Returns a default response if the amount is not zero, otherwise returns an error indicating a zero amount.
-pub fn validate_amount(amount: Uint128, index: usize) -> Result<Response, AirdropErrors> {
+pub fn validate_amount(user: User) -> Result<Response, AirdropErrors> {
     // Check if the amount is not zero
-    if amount == Uint128::zero() {
-        return Err(AirdropErrors::ZeroAmount { index });
+    if user.amount == Uint128::zero() {
+        return Err(AirdropErrors::ZeroAmount {
+            address: user.address,
+        });
     }
     Ok(Response::default())
 }
@@ -203,10 +206,22 @@ mod tests {
 
     #[test]
     fn test_validate_amount() {
-        let err = validate_amount(Uint128::new(0), 1).unwrap_err();
-        assert_eq!(AirdropErrors::ZeroAmount { index: 1 }, err);
-        let resp = validate_amount(Uint128::new(10), 1).unwrap();
-        assert_eq!(Response::default(), resp);
+        let err = validate_amount(User {
+            address: "test".to_string(),
+            amount: Uint128::new(0),
+        })
+        .unwrap_err();
+        assert_eq!(
+            AirdropErrors::ZeroAmount {
+                address: "test".to_string()
+            },
+            err
+        );
+        let resp = validate_amount(User {
+            address: "test".to_string(),
+            amount: Uint128::new(10),
+        })
+        .unwrap();
     }
 
     // #[test]

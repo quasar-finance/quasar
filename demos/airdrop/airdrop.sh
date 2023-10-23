@@ -23,15 +23,15 @@ echo "Got address of primitive 1 contract = $ADDR1"
 quasarnoded query wasm contract-state smart $ADDR1 '{"airdrop_config_query":{}}'
 
 echo "Should not fail"
-quasarnoded tx wasm execute $ADDR1 '{"admin": {"add_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu", "quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf", "quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p"], "amounts": ["2500000000", "2500000000", "2500000000", "2500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
+quasarnoded tx wasm execute $ADDR1 '{"admin": {"add_users": {"users": [{"address": "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "amount": "2500000000"}, {"address": "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu", "amount": "2500000000"}, {"address": "quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf", "amount": "2500000000"}, {"address": "quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p", "amount": "2500000000"}]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
 echo "Set alice amount to a higher amount so that it overflows and it should fail"
-quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"], "amounts": ["4500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
+quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": [{"address": "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "amount": "4500000000"}]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 echo "Update set new users to update airdrop amount for alice and bob and it should work"
-quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"], "amounts": ["1500000000", "3500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
+quasarnoded tx wasm execute $ADDR1 '{"admin": {"set_users": {"users": [{"address": "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "amount": "1500000000"}, {"address": "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu", "amount": "3500000000"}]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
@@ -41,7 +41,7 @@ quasarnoded tx wasm execute $ADDR1 '{"admin": {"remove_users":["quasar1sqlsc5024
 quasarnoded q wasm contract-state smart $ADDR1 '{"contract_state_query":{}}'
 
 echo "Add alcie to the airdrop eligibility"
-quasarnoded tx wasm execute $ADDR1 '{"admin": {"add_users": {"users": ["quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"], "amounts": ["1500000000"]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
+quasarnoded tx wasm execute $ADDR1 '{"admin": {"add_users": {"users": [{"address": "quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec", "amount": "1500000000"}]}}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block
 
 echo "funding contract account"
 quasarnoded tx bank send $ACCOUNT_ADDRESS $ADDR1 11000000000uqsr --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block

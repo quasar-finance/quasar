@@ -6,6 +6,7 @@ use cw_asset::Asset;
 use crate::helpers::{
     check_amounts_and_airdrop_size, get_total_in_user_info, validate_amount, validate_update_config,
 };
+use crate::msg::User;
 use crate::state::{AirdropConfig, UserInfo, AIRDROP_CONFIG, USER_INFO};
 use crate::AirdropErrors;
 
@@ -84,11 +85,7 @@ pub fn execute_update_airdrop_config(
 ///
 /// Returns a response indicating the success of the addition operation and includes relevant attributes
 /// in the event.
-pub fn execute_add_users(
-    deps: DepsMut,
-    users: Vec<String>,
-    amounts: Vec<Uint128>,
-) -> Result<Response, AirdropErrors> {
+pub fn execute_add_users(deps: DepsMut, users: Vec<User>) -> Result<Response, AirdropErrors> {
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Check if the current airdrop window is not open (start_height or end_height not zero)
@@ -96,23 +93,18 @@ pub fn execute_add_users(
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
-    // Check if the number of users and amounts provided match
-    if users.len() != amounts.len() {
-        return Err(AirdropErrors::UnequalLengths {});
-    }
-
     let mut attributes: Vec<Attribute> = Vec::new();
 
     // Loop through the provided users and amounts
-    for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
+    for user in users {
         // Validate the user's address
-        deps.api.addr_validate(user_and_amount.0)?;
+        deps.api.addr_validate(&user.address)?;
 
         // Validate that the amount is not zero
-        validate_amount(*user_and_amount.1, index)?;
+        validate_amount(user.clone())?;
 
         // Attempt to load user_info from storage
-        let maybe_user_info = USER_INFO.may_load(deps.storage, user_and_amount.0.clone())?;
+        let maybe_user_info = USER_INFO.may_load(deps.storage, user.address.clone())?;
 
         // Check if the user_info exists (is not empty)
         if let Some(user_info) = maybe_user_info {
@@ -120,25 +112,25 @@ pub fn execute_add_users(
             if user_info.get_claimable_amount() != Uint128::zero() || user_info.get_claimed_flag() {
                 // Handle the case where user_info exists
                 return Err(AirdropErrors::AlreadyExists {
-                    user: user_and_amount.0.to_string(),
+                    user: user.address,
                 });
             }
         } else {
             // User info does not exist, create a new entry
             let new_user_info = UserInfo {
-                claimable_amount: *user_and_amount.1,
+                claimable_amount: user.amount,
                 claimed_flag: false,
             };
-            USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
+            USER_INFO.save(deps.storage, user.address.to_string(), &new_user_info)?;
 
             // Add user and amount to attributes for the event
             attributes.push(Attribute {
                 key: "address".to_string(),
-                value: user_and_amount.0.to_string(),
+                value: user.address.to_string(),
             });
             attributes.push(Attribute {
                 key: "amount".to_string(),
-                value: user_and_amount.1.to_string(),
+                value: user.amount.to_string(),
             });
         }
     }
@@ -170,11 +162,7 @@ pub fn execute_add_users(
 ///
 /// Returns a response indicating the success of the set/update operation and includes relevant attributes
 /// in the event.
-pub fn execute_set_users(
-    deps: DepsMut,
-    users: Vec<String>,
-    amounts: Vec<Uint128>,
-) -> Result<Response, AirdropErrors> {
+pub fn execute_set_users(deps: DepsMut, users: Vec<User>) -> Result<Response, AirdropErrors> {
     let current_airdrop_config = AIRDROP_CONFIG.load(deps.storage)?;
 
     // Check if the current airdrop window is not open (start_height or end_height not zero)
@@ -182,40 +170,35 @@ pub fn execute_set_users(
         return Err(AirdropErrors::InvalidChangeUserInfo {});
     }
 
-    // Check if the number of users and amounts provided match
-    if users.len() != amounts.len() {
-        return Err(AirdropErrors::UnequalLengths {});
-    }
-
     let mut attributes: Vec<Attribute> = Vec::new();
 
-    for (index, user_and_amount) in users.iter().zip(amounts.iter()).enumerate() {
+    for user in users {
         // Validate the user's address
-        deps.api.addr_validate(user_and_amount.0)?;
+        deps.api.addr_validate(&user.address)?;
 
         // Validate that the amount is not zero
-        validate_amount(*user_and_amount.1, index)?;
+        validate_amount(user.clone())?;
 
         // Load the user's current information from storage
-        let user_info = USER_INFO.load(deps.storage, user_and_amount.0.clone())?;
+        let user_info = USER_INFO.load(deps.storage, user.address.to_string())?;
 
         // Check if the user has not claimed
         if !user_info.get_claimed_flag() {
             // Update all the users with the given info
             let new_user_info = UserInfo {
-                claimable_amount: *user_and_amount.1,
+                claimable_amount: user.amount,
                 claimed_flag: false,
             };
-            USER_INFO.save(deps.storage, user_and_amount.0.clone(), &new_user_info)?;
+            USER_INFO.save(deps.storage, user.address.to_string(), &new_user_info)?;
 
             // Add user and amount to attributes for the event
             attributes.push(Attribute {
                 key: "address".to_string(),
-                value: user_and_amount.0.to_string(),
+                value: user.address.to_string(),
             });
             attributes.push(Attribute {
                 key: "amount".to_string(),
-                value: user_and_amount.1.to_string(),
+                value: user.amount.to_string(),
             })
         }
     }
@@ -402,43 +385,60 @@ mod tests {
         execute_update_airdrop_config(deps.as_mut(), env.clone(), config.clone()).unwrap_err();
 
         // add users to the airdrop
-        let users: Vec<String> = vec![
-            "user1".to_string(),
-            "user2".to_string(),
-            "user3".to_string(),
+        let users: Vec<User> = vec![
+            User {
+                address: "user1".to_string(),
+                amount: Uint128::new(330000),
+            },
+            User {
+                address: "user2".to_string(),
+                amount: Uint128::new(330000),
+            },
+            User {
+                address: "user3".to_string(),
+                amount: Uint128::new(330000),
+            },
         ];
-        let amounts: Vec<Uint128> = vec![
-            Uint128::new(330000),
-            Uint128::new(330000),
-            Uint128::new(330000),
-        ];
-        let add_users_response = execute_add_users(deps.as_mut(), users, amounts).unwrap();
+        let add_users_response = execute_add_users(deps.as_mut(), users).unwrap();
         assert_eq!(add_users_response.events[0].attributes.len(), 6);
 
         // set a user so that the total is higher than airdrop size
-        let users: Vec<String> = vec!["user1".to_string()];
-        let amounts: Vec<Uint128> = vec![Uint128::new(630000)];
-        execute_set_users(deps.as_mut(), users, amounts).unwrap_err();
+        let users1: Vec<User> = vec![User {
+            address: "user1".to_string(),
+            amount: Uint128::new(630000),
+        }];
+        execute_set_users(deps.as_mut(), users1).unwrap_err();
 
         // set users with new values and the amount should be less than the airdrop size
-        let users: Vec<String> = vec!["user1".to_string(), "user2".to_string()];
-        let amounts: Vec<Uint128> = vec![Uint128::new(230000), Uint128::new(430000)];
-        let set_users_response = execute_set_users(deps.as_mut(), users, amounts).unwrap();
+        let users2: Vec<User> = vec![
+            User {
+                address: "user1".to_string(),
+                amount: Uint128::new(230000),
+            },
+            User {
+                address: "user2".to_string(),
+                amount: Uint128::new(430000),
+            },
+        ];
+        let set_users_response = execute_set_users(deps.as_mut(), users2).unwrap();
         assert_eq!(set_users_response.events[0].attributes.len(), 4);
 
         // remove user1 which should be successful
-        let users: Vec<String> = vec!["user1".to_string()];
-        let set_users_response = execute_remove_users(deps.as_mut(), users).unwrap();
+        let users3: Vec<String> = vec!["user1".to_string()];
+        let set_users_response = execute_remove_users(deps.as_mut(), users3).unwrap();
         assert_eq!(set_users_response.events[0].attributes.len(), 1);
 
         // remove user4 which should result into an error
-        let users: Vec<String> = vec!["user4".to_string()];
-        execute_remove_users(deps.as_mut(), users).unwrap_err();
+        let users4: Vec<String> = vec!["user4".to_string()];
+        execute_remove_users(deps.as_mut(), users4).unwrap_err();
 
         // add the user1 again
-        let users: Vec<String> = vec!["user1".to_string()];
-        let amounts: Vec<Uint128> = vec![Uint128::new(230000)];
-        let set_users_response = execute_add_users(deps.as_mut(), users, amounts).unwrap();
+        let users5: Vec<User> = vec![User {
+            address: "user1".to_string(),
+            amount: Uint128::new(230000),
+        }];
+
+        let set_users_response = execute_add_users(deps.as_mut(), users5).unwrap();
         assert_eq!(set_users_response.events[0].attributes.len(), 2);
 
         // update the airdrop config with

@@ -55,6 +55,6 @@ pub enum AirdropErrors {
     #[error("Given number of users do not match the given number of amounts which results into a mismatch")]
     UnequalLengths {},
 
-    #[error("Amount at index : {index:?} is zero")]
-    ZeroAmount { index: usize },
+    #[error("Amount for address {address:?} is zero")]
+    ZeroAmount { address: String },
 }

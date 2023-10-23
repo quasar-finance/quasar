@@ -23,16 +23,10 @@ pub enum AdminExecuteMsg {
     UpdateAirdropConfig(AirdropConfig),
 
     /// add users to the airdrop with the given amounts
-    AddUsers {
-        users: Vec<String>,
-        amounts: Vec<Uint128>,
-    },
+    AddUsers { users: Vec<User> },
 
     /// updates the existing users with the given address and amounts
-    SetUsers {
-        users: Vec<String>,
-        amounts: Vec<Uint128>,
-    },
+    SetUsers { users: Vec<User> },
 
     /// remove a list of users from an airdrop
     RemoveUsers(Vec<String>),
@@ -87,4 +81,10 @@ pub struct UsersStatsResponse {
     pub claimed_users_count: u64,
     pub unclaimed_users_count: u64,
     pub total_users_count: u64,
+}
+
+#[cw_serde]
+pub struct User {
+    pub address: String,
+    pub amount: Uint128,
 }

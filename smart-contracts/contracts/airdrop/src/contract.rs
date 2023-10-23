@@ -114,17 +114,15 @@ pub fn execute(
                     // Call the function to update the airdrop configuration
                     execute_update_airdrop_config(deps, env, airdrop_config)
                 }
-                AdminExecuteMsg::AddUsers { users, amounts } => {
+                AdminExecuteMsg::AddUsers { users } => {
                     // Call the function to add users and their amounts
-                    execute_add_users(deps, users, amounts)
+                    execute_add_users(deps, users)
                 }
                 AdminExecuteMsg::RemoveUsers(users) => execute_remove_users(deps, users),
                 AdminExecuteMsg::WithdrawFunds(withdraw_address) => {
                     execute_withdraw_funds(deps, env, withdraw_address)
                 }
-                AdminExecuteMsg::SetUsers { users, amounts } => {
-                    execute_set_users(deps, users, amounts)
-                }
+                AdminExecuteMsg::SetUsers { users } => execute_set_users(deps, users),
             }
         }
         ExecuteMsg::ClaimAirdrop() => execute_claim(deps, env, info.sender),
