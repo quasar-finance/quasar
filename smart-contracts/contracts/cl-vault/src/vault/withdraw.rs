@@ -14,9 +14,11 @@ use crate::{
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{get_position, withdraw_from_position},
+    vault::concentrated_liquidity::withdraw_from_position,
     ContractError,
 };
+
+use super::concentrated_liquidity::get_positions;
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
@@ -96,43 +98,55 @@ pub fn execute_withdraw(
     Ok(Response::new()
         .add_attribute("method", "withdraw")
         .add_attribute("action", "withdraw")
-        .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
         .add_attribute("share_amount", shares_to_withdraw)
         .add_message(burn_msg)
-        .add_submessage(SubMsg::reply_on_success(
-            withdraw_msg,
-            Replies::WithdrawUser as u64,
-        )))
+        // TODO dispatch the vec of withdraw msgs, can we banksend each seperate
+        .add_submessages(
+            withdraw_msg
+                .iter()
+                .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUser as u64)),
+        ))
 }
 
 fn withdraw(
     deps: DepsMut,
     env: &Env,
     user_shares: Uint128,
-) -> Result<MsgWithdrawPosition, ContractError> {
-    let existing_position = get_position(deps.storage, &deps.querier)?;
-    let existing_liquidity: Decimal256 = existing_position
-        .position
-        .ok_or(ContractError::PositionNotFound)?
-        .liquidity
-        .parse()?;
+) -> Result<Vec<MsgWithdrawPosition>, ContractError> {
+    let positions = get_positions(deps.storage, &deps.querier)?;
+    let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions
+        .iter()
+        .map(|position| {
+            let existing_liquidity: Decimal256 = position
+                .position
+                .ok_or(ContractError::PositionNotFound)?
+                .liquidity
+                .parse()?;
 
-    let bq = BankQuerier::new(&deps.querier);
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+            let bq = BankQuerier::new(&deps.querier);
+            let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    let total_vault_shares: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+            let total_vault_shares: Uint128 = bq
+                .supply_of(vault_denom)?
+                .amount
+                .unwrap()
+                .amount
+                .parse::<u128>()?
+                .into();
 
-    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
-        .checked_mul(existing_liquidity)?
-        .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
+            let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
+                .checked_mul(existing_liquidity)?
+                .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
 
-    withdraw_from_position(deps.storage, env, user_liquidity)
+            Ok(withdraw_from_position(
+                env,
+                position.position.unwrap().position_id,
+                user_liquidity,
+            )?)
+        })
+        .collect();
+
+    Ok(withdraws?)
 }
 
 pub fn handle_withdraw_user_reply(
