@@ -25,7 +25,6 @@ use crate::{
         RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::concentrated_liquidity::create_position,
-    vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
     vault::swap::swap,
     ContractError,
@@ -51,11 +50,38 @@ fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
-pub fn execute_update_range(deps: DepsMut, env: Env, info: MessageInfo, msg: ModifyRange) -> Result<Response, ContractError> {
+pub fn execute_update_range(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ModifyRange,
+) -> Result<Response, ContractError> {
     match msg {
-        ModifyRange::MovePosition { old_position_id, new_lower_price, new_upper_price, max_slippage } => move_position(deps, env, info, old_position_id, new_lower_price, new_upper_price, max_slippage),
-        ModifyRange::ModifyPercentage { position_id, old_percentage, new_percentage } => modify_percentage(),
-        ModifyRange::CreatePosition { lower_price, upper_price, max_slippage, max_percentage } => create_new_position(),
+        ModifyRange::MovePosition {
+            old_position_id,
+            new_lower_price,
+            new_upper_price,
+            max_slippage,
+        } => move_position(
+            deps,
+            env,
+            info,
+            old_position_id,
+            new_lower_price,
+            new_upper_price,
+            max_slippage,
+        ),
+        ModifyRange::ModifyPercentage {
+            position_id,
+            old_percentage,
+            new_percentage,
+        } => modify_percentage(),
+        ModifyRange::CreatePosition {
+            lower_price,
+            upper_price,
+            max_slippage,
+            max_percentage,
+        } => create_new_position(),
         ModifyRange::DeletePosition { position_id } => delete_position(),
     }
 }
