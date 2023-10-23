@@ -56,7 +56,7 @@ pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 #[cw_serde]
 pub struct Position {
     pub position_id: u64,
-    pub percentage: Decimal
+    pub ratio: Uint128,
 }
 
 pub const POSITIONS: Item<Vec<Position>> = Item::new("positions");

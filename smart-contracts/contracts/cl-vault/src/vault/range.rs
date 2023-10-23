@@ -17,12 +17,12 @@ use crate::{
     helpers::get_spot_price,
     helpers::get_unused_balances,
     math::tick::price_to_tick,
-    msg::{ExecuteMsg, MergePositionMsg},
+    msg::{ExecuteMsg, MergePositionMsg, ModifyRange},
     reply::Replies,
     state::CURRENT_SWAP,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+        RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::concentrated_liquidity::create_position,
     vault::concentrated_liquidity::get_position,
@@ -51,10 +51,20 @@ fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
-pub fn execute_update_range(
+pub fn execute_update_range(deps: DepsMut, env: Env, info: MessageInfo, msg: ModifyRange) -> Result<Response, ContractError> {
+    match msg {
+        ModifyRange::MovePosition { old_position_id, new_lower_price, new_upper_price, max_slippage } => move_position(deps, env, info, old_position_id, new_lower_price, new_upper_price, max_slippage),
+        ModifyRange::ModifyPercentage { position_id, old_percentage, new_percentage } => modify_percentage(),
+        ModifyRange::CreatePosition { lower_price, upper_price, max_slippage, max_percentage } => create_new_position(),
+        ModifyRange::DeletePosition { position_id } => delete_position(),
+    }
+}
+
+pub fn move_position(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    old_position_id: u64,
     lower_price: Decimal,
     upper_price: Decimal,
     max_slippage: Decimal,
@@ -70,6 +80,18 @@ pub fn execute_update_range(
         upper_tick.try_into().unwrap(),
         max_slippage,
     )
+}
+
+pub fn modify_percentage() -> Result<Response, ContractError> {
+    todo!()
+}
+
+pub fn create_new_position() -> Result<Response, ContractError> {
+    todo!()
+}
+
+pub fn delete_position() -> Result<Response, ContractError> {
+    todo!()
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps

@@ -2,7 +2,7 @@ use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg, MigrateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
     query_info, query_metadata, query_pool, query_position, query_total_assets,
     query_total_vault_token_supply, query_user_balance, query_user_rewards,
@@ -69,11 +69,7 @@ pub fn execute(
                     execute_admin(deps, info, admin_msg)
                 }
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
-                crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
-                    lower_price,
-                    upper_price,
-                    max_slippage,
-                }) => execute_update_range(deps, env, info, lower_price, upper_price, max_slippage),
+                crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => execute_update_range(deps, env, info, msg),
                 crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
                     execute_distribute_rewards(deps, env)
                 }
