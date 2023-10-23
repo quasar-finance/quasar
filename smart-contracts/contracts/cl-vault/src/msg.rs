@@ -119,7 +119,7 @@ pub enum ClQueryMsg {
     #[returns(PoolResponse)]
     Pool {},
     #[returns(PositionResponse)]
-    Position {},
+    Positions {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
 }

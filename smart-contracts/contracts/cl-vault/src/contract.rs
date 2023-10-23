@@ -4,7 +4,7 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_info, query_metadata, query_pool, query_position, query_total_assets,
+    query_info, query_metadata, query_pool, query_positions, query_total_assets,
     query_total_vault_token_supply, query_user_balance, query_user_rewards,
 };
 use crate::reply::Replies;
@@ -113,7 +113,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Position {} => Ok(to_binary(&query_position(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => Ok(to_binary(&query_positions(deps)?)?),
                 crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
             },
         },

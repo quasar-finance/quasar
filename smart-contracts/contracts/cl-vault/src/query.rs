@@ -1,13 +1,12 @@
-use crate::vault::concentrated_liquidity::get_position;
+use crate::state::{Position, POSITIONS};
+use crate::vault::concentrated_liquidity::get_positions;
+use crate::ContractError;
 use crate::{
     error::ContractResult,
-    state::{
-        PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, USER_REWARDS,
-        VAULT_DENOM,
-    },
+    state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, USER_REWARDS, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, Uint128};
+use cosmwasm_std::{coin, Coin, Deps, OverflowError, OverflowOperation, StdError, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -34,7 +33,7 @@ pub struct PoolResponse {
 
 #[cw_serde]
 pub struct PositionResponse {
-    pub position_ids: Vec<u64>,
+    pub positions: Vec<Position>,
 }
 
 #[cw_serde]
@@ -99,11 +98,9 @@ pub fn query_pool(deps: Deps) -> ContractResult<PoolResponse> {
     Ok(PoolResponse { pool_config })
 }
 
-pub fn query_position(deps: Deps) -> ContractResult<PositionResponse> {
-    let position_id = POSITION.load(deps.storage)?.position_id;
-    Ok(PositionResponse {
-        position_ids: vec![position_id],
-    })
+pub fn query_positions(deps: Deps) -> ContractResult<PositionResponse> {
+    let positions = POSITIONS.load(deps.storage)?;
+    Ok(PositionResponse { positions })
 }
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
     let balance = SHARES
@@ -120,17 +117,34 @@ pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserReward
 }
 
 pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
-    let position = get_position(deps.storage, &deps.querier)?;
+    let positions = get_positions(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
+    let (asset0, asset1) = positions.iter().try_fold(
+        (0_u128, 0_u128),
+        |(acc0, acc1), i| -> Result<(u128, u128), ContractError> {
+            let asset0 = i
+                .asset0
+                .map(|v| v.amount.parse::<u128>().unwrap())
+                .unwrap_or(0_u128);
+            let asset1 = i
+                .asset1
+                .map(|v| v.amount.parse::<u128>().unwrap())
+                .unwrap_or(0_u128);
+
+            Ok((
+                acc0.checked_add(asset0).ok_or_else(|| {
+                    StdError::overflow(OverflowError::new(OverflowOperation::Add, acc0, asset0))
+                })?,
+                acc1.checked_add(asset1).ok_or_else(|| {
+                    StdError::overflow(OverflowError::new(OverflowOperation::Add, acc0, asset1))
+                })?,
+            ))
+        },
+    )?;
+
     Ok(TotalAssetsResponse {
-        token0: position
-            .asset0
-            .map(|c| c.try_into().unwrap())
-            .unwrap_or(coin(0, pool.token0)),
-        token1: position
-            .asset1
-            .map(|c| c.try_into().unwrap())
-            .unwrap_or(coin(0, pool.token1)),
+        token0: coin(asset0, pool.token0),
+        token1: coin(asset1, pool.token1),
     })
 }
 
