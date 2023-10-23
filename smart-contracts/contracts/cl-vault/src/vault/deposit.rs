@@ -18,8 +18,8 @@ use crate::{
     helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{create_position, get_position},
+    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::{create_position, get_positions},
     ContractError,
 };
 

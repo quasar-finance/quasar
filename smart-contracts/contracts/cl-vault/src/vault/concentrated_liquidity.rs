@@ -6,9 +6,10 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
+use crate::state::POSITIONS;
 use crate::{
     helpers::{round_up_to_nearest_multiple, sort_tokens},
-    state::{POOL_CONFIG, POSITION},
+    state::POOL_CONFIG,
     ContractError,
 };
 
@@ -48,30 +49,32 @@ pub fn create_position(
 
 // TODO verify that liquidity amount should be Decimal256
 pub fn withdraw_from_position(
-    storage: &dyn Storage,
     env: &Env,
+    position_id: u64,
     liquidity_amount: Decimal256,
 ) -> Result<MsgWithdrawPosition, ContractError> {
     let sender = env.contract.address.to_string();
-    let position = POSITION.load(storage)?;
 
     let withdraw_position = MsgWithdrawPosition {
-        position_id: position.position_id,
+        position_id: position_id,
         sender,
         liquidity_amount: liquidity_amount.atomics().to_string(),
     };
     Ok(withdraw_position)
 }
 
-pub fn get_position(
+pub fn get_positions(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-) -> Result<FullPositionBreakdown, ContractError> {
-    let position = POSITION.load(storage)?;
+) -> Result<Vec<FullPositionBreakdown>, ContractError> {
+    let position_ids = POSITIONS.load(storage)?;
 
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
-    let position = cl_querier.position_by_id(position.position_id)?;
-    position.position.ok_or(ContractError::PositionNotFound)
+    let positions: Result<Vec<FullPositionBreakdown>, ContractError> = position_ids
+        .iter()
+        .map(|id| Ok(cl_querier.position_by_id(id.position_id)?.position.unwrap()))
+        .collect();
+    positions
 }
 
 pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, ContractError> {
@@ -85,23 +88,6 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
             Ok(decoded_pool)
         }
         None => Err(ContractError::PoolNotFound { pool_id }),
-    }
-}
-
-pub fn _may_get_position(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    _env: &Env,
-) -> Result<Option<FullPositionBreakdown>, ContractError> {
-    let position = POSITION.may_load(storage)?;
-    if let Some(position) = position {
-        let cl_querier = ConcentratedliquidityQuerier::new(querier);
-        let position = cl_querier.position_by_id(position.position_id)?;
-        Ok(Some(
-            position.position.ok_or(ContractError::PositionNotFound)?,
-        ))
-    } else {
-        Ok(None)
     }
 }
 
@@ -200,11 +186,8 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
-            .unwrap();
 
-        let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
+        let result = withdraw_from_position(&env, position_id, liquidity_amount).unwrap();
 
         assert_eq!(
             result,
