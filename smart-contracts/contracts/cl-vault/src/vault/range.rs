@@ -376,12 +376,12 @@ pub fn do_swap_deposit_merge(
     let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             pool_config.token0,
-            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator())?,
             balance0.checked_sub(swap_amount)?,
         ),
         SwapDirection::OneToZero => (
             pool_config.token1,
-            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator())?,
             balance1.checked_sub(swap_amount)?,
         ),
     };
@@ -389,8 +389,8 @@ pub fn do_swap_deposit_merge(
     CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
+    let token_out_min_amount = token_out_ideal_amount.checked_sub(token_out_ideal_amount
+        .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?)?;
 
     let swap_msg = swap(
         deps,
