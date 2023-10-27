@@ -111,9 +111,7 @@ pub fn execute_add_users(deps: DepsMut, users: Vec<User>) -> Result<Response, Ai
             // User info exists, perform your checks here
             if user_info.get_claimable_amount() != Uint128::zero() || user_info.get_claimed_flag() {
                 // Handle the case where user_info exists
-                return Err(AirdropErrors::AlreadyExists {
-                    user: user.address,
-                });
+                return Err(AirdropErrors::AlreadyExists { user: user.address });
             }
         } else {
             // User info does not exist, create a new entry
