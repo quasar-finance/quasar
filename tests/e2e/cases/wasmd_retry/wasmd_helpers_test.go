@@ -11,7 +11,7 @@ import (
 )
 
 // deployPrimitives stores the contract, initiates it and returns the contract address.
-func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) (string, string, string) {
+func (s *WasmdLPRetryTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs1, initArgs2, initArgs3 any) (string, string, string) {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -107,7 +107,7 @@ func (s *WasmdTestSuite) deployPrimitives(ctx context.Context, acc *ibc.Wallet, 
 }
 
 // deployRewardsContract stores the contract
-func (s *WasmdTestSuite) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, filePath string) {
+func (s *WasmdLPRetryTestSuite) deployRewardsContract(ctx context.Context, acc *ibc.Wallet, filePath string) {
 	// Read the contract from os file
 	contract, err := os.ReadFile(filePath)
 	s.Require().NoError(err)
@@ -118,7 +118,7 @@ func (s *WasmdTestSuite) deployRewardsContract(ctx context.Context, acc *ibc.Wal
 }
 
 // deployVault stores the contract, initiates it and returns the contract address.
-func (s *WasmdTestSuite) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs any) string {
+func (s *WasmdLPRetryTestSuite) deployVault(ctx context.Context, acc *ibc.Wallet, filePath, label string, initArgs any) string {
 	accAddress := acc.Bech32Address(s.Quasar().Config().Bech32Prefix)
 
 	// Read the contract from os file
@@ -135,13 +135,13 @@ func (s *WasmdTestSuite) deployVault(ctx context.Context, acc *ibc.Wallet, fileP
 	return res.Address
 }
 
-func (s *WasmdTestSuite) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any, lpAddresses []string) {
+func (s *WasmdLPRetryTestSuite) setDepositorForContracts(ctx context.Context, acc *ibc.Wallet, initArgs any, lpAddresses []string) {
 	s.SetDepositors(ctx, s.Quasar(), lpAddresses[0], acc.KeyName, initArgs)
 	s.SetDepositors(ctx, s.Quasar(), lpAddresses[1], acc.KeyName, initArgs)
 	s.SetDepositors(ctx, s.Quasar(), lpAddresses[2], acc.KeyName, initArgs)
 }
 
-func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
+func (s *WasmdLPRetryTestSuite) CreatePools(ctx context.Context) {
 	// Read the pool details from os file
 	poolBz, err := os.ReadFile(osmosisPool1Path)
 	s.Require().NoError(err)
@@ -158,7 +158,7 @@ func (s *WasmdTestSuite) CreatePools(ctx context.Context) {
 	s.CreatePoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolBz, "")
 }
 
-func (s *WasmdTestSuite) JoinPools(ctx context.Context, poolIds []string, maxAmountsIn []string, sharesAmountOut []string) {
+func (s *WasmdLPRetryTestSuite) JoinPools(ctx context.Context, poolIds []string, maxAmountsIn []string, sharesAmountOut []string) {
 	// TODO: require len(allTheArgs) is the same
 	for i, _ := range poolIds {
 		s.JoinPoolOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, poolIds[i], maxAmountsIn[i], sharesAmountOut[i])
