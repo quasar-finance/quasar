@@ -24,16 +24,16 @@ type ContractAck struct {
 }
 
 type WasmHooks struct {
-	keeper             keeper.Keeper
-	wasmKeeper         wasmkeeper.Keeper
-	permissionedKeeper *wasmkeeper.PermissionedKeeper
+	keeper     keeper.Keeper     // ibc hook keeper
+	wasmKeeper wasmkeeper.Keeper // contract keeper
+	//	permissionedKeeper *wasmkeeper.PermissionedKeeper
 }
 
 func NewWasmHooks(k keeper.Keeper, wasmKeeper wasmkeeper.Keeper) WasmHooks {
 	return WasmHooks{
-		keeper:             k,
-		wasmKeeper:         wasmKeeper,
-		permissionedKeeper: wasmkeeper.NewDefaultPermissionKeeper(wasmKeeper),
+		keeper:     k,
+		wasmKeeper: wasmKeeper,
+		// permissionedKeeper: wasmkeeper.NewDefaultPermissionKeeper(wasmKeeper),
 	}
 }
 
@@ -143,18 +143,27 @@ func MustExtractDenomFromPacketOnRecv(packet ibcexported.PacketI) string {
 }
 
 // TODO - SDK47
-func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
 
-	/*
-		if err := execMsg.ValidateBasic(); err != nil {
-			return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
-		}
-		wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
-		return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
-	*/
-	return nil, nil
+func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
+	if err := execMsg.ValidateBasic(); err != nil {
+		return nil, fmt.Errorf(types.ErrBadExecutionMsg, err.Error())
+	}
+	wasmMsgServer := wasmkeeper.NewMsgServerImpl(&h.wasmKeeper) // SDK 47 to be tested.
+	return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
 }
 
+/*
+func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
+
+			if err := execMsg.ValidateBasic(); err != nil {
+				return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
+			}
+			wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
+			return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
+
+		return nil, nil
+	}
+*/
 func isIcs20Packet(packet channeltypes.Packet) (isIcs20 bool, ics20data transfertypes.FungibleTokenPacketData) {
 	var data transfertypes.FungibleTokenPacketData
 	if err := json.Unmarshal(packet.GetData(), &data); err != nil {

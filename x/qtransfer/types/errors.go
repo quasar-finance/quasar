@@ -7,4 +7,5 @@ import (
 
 var (
 	ErrInvalidMetadataFormat = sdkerrors.New(ModuleName, 2, "invalid metadata format")
+	ErrBadExecutionMsg       = "cannot execute contract: %v"
 )

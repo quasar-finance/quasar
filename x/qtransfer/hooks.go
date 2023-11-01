@@ -6,6 +6,8 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
 	// ibc-go
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
@@ -110,6 +112,19 @@ type OnTimeoutPacketAfterHooks interface {
 	OnTimeoutPacketAfterHook(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress, err error)
 }
 
+// SDK 47 changes.
+// SendPacket Hooks
+type SendPacketOverrideHooks interface {
+	SendPacketOverride(i ICS4Middleware, ctx sdk.Context, chanCap *capabilitytypes.Capability, sourcePort string, sourceChannel string, timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) (uint64, error)
+}
+type SendPacketBeforeHooks interface {
+	SendPacketBeforeHook(ctx sdk.Context, chanCap *capabilitytypes.Capability, sourcePort string, sourceChannel string, timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte)
+}
+type SendPacketAfterHooks interface {
+	SendPacketAfterHook(cctx sdk.Context, chanCap *capabilitytypes.Capability, sourcePort string, sourceChannel string, timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte, err error)
+}
+
+/*
 // SendPacket Hooks
 type SendPacketOverrideHooks interface {
 	SendPacketOverride(i ICS4Middleware, ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI) error
@@ -120,7 +135,7 @@ type SendPacketBeforeHooks interface {
 type SendPacketAfterHooks interface {
 	SendPacketAfterHook(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, err error)
 }
-
+*/
 // WriteAcknowledgement Hooks
 type WriteAcknowledgementOverrideHooks interface {
 	WriteAcknowledgementOverride(i ICS4Middleware, ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error
