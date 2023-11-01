@@ -59,6 +59,37 @@ pub mod initialize {
         )
     }
 
+    pub fn init_18dec() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+        init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(1_000_000_000_000_000_000_000_000_000_000, "gwei"),
+                Coin::new(1_000_000_000_000_000_000_000_000_000_000, "uosmo"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "gwei".to_string(),
+                denom1: "uosmo".to_string(),
+                tick_spacing: 1,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -2000,
+            2000,
+            vec![
+                v1beta1::Coin {
+                    denom: "gwei".to_string(),
+                    amount: "1_000_000_000_000_000_000_000".to_string(), // 1k eth
+                },
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "6_000_000_000_000".to_string(), //6M osmo
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        )
+    }
+
     // admin should be on accs[0] if this is called to init
     /// this returns the testube app, contract_address, pool_id
     /// sender is overwritten by the admin

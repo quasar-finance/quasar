@@ -14,6 +14,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
@@ -76,6 +77,12 @@ pub(crate) fn execute_exact_deposit(
         coins_to_send.push(token1.clone());
     }
 
+    debug!(
+        deps,
+        "execute_exact_deposit",
+        format!("coins_to_send: {:?}", coins_to_send)
+    );
+
     let create_position_msg = create_position(
         deps,
         &env,
@@ -136,6 +143,12 @@ pub fn handle_deposit_create_position_reply(
         current_deposit.token1_in.checked_sub(Uint128::new(
             create_deposit_position_resp.amount1.parse::<u128>()?,
         ))?,
+    );
+
+    debug!(
+        deps,
+        "execute_exact_deposit",
+        format!("refunded: {:?}", refunded)
     );
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
