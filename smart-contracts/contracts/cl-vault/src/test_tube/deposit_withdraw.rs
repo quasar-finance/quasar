@@ -22,13 +22,19 @@ mod tests {
         let (app, contract_address, _cl_pool_id, _admin) = init_18dec();
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000_000_000_000, "gwei"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
                 Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
         let bob = app
             .init_account(&[
-                Coin::new(1_000_000_000_000_000_000_000, "gwei"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
                 Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
@@ -42,7 +48,10 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, "gwei"),
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
                     Coin::new(6_000_000_000, "uosmo"),
                 ], // 1eth = 6k osmo
                 &alice,
@@ -75,7 +84,11 @@ mod tests {
                 from_address: alice.address(),
                 to_address: contract_address.to_string(),
                 amount: vec![
-                    coin(9995_000_000_000, "gwei").into(),
+                    coin(
+                        9995_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    )
+                    .into(),
                     coin(1012, "uosmo").into(),
                 ],
             },
@@ -88,7 +101,10 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, "gwei"),
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
                     Coin::new(6_000_000_000, "uosmo"),
                 ], // 1eth = 6k osmo
                 &bob,
@@ -107,7 +123,7 @@ mod tests {
         //     .execute(
         //         contract_address.as_str(),
         //         &ExecuteMsg::ExactDeposit { recipient: None },
-        //         &[   Coin::new(1_000_000_000_000_000_000, "gwei"),
+        //         &[   Coin::new(1_000_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
         // Coin::new(6_000_000_000, "uosmo")],
         //         &alice,
         //     )
@@ -188,7 +204,10 @@ mod tests {
         let (app, contract_address, _cl_pool_id, _admin) = init_18dec();
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000_000_000_000_000, "gwei"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
                 Coin::new(1_000_000_000_000_000, "uosmo"),
             ])
             .unwrap();
@@ -204,8 +223,11 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, "gwei"),
-                    Coin::new(6_000_000_000, "uosmo"),
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(1_000_000_000, "uosmo"),
                 ],
                 &alice,
             )
@@ -216,8 +238,11 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, "gwei"),
-                    Coin::new(6_000_000_000, "uosmo"),
+                    Coin::new(
+                        1_000_000_000_000_000_000, // 1eth
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(1_000_000_000, "uosmo"), // 1k osmo
                 ],
                 &alice,
             )
@@ -228,8 +253,11 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, "gwei"),
-                    Coin::new(6_000_000_000, "uosmo"),
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(1_000_000_000, "uosmo"),
                 ],
                 &alice,
             )
@@ -257,15 +285,17 @@ mod tests {
                 )),
             )
             .unwrap();
-        println!("{:?}", user_assets);
+
+        // deposit alice 3x 1_000_000_000_000_000_000. we should be close to 3*10^18 for the eth asset
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(15000u128),
+            Uint128::from(3_000_000_000_000_000_000u128),
             "0.001"
         );
+        // deposit alice 3x 1_000_000_000. we should be close to 3*10^9 for the osmo asset
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(1516u128),
+            Uint128::from(3_000_000_000u128),
             "0.001"
         );
 
@@ -279,24 +309,25 @@ mod tests {
             .unwrap();
         assert_approx_eq!(
             user_assets_again.balances[0].amount,
-            Uint128::from(15000u128),
+            Uint128::from(3_000_000_000_000_000_000u128),
             "0.001"
         );
         assert_approx_eq!(
             user_assets_again.balances[1].amount,
-            Uint128::from(1516u128),
+            Uint128::from(3_000_000_000u128),
             "0.001"
         );
 
         let vault_assets: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
+        println!("vab {:?}", vault_assets_before);
         assert_approx_eq!(
             vault_assets.token0.amount,
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(15000u128))
+                .checked_add(Uint128::from(3_000_000_000u128))
                 .unwrap(),
             "0.001"
         );
@@ -306,7 +337,7 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(1516u128))
+                .checked_add(Uint128::from(3_000_000_000_000_000_000u128))
                 .unwrap(),
             "0.01"
         );
@@ -347,7 +378,10 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, "gwei"),
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
                     Coin::new(6_000_000_000, "uosmo"),
                 ],
                 &alice,
