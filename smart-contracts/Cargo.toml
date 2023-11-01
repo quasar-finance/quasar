@@ -2,6 +2,7 @@
 
 members = [
   # "contracts/icq",
+  "contracts/airdrop",
   "contracts/lp-strategy",
   # "contracts/ibc-transfer",
   "contracts/basic-vault",
