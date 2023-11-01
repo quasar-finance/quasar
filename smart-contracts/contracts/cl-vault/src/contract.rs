@@ -6,7 +6,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMs
 use crate::query::{
     query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
     query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, RangeAdminResponse,
+    query_user_rewards, query_vault_config, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -140,6 +140,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                     Ok(to_binary(&RangeAdminResponse {
                         address: range_admin.to_string(),
                     })?)
+                }
+                crate::msg::ClQueryMsg::VaultConfigQuery {} => {
+                    Ok(to_binary(&query_vault_config(deps)?)?)
                 }
             },
         },

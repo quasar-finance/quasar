@@ -1,5 +1,6 @@
 use crate::helpers::get_unused_balances;
 use crate::rewards::CoinList;
+use crate::state::{VaultConfig, VAULT_CONFIG};
 use crate::vault::concentrated_liquidity::get_position;
 use crate::{
     error::ContractResult,
@@ -68,6 +69,11 @@ pub struct RangeAdminResponse {
 #[cw_serde]
 pub struct TotalVaultTokenSupplyResponse {
     pub total: Uint128,
+}
+
+#[cw_serde]
+pub struct VaultConfigResponse {
+    pub config: VaultConfig,
 }
 
 pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
@@ -201,4 +207,12 @@ pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTo
         .parse::<u128>()?
         .into();
     Ok(TotalVaultTokenSupplyResponse { total })
+}
+
+/// queries the vault config
+pub fn query_vault_config(deps: Deps) -> ContractResult<VaultConfigResponse> {
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    Ok(VaultConfigResponse {
+        config: vault_config,
+    })
 }
