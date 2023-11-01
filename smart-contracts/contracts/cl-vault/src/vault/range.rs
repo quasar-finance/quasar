@@ -98,7 +98,7 @@ pub fn move_position(
     let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
     let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
 
-    execute_update_range_ticks(
+    move_position_ticks(
         deps,
         env,
         info,
@@ -113,7 +113,10 @@ pub fn modify_percentage() -> Result<Response, ContractError> {
 }
 
 pub fn create_new_position() -> Result<Response, ContractError> {
-    todo!()
+    // create a new position between the given ticks
+    // add free liquidity
+
+    // do any swaps(?)
 }
 
 pub fn delete_position() -> Result<Response, ContractError> {
@@ -125,7 +128,7 @@ pub fn delete_position() -> Result<Response, ContractError> {
 /// * so how much of each asset given liq would we have at current price
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
-pub fn execute_update_range_ticks(
+pub fn move_position_ticks(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
