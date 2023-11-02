@@ -237,6 +237,7 @@ pub mod initialize {
         // create new osmosis appchain instance.
         let app = OsmosisTestApp::new();
 
+        println!("admin balance: {:?}", admin_balance);
         // create new account with initial funds
         let admin = app.init_account(admin_balance).unwrap();
 
@@ -351,7 +352,7 @@ pub mod initialize {
             thesis: "provide big swap efficiency".to_string(),
             name: "good contract".to_string(),
         };
-        
+
         // Instantiate
         let contract = wasm
             .instantiate(
