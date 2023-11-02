@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	tmtypes "github.com/cometbft/cometbft/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -223,6 +224,18 @@ func (a appCreator) newApp(
 	if err != nil {
 		panic(err)
 	}
+	// SDK 47 - Set chain id
+	homeDir := cast.ToString(appOpts.Get(flags.FlagHome))
+	chainID := cast.ToString(appOpts.Get(flags.FlagChainID))
+	if chainID == "" {
+		// fallback to genesis chain-ida.
+		appGenesis, err := tmtypes.GenesisDocFromFile(filepath.Join(homeDir, "config", "genesis.json"))
+		if err != nil {
+			panic(err)
+		}
+
+		chainID = appGenesis.ChainID
+	}
 
 	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
 	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
@@ -255,6 +268,7 @@ func (a appCreator) newApp(
 		appOpts,
 		app.GetWasmEnabledProposals(),
 		wasmOpts,
+		baseapp.SetChainID(chainID),
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),

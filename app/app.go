@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
 	"io"
 	"net/http"
 	"os"
@@ -284,7 +285,7 @@ var (
 		tftypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	}
 
-	Upgrades = []upgrades.Upgrade{v0.Upgrade} // TODO - SDK47
+	Upgrades = []upgrades.Upgrade{v0.Upgrade, v2.Upgrade} // TODO - SDK47
 )
 
 var (
@@ -555,8 +556,8 @@ func New(
 		// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)). // TODO - SDK47
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+	// AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	// AddRoute(providertypes.RouterKey, ibcprovider.NewProviderProposalHandler(appKeepers.ProviderKeeper))
 	if len(wasmEnabledProposals) != 0 {
