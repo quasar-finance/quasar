@@ -36,7 +36,7 @@ use crate::{
     state::CURRENT_BALANCE,
 };
 
-use super::concentrated_liquidity::get_cl_pool_info;
+use super::concentrated_liquidity::{get_cl_pool_info, get_positions, get_position};
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -132,6 +132,7 @@ pub fn move_position_ticks(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    old_position_id: u64,
     lower_tick: i64,
     upper_tick: i64,
     max_slippage: Decimal,
@@ -141,7 +142,7 @@ pub fn move_position_ticks(
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
-    let position_breakdown = get_position(deps.storage, &deps.querier)?;
+    let position_breakdown = get_position(&deps.querier, old_position_id)?;
     let position = position_breakdown.position.unwrap();
 
     let withdraw_msg = MsgWithdrawPosition {

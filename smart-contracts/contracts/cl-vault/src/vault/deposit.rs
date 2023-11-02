@@ -47,6 +47,7 @@ pub(crate) fn execute_exact_deposit(
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
+    // TODO figure out how to distribute funds over the different positions
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
         .position_by_id(position_id)?
