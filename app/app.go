@@ -12,6 +12,7 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"github.com/CosmWasm/wasmd/x/wasm"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	// wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -386,6 +387,8 @@ func New(
 		tftypes.StoreKey,
 		qvestingmoduletypes.StoreKey, // TODO delete this if unused
 		authzkeeper.StoreKey,
+		consensusparamtypes.StoreKey,
+		crisistypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(
