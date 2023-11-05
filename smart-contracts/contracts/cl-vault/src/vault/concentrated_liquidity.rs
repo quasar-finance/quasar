@@ -47,7 +47,6 @@ pub fn create_position(
     Ok(create_position)
 }
 
-// TODO verify that liquidity amount should be Decimal256
 pub fn withdraw_from_position(
     env: &Env,
     position_id: u64,

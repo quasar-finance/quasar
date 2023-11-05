@@ -17,12 +17,12 @@ use crate::{
     helpers::get_spot_price,
     helpers::get_unused_balances,
     math::tick::price_to_tick,
-    msg::{ExecuteMsg, MergePositionMsg, ModifyRange},
+    msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::CURRENT_SWAP,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+        SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::concentrated_liquidity::create_position,
     vault::merge::MergeResponse,
@@ -36,55 +36,7 @@ use crate::{
     state::CURRENT_BALANCE,
 };
 
-use super::concentrated_liquidity::{get_cl_pool_info, get_positions, get_position};
-
-fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    let admin = RANGE_ADMIN.load(storage)?;
-    if admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    Ok(())
-}
-
-fn _get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
-    Ok(RANGE_ADMIN.load(deps.storage)?)
-}
-
-pub fn execute_update_range(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ModifyRange,
-) -> Result<Response, ContractError> {
-    match msg {
-        ModifyRange::MovePosition {
-            old_position_id,
-            new_lower_price,
-            new_upper_price,
-            max_slippage,
-        } => move_position(
-            deps,
-            env,
-            info,
-            old_position_id,
-            new_lower_price,
-            new_upper_price,
-            max_slippage,
-        ),
-        ModifyRange::ModifyPercentage {
-            position_id,
-            old_percentage,
-            new_percentage,
-        } => modify_percentage(),
-        ModifyRange::CreatePosition {
-            lower_price,
-            upper_price,
-            max_slippage,
-            max_percentage,
-        } => create_new_position(),
-        ModifyRange::DeletePosition { position_id } => delete_position(),
-    }
-}
+use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_positions, get_position};
 
 pub fn move_position(
     deps: DepsMut,
@@ -102,26 +54,13 @@ pub fn move_position(
         deps,
         env,
         info,
+        old_position_id,
         lower_tick.try_into().unwrap(),
         upper_tick.try_into().unwrap(),
         max_slippage,
     )
 }
 
-pub fn modify_percentage() -> Result<Response, ContractError> {
-    todo!()
-}
-
-pub fn create_new_position() -> Result<Response, ContractError> {
-    // create a new position between the given ticks
-    // add free liquidity
-
-    // do any swaps(?)
-}
-
-pub fn delete_position() -> Result<Response, ContractError> {
-    todo!()
-}
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range
@@ -137,8 +76,6 @@ pub fn move_position_ticks(
     upper_tick: i64,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    assert_range_admin(deps.storage, &info.sender)?;
-
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway

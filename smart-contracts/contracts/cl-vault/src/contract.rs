@@ -18,7 +18,7 @@ use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_positio
 use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
 };
-use crate::vault::range::{
+use crate::vault::range::move_position::{
     execute_update_range, handle_initial_create_position_reply,
     handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
     handle_withdraw_position_reply,
