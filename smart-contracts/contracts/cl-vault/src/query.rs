@@ -6,7 +6,7 @@ use crate::{
     state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, USER_REWARDS, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, OverflowError, OverflowOperation, StdError, Uint128};
+use cosmwasm_std::{coin, Coin, Deps, OverflowError, OverflowOperation, StdError, Uint128, Order};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -99,9 +99,10 @@ pub fn query_pool(deps: Deps) -> ContractResult<PoolResponse> {
 }
 
 pub fn query_positions(deps: Deps) -> ContractResult<PositionResponse> {
-    let positions = POSITIONS.load(deps.storage)?;
-    Ok(PositionResponse { positions })
+    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS.range(deps.storage, None, None, Order::Ascending).collect();
+    Ok(PositionResponse { positions: positions?.into_iter().map(|(_, p)| p).collect() })
 }
+
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
     let balance = SHARES
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?

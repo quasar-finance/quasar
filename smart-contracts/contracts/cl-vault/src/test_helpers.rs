@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use cosmwasm_std::testing::{BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
     from_binary, to_binary, Addr, BankQuery, Binary, Coin, ContractResult as CwContractResult,
-    Decimal, Empty, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    Decimal, Empty, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest, Uint128,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 
@@ -204,8 +204,15 @@ pub fn mock_deps_with_querier_with_balance(
             },
         )
         .unwrap();
-    POSITION
-        .save(storage, &crate::state::Position { position_id: 1 })
+    POSITIONS
+        .save(
+            storage,
+            1,
+            &crate::state::Position {
+                position_id: 1,
+                ratio: Uint128::one(),
+            },
+        )
         .unwrap();
 
     deps
@@ -277,8 +284,15 @@ pub fn mock_deps_with_querier(
             },
         )
         .unwrap();
-    POSITION
-        .save(storage, &crate::state::Position { position_id: 1 })
+    POSITIONS
+        .save(
+            storage,
+            1,
+            &crate::state::Position {
+                position_id: 1,
+                ratio: Uint128::one(),
+            },
+        )
         .unwrap();
 
     deps

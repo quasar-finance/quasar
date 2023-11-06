@@ -64,13 +64,11 @@ pub fn withdraw_from_position(
 
 pub fn get_position(
     querier: &QuerierWrapper,
-    position_id: u64
+    position_id: u64,
 ) -> Result<FullPositionBreakdown, ContractError> {
-
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
     Ok(cl_querier.position_by_id(position_id)?.position.unwrap())
 }
-
 
 pub fn get_positions(
     storage: &dyn Storage,

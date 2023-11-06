@@ -19,10 +19,11 @@ use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
 };
 use crate::vault::range::move_position::{
-    execute_update_range, handle_initial_create_position_reply,
+    handle_initial_create_position_reply,
     handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
     handle_withdraw_position_reply,
 };
+use crate::vault::range::update_range::execute_update_range;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;

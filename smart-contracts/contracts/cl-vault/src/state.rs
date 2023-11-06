@@ -4,7 +4,7 @@ use cw_storage_plus::{Deque, Item, Map};
 
 use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
-use crate::vault::range::SwapDirection;
+use crate::vault::range::move_position::SwapDirection;
 
 /// metadata useful for display purposes
 #[cw_serde]
@@ -52,15 +52,15 @@ impl PoolConfig {
 
 pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 
-/// POSITION
+/// a position managed by the contract
 #[cw_serde]
 pub struct Position {
     pub position_id: u64,
     pub ratio: Uint128,
 }
 
-pub const POSITIONS: Item<Vec<Position>> = Item::new("positions");
-
+// positions in the contract, the key should be the same as the position's id in Osmosis
+pub const POSITIONS: Map<u64, Position> = Map::new("positions");
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 /// The merge of positions currently being executed
@@ -102,6 +102,8 @@ pub struct ModifyRangeState {
     pub max_slippage: Decimal,
     // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
+    // the ratio of the position we are moving, and thus also of the final position
+    pub position_ratio: Uint128,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

@@ -117,10 +117,11 @@ pub fn handle_instantiate_create_position_reply(
     let response: MsgCreatePositionResponse = data.try_into()?;
     POSITIONS.save(
         deps.storage,
-        &vec![Position {
+        response.position_id,
+        &Position {
             position_id: response.position_id,
             ratio: Uint128::one(),
-        }],
+        },
     )?;
 
     let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);

@@ -22,7 +22,7 @@ use crate::{
     state::CURRENT_SWAP,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        SWAP_DEPOSIT_MERGE_STATE,
+        POSITIONS, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::concentrated_liquidity::create_position,
     vault::merge::MergeResponse,
@@ -36,7 +36,7 @@ use crate::{
     state::CURRENT_BALANCE,
 };
 
-use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_positions, get_position};
+use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position, get_positions};
 
 pub fn move_position(
     deps: DepsMut,
@@ -61,7 +61,6 @@ pub fn move_position(
     )
 }
 
-
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range
 /// * so how much of each asset given liq would we have at current price
@@ -82,6 +81,8 @@ pub fn move_position_ticks(
     let position_breakdown = get_position(&deps.querier, old_position_id)?;
     let position = position_breakdown.position.unwrap();
 
+    // fetch the position's ratio
+
     let withdraw_msg = MsgWithdrawPosition {
         position_id: position.position_id,
         sender: env.contract.address.to_string(),
@@ -98,6 +99,7 @@ pub fn move_position_ticks(
             upper_tick,
             new_range_position_ids: vec![],
             max_slippage,
+            position_ratio: todo!(),
         }),
     )?;
 
@@ -310,20 +312,25 @@ pub fn do_swap_deposit_merge(
     } else {
         // if we have not tokens to swap, that means all tokens we correctly used in the create position
         // this means we can save the position id of the first create_position
-        POSITION.save(
+        // if position_id is None, then no first position was ever created, meaning we should never hit this else case.
+        let position_id = position_id.unwrap();
+        let modify = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+
+        POSITIONS.save(
             deps.storage,
+            position_id,
             &Position {
-                // if position not found, then we should panic here anyway ?
-                position_id: position_id.expect("position id should be set if no swap is needed"),
+                position_id,
+                ratio: modify.position_ratio,
             },
-        )?;
+        );
 
         SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
         return Ok(Response::new()
             .add_attribute("action", "swap_deposit_merge")
             .add_attribute("method", "no_swap")
-            .add_attribute("new_position", position_id.unwrap().to_string()));
+            .add_attribute("new_position", position_id.to_string()));
     };
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
@@ -467,6 +474,9 @@ pub fn handle_iteration_create_position_reply(
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
         }));
+
+    // TODO remove swap_deposit_merge_state.target_range_position_ids from the POSITIONS MAP, since they will be merged
+
     // merge our position with the main position
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
@@ -494,10 +504,14 @@ pub fn handle_iteration_create_position_reply(
 pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     let merge_response: MergeResponse = data.try_into()?;
 
-    POSITION.save(
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+
+    POSITIONS.save(
         deps.storage,
+        merge_response.new_position_id,
         &Position {
             position_id: merge_response.new_position_id,
+            ratio: mrs.position_ratio,
         },
     )?;
 
@@ -521,7 +535,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
-        Addr, Decimal, SubMsgResponse, SubMsgResult,
+        Addr, Decimal, SubMsgResponse, SubMsgResult, Uint128,
     };
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
@@ -529,35 +543,8 @@ mod tests {
         rewards::CoinList,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
+        vault::range::move_position::move_position,
     };
-
-    #[test]
-    fn test_assert_range_admin() {
-        let mut deps = mock_dependencies();
-        let info = mock_info("addr0000", &[]);
-
-        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
-
-        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap();
-
-        let info = mock_info("addr0001", &[]);
-        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
-
-        let info = mock_info("addr0000", &[]);
-        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
-
-        super::assert_range_admin(&mut deps.storage, &Addr::unchecked("someoneelse")).unwrap_err();
-    }
-
-    #[test]
-    fn test_get_range_admin() {
-        let mut deps = mock_dependencies();
-        let info = mock_info("addr0000", &[]);
-
-        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
-
-        assert_eq!(super::_get_range_admin(deps.as_ref()).unwrap(), info.sender);
-    }
 
     #[test]
     fn test_execute_update_range() {
@@ -569,10 +556,11 @@ mod tests {
         let upper_price = Decimal::from_str("100.20").unwrap();
         let max_slippage = Decimal::from_str("0.5").unwrap();
 
-        let res = super::execute_update_range(
+        let res = move_position(
             deps.as_mut(),
             env,
             info,
+            1, // hardcoded
             lower_price,
             upper_price,
             max_slippage,
@@ -610,6 +598,7 @@ mod tests {
                     upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
                     new_range_position_ids: vec![],
                     max_slippage: Decimal::zero(),
+                    position_ratio: Uint128::one(),
                 }),
             )
             .unwrap();
@@ -669,6 +658,7 @@ mod tests {
                     upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
                     new_range_position_ids: vec![],
                     max_slippage: Decimal::zero(),
+                    position_ratio: Uint128::one(),
                 }),
             )
             .unwrap();

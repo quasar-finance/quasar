@@ -1,10 +1,12 @@
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Storage, Addr, Response};
+use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Response, Storage};
 use cw_utils::nonpayable;
 
-use crate::{msg::ModifyRange, ContractError, state::RANGE_ADMIN};
+use crate::{msg::ModifyRange, state::RANGE_ADMIN, ContractError};
 
-use super::{move_position::move_position, modify_percentage::modify_percentage, create_position::create_new_position, delete_position::delete_position};
-
+use super::{
+    create_position::create_new_position, delete_position::delete_position,
+    modify_percentage::modify_percentage, move_position::move_position,
+};
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -50,5 +52,34 @@ pub fn execute_update_range(
             max_percentage,
         } => create_new_position(),
         ModifyRange::DeletePosition { position_id } => delete_position(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_info},
+        Addr,
+    };
+
+    use super::*;
+    use crate::state::RANGE_ADMIN;
+
+    #[test]
+    fn test_assert_range_admin() {
+        let mut deps = mock_dependencies();
+        let info = mock_info("addr0000", &[]);
+
+        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
+
+        assert_range_admin(&mut deps.storage, &info.sender).unwrap();
+
+        let info = mock_info("addr0001", &[]);
+        assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
+
+        let info = mock_info("addr0000", &[]);
+        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
+
+        assert_range_admin(&mut deps.storage, &Addr::unchecked("someoneelse")).unwrap_err();
     }
 }

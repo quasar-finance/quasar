@@ -290,6 +290,7 @@ pub fn get_max_utilization_for_ratio(
     }
 }
 
+// TODO figure
 pub fn get_liquidity_amount_for_unused_funds(
     deps: DepsMut,
     env: &Env,
