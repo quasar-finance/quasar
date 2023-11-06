@@ -198,9 +198,9 @@ pub fn handle_deposit_create_position_reply(
         create_deposit_position_resp.position_id,
     ];
     let merge_msg =
-        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-            position_ids,
-        }));
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
+            crate::msg::CallbackExecuteMsg::Merge(MergePositionMsg { position_ids }),
+        ));
     // merge our position with the main position
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {

@@ -9,8 +9,9 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply,
+    execute_callback_distribute_rewards, execute_distribute_rewards,
+    handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+    handle_distribute_rewards_reply,
 };
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
@@ -19,9 +20,8 @@ use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
 };
 use crate::vault::range::move_position::{
-    handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
-    handle_withdraw_position_reply,
+    handle_initial_create_position_reply, handle_iteration_create_position_reply,
+    handle_merge_response, handle_swap_reply, handle_withdraw_position_reply,
 };
 use crate::vault::range::update_range::execute_update_range;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
@@ -69,7 +69,6 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => {
                     execute_update_range(deps, env, info, msg)
                 }
@@ -79,6 +78,14 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
                 }
+                crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(msg) => match msg {
+                    crate::msg::CallbackExecuteMsg::DistributeRewards() => {
+                        execute_callback_distribute_rewards(deps, env)
+                    }
+                    crate::msg::CallbackExecuteMsg::Merge(msg) => {
+                        execute_merge(deps, env, info, msg)
+                    }
+                },
             }
         }
     }

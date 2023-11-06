@@ -7,9 +7,9 @@ pub enum Replies {
     DepositCreatePosition = 1,
     // create the initial position while instantiating the contract
     InstantiateCreatePosition,
-    // when handling rewards, we first collect incentives, then collect rewards
+    // when handling rewards, we collect incentives gained by a position and save them in state
     CollectIncentives,
-    // after gathering rewards, we divide them over share holders
+    // when handling rewards, we collect spread rewards gained by a position and save them in state
     CollectSpreadRewards,
 
     // withdraw position

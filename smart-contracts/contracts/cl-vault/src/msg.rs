@@ -15,8 +15,8 @@ pub enum ExtensionExecuteMsg {
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRange),
-    /// provides a fungify callback interface for the contract to use
-    Merge(MergePositionMsg),
+    /// handle any callback messages of the contract
+    CallbackExecuteMsg(CallbackExecuteMsg),
     /// Distribute any rewards over all users
     DistributeRewards {},
     /// Claim rewards belonging to a single user
@@ -43,6 +43,15 @@ pub enum AdminExtensionExecuteMsg {
         updates: VaultConfig,
     },
     ClaimStrategistRewards {},
+}
+
+/// Callback messages
+#[cw_serde]
+pub enum CallbackExecuteMsg {
+    /// distribute any already gathered from the contract state to all share holders
+    DistributeRewards(),
+    /// provides a fungify callback interface for the contract to use
+    Merge(MergePositionMsg),
 }
 
 /// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position

@@ -471,9 +471,11 @@ pub fn handle_iteration_create_position_reply(
 
     // call merge
     let merge_msg =
-        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-            position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
-        }));
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
+            crate::msg::CallbackExecuteMsg::Merge(MergePositionMsg {
+                position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
+            }),
+        ));
 
     // TODO remove swap_deposit_merge_state.target_range_position_ids from the POSITIONS MAP, since they will be merged
 
