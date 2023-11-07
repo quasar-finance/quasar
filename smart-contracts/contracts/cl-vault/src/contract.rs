@@ -212,7 +212,9 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
         burn_from_address: env.contract.address.to_string(),
     };
 
-    Ok(Response::new().add_attribute("migrate", "successful"))
+    Ok(Response::new()
+        .add_message(burn)
+        .add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]
