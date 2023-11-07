@@ -103,7 +103,7 @@ pub fn execute_withdraw(
         // TODO dispatch the vec of withdraw msgs, can we banksend each seperate
         .add_submessages(
             withdraw_msg
-                .iter()
+                .into_iter()
                 .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUser as u64)),
         ))
 }
@@ -118,6 +118,7 @@ fn withdraw(
         .iter()
         .map(|position| {
             let existing_liquidity: Decimal256 = position
+                .1
                 .position
                 .ok_or(ContractError::PositionNotFound)?
                 .liquidity
@@ -140,7 +141,7 @@ fn withdraw(
 
             Ok(withdraw_from_position(
                 env,
-                position.position.unwrap().position_id,
+                position.1.position.unwrap().position_id,
                 user_liquidity,
             )?)
         })

@@ -11,7 +11,6 @@ use crate::reply::Replies;
 use crate::rewards::{
     execute_callback_distribute_rewards, execute_distribute_rewards,
     handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
-    handle_distribute_rewards_reply,
 };
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;

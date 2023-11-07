@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
+use crate::state::{Position, ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -10,6 +10,7 @@ use cosmwasm_std::{
     QuerierWrapper, Storage, Uint128, Uint256,
 };
 
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::FullPositionBreakdown;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
@@ -290,7 +291,45 @@ pub fn get_max_utilization_for_ratio(
     }
 }
 
-// TODO figure
+// TODO, do we allocate to top up
+pub fn allocate_funds_per_position(
+    cur_price: Decimal,
+    positions: Vec<(Position, FullPositionBreakdown)>,
+    asset0: Uint128,
+    asset1: Uint128,
+) -> Result<(Position, Uint128, Uint128), ContractError> {
+    // per position, calculate the ratio of asset1 and asset2 a position needs
+    let positions: Result<Vec<(Position, FullPositionBreakdown, Decimal)>, ContractError> =
+        positions
+            .into_iter()
+            .map(|(p, fp)| {
+                let amount0 = fp
+                    .asset0
+                    .map(|c| c.amount.parse()?)
+                    .unwrap_or(Uint128::zero());
+                let amount1 = fp
+                    .asset1
+                    .map(|c| c.amount.parse()?)
+                    .unwrap_or(Uint128::zero());
+                Ok((p, fp, Decimal::from_ratio(amount0, amount1)))
+            })
+            .collect();
+
+    let total_ratio = positions?
+        .iter()
+        .fold(Uint128::zero(), |acc, (p, _, _)| acc + p.ratio);
+
+    // figure get the total sums per asset0 and asset 1 (position ratio times assetX ratio in position)
+    let positions: Result<Vec<(Position, FullPositionBreakdown, Decimal)>, ContractError> =
+        positions?.into_iter().map(|(p, fp, r)| {
+            Ok(p, fp, (p.ratio * Decimal::from_ratio(p.ratio, total_ratio)))
+        });
+
+    // divide the assets over the positions
+    todo!()
+}
+
+/// get_liquidity_amount_for_unused_funds basically simulates an any deposit against the vault
 pub fn get_liquidity_amount_for_unused_funds(
     deps: DepsMut,
     env: &Env,
@@ -299,6 +338,7 @@ pub fn get_liquidity_amount_for_unused_funds(
     // first get the ratio of token0:token1 in the position.
     let p = get_position(deps.storage, &deps.querier)?;
     // if there is no position, then we can assume that there are 0 unused funds
+    // TODO this might now be true with multirange
     if p.position.is_none() {
         return Ok(Decimal256::zero());
     }
@@ -323,7 +363,7 @@ pub fn get_liquidity_amount_for_unused_funds(
         .find_coin(token0.denom)
         .amount
         .checked_sub(additional_excluded_funds.0)?
-        .into();
+        .into(); 
     let unused_t1: Uint256 = tokens
         .find_coin(token1.denom)
         .amount

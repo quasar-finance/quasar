@@ -1,14 +1,15 @@
 use cosmwasm_std::{
-    Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult,
-    Uint128,
+    to_binary, Addr, Attribute, CosmosMsg, Decimal, Deps, DepsMut, Env, Order, Response, StdError,
+    SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use crate::{
     error::ContractResult,
+    msg::ExtensionExecuteMsg,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
-        VAULT_DENOM,
+        Position, CURRENT_REWARDS, POSITIONS, SHARES, STRATEGIST_REWARDS, USER_REWARDS,
+        VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -25,12 +26,28 @@ use super::helpers::CoinList;
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
-    let msg = collect_incentives(deps.as_ref(), env)?;
+    let incentive_msgs = collect_incentives(deps.as_ref(), env)?;
+    let rewards_msgs = collect_spread_rewards(deps.as_ref(), env)?;
 
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
-        Replies::CollectIncentives as u64,
-    )))
+    // TODO, we should dispatch 1 collect incentives per position, 1 collect spread rewards per position, and after both messages, a distribute rewards
+    Ok(Response::new()
+        .add_submessages(
+            incentive_msgs
+                .into_iter()
+                .map(|m| SubMsg::reply_on_success(m, Replies::CollectIncentives as u64)),
+        )
+        .add_submessages(
+            rewards_msgs
+                .into_iter()
+                .map(|m| SubMsg::reply_on_success(m, Replies::CollectIncentives as u64)),
+        )
+        .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_binary(&ExtensionExecuteMsg::CallbackExecuteMsg(
+                crate::msg::CallbackExecuteMsg::DistributeRewards(),
+            ))?,
+            funds: vec![],
+        })))
 }
 
 pub fn handle_collect_incentives_reply(
@@ -60,11 +77,7 @@ pub fn handle_collect_incentives_reply(
     )?;
 
     // collect the spread rewards
-    let msg = collect_spread_rewards(deps.as_ref(), env)?;
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
-        Replies::CollectSpreadRewards as u64,
-    )))
+    Ok(Response::new())
 }
 
 pub fn handle_collect_spread_rewards_reply(
@@ -84,17 +97,29 @@ pub fn handle_collect_spread_rewards_reply(
         }));
 
     let response: MsgCollectSpreadRewardsResponse = data?;
-    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
-    rewards.update_rewards(response.collected_spread_rewards)?;
-
-    // update the rewards map against all user's locked up vault shares
-    distribute_rewards(deps, rewards)?;
+    CURRENT_REWARDS.update(
+        deps.storage,
+        |mut rewards| -> Result<CoinList, ContractError> {
+            rewards.update_rewards(response.collected_spread_rewards)?;
+            Ok(rewards)
+        },
+    )?;
 
     // TODO add a nice response
     Ok(Response::new())
 }
 
-fn distribute_rewards(
+pub fn execute_callback_distribute_rewards(
+    deps: DepsMut,
+    _env: Env,
+) -> Result<Response, ContractError> {
+    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
+
+    let attr = do_distribute_rewards(deps, rewards)?;
+    Ok(Response::new().add_attributes(attr))
+}
+
+fn do_distribute_rewards(
     mut deps: DepsMut,
     mut rewards: CoinList,
 ) -> Result<Vec<Attribute>, ContractError> {
@@ -152,20 +177,33 @@ fn distribute_rewards(
     )])
 }
 
-fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
-    let position = POSITION.load(deps.storage)?;
-    Ok(MsgCollectIncentives {
-        position_ids: vec![position.position_id],
-        sender: env.contract.address.into(),
-    })
+fn collect_incentives(deps: Deps, env: Env) -> Result<Vec<MsgCollectIncentives>, ContractError> {
+    let position: Result<Vec<(_, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(position?
+        .into_iter()
+        .map(|(_, p)| MsgCollectIncentives {
+            position_ids: vec![p.position_id],
+            sender: env.contract.address.into(),
+        })
+        .collect())
 }
 
-fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadRewards, ContractError> {
-    let position = POSITION.load(deps.storage)?;
-    Ok(MsgCollectSpreadRewards {
-        position_ids: vec![position.position_id],
-        sender: env.contract.address.into(),
-    })
+fn collect_spread_rewards(
+    deps: Deps,
+    env: Env,
+) -> Result<Vec<MsgCollectSpreadRewards>, ContractError> {
+    let position: Result<Vec<(_, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(position?
+        .into_iter()
+        .map(|(_, p)| MsgCollectSpreadRewards {
+            position_ids: vec![p.position_id],
+            sender: env.contract.address.into(),
+        })
+        .collect())
 }
 
 #[cfg(test)]
@@ -186,33 +224,23 @@ mod tests {
     fn test_claim_rewards() {
         let position_id = 2;
         let mut deps = mock_dependencies();
-        let _qq = QuasarQuerier::new(
-            FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id,
-                    address: "bob".to_string(),
-                    pool_id: 1,
-                    lower_tick: 1,
-                    upper_tick: 100,
-                    join_time: None,
-                    liquidity: "123.214".to_string(),
-                }),
-                asset0: Some(coin(1000, "uosmo").into()),
-                asset1: Some(coin(1000, "uosmo").into()),
-                claimable_spread_rewards: vec![coin(1000, "uosmo").into()],
-                claimable_incentives: vec![coin(123, "uatom").into()],
-                forfeited_incentives: vec![],
-            },
-            100,
-        );
         let env = mock_env();
-        let position = Position { position_id };
-        POSITION.save(deps.as_mut().storage, &position).unwrap();
+        let position = Position {
+            position_id,
+            ratio: Uint128::one(),
+        };
+        POSITIONS
+            .save(deps.as_mut().storage, position_id, &position)
+            .unwrap();
 
         let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
-            collect_incentives(deps.as_ref(), env).unwrap().into()
+            collect_incentives(deps.as_ref(), env).unwrap()[0].into()
+        );
+        assert_eq!(
+            resp.messages[1].msg,
+            collect_spread_rewards(deps.as_ref(), env).unwrap()[0].into()
         )
     }
 

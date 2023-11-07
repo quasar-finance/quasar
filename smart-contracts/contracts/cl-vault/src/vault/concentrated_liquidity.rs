@@ -1,4 +1,6 @@
-use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{
+    Coin, Decimal256, DepsMut, Env, Order, QuerierWrapper, StdError, Storage, Uint128,
+};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
     Pool,
@@ -6,7 +8,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
-use crate::state::POSITIONS;
+use crate::state::{Position, POSITIONS};
 use crate::{
     helpers::{round_up_to_nearest_multiple, sort_tokens},
     state::POOL_CONFIG,
@@ -73,15 +75,17 @@ pub fn get_position(
 pub fn get_positions(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-) -> Result<Vec<FullPositionBreakdown>, ContractError> {
-    let position_ids = POSITIONS.load(storage)?;
+) -> Result<Vec<(Position, FullPositionBreakdown)>, ContractError> {
+    let position_ids: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(storage, None, None, Order::Ascending)
+        .collect();
 
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
-    let positions: Result<Vec<FullPositionBreakdown>, ContractError> = position_ids
-        .iter()
-        .map(|id| Ok(cl_querier.position_by_id(id.position_id)?.position.unwrap()))
+    let positions: Result<Vec<(Position, FullPositionBreakdown)>, StdError> = position_ids?
+        .into_iter()
+        .map(|(id, position)| Ok((position, cl_querier.position_by_id(id)?.position.unwrap())))
         .collect();
-    positions
+    Ok(positions?)
 }
 
 pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, ContractError> {

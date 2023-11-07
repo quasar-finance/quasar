@@ -6,7 +6,7 @@ use crate::{
     state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, USER_REWARDS, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, OverflowError, OverflowOperation, StdError, Uint128, Order};
+use cosmwasm_std::{coin, Coin, Deps, Order, OverflowError, OverflowOperation, StdError, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -99,8 +99,12 @@ pub fn query_pool(deps: Deps) -> ContractResult<PoolResponse> {
 }
 
 pub fn query_positions(deps: Deps) -> ContractResult<PositionResponse> {
-    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS.range(deps.storage, None, None, Order::Ascending).collect();
-    Ok(PositionResponse { positions: positions?.into_iter().map(|(_, p)| p).collect() })
+    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(PositionResponse {
+        positions: positions?.into_iter().map(|(_, p)| p).collect(),
+    })
 }
 
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
@@ -123,14 +127,14 @@ pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
     let (asset0, asset1) = positions.iter().try_fold(
         (0_u128, 0_u128),
         |(acc0, acc1), i| -> Result<(u128, u128), ContractError> {
-            let asset0 = i
-                .asset0
-                .map(|v| v.amount.parse::<u128>().unwrap())
-                .unwrap_or(0_u128);
-            let asset1 = i
-                .asset1
-                .map(|v| v.amount.parse::<u128>().unwrap())
-                .unwrap_or(0_u128);
+            let asset0 =
+                i.1.asset0
+                    .map(|v| v.amount.parse::<u128>().unwrap())
+                    .unwrap_or(0_u128);
+            let asset1 =
+                i.1.asset1
+                    .map(|v| v.amount.parse::<u128>().unwrap())
+                    .unwrap_or(0_u128);
 
             Ok((
                 acc0.checked_add(asset0).ok_or_else(|| {
