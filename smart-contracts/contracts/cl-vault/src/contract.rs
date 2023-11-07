@@ -13,6 +13,7 @@ use crate::rewards::{
     execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
+use crate::state::{SHARES, VAULT_DENOM};
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -27,8 +28,12 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{
+    coin, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
+};
 use cw2::set_contract_version;
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgBurn;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -175,7 +180,38 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let storage = deps.storage;
+
+    let range = SHARES
+        .range(storage, None, None, cosmwasm_std::Order::Ascending)
+        .into_iter();
+
+    let mut total_old = Uint128::zero();
+    let mut total_new = Uint128::zero();
+    for user_share in range {
+        let (user, shares) = user_share?;
+        let new_shares = shares
+            .checked_div(Uint128::from(10u128).pow(18))
+            .expect("Underflow");
+        SHARES.save(storage, user, &new_shares)?;
+
+        total_old = total_old.checked_add(shares)?;
+        total_new = total_new.checked_add(new_shares)?;
+    }
+
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+
+    let burn = MsgBurn {
+        amount: Some(OsmoCoin {
+            amount: total_old.checked_sub(total_new)?.to_string(),
+            denom: vault_denom,
+        }),
+        // todo: do we burn from the holders directly?
+        sender: env.contract.address.to_string(),
+        burn_from_address: env.contract.address.to_string(),
+    };
+
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
