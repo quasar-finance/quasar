@@ -13,22 +13,28 @@ mod tests {
         query::{
             AssetsBalanceResponse, PositionResponse, TotalAssetsResponse, UserSharesBalanceResponse,
         },
-        test_tube::default_init,
+        test_tube::{default_init, initialize::initialize::init_18dec},
     };
 
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = init_18dec();
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
                 Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
         let bob = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
                 Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
@@ -41,7 +47,13 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5000, "uatom"), Coin::new(5000, "uosmo")],
+                &[
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(6_000_000_000, "uosmo"),
+                ], // 1eth = 6k osmo
                 &alice,
             )
             .unwrap();
@@ -71,7 +83,14 @@ mod tests {
             MsgSend {
                 from_address: alice.address(),
                 to_address: contract_address.to_string(),
-                amount: vec![coin(9995, "uatom").into(), coin(1012, "uosmo").into()],
+                amount: vec![
+                    coin(
+                        9995_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    )
+                    .into(),
+                    coin(1012, "uosmo").into(),
+                ],
             },
             &alice,
         )
@@ -81,7 +100,13 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+                &[
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(6_000_000_000, "uosmo"),
+                ], // 1eth = 6k osmo
                 &bob,
             )
             .unwrap();
@@ -98,7 +123,8 @@ mod tests {
         //     .execute(
         //         contract_address.as_str(),
         //         &ExecuteMsg::ExactDeposit { recipient: None },
-        //         &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+        //         &[   Coin::new(1_000_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
+        // Coin::new(6_000_000_000, "uosmo")],
         //         &alice,
         //     )
         //     .unwrap();
@@ -175,11 +201,14 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = init_18dec();
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
+                Coin::new(1_000_000_000_000_000, "uosmo"),
             ])
             .unwrap();
 
@@ -193,7 +222,13 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+                &[
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(1_000_000_000, "uosmo"),
+                ],
                 &alice,
             )
             .unwrap();
@@ -202,7 +237,13 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+                &[
+                    Coin::new(
+                        1_000_000_000_000_000_000, // 1eth
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(1_000_000_000, "uosmo"), // 1k osmo
+                ],
                 &alice,
             )
             .unwrap();
@@ -211,7 +252,13 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+                &[
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(1_000_000_000, "uosmo"),
+                ],
                 &alice,
             )
             .unwrap();
@@ -238,14 +285,17 @@ mod tests {
                 )),
             )
             .unwrap();
+
+        // deposit alice 3x 1_000_000_000_000_000_000. we should be close to 3*10^18 for the eth asset
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(15000u128),
+            Uint128::from(3_000_000_000_000_000_000u128),
             "0.001"
         );
+        // deposit alice 3x 1_000_000_000. we should be close to 3*10^9 for the osmo asset
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(1516u128),
+            Uint128::from(3_000_000_000u128),
             "0.001"
         );
 
@@ -259,24 +309,25 @@ mod tests {
             .unwrap();
         assert_approx_eq!(
             user_assets_again.balances[0].amount,
-            Uint128::from(15000u128),
+            Uint128::from(3_000_000_000_000_000_000u128),
             "0.001"
         );
         assert_approx_eq!(
             user_assets_again.balances[1].amount,
-            Uint128::from(1516u128),
+            Uint128::from(3_000_000_000u128),
             "0.001"
         );
 
         let vault_assets: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
+        println!("vab {:?}", vault_assets_before);
         assert_approx_eq!(
             vault_assets.token0.amount,
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(15000u128))
+                .checked_add(Uint128::from(3_000_000_000u128))
                 .unwrap(),
             "0.001"
         );
@@ -286,7 +337,7 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(1516u128))
+                .checked_add(Uint128::from(3_000_000_000_000_000_000u128))
                 .unwrap(),
             "0.01"
         );
@@ -326,7 +377,13 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+                &[
+                    Coin::new(
+                        1_000_000_000_000_000_000,
+                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                    ),
+                    Coin::new(6_000_000_000, "uosmo"),
+                ],
                 &alice,
             )
             .unwrap();
