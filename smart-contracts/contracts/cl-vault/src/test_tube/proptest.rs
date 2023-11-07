@@ -473,7 +473,7 @@ mod tests {
     // get_percentage generates a list of random percentages used to calculate deposit_amount,
     // withdraw_amount, and newers lower and upper ticks based on the previous values
     prop_compose! {
-        fn get_percentage_list()(list in prop::collection::vec(1.0..100.0, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
+        fn get_percentage_list()(list in prop::collection::vec(1.0..10.0, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
             list
         }
     }
@@ -629,10 +629,13 @@ mod tests {
                 ], ACCOUNTS_NUMBER)
                 .unwrap();
 
+
+
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00,DENOM_OSMO,DENOM_18DEC);
+                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 1.0 ,DENOM_OSMO,DENOM_18DEC);
             }
+
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {

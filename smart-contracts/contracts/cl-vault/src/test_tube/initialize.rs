@@ -237,7 +237,6 @@ pub mod initialize {
         // create new osmosis appchain instance.
         let app = OsmosisTestApp::new();
 
-        println!("admin balance: {:?}", admin_balance);
         // create new account with initial funds
         let admin = app.init_account(admin_balance).unwrap();
 
@@ -278,8 +277,6 @@ pub mod initialize {
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        println!("pool: {:?}", pool);
-
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
                                                                // create a basic position on the pool
         let initial_position = MsgCreatePosition {
@@ -292,7 +289,6 @@ pub mod initialize {
             token_min_amount1: token_min_amount1.to_string(),
         };
         let _position = cl.create_position(initial_position, &admin).unwrap();
-        println!("position: {:?}", _position.data);
 
         // move the tick to the initial position, if we don't do this, the position the contract is instantiated
         // we want 1 ETH to be worth 1000 osmo, we currently have 1M osmo (so 1trillion uosmo) and 0 eth
