@@ -7,6 +7,7 @@ pub mod initialize {
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
+        PositionByIdRequest,
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -19,7 +20,7 @@ pub mod initialize {
         },
         Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, Wasm,
     };
-    use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
+    use osmosis_test_tube::{PoolManager, Runner, SigningAccount, TokenFactory};
 
     use crate::helpers::sort_tokens;
     use crate::msg::{
@@ -147,6 +148,187 @@ pub mod initialize {
             &admin,
         )
         .unwrap();
+
+        // increment the app time for twaps to function
+        app.increase_time(1000000);
+
+        let instantiate_msg = InstantiateMsg {
+            admin: admin.address(),
+            pool_id: pool.id,
+            config: VaultConfig {
+                performance_fee: Decimal::percent(5),
+                treasury: Addr::unchecked(admin.address()),
+                swap_max_slippage: Decimal::percent(5),
+            },
+            vault_token_subdenom: "utestvault".to_string(),
+            range_admin: admin.address(),
+            initial_lower_tick: lower_tick,
+            initial_upper_tick: upper_tick,
+            thesis: "provide big swap efficiency".to_string(),
+            name: "good contract".to_string(),
+        };
+
+        // Instantiate
+        let contract = wasm
+            .instantiate(
+                code_id,
+                &instantiate_msg,
+                Some(admin.address().as_str()),
+                Some("cl-vault"),
+                sort_tokens(vec![coin(5000, pool.token0), coin(507, pool.token1)]).as_ref(),
+                &admin,
+            )
+            .unwrap();
+
+        (app, Addr::unchecked(contract.data.address), pool.id, admin)
+    }
+
+    pub fn init_18dec() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+        init_test_contract_18dec(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(1_000_000_000_000_000_000_000_000_000_000, "uosmo"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ), // seriously could not figure out how to make wei accepted here, just pretend
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uosmo".to_string(),
+                denom1: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                    .to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -200000,
+            200000,
+            vec![
+                v1beta1::Coin {
+                    //setting amounts here doesn't mean anything, it's just for reference
+                    denom: "uosmo".to_string(),
+                    amount: "1_000_000_000_000".to_string(), // 1M osmo
+                },
+                v1beta1::Coin {
+                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                        .to_string(),
+                    amount: "1_000_000_000_000_000_000_000".to_string(), // 1k eth (gets refunded)
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        )
+    }
+
+    // admin should be on accs[0] if this is called to init
+    /// this returns the testube app, contract_address, pool_id
+    /// sender is overwritten by the admin
+    // bad function but it's finnee x2
+    pub fn init_test_contract_18dec(
+        filename: &str,
+        admin_balance: &[Coin],
+        pool: MsgCreateConcentratedPool,
+        lower_tick: i64,
+        upper_tick: i64,
+        mut tokens_provided: Vec<v1beta1::Coin>,
+        token_min_amount0: Uint128,
+        token_min_amount1: Uint128,
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+        // create new osmosis appchain instance.
+        let app = OsmosisTestApp::new();
+
+        // create new account with initial funds
+        let admin = app.init_account(admin_balance).unwrap();
+
+        // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
+        // it implements `Module` trait which you will see more later.
+        let wasm = Wasm::new(&app);
+
+        // Load compiled wasm bytecode
+        let wasm_byte_code = std::fs::read(filename).unwrap();
+        let code_id = wasm
+            .store_code(&wasm_byte_code, None, &admin)
+            .unwrap()
+            .data
+            .code_id;
+
+        // setup a CL pool
+        let cl = ConcentratedLiquidity::new(&app);
+        let gov = GovWithAppAccess::new(&app);
+        gov.propose_and_execute(
+            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
+            CreateConcentratedLiquidityPoolsProposal {
+                title: "Create concentrated uosmo:ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 pool".to_string(),
+                description: "Create concentrated uosmo:ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 pool, so that we can trade it"
+                    .to_string(),
+                pool_records: vec![PoolRecord {
+                    denom0: pool.denom0,
+                    denom1: pool.denom1,
+                    tick_spacing: pool.tick_spacing,
+                    spread_factor: pool.spread_factor,
+                }],
+            },
+            admin.address(),
+            false,
+            &admin,
+        )
+        .unwrap();
+
+        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+
+        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
+                                                               // create a basic position on the pool
+        let initial_position = MsgCreatePosition {
+            pool_id: pool.id,
+            sender: admin.address(),
+            lower_tick,
+            upper_tick,
+            tokens_provided, // if I understand correctly, we get token1 fully refunded
+            token_min_amount0: token_min_amount0.to_string(),
+            token_min_amount1: token_min_amount1.to_string(),
+        };
+        let _position = cl.create_position(initial_position, &admin).unwrap();
+
+        // move the tick to the initial position, if we don't do this, the position the contract is instantiated
+        // we want 1 ETH to be worth 1000 osmo, we currently have 1M osmo (so 1trillion uosmo) and 0 eth
+        // 1T ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 = 1e-6 ETH = 0.01 osmo, so lets swap 500 ETH = 500B ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 for some osmo
+        // we want to have 1^10^9th ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2 for every uosmo in the pool
+        let pm = PoolManager::new(&app);
+        let _res = pm
+            .swap_exact_amount_in(
+                MsgSwapExactAmountIn {
+                    sender: admin.address(),
+                    routes: vec![SwapAmountInRoute {
+                        pool_id: pool.id,
+                        token_out_denom: pool.token1.clone(),
+                    }],
+                    token_in: Some(v1beta1::Coin {
+                        denom: pool.token0.clone(),
+                        amount: "1_000_000_000_000".to_string(),
+                    }),
+                    token_out_min_amount: "1".to_string(),
+                },
+                &admin,
+            )
+            .unwrap();
+
+        // we now have this position ratio which is what we want 10^ 12 uosmo = 10^21 wei
+        // 999900000000
+        // 999999998800120000139
+        // if needed here is code for printing:
+        // println!("res: {:?}", _res.data);
+
+        // let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        // let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        // println!("pool: {:?}", pool);
+
+        // let position = cl
+        //     .query_position_by_id(&PositionByIdRequest {
+        //         position_id: _position.data.position_id,
+        //     })
+        //     .unwrap();
+        // println!("position: {:?}", position);
 
         // increment the app time for twaps to function
         app.increase_time(1000000);
