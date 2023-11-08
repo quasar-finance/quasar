@@ -166,7 +166,7 @@ mod tests {
         let token_min_amount1 = Uint128::new(2000);
 
         let result = create_position(
-            deps_mut,
+            &deps_mut,
             &env,
             lower_tick,
             upper_tick,
