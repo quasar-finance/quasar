@@ -275,7 +275,7 @@ mod tests {
                 to_address: contract_address.to_string(),
                 amount: vec![
                     coin(
-                        9_995_000_000_000,
+                        deposit_amount,
                         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
                     )
                     .into(),

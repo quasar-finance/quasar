@@ -428,7 +428,6 @@ mod tests {
     #[test]
     fn refund_bank_msg_2_leftover() {
         let _env = mock_env();
-        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {

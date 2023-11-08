@@ -83,10 +83,10 @@ mod tests {
         // Initialize an empty Vec<Coin> and push only non zero amount coins
         let mut coins_to_deposit = Vec::new();
         if adjusted_amount0 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount0 - 10, denom0));
+            coins_to_deposit.push(Coin::new(adjusted_amount0, denom0));
         }
         if adjusted_amount1 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount1 - 10, denom1));
+            coins_to_deposit.push(Coin::new(adjusted_amount1, denom1));
         }
 
         // Check if coins_to_deposit is not empty before proceeding or skip the iteration
