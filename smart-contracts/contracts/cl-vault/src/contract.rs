@@ -29,7 +29,7 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
 };
 use cw2::set_contract_version;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
