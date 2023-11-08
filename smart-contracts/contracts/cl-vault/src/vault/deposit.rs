@@ -81,7 +81,7 @@ pub(crate) fn execute_exact_deposit(
     }
 
     let create_position_msg = create_position(
-        &deps,
+        deps,
         &env,
         position.lower_tick,
         position.upper_tick,
@@ -297,7 +297,7 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
@@ -447,13 +447,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(
-            current_deposit.clone(),
-            &resp,
-            denom0,
-            denom1,
-        )
-        .unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -467,7 +461,6 @@ mod tests {
     #[test]
     fn refund_bank_msg_token1_leftover() {
         let _env = mock_env();
-        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -486,13 +479,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(
-            current_deposit.clone(),
-            &resp,
-            denom0,
-            denom1,
-        )
-        .unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -506,7 +493,6 @@ mod tests {
     #[test]
     fn refund_bank_msg_token0_leftover() {
         let _env = mock_env();
-        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -525,13 +511,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(
-            current_deposit.clone(),
-            &resp,
-            denom0,
-            denom1,
-        )
-        .unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -545,7 +525,6 @@ mod tests {
     #[test]
     fn refund_bank_msg_none_leftover() {
         let _env = mock_env();
-        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -564,8 +543,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response =
-            refund_bank_msg( current_deposit, &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 

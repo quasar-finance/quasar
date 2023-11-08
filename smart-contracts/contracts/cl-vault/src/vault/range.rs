@@ -213,7 +213,7 @@ pub fn handle_withdraw_position_reply(
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
         let create_position_msg = create_position(
-            &deps,
+            deps,
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
@@ -461,7 +461,7 @@ fn handle_swap_success(
         });
     }
     let create_position_msg = create_position(
-        &deps,
+        deps,
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,

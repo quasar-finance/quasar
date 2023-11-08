@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn create_position(
-    deps: &DepsMut,
+    deps: DepsMut,
     env: &Env,
     lower_tick: i64,
     upper_tick: i64,
@@ -166,7 +166,7 @@ mod tests {
         let token_min_amount1 = Uint128::new(2000);
 
         let result = create_position(
-            &deps_mut,
+            deps_mut,
             &env,
             lower_tick,
             upper_tick,
