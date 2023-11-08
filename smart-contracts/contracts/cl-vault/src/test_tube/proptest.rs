@@ -16,6 +16,7 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::query::AssetsBalanceResponse;
     use crate::test_tube::initialize::initialize::init_test_contract_18dec;
     use crate::{
         helpers::sort_tokens,
@@ -28,7 +29,7 @@ mod tests {
 
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
-    const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
+    const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000_000_000_000_000;
     const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
     const DENOM_QUOTE: &str =
         "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
@@ -53,6 +54,7 @@ mod tests {
         denom0: &str,
         denom1: &str,
     ) {
+        println!("DEPOSIT");
         // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, denom0);
         let balance0_str = balance_asset0.balance.unwrap().amount;
@@ -84,14 +86,16 @@ mod tests {
             ((amount1 as f64 * ratio).round() as u128, amount1)
         };
 
+        println!("adjusted_amount0 {}", adjusted_amount0);
         // Initialize an empty Vec<Coin> and push only non zero amount coins
         let mut coins_to_deposit = Vec::new();
         if adjusted_amount0 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount0, denom0));
+            coins_to_deposit.push(Coin::new(adjusted_amount0-10, denom0));
         }
         if adjusted_amount1 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount1, denom1));
+            coins_to_deposit.push(Coin::new(adjusted_amount1-10, denom1));
         }
+        println!("coins_to_deposit {:?}", coins_to_deposit);
 
         // Check if coins_to_deposit is not empty before proceeding or skip the iteration
         if coins_to_deposit.is_empty() {
@@ -173,6 +177,8 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
+        println!("WITHDRAW");
+
         let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
         // // Before queries
@@ -183,6 +189,26 @@ mod tests {
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
 
+
+        let user_assets_bal: AssetsBalanceResponse = wasm.query(
+            contract_address.as_str(),
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                    user: account.address(),
+                },
+            )),
+        )
+        .unwrap();
+        println!("USER_ASSETS_BALANCE: {:?}", user_assets_bal);
+
+        let vault_total_shares: TotalAssetsResponse  = wasm.query(
+            contract_address.as_str(),
+            &QueryMsg::TotalAssets {  },
+        )
+        .unwrap();
+        println!("VAULT_TOTAL_SHARES: {:?}", vault_total_shares);
+
+        println!("WITHDRAW_AMOUNT: {}", Uint128::new(amount));
         // Execute withdraw
         let withdraw_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
             .execute(
@@ -272,6 +298,8 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
+        println!("UPDATE_RANGE");
+
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
         let (current_lower_price, current_upper_price) = (
@@ -453,7 +481,7 @@ mod tests {
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in 1i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -508,9 +536,9 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_BASE),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(100_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(100_000_000_000_000_000_000_000_000_000_000_000, DENOM_BASE),
+                    Coin::new(100_000_000_000_000_000_000_000_000_000_000_000, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -524,11 +552,11 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),
@@ -541,7 +569,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
@@ -592,13 +620,13 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract_18dec(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_OSMO),
-                    Coin::new(100_000_000_000_000_000_000_000,DENOM_18DEC),
+                    Coin::new(100_000_000_000_000_000_000_000_000_000_000_000, DENOM_OSMO),
+                    Coin::new(100_000_000_000_000_000_000_000_000_000_000_000, DENOM_18DEC),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
                     denom0: DENOM_OSMO.to_string(),
-                    denom1:DENOM_18DEC.to_string(),
+                    denom1: DENOM_18DEC.to_string(),
                     tick_spacing: 1,
                     spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
                 },
@@ -607,11 +635,11 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: DENOM_OSMO.to_string(),
-                        amount: "1_000_000_000_000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom:DENOM_18DEC.to_string(),
-                        amount: "1_000_000_000_000_000_000_000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),

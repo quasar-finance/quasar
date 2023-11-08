@@ -15,7 +15,7 @@ use crate::{
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
-    ContractError,
+    ContractError, debug,
 };
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development

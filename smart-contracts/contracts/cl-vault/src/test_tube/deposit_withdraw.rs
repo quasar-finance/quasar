@@ -23,19 +23,19 @@ mod tests {
         let alice = app
             .init_account(&[
                 Coin::new(
-                    1_000_000_000_000_000_000_000,
+                    200_000_000_000_000_008_388_598,
                     "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
                 ),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000_000_000, "uosmo"),
             ])
             .unwrap();
         let bob = app
             .init_account(&[
                 Coin::new(
-                    1_000_000_000_000_000_000_000,
+                    200_000_000_000_000_008_388_598,
                     "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
                 ),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000_000_000, "uosmo"),
             ])
             .unwrap();
 
@@ -49,10 +49,10 @@ mod tests {
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
                     Coin::new(
-                        1_000_000_000_000_000_000,
+                        100_000_000_000_000_008_388_598,
                         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
                     ),
-                    Coin::new(6_000_000_000, "uosmo"),
+                    Coin::new(6_000_000_000_000, "uosmo"),
                 ], // 1eth = 6k osmo
                 &alice,
             )
@@ -85,7 +85,7 @@ mod tests {
                 to_address: contract_address.to_string(),
                 amount: vec![
                     coin(
-                        9995_000_000_000,
+                        9_995_000_000_000,
                         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
                     )
                     .into(),
@@ -102,10 +102,10 @@ mod tests {
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
                     Coin::new(
-                        1_000_000_000_000_000_000,
+                        100_000_000_000_000_008_388_598,
                         "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
                     ),
-                    Coin::new(6_000_000_000, "uosmo"),
+                    Coin::new(6_000_000_000_000, "uosmo"),
                 ], // 1eth = 6k osmo
                 &bob,
             )
