@@ -56,7 +56,11 @@ pub(crate) fn execute_exact_deposit(
         .ok_or(ContractError::PositionNotFound)?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
+    let (mut token0, mut token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
+
+    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
+    token0.amount = token0.amount.saturating_sub(Uint128::one());
+    token1.amount = token1.amount.saturating_sub(Uint128::one());
 
     CURRENT_DEPOSIT.save(
         deps.storage,
@@ -77,7 +81,7 @@ pub(crate) fn execute_exact_deposit(
     }
 
     let create_position_msg = create_position(
-        deps,
+        &deps,
         &env,
         position.lower_tick,
         position.upper_tick,
@@ -105,6 +109,7 @@ pub fn handle_deposit_create_position_reply(
     data: SubMsgResult,
 ) -> ContractResult<Response> {
     let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
+
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
@@ -129,13 +134,14 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
+    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refunded = (
-        current_deposit.token0_in.checked_sub(Uint128::new(
+        current_deposit.token0_in.saturating_sub(Uint128::new(
             create_deposit_position_resp.amount0.parse::<u128>()?,
-        ))?,
-        current_deposit.token1_in.checked_sub(Uint128::new(
+        )),
+        current_deposit.token1_in.saturating_sub(Uint128::new(
             create_deposit_position_resp.amount1.parse::<u128>()?,
-        ))?,
+        )),
     );
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
@@ -247,13 +253,14 @@ fn refund_bank_msg(
     denom0: String,
     denom1: String,
 ) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
+    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refund0 = current_deposit
         .token0_in
-        .checked_sub(Uint128::new(resp.amount0.parse::<u128>()?))?;
+        .saturating_sub(Uint128::new(resp.amount0.parse::<u128>()?));
 
     let refund1 = current_deposit
         .token1_in
-        .checked_sub(Uint128::new(resp.amount1.parse::<u128>()?))?;
+        .saturating_sub(Uint128::new(resp.amount1.parse::<u128>()?));
 
     let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];
@@ -290,7 +297,7 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
@@ -421,6 +428,7 @@ mod tests {
     #[test]
     fn refund_bank_msg_2_leftover() {
         let _env = mock_env();
+        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -439,7 +447,13 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -453,6 +467,7 @@ mod tests {
     #[test]
     fn refund_bank_msg_token1_leftover() {
         let _env = mock_env();
+        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -471,7 +486,13 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -485,6 +506,7 @@ mod tests {
     #[test]
     fn refund_bank_msg_token0_leftover() {
         let _env = mock_env();
+        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -503,7 +525,13 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -517,6 +545,7 @@ mod tests {
     #[test]
     fn refund_bank_msg_none_leftover() {
         let _env = mock_env();
+        let mut deps = mock_dependencies();
         let user = Addr::unchecked("alice");
 
         let current_deposit = CurrentDeposit {
@@ -535,7 +564,8 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
+        let response =
+            refund_bank_msg( current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 

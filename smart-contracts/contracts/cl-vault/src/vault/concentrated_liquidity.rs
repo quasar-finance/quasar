@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn create_position(
-    deps: DepsMut,
+    deps: &DepsMut,
     env: &Env,
     lower_tick: i64,
     upper_tick: i64,

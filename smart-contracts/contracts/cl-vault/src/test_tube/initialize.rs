@@ -7,7 +7,6 @@ pub mod initialize {
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
-        PositionByIdRequest,
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -20,7 +19,7 @@ pub mod initialize {
         },
         Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, Wasm,
     };
-    use osmosis_test_tube::{PoolManager, Runner, SigningAccount, TokenFactory};
+    use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
 
     use crate::helpers::sort_tokens;
     use crate::msg::{
@@ -53,6 +52,43 @@ pub mod initialize {
                 v1beta1::Coin {
                     denom: "uosmo".to_string(),
                     amount: "1000000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        )
+    }
+
+    pub fn init_18dec() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+        init_test_contract_18dec(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(1_000_000_000_000_000_000_000_000_000_000, "uosmo"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ), // seriously could not figure out how to make wei accepted here, just pretend
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uosmo".to_string(),
+                denom1: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                    .to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -200000,
+            200000,
+            vec![
+                v1beta1::Coin {
+                    //setting amounts here doesn't mean anything, it's just for reference
+                    denom: "uosmo".to_string(),
+                    amount: "1_000_000_000_000_000_000_000".to_string(), // 1M OSMO
+                },
+                v1beta1::Coin {
+                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                        .to_string(),
+                    amount: "1_000_000_000_000_000_000_000".to_string(), // 1k ETH (gets refunded)
                 },
             ],
             Uint128::zero(),
@@ -181,43 +217,6 @@ pub mod initialize {
             .unwrap();
 
         (app, Addr::unchecked(contract.data.address), pool.id, admin)
-    }
-
-    pub fn init_18dec() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
-        init_test_contract_18dec(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(1_000_000_000_000_000_000_000_000_000_000, "uosmo"),
-                Coin::new(
-                    1_000_000_000_000_000_000_000_000_000_000,
-                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-                ), // seriously could not figure out how to make wei accepted here, just pretend
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: "uosmo".to_string(),
-                denom1: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
-                    .to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            -200000,
-            200000,
-            vec![
-                v1beta1::Coin {
-                    //setting amounts here doesn't mean anything, it's just for reference
-                    denom: "uosmo".to_string(),
-                    amount: "1_000_000_000_000".to_string(), // 1M osmo
-                },
-                v1beta1::Coin {
-                    denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
-                        .to_string(),
-                    amount: "1_000_000_000_000_000_000_000".to_string(), // 1k eth (gets refunded)
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        )
     }
 
     // admin should be on accs[0] if this is called to init
