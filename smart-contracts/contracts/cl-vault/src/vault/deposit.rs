@@ -253,7 +253,6 @@ fn refund_bank_msg(
     let refund0 = current_deposit
         .token0_in
         .saturating_sub(Uint128::new(resp.amount0.parse::<u128>()?));
-
     let refund1 = current_deposit
         .token1_in
         .saturating_sub(Uint128::new(resp.amount1.parse::<u128>()?));
