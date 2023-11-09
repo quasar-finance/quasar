@@ -346,12 +346,12 @@ pub fn get_liquidity_amount_for_unused_funds(
     let unused_t0: Uint256 = tokens
         .find_coin(token0.denom)
         .amount
-        .checked_sub(additional_excluded_funds.0)?
+        .saturating_sub(additional_excluded_funds.0)
         .into();
     let unused_t1: Uint256 = tokens
         .find_coin(token1.denom)
         .amount
-        .checked_sub(additional_excluded_funds.1)?
+        .saturating_sub(additional_excluded_funds.1)
         .into();
 
     let max_initial_deposit = get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;

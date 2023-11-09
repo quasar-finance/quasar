@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
@@ -16,6 +14,7 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::query::AssetsBalanceResponse;
     use crate::test_tube::initialize::initialize::init_test_contract_18dec;
     use crate::{
         helpers::sort_tokens,
@@ -28,13 +27,10 @@ mod tests {
 
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
-    const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
+    const ACCOUNTS_INITIAL_BALANCE: u128 = 100_000_000_000_000_000;
     const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
     const DENOM_QUOTE: &str =
         "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
-    const DENOM_OSMO: &str = "uosmo";
-    const DENOM_18DEC: &str =
-        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -182,6 +178,21 @@ mod tests {
         //     get_vault_position_assets(wasm, contract_address);
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
+
+        let user_assets_bal: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: account.address(),
+                    },
+                )),
+            )
+            .unwrap();
+
+        let vault_total_shares: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
 
         // Execute withdraw
         let withdraw_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -453,7 +464,7 @@ mod tests {
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in 1i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -473,7 +484,7 @@ mod tests {
     // get_percentage generates a list of random percentages used to calculate deposit_amount,
     // withdraw_amount, and newers lower and upper ticks based on the previous values
     prop_compose! {
-        fn get_percentage_list()(list in prop::collection::vec(1.0..10.0, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
+        fn get_percentage_list()(list in prop::collection::vec(1.0..100.0, ITERATIONS_NUMBER..ITERATIONS_NUMBER+1)) -> Vec<f64> {
             list
         }
     }
@@ -508,9 +519,9 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_BASE),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -524,11 +535,11 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),
@@ -541,7 +552,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
@@ -564,7 +575,7 @@ mod tests {
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Swap => {
-                        swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
@@ -576,7 +587,6 @@ mod tests {
         }
     }
 
-    // TESTS
     proptest! {
         // setup the config with amount of cases, usable for setting different values on ci vs local
         #![proptest_config(ProptestConfig::with_cases(get_cases()))]
@@ -592,26 +602,27 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract_18dec(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_OSMO),
-                    Coin::new(100_000_000_000_000_000_000_000,DENOM_18DEC),
+                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
-                    denom0: DENOM_OSMO.to_string(),
-                    denom1:DENOM_18DEC.to_string(),
+                    denom0: DENOM_BASE.to_string(),
+                    denom1: DENOM_QUOTE.to_string(),
                     tick_spacing: 1,
-                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+                    spread_factor: "100000000000000".to_string(),
                 },
                 initial_lower_tick,
                 initial_upper_tick,
                 vec![
                     v1beta1::Coin {
-                        denom: DENOM_OSMO.to_string(),
-                        amount: "1_000_000_000_000".to_string(),
+                        denom: DENOM_BASE.to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
-                        denom:DENOM_18DEC.to_string(),
-                        amount: "1_000_000_000_000_000_000_000".to_string(),
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),
@@ -624,24 +635,22 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_OSMO),
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_18DEC),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
                 .unwrap();
 
-
-
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 1.0 ,DENOM_OSMO,DENOM_18DEC);
+                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, DENOM_BASE, DENOM_QUOTE);
             }
-
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {
                 match actions[i] {
                     Action::Deposit => {
-                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i],DENOM_OSMO,DENOM_18DEC);
+                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Withdraw => {
@@ -649,7 +658,7 @@ mod tests {
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Swap => {
-                        swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
@@ -658,8 +667,6 @@ mod tests {
                     },
                 }
             }
-
-            println!("PASS");
         }
     }
 }

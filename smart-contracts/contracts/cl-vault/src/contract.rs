@@ -29,7 +29,7 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128, Addr,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
 };
 use cw2::set_contract_version;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -180,22 +180,24 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[entry_point]
-pub fn migrate(mut deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     let mut total_old = Uint128::zero();
     let mut total_new = Uint128::zero();
-    let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES.range(deps.storage, None, None, cosmwasm_std::Order::Ascending).map(|val| -> Result<(Addr, Uint128), ContractError> {
-        let (user, shares) = val?;
-        let new_shares = shares
-            .checked_div(Uint128::from(10u128).pow(18))
-            .expect("Underflow");
+    let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .map(|val| -> Result<(Addr, Uint128), ContractError> {
+            let (user, shares) = val?;
+            let new_shares = shares
+                .checked_div(Uint128::from(10u128).pow(18))
+                .expect("Underflow");
 
-        total_old = total_old.checked_add(shares)?;
-        total_new = total_new.checked_add(new_shares)?;
-        Ok((user, new_shares))
-    }).collect();
+            total_old = total_old.checked_add(shares)?;
+            total_new = total_new.checked_add(new_shares)?;
+            Ok((user, new_shares))
+        })
+        .collect();
 
     for (user, new_shares) in vals? {
         SHARES.save(deps.storage, user, &new_shares)?;
