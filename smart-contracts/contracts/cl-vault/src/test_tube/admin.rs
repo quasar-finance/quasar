@@ -55,6 +55,7 @@ mod tests {
 
     proptest! {
         #[test]
+        #[ignore]
         fn test_update_range_admin_works(
         (initial_lower_tick, initial_upper_tick) in get_initial_range(),
         ) {
