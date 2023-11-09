@@ -56,11 +56,7 @@ pub(crate) fn execute_exact_deposit(
         .ok_or(ContractError::PositionNotFound)?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let (mut token0, mut token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
-
-    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
-    token0.amount = token0.amount.saturating_sub(Uint128::one());
-    token1.amount = token1.amount.saturating_sub(Uint128::one());
+    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
     CURRENT_DEPOSIT.save(
         deps.storage,
