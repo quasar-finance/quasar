@@ -155,3 +155,41 @@ $$K=\sqrt{P_c}\sqrt{P_l}\frac{\sqrt{P_u}-\sqrt{P_{c}}}{\sqrt{P_{c}}-\sqrt{P_l}}$
 This current math assumes an ideal pool with infinite liquidity. In reality, we will need to account for slippage.
 
 We can actually create further optimizations here by increasing the amount of tokens to swap by half of the expected slippage, which will lead to returning (not being able to deposit) less tokens.
+
+# Multi-position support
+## intro
+The CL vault supports multiple positions internally. 
+
+### position ratios
+Each position is saved in the contract with a ratio. This ratio dictates how many tokens are sent to a position when a user deposits.
+
+Given any current spot price, each position needs a different amount of tokens. Lets take 3 positions $P_1$, $P_2$ and $P_3$. at some price $P$, $P_1$ needs 30% of token0 and 70% of token1. $P_2$ needs 45% token0 and 55% token1 and $P_3$ 80% token0 and 20% token1. Effectively this means that each position has the following internal ratio:
+$$
+IR_{P_1} = \frac{3}{7}\\
+IR_{P_2} = \frac{45}{55}\\
+IR_{P_3} = \frac{80}{20} 
+$$
+lets say that we allocate 20% of tokens to $P_1$, 50% of tokens to $P_2$, and 30% of all tokens to $P_3$. When we want to know how many total tokens we sent to a position, we multiply the internal ratio with the external ratio.
+For actual ratios, we then get
+$$
+R_{P_1} = IR_{P_1} \cdot 0.20 = \frac{3}{7} \cdot \frac{1}{5} = \frac{3}{35} \\
+R_{P_2} = IR_{P_2} \cdot 0.50 = \frac{45}{55} \cdot \frac{1}{2} = \frac{45}{110} = \frac{9}{22} \\
+R_{P_3} = IR_{P_3} \cdot 0.30 = \frac{80}{20} \cdot \frac{3}{10} = \frac{240}{200} = \frac{6}{5}
+$$
+Our effective ratio then becomes
+$$
+\frac{3}{35} + \frac{9}{22} + \frac{6}{5} = \frac{261}{154}
+$$
+So for every 261 token0, we need 154 token1
+
+### Lowering ratio
+
+### increasing ratio
+
+### Moving a position
+
+### Creating and deleting positions
+Deleting a position means all
+
+### Rebalancing over all positions
+TODO
