@@ -29,7 +29,7 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,Uint256
 };
 use cw2::set_contract_version;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -179,21 +179,30 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
     }
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    let mut total_old = Uint128::zero();
+    let mut total_old = Uint256::zero();
     let mut total_new = Uint128::zero();
+
     let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|val| -> Result<(Addr, Uint128), ContractError> {
             let (user, shares) = val?;
-            let new_shares = shares
-                .checked_div(Uint128::from(10u128).pow(18))
+            // Convert Uint128 to Uint256 for old shares
+            let shares_256 = Uint256::from(shares.u128());
+
+            // Perform the division
+            let new_shares_256 = shares_256
+                .checked_div(Uint256::from_u128(10u128).pow(18))
                 .expect("Underflow");
 
-            total_old = total_old.checked_add(shares)?;
+            // Convert back to Uint128 for new shares, handling potential overflow
+            let new_shares: Uint128 = Uint128::try_from(new_shares_256)
+                .expect("Conversion from Uint256 to Uint128 failed due to overflow");
+
+            total_old = total_old.checked_add(shares_256)?;
             total_new = total_new.checked_add(new_shares)?;
             Ok((user, new_shares))
         })
@@ -203,12 +212,16 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
         SHARES.save(deps.storage, user, &new_shares)?;
     }
 
+    // Ensure the subtraction does not underflow and the result fits into Uint128
+    let burn_amount = Uint128::try_from(
+        total_old.checked_sub(Uint256::from(total_new.u128()))?
+    ).expect("Overflow/Underflow in burn amount calculation");
+
     let burn = MsgBurn {
         amount: Some(OsmoCoin {
-            amount: total_old.checked_sub(total_new)?.to_string(),
+            amount: burn_amount.to_string(),
             denom: vault_denom,
         }),
-        // todo: do we burn from the holders directly?
         sender: env.contract.address.to_string(),
         burn_from_address: env.contract.address.to_string(),
     };
@@ -219,4 +232,48 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::{Addr, Uint128};
+
+    #[test]
+    fn test_migrate_with_specific_shares() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Mock SHARE values
+        let shares1 = Uint128::new(185912923697588092930704227562937349138);
+        let shares2 = Uint128::new(178031641137042482729928643373924461306);
+
+        SHARES.save(&mut deps.storage, Addr::unchecked("addr1"), &shares1).unwrap();
+        SHARES.save(&mut deps.storage, Addr::unchecked("addr2"), &shares2).unwrap();
+
+        // Call the migrate function
+        let migrate_result = migrate(deps.as_mut(), env, MigrateMsg {});
+
+        // Assert that migrate did not return an error
+        assert!(migrate_result.is_ok(), "Migrate function returned an error when it was expected to succeed.");
+
+        let response = migrate_result.unwrap();
+
+
+
+        let new_share1 = Uint128::from(shares1.u128() / 10u128.pow(18));
+        let new_share2 = Uint128::from(shares2.u128() / 10u128.pow(18));
+
+        assert_eq!(SHARES.load(&deps.storage, Addr::unchecked("user1")).unwrap(), new_share1);
+        assert_eq!(SHARES.load(&deps.storage, Addr::unchecked("user2")).unwrap(), new_share2);
+
+        // Verify MsgBurn creation
+        let sum_result = shares1.checked_add(shares2);
+        let total_old = match sum_result {
+            Ok(sum) => Uint256::from_u128(sum.u128()),
+            Err(_) => panic!("Overflow occurred while adding shares"),
+        };
+        let total_new = Uint256::from_u128(new_share1.u128() + new_share2.u128());
+        let expected_burn_amount = total_old.checked_sub(total_new).unwrap();
+
+        assert!(response.attributes.iter().any(|attr| attr.key == "migrate" && attr.value == "successful"), "Migration attribute missing or incorrect");
+    }
+}
