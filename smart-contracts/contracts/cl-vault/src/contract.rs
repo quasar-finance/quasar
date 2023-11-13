@@ -230,3 +230,6 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
         .add_message(burn)
         .add_attribute("migrate", "successful"))
 }
+
+#[cfg(test)]
+mod tests {}
