@@ -1,7 +1,9 @@
 use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
 use crate::rewards::CoinList;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, Metadata, METADATA};
+use crate::state::{
+    Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
+};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -441,9 +443,7 @@ mod tests {
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
-        METADATA
-            .save(deps.as_mut().storage, &old_metadata)
-            .unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
 
         let new_metadata = Metadata {
             name: "new_name".to_string(),
@@ -452,10 +452,7 @@ mod tests {
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
         assert!(execute_update_metadata(deps.as_mut(), info_admin, new_metadata.clone()).is_ok());
-        assert_eq!(
-            METADATA.load(deps.as_mut().storage).unwrap(),
-            new_metadata
-        );
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), new_metadata);
     }
 
     #[test]
@@ -467,9 +464,7 @@ mod tests {
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
-        METADATA
-            .save(deps.as_mut().storage, &old_metadata)
-            .unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
 
         let new_metadata = Metadata {
             name: "new_name".to_string(),
@@ -478,10 +473,7 @@ mod tests {
         let info_not_admin = mock_info("not_admin", &[]);
 
         assert!(execute_update_metadata(deps.as_mut(), info_not_admin, new_metadata).is_err());
-        assert_eq!(
-            METADATA.load(deps.as_mut().storage).unwrap(),
-            old_metadata
-        );
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), old_metadata);
     }
 
     #[test]
@@ -493,9 +485,7 @@ mod tests {
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
-        METADATA
-            .save(deps.as_mut().storage, &old_metadata)
-            .unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
 
         let new_metadata = Metadata {
             name: "new_name".to_string(),
@@ -517,18 +507,13 @@ mod tests {
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
-        METADATA
-            .save(deps.as_mut().storage, &old_metadata)
-            .unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
 
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
         let res = execute_update_metadata(deps.as_mut(), info_admin, old_metadata.clone());
         assert!(res.is_ok());
-        assert_eq!(
-            METADATA.load(deps.as_mut().storage).unwrap(),
-            old_metadata
-        );
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), old_metadata);
     }
 
     #[test]

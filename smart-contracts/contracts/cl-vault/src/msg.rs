@@ -7,7 +7,7 @@ use crate::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
         UserRewardsResponse, UserSharesBalanceResponse,
     },
-    state::{VaultConfig, Metadata},
+    state::{Metadata, VaultConfig},
 };
 
 /// Extension execute messages for an apollo autocompounding vault
