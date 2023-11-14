@@ -184,7 +184,9 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     let mut total_old = Uint256::zero();
-    let mut total_new = Uint128::zero();
+    // let mut total_new = Uint128::zero();
+
+    let mut response = Response::new();
 
     let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
         .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
@@ -203,32 +205,36 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
                 .expect("Conversion from Uint256 to Uint128 failed due to overflow");
 
             total_old = total_old.checked_add(shares_256)?;
-            total_new = total_new.checked_add(new_shares)?;
             Ok((user, new_shares))
         })
         .collect();
 
     for (user, new_shares) in vals? {
         SHARES.save(deps.storage, user, &new_shares)?;
+
+        // Calculate the burn amount for each user
+        let old_shares_256 = Uint256::from(new_shares.u128() * 10u128.pow(18));
+        let burn_amount_user = Uint128::try_from(
+            old_shares_256.checked_sub(Uint256::from(new_shares.u128()))?
+        ).expect("Overflow/Underflow in burn amount calculation for user");
+
+        // Create a burn message for each user
+        let individual_burn = MsgBurn {
+            amount: Some(OsmoCoin {
+                amount: burn_amount_user.to_string(),
+                denom: vault_denom.clone(),
+            }),
+            sender: env.contract.address.to_string(),
+            burn_from_address: env.contract.address.to_string(),
+        };
+
+        // Add the burn message to the response
+        response = response.add_message(individual_burn);
     }
 
-    // Ensure the subtraction does not underflow and the result fits into Uint128
-    let burn_amount = Uint128::try_from(
-        total_old.checked_sub(Uint256::from(total_new.u128()))?
-    ).expect("Overflow/Underflow in burn amount calculation");
+    response = response.add_attribute("migrate", "successful");
 
-    let burn = MsgBurn {
-        amount: Some(OsmoCoin {
-            amount: burn_amount.to_string(),
-            denom: vault_denom,
-        }),
-        sender: env.contract.address.to_string(),
-        burn_from_address: env.contract.address.to_string(),
-    };
-
-    Ok(Response::new()
-        .add_message(burn)
-        .add_attribute("migrate", "successful"))
+    Ok(response)
 }
 
 #[cfg(test)]
