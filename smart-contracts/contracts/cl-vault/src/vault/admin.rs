@@ -1,7 +1,7 @@
 use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
 use crate::rewards::CoinList;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
+use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, Metadata, METADATA};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -17,6 +17,9 @@ pub(crate) fn execute_admin(
         }
         AdminExtensionExecuteMsg::UpdateConfig { updates } => {
             execute_update_config(deps, info, updates)
+        }
+        AdminExtensionExecuteMsg::UpdateMetadata { updates } => {
+            execute_update_metadata(deps, info, updates)
         }
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
@@ -111,6 +114,21 @@ pub fn execute_update_config(
 
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
+        .add_attribute("updates", format!("{:?}", updates)))
+}
+
+pub fn execute_update_metadata(
+    deps: DepsMut,
+    info: MessageInfo,
+    updates: Metadata,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    METADATA.save(deps.storage, &updates)?;
+
+    Ok(Response::default()
+        .add_attribute("action", "execute_update_metadata")
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
@@ -411,6 +429,105 @@ mod tests {
         assert_eq!(
             VAULT_CONFIG.load(deps.as_mut().storage).unwrap(),
             old_config
+        );
+    }
+
+    #[test]
+    fn test_execute_update_metadata_success() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA
+            .save(deps.as_mut().storage, &old_metadata)
+            .unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        assert!(execute_update_metadata(deps.as_mut(), info_admin, new_metadata.clone()).is_ok());
+        assert_eq!(
+            METADATA.load(deps.as_mut().storage).unwrap(),
+            new_metadata
+        );
+    }
+
+    #[test]
+    fn test_execute_update_metadata_not_admin() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA
+            .save(deps.as_mut().storage, &old_metadata)
+            .unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+        let info_not_admin = mock_info("not_admin", &[]);
+
+        assert!(execute_update_metadata(deps.as_mut(), info_not_admin, new_metadata).is_err());
+        assert_eq!(
+            METADATA.load(deps.as_mut().storage).unwrap(),
+            old_metadata
+        );
+    }
+
+    #[test]
+    fn test_execute_update_metadata_with_funds() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA
+            .save(deps.as_mut().storage, &old_metadata)
+            .unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+
+        let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
+
+        let result = execute_update_metadata(deps.as_mut(), info_admin_with_funds, new_metadata);
+        assert!(result.is_err(), "Expected Err, but got: {:?}", result);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_same_metadata() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA
+            .save(deps.as_mut().storage, &old_metadata)
+            .unwrap();
+
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        let res = execute_update_metadata(deps.as_mut(), info_admin, old_metadata.clone());
+        assert!(res.is_ok());
+        assert_eq!(
+            METADATA.load(deps.as_mut().storage).unwrap(),
+            old_metadata
         );
     }
 

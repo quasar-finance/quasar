@@ -7,7 +7,7 @@ use crate::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
         UserRewardsResponse, UserSharesBalanceResponse,
     },
-    state::VaultConfig,
+    state::{VaultConfig, Metadata},
 };
 
 /// Extension execute messages for an apollo autocompounding vault
@@ -44,6 +44,10 @@ pub enum AdminExtensionExecuteMsg {
     UpdateConfig {
         /// The config updates.
         updates: VaultConfig,
+    },
+    UpdateMetadata {
+        /// The metadata updates.
+        updates: Metadata,
     },
     ClaimStrategistRewards {},
 }
