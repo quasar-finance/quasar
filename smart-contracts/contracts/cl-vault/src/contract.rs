@@ -204,18 +204,21 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
                 Uint128::try_from(shares_256.checked_sub(Uint256::from(new_shares.u128()))?)
                     .expect("Overflow/Underflow in burn amount calculation for user");
 
-            // Create a burn message for each user
-            let individual_burn = MsgBurn {
-                amount: Some(OsmoCoin {
-                    amount: burn_amount_user.to_string(),
-                    denom: vault_denom.clone(),
-                }),
-                sender: env.contract.address.to_string(),
-                burn_from_address: env.contract.address.to_string(),
-            };
+            if burn_amount_user.gt(&Uint128::zero()) {
+                // Create a burn message for each user
+                let individual_burn = MsgBurn {
+                    amount: Some(OsmoCoin {
+                        amount: burn_amount_user.to_string(),
+                        denom: vault_denom.clone(),
+                    }),
+                    sender: env.contract.address.to_string(),
+                    burn_from_address: env.contract.address.to_string(),
+                };
 
-            // Add the burn message to the response
-            response = response.clone().add_message(individual_burn);
+                // Add the burn message to the response
+                response = response.clone().add_message(individual_burn);
+            }
+
             Ok((user, new_shares))
         })
         .collect();
