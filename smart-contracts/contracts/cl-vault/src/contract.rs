@@ -76,12 +76,12 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
-                                                                 lower_price,
-                                                                 upper_price,
-                                                                 max_slippage,
-                                                                 ratio_of_swappable_funds_to_use,
-                                                                 twap_window_seconds,
-                                                             }) => execute_update_range(
+                    lower_price,
+                    upper_price,
+                    max_slippage,
+                    ratio_of_swappable_funds_to_use,
+                    twap_window_seconds,
+                }) => execute_update_range(
                     deps,
                     env,
                     info,
