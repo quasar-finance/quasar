@@ -215,7 +215,7 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
             };
 
             // Add the burn message to the response
-            response = response.add_message(individual_burn);
+            response = response.clone().add_message(individual_burn);
             Ok((user, new_shares))
         })
         .collect();
@@ -229,5 +229,47 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
     Ok(response)
 }
 
-#[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::Addr;
+
+    #[test]
+    fn test_migration() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        VAULT_DENOM.save(deps.as_mut().storage, &String::from("tokenfactory/test/migration"));
+
+        let user1 = Addr::unchecked("user1");
+        let user2 = Addr::unchecked("user2");
+        let initial_shares_user1 = Uint128::new(1000000000000000000);
+        let initial_shares_user2 = Uint128::new(2000000000000000000);
+
+        SHARES.save(deps.as_mut().storage, user1.clone(), &initial_shares_user1).unwrap();
+        SHARES.save(deps.as_mut().storage, user2.clone(), &initial_shares_user2).unwrap();
+
+        let migrate_msg = MigrateMsg {};
+
+
+        let migrate_response = migrate(deps.as_mut(), env.clone(), migrate_msg).unwrap();
+
+        assert_eq!(migrate_response.attributes[0].key, "migrate");
+        assert_eq!(migrate_response.attributes[0].value, "successful");
+
+
+        let updated_shares_user1 = SHARES.load(deps.as_ref().storage, user1.clone()).unwrap();
+        let updated_shares_user2 = SHARES.load(deps.as_ref().storage, user2.clone()).unwrap();
+
+
+        let expected_shares_user1 = initial_shares_user1 / Uint128::new(10u128).pow(18);
+        let expected_shares_user2 = initial_shares_user2 / Uint128::new(10u128).pow(18);
+
+        assert_eq!(updated_shares_user1, expected_shares_user1);
+        assert_eq!(updated_shares_user2, expected_shares_user2);
+
+        let messages = migrate_response.messages.clone();
+        println!("{:?}", migrate_response.messages);
+        assert_eq!(messages.len(), 2);
+
+    }
+}
