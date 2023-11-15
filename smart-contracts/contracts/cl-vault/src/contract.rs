@@ -242,8 +242,8 @@ mod tests {
 
         let user1 = Addr::unchecked("user1");
         let user2 = Addr::unchecked("user2");
-        let initial_shares_user1 = Uint128::new(1000000000000000000);
-        let initial_shares_user2 = Uint128::new(2000000000000000000);
+        let initial_shares_user1 = Uint128::new(10000000000000000000);
+        let initial_shares_user2 = Uint128::new(20000000000000000000);
 
         SHARES.save(deps.as_mut().storage, user1.clone(), &initial_shares_user1).unwrap();
         SHARES.save(deps.as_mut().storage, user2.clone(), &initial_shares_user2).unwrap();

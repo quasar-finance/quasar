@@ -344,7 +344,6 @@ pub fn get_liquidity_amount_for_unused_funds(
     // (with the ratio, what is the max tokens we can deposit)
     let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
 
-    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let unused_t0: Uint256 = tokens
         .find_coin(token0.denom)
         .amount
