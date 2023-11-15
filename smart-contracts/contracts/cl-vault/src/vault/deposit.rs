@@ -130,7 +130,6 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
-    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refunded = (
         current_deposit.token0_in.checked_sub(Uint128::new(
             create_deposit_position_resp.amount0.parse::<u128>()?,
@@ -249,7 +248,6 @@ fn refund_bank_msg(
     denom0: String,
     denom1: String,
 ) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
-    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refund0 = current_deposit
         .token0_in
         .checked_sub(Uint128::new(resp.amount0.parse::<u128>()?))?;
