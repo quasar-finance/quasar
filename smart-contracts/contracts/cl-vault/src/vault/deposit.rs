@@ -132,12 +132,12 @@ pub fn handle_deposit_create_position_reply(
 
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refunded = (
-        current_deposit.token0_in.saturating_sub(Uint128::new(
+        current_deposit.token0_in.checked_sub(Uint128::new(
             create_deposit_position_resp.amount0.parse::<u128>()?,
-        )),
-        current_deposit.token1_in.saturating_sub(Uint128::new(
+        ))?,
+        current_deposit.token1_in.checked_sub(Uint128::new(
             create_deposit_position_resp.amount1.parse::<u128>()?,
-        )),
+        ))?,
     );
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
@@ -252,10 +252,10 @@ fn refund_bank_msg(
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refund0 = current_deposit
         .token0_in
-        .saturating_sub(Uint128::new(resp.amount0.parse::<u128>()?));
+        .checked_sub(Uint128::new(resp.amount0.parse::<u128>()?))?;
     let refund1 = current_deposit
         .token1_in
-        .saturating_sub(Uint128::new(resp.amount1.parse::<u128>()?));
+        .checked_sub(Uint128::new(resp.amount1.parse::<u128>()?))?;
 
     let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];

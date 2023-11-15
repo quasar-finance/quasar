@@ -29,7 +29,7 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,Uint256
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128, Uint256,
 };
 use cw2::set_contract_version;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -76,12 +76,12 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
-                    lower_price,
-                    upper_price,
-                    max_slippage,
-                    ratio_of_swappable_funds_to_use,
-                    twap_window_seconds,
-                }) => execute_update_range(
+                                                                 lower_price,
+                                                                 upper_price,
+                                                                 max_slippage,
+                                                                 ratio_of_swappable_funds_to_use,
+                                                                 twap_window_seconds,
+                                                             }) => execute_update_range(
                     deps,
                     env,
                     info,
@@ -182,10 +182,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-    let mut total_old = Uint256::zero();
-    // let mut total_new = Uint128::zero();
-
     let mut response = Response::new();
 
     let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
@@ -204,32 +200,28 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
             let new_shares: Uint128 = Uint128::try_from(new_shares_256)
                 .expect("Conversion from Uint256 to Uint128 failed due to overflow");
 
-            total_old = total_old.checked_add(shares_256)?;
+            let burn_amount_user = Uint128::try_from(
+                shares_256.checked_sub(Uint256::from(new_shares.u128()))?
+            ).expect("Overflow/Underflow in burn amount calculation for user");
+
+            // Create a burn message for each user
+            let individual_burn = MsgBurn {
+                amount: Some(OsmoCoin {
+                    amount: burn_amount_user.to_string(),
+                    denom: vault_denom.clone(),
+                }),
+                sender: env.contract.address.to_string(),
+                burn_from_address: env.contract.address.to_string(),
+            };
+
+            // Add the burn message to the response
+            response = response.add_message(individual_burn);
             Ok((user, new_shares))
         })
         .collect();
 
     for (user, new_shares) in vals? {
         SHARES.save(deps.storage, user, &new_shares)?;
-
-        // Calculate the burn amount for each user
-        let old_shares_256 = Uint256::from(new_shares.u128() * 10u128.pow(18));
-        let burn_amount_user = Uint128::try_from(
-            old_shares_256.checked_sub(Uint256::from(new_shares.u128()))?
-        ).expect("Overflow/Underflow in burn amount calculation for user");
-
-        // Create a burn message for each user
-        let individual_burn = MsgBurn {
-            amount: Some(OsmoCoin {
-                amount: burn_amount_user.to_string(),
-                denom: vault_denom.clone(),
-            }),
-            sender: env.contract.address.to_string(),
-            burn_from_address: env.contract.address.to_string(),
-        };
-
-        // Add the burn message to the response
-        response = response.add_message(individual_burn);
     }
 
     response = response.add_attribute("migrate", "successful");
