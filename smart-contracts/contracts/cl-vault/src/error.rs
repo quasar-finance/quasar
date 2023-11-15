@@ -32,6 +32,12 @@ pub enum ContractError {
     #[error("Modify range state item not found")]
     ModifyRangeStateNotFound,
 
+    #[error("bad old ratio, got: {actual}, expected: {expected}")]
+    BadOldRatio { actual: Uint128, expected: Uint128 },
+
+    #[error("ratio difference between old and new ratio is incorrect")]
+    IncorrectRatioChange {},
+
     #[error("Cannot do two swaps at the same time")]
     SwapInProgress,
 

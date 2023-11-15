@@ -469,11 +469,14 @@ pub fn handle_iteration_create_position_reply(
         .target_range_position_ids
         .push(create_position_message.position_id);
 
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+
     // call merge
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
             crate::msg::CallbackExecuteMsg::Merge(MergePositionMsg {
                 position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
+                ratio: mrs.position_ratio,
             }),
         ));
 
@@ -505,17 +508,6 @@ pub fn handle_iteration_create_position_reply(
 // store new position id and exit
 pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     let merge_response: MergeResponse = data.try_into()?;
-
-    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
-    POSITIONS.save(
-        deps.storage,
-        merge_response.new_position_id,
-        &Position {
-            position_id: merge_response.new_position_id,
-            ratio: mrs.position_ratio,
-        },
-    )?;
 
     Ok(Response::new()
         .add_attribute("action", "swap_deposit_merge")

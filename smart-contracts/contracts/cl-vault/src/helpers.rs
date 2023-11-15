@@ -298,7 +298,30 @@ pub fn allocate_funds_per_position(
     asset0: Uint128,
     asset1: Uint128,
 ) -> Result<(Position, Uint128, Uint128), ContractError> {
+    // get the wanted ratio per position
+    let ps = get_min_ratio_per_position(positions)?;
+
+    // divide the assets over the positions
+    let total = get_total_ratio(&ps)?;
+
+            
+}
+
+/// Calculate the total ratio after a set if positions
+fn get_total_ratio(positions_ratios: &Vec<(Position, Decimal)>) -> Result<Decimal, ContractError> {
+    let total = positions_ratios
+        .into_iter()
+        .try_fold(Decimal::zero(), |acc, (p, r)| acc.checked_add(r))?;
+    Ok(total)
+}
+
+/// per position, calculate the ratio of tokens that position needs, multiplied with the ratio of that position
+/// within the vault
+fn get_min_ratio_per_position(
+    positions: Vec<(Position, FullPositionBreakdown)>,
+) -> Result<Vec<(Position, Decimal)>, ContractError> {
     // per position, calculate the ratio of asset1 and asset2 a position needs
+    // TODO this should use the current price and the ranges instead of token, since a position might contain a small amount of tokens
     let positions: Result<Vec<(Position, FullPositionBreakdown, Decimal)>, ContractError> =
         positions
             .into_iter()
@@ -319,14 +342,19 @@ pub fn allocate_funds_per_position(
         .iter()
         .fold(Uint128::zero(), |acc, (p, _, _)| acc + p.ratio);
 
-    // figure get the total sums per asset0 and asset 1 (position ratio times assetX ratio in position)
-    let positions: Result<Vec<(Position, FullPositionBreakdown, Decimal)>, ContractError> =
-        positions?.into_iter().map(|(p, fp, r)| {
-            Ok(p, fp, (p.ratio * Decimal::from_ratio(p.ratio, total_ratio)))
-        });
-
-    // divide the assets over the positions
-    todo!()
+    // now that we know how much tokens a positions internal ratio needs, we need to normalize these internal ratios to eachother using the positions ratios
+    // Each position might get ratio/total_ratio of tokens. We want to find the effective ratio for each position then.
+    // we multiply the position's internal ratio by the positions external ratio
+    // The external ratio is the positions ratio divided by the total ratio of all positions
+    let positions: Result<Vec<(Position, Decimal)>, ContractError> = positions?
+        .into_iter()
+        .map(|(p, _, internal_ratio)| {
+            let external_ratio = Decimal::from_ratio(p.ratio, total_ratio);
+            let total_ratio = internal_ratio.checked_mul(external_ratio)?;
+            Ok((p, total_ratio))
+        })
+        .collect();
+    positions
 }
 
 /// get_liquidity_amount_for_unused_funds basically simulates an any deposit against the vault
@@ -363,7 +391,7 @@ pub fn get_liquidity_amount_for_unused_funds(
         .find_coin(token0.denom)
         .amount
         .checked_sub(additional_excluded_funds.0)?
-        .into(); 
+        .into();
     let unused_t1: Uint256 = tokens
         .find_coin(token1.denom)
         .amount

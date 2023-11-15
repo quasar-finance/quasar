@@ -93,6 +93,10 @@ pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_rema
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 
+pub const CURRENT_RATIO: Item<Uint128> = Item::new("current_ratio");
+
+pub const CURRENT_POSITION_ID: Item<u64> = Item::new("current_position_id");
+
 #[cw_serde]
 pub struct ModifyRangeState {
     // pre-withdraw state items

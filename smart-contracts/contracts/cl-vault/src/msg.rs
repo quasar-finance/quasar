@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -69,16 +69,29 @@ pub enum ModifyRange {
         /// max position movement slippage
         max_slippage: Decimal,
     },
-    /// Increase or Decrease which percentage of the vault a range is
-    ModifyPercentage {
+    /// Increase the ratio a position has within the total positions of the vault
+    AddRatio {
         /// the position_id of the position to change percentage of
         position_id: u64,
         /// The old percentage at which the position was set, this might be different from the actual current percentage
         /// of that position due to IL
-        old_percentage: Decimal,
+        old_ratio: Uint128,
         /// The new percentage to set the position at, Increasing requires free balance in the contract.
         /// Decreasing generates free balance in the contract
-        new_percentage: Decimal,
+        new_ratio: Uint128,
+        /// The ratio of free funds to use in adding to the position
+        ratio_of_free_funds: Decimal,
+    },
+    /// Increase or Decrease which percentage of the vault a range is
+    LowerRatio {
+        /// the position_id of the position to change percentage of
+        position_id: u64,
+        /// The old percentage at which the position was set, this might be different from the actual current percentage
+        /// of that position due to IL
+        old_ratio: Uint128,
+        /// The new percentage to set the position at, Increasing requires free balance in the contract.
+        /// Decreasing generates free balance in the contract
+        new_ratio: Uint128,
     },
     /// Create a new position. This consumes all free balance up to max_percentage current free balance
     CreatePosition {
@@ -86,20 +99,21 @@ pub enum ModifyRange {
         lower_price: Decimal,
         /// The upper price of the new position
         upper_price: Decimal,
-        /// max position movement slippage
-        max_slippage: Decimal,
-        /// the max percentage this new position can take
-        max_percentage: Option<Decimal>,
+        /// the ratio that this new position can take
+        ratio: Uint128,
     },
     DeletePosition {
         /// delete the position under position_id
         position_id: u64,
     },
+    /// Rebalance the vaults assets over all positions according to the positions ratios
+    Rebalance {},
 }
 
 #[cw_serde]
 pub struct MergePositionMsg {
     pub position_ids: Vec<u64>,
+    pub ratio: Uint128,
 }
 
 /// Extension query messages for an apollo autocompounding vault

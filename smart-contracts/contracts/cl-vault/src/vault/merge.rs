@@ -15,7 +15,10 @@ use crate::{
     error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,
-    state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
+    state::{
+        CurrentMergePosition, Position, CURRENT_MERGE, CURRENT_MERGE_POSITION, CURRENT_RATIO,
+        POOL_CONFIG, POSITIONS,
+    },
     vault::concentrated_liquidity::create_position,
     ContractError,
 };
@@ -35,6 +38,9 @@ pub fn execute_merge(
     if env.contract.address != info.sender {
         return Err(ContractError::Unauthorized {});
     }
+
+    // save the ratio we want to save the merged position under
+    CURRENT_RATIO.save(deps.storage, &msg.ratio)?;
 
     let mut range: Option<CurrentMergePosition> = None;
     // Withdraw all positions
@@ -184,12 +190,23 @@ pub fn handle_merge_withdraw_reply(
 }
 
 pub fn handle_merge_create_position_reply(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     msg: SubMsgResult,
 ) -> ContractResult<Response> {
     let response: MsgCreatePositionResponse = msg.try_into()?;
     // TODO decide if we want any healthchecks here
+
+    let ratio = CURRENT_RATIO.load(deps.storage)?;
+    POSITIONS.save(
+        deps.storage,
+        response.position_id,
+        &Position {
+            position_id: response.position_id,
+            ratio,
+        },
+    )?;
+
     Ok(Response::new()
         .set_data(
             to_binary(&MergeResponse {
@@ -223,6 +240,9 @@ pub mod tests {
 
     #[test]
     fn execute_merge_works() {}
+
+    #[test]
+    fn handle_merge_create_position_reply_works() {}
 
     #[test]
     fn serde_merge_response_is_inverse() {

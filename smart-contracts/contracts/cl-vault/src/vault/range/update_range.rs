@@ -48,10 +48,11 @@ pub fn execute_update_range(
         ModifyRange::CreatePosition {
             lower_price,
             upper_price,
-            max_slippage,
-            max_percentage,
-        } => create_new_position(),
-        ModifyRange::DeletePosition { position_id } => delete_position(),
+            ratio,
+        } => create_new_position(deps, env, lower_price, upper_price, ratio),
+        ModifyRange::DeletePosition { position_id } => delete_position(deps, env, position_id),
+        // Unimplemented in this release
+        ModifyRange::Rebalance {} => unimplemented!(),
     }
 }
 

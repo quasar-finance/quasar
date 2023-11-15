@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
-    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256, StdResult, Order,
 };
 
 use osmosis_std::types::{
@@ -18,7 +18,7 @@ use crate::{
     helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM},
+    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM, Position},
     vault::concentrated_liquidity::{create_position, get_positions},
     ContractError,
 };
@@ -47,6 +47,9 @@ pub(crate) fn execute_exact_deposit(
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
+    let positions: StdResult<Vec<(u64, Position)>> = POSITIONS.range(deps.storage, None, None, Order::Ascending).collect();    
+
+    
     // TODO figure out how to distribute funds over the different positions
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
@@ -197,9 +200,13 @@ pub fn handle_deposit_create_position_reply(
         existing_position.position_id,
         create_deposit_position_resp.position_id,
     ];
+
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
-            crate::msg::CallbackExecuteMsg::Merge(MergePositionMsg { position_ids }),
+            crate::msg::CallbackExecuteMsg::Merge(MergePositionMsg {
+                position_ids,
+                ratio: todo!(),
+            }),
         ));
     // merge our position with the main position
     let merge_submsg = SubMsg::reply_on_success(
