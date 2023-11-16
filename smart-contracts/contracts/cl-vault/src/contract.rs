@@ -260,7 +260,9 @@ mod tests {
         for (user, shares) in user_shares.iter() {
             let addr = Addr::unchecked(*user);
             let initial_shares = Uint128::new(*shares);
-            SHARES.save(deps.as_mut().storage, addr.clone(), &initial_shares).unwrap();
+            SHARES
+                .save(deps.as_mut().storage, addr.clone(), &initial_shares)
+                .unwrap();
         }
 
         let migrate_msg = MigrateMsg {};
