@@ -552,7 +552,10 @@ mod tests {
         let (app, contract_address, _cl_pool_id, _admin) = init_18dec();
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000_000_000_000, "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"),
+                Coin::new(
+                    1_000_000_000_000_000_000_000,
+                    "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+                ),
                 Coin::new(1_000_000_000_000_000_000_000, "uosmo"),
             ])
             .unwrap();
