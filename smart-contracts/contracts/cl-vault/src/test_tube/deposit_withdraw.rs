@@ -261,339 +261,111 @@ mod tests {
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
-        let alice = app
-            .init_account(&[
-                Coin::new(200_000_000_000_000_000_000_000_000_000_000_000, DENOM_BASE),
-                Coin::new(200_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-        let bob = app
-            .init_account(&[
-                Coin::new(200_000_000_000_000_000_000_000_000_000_000_000, DENOM_BASE),
-                Coin::new(200_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-
-        let bank = Bank::new(&app);
+        //let bank = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
+        // Create 3 accounts
+        let users = [
+            app.init_account(&[
+                Coin::new(
+                    100_000_000_000_000_000_000_000_000_000_000_000_000,
+                    DENOM_BASE,
+                ),
+                Coin::new(
+                    100_000_000_000_000_000_000_000_000_000_000_000_000,
+                    DENOM_QUOTE,
+                ),
+            ])
+            .unwrap(),
+            app.init_account(&[
+                Coin::new(
+                    100_000_000_000_000_000_000_000_000_000_000_000_000,
+                    DENOM_BASE,
+                ),
+                Coin::new(
+                    100_000_000_000_000_000_000_000_000_000_000_000_000,
+                    DENOM_QUOTE,
+                ),
+            ])
+            .unwrap(),
+            app.init_account(&[
+                Coin::new(
+                    100_000_000_000_000_000_000_000_000_000_000_000_000,
+                    DENOM_BASE,
+                ),
+                Coin::new(
+                    100_000_000_000_000_000_000_000_000_000_000_000_000,
+                    DENOM_QUOTE,
+                ),
+            ])
+            .unwrap(),
+        ];
+
+        // this is the max deposit amount before overflow -> 100_000_000 ETH (100_000_000_000_000_000_000_000_000 Wei)
         let deposit_amount: u128 = 100_000_000_000_000_000_000_000_000;
-        // depositing
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(deposit_amount, DENOM_BASE),
-                    Coin::new(deposit_amount, "uosmo"),
-                ], // 1eth = 6k osmo
-                &alice,
-            )
-            .unwrap();
 
-        // The contract right now has 89874 free uosmo, if we send another 89874 free uosmo, we double the amount of free
-        // liquidity, but we want to double the amount of total liquidity, so we first query to contract to get how many
-        // assets we have in the position
-        let pos_id: PositionResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
-                )),
-            )
-            .unwrap();
-        let _position = ConcentratedLiquidity::new(&app)
-            .query_position_by_id(&PositionByIdRequest {
-                position_id: pos_id.position_ids[0],
-            })
-            .unwrap();
-        // This amount should decrease the amount of shares we get back
-        // "uatom", amount: "100000" }), asset1: Some(Coin { denom: "uosmo", amount: "10126"
-        // to dilute 50%, we need to send uatom100000, 10631uosmo + 89874+uosmo = 100000uosmo
-        // aka double the liquidty
-
-        bank.send(
-            MsgSend {
-                from_address: alice.address(),
-                to_address: contract_address.to_string(),
-                amount: vec![
-                    coin(deposit_amount, DENOM_BASE).into(),
-                    coin(1012, "uosmo").into(),
-                ],
-            },
-            &alice,
-        )
-        .unwrap();
-
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(deposit_amount, DENOM_BASE),
-                    Coin::new(deposit_amount, "uosmo"),
-                ], // 1eth = 6k osmo
-                &bob,
-            )
-            .unwrap();
-
-        // 2766182566501133149875859 before banksend,
-        // 1926137978194597565946694 after banksend
-        // does this make sense?
-        // when we withdraw 2766182566501133149875859 shares, we should get our original amount back +
-        // 2766182566501133149875859 / total_shares * 89874 back, remember we had original free osmo
-        // and sent free osmo
-        // the second share amount should only get it's original amount back
-
-        // let _ = wasm
-        //     .execute(
-        //         contract_address.as_str(),
-        //         &ExecuteMsg::ExactDeposit { recipient: None },
-        //         &[   Coin::new(1_000_000_000_000_000_000, DENOM_BASE),
-        // Coin::new(6_000_000_000, "uosmo")],
-        //         &alice,
-        //     )
-        //     .unwrap();
-
-        let alice_shares: UserSharesBalanceResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
-                        user: alice.address(),
-                    },
-                )),
-            )
-            .unwrap();
-        let bob_shares: UserSharesBalanceResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
-                        user: bob.address(),
-                    },
-                )),
-            )
-            .unwrap();
-
-        let _balances = bank
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-        let pos_id: PositionResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
-                )),
-            )
-            .unwrap();
-        let _position = ConcentratedLiquidity::new(&app)
-            .query_position_by_id(&PositionByIdRequest {
-                position_id: pos_id.position_ids[0],
-            })
-            .unwrap();
-        // This amount should decrease the amount of shares we get back
-
-        let _withdraw = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::Redeem {
-                    recipient: None,
-                    amount: bob_shares.balance,
-                },
-                &[],
-                &bob,
-            )
-            .unwrap();
-
-        let _withdraw = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::Redeem {
-                    recipient: None,
-                    amount: alice_shares.balance,
-                },
-                &[],
-                &alice,
-            )
-            .unwrap();
-        // we receive "token0_amount", value: "2018" }, Attribute { key: "token1_amount", value: "3503
-        // we used 5000uatom to deposit and 507 uosmo, thus we are down 3000 uatom and up 2996 uosmo
-    }
-
-    #[test]
-    #[ignore]
-    fn multiple_deposit_withdraw_unused_funds_overflow() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
-
-        // Setup accounts
-
-        let alice = app
-            .init_account(&[
-                Coin::new(
-                    100_000_000_000_000_000_000_000_000_000_000_000_000,
-                    DENOM_BASE,
-                ),
-                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-        let bob = app
-            .init_account(&[
-                Coin::new(
-                    100_000_000_000_000_000_000_000_000_000_000_000_000,
-                    DENOM_BASE,
-                ),
-                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-        let charlie = app
-            .init_account(&[
-                Coin::new(
-                    100_000_000_000_000_000_000_000_000_000_000_000_000,
-                    DENOM_BASE,
-                ),
-                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-
-        let bank = Bank::new(&app);
-        let wasm = Wasm::new(&app);
-
-        let deposit_amount: u128 = 100_000_000_000_000_000_000_000_000; // this is the max deposit amount before overflow -> 100_000_000 ETH (100_000_000_000_000_000_000_000_000 Wei)
-
+        // you can scale this up to 1000 and still not failing, which would be like: 3 users x 100_000_000 ETH x 1000 = 300_000_000_000 (300 B) total deposited ETHs in the vault
         for _ in 0..10 {
-            // you can scale this up to 1000 and still not failing, which would be like: 3 users x 100_000_000 ETH x 1000 = 300_000_000_000 (300 B) total deposited ETHs in the vault
             // depositing
-            let _res = wasm
-                .execute(
+            for user in &users {
+                wasm.execute(
                     contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
                         Coin::new(deposit_amount, DENOM_BASE),
-                        Coin::new(deposit_amount, "uosmo"),
+                        Coin::new(deposit_amount, DENOM_QUOTE),
                     ], // 1eth = 6k osmo
-                    &alice,
+                    &user,
                 )
                 .unwrap();
-
-            let _res = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::ExactDeposit { recipient: None },
-                    &[
-                        Coin::new(deposit_amount, DENOM_BASE),
-                        Coin::new(deposit_amount, "uosmo"),
-                    ], // 1eth = 6k osmo
-                    &bob,
-                )
-                .unwrap();
-
-            let _res = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::ExactDeposit { recipient: None },
-                    &[
-                        Coin::new(deposit_amount, DENOM_BASE),
-                        Coin::new(deposit_amount, "uosmo"),
-                    ], // 1eth = 6k osmo
-                    &charlie,
-                )
-                .unwrap();
+            }
         }
 
-        // querying shares
+        // querying shares and withdrawing
 
-        let alice_shares: UserSharesBalanceResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
-                        user: alice.address(),
-                    },
-                )),
-            )
-            .unwrap();
-        let bob_shares: UserSharesBalanceResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
-                        user: bob.address(),
-                    },
-                )),
-            )
-            .unwrap();
-        let carlie_shares: UserSharesBalanceResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                    crate::msg::UserBalanceQueryMsg::UserSharesBalance {
-                        user: charlie.address(),
-                    },
-                )),
-            )
-            .unwrap();
+        for user in users {
+            let user_shares: UserSharesBalanceResponse = wasm
+                .query(
+                    contract_address.as_str(),
+                    &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                        crate::msg::UserBalanceQueryMsg::UserSharesBalance {
+                            user: user.address(),
+                        },
+                    )),
+                )
+                .unwrap();
 
-        let _balances = bank
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-        let pos_id: PositionResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
-                )),
-            )
-            .unwrap();
-        let _position = ConcentratedLiquidity::new(&app)
-            .query_position_by_id(&PositionByIdRequest {
-                position_id: pos_id.position_ids[0],
-            })
-            .unwrap();
-        // This amount should decrease the amount of shares we get back
+            // let _balances = bank
+            //     .query_all_balances(&QueryAllBalancesRequest {
+            //         address: contract_address.to_string(),
+            //         pagination: None,
+            //     })
+            //     .unwrap();
+            // let pos_id: PositionResponse = wasm
+            //     .query(
+            //         contract_address.as_str(),
+            //         &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
+            //             crate::msg::ClQueryMsg::Position {},
+            //         )),
+            //     )
+            //     .unwrap();
+            // let _position = ConcentratedLiquidity::new(&app)
+            //     .query_position_by_id(&PositionByIdRequest {
+            //         position_id: pos_id.position_ids[0],
+            //     })
+            //     .unwrap();
 
-        // withdrawing
-
-        let _withdraw = wasm
-            .execute(
+            // withdrawing
+            wasm.execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
                     recipient: None,
-                    amount: carlie_shares.balance,
+                    amount: user_shares.balance,
                 },
                 &[],
-                &charlie,
+                &user,
             )
             .unwrap();
-
-        let _withdraw = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::Redeem {
-                    recipient: None,
-                    amount: bob_shares.balance,
-                },
-                &[],
-                &bob,
-            )
-            .unwrap();
-
-        let _withdraw = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::Redeem {
-                    recipient: None,
-                    amount: alice_shares.balance,
-                },
-                &[],
-                &alice,
-            )
-            .unwrap();
+        }
     }
 }

@@ -35,7 +35,7 @@ mod tests {
     enum Action {
         Deposit,
         Withdraw,
-        Swap,
+        //Swap,
         UpdateRange,
     }
 
@@ -257,7 +257,7 @@ mod tests {
         // );
     }
 
-    fn swap(
+    fn _swap(
         _wasm: &Wasm<OsmosisTestApp>,
         bank: &Bank<OsmosisTestApp>,
         _contract_address: &Addr,
@@ -336,7 +336,7 @@ mod tests {
         .unwrap()
     }
 
-    fn get_vault_shares_balance(
+    fn _get_vault_shares_balance(
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
     ) -> TotalVaultTokenSupplyResponse {
@@ -418,7 +418,7 @@ mod tests {
             .collect()
     }
 
-    fn get_event_value_amount_numeric(value: &String) -> u128 {
+    fn _get_event_value_amount_numeric(value: &String) -> u128 {
         // Find the position where the non-numeric part starts
         let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
         // Extract the numeric part from the string
@@ -573,16 +573,18 @@ mod tests {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
-                    Action::Swap => {
-                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                        //assert_swap(); // todo!()
-                    },
+                    // Action::Swap => {
+                    //     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                    //     assert_swap(); // todo!()
+                    // },
                     Action::UpdateRange => {
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
                         //assert_update_range(); // todo!()
                     },
                 }
             }
+
+            println!("PASS");
         }
     }
 }

@@ -17,9 +17,9 @@ pub mod initialize {
         osmosis_std::types::osmosis::concentratedliquidity::{
             poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePosition,
         },
-        Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, Wasm,
+        Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, PoolManager,
+        SigningAccount, TokenFactory, Wasm,
     };
-    use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
 
     use crate::helpers::sort_tokens;
     use crate::msg::{

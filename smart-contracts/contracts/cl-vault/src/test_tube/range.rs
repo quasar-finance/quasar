@@ -23,8 +23,8 @@ mod test {
 
     use prost::Message;
 
-    // #[test]
-    // #[ignore]
+    #[test]
+    #[ignore]
     fn move_range_works() {
         let (app, contract, cl_pool_id, admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -54,15 +54,15 @@ mod test {
             Uint128::zero(),
             Uint128::zero(),
         );
+        let wasm = Wasm::new(&app);
+        // let cl = ConcentratedLiquidity::new(&app);
+
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
                 Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
-
-        let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
 
         // do a swap to move the cur tick
         let pm = PoolManager::new(&app);
@@ -83,8 +83,8 @@ mod test {
         )
         .unwrap();
 
-        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        // let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        // let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _before_position: PositionResponse = wasm
             .query(
@@ -153,6 +153,10 @@ mod test {
             Uint128::zero(),
             Uint128::zero(),
         );
+        let wasm = Wasm::new(&app);
+        //let cl = ConcentratedLiquidity::new(&app);
+        let pm = PoolManager::new(&app);
+
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -160,11 +164,7 @@ mod test {
             ])
             .unwrap();
 
-        let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
-
         // do a swap to move the cur tick
-        let pm = PoolManager::new(&app);
         pm.swap_exact_amount_in(
             MsgSwapExactAmountIn {
                 sender: alice.address(),
@@ -182,8 +182,8 @@ mod test {
         )
         .unwrap();
 
-        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        //let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        //let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _result = wasm
             .execute(
