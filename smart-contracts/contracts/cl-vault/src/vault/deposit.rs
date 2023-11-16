@@ -186,7 +186,6 @@ pub fn handle_deposit_create_position_reply(
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    // TODOSN: Document the following refund_bank_msg purpose
     let bank_msg = refund_bank_msg(
         current_deposit.clone(),
         &create_deposit_position_resp,
@@ -260,7 +259,6 @@ fn refund_bank_msg(
     let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];
 
-    // TODOSN: Document this explaining what s happening below
     if !refund0.is_zero() {
         attributes.push(attr("refund0_amount", refund0));
         attributes.push(attr("refund0_denom", denom0.as_str()));

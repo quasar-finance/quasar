@@ -15,7 +15,6 @@ mod tests {
     use proptest::prelude::*;
 
     use crate::query::AssetsBalanceResponse;
-    use crate::test_tube::initialize::initialize::init_test_contract_18dec;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -508,7 +507,7 @@ mod tests {
         // setup the config with amount of cases, usable for setting different values on ci vs local
         #![proptest_config(ProptestConfig::with_cases(get_cases()))]
         #[test]
-        #[ignore]
+        //#[ignore]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
             actions in get_strategy_list(),
@@ -516,90 +515,7 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
-                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-                &[
-                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
-                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
-                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
-                ],
-                MsgCreateConcentratedPool {
-                    sender: "overwritten".to_string(),
-                    denom0: DENOM_BASE.to_string(),
-                    denom1: DENOM_QUOTE.to_string(),
-                    tick_spacing: 1,
-                    spread_factor: "100000000000000".to_string(),
-                },
-                initial_lower_tick,
-                initial_upper_tick,
-                vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: "1000000000000000000".to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: "1000000000000000000".to_string(),
-                    },
-                ],
-                Uint128::zero(),
-                Uint128::zero(),
-            );
-            let wasm = Wasm::new(&app);
-            let cl = ConcentratedLiquidity::new(&app);
-            let bank = Bank::new(&app);
-
-            // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
-            let accounts = app
-                .init_accounts(&[
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
-                ], ACCOUNTS_NUMBER)
-                .unwrap();
-
-            // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
-            for i in 0..ACCOUNTS_NUMBER {
-                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, DENOM_BASE, DENOM_QUOTE);
-            }
-
-            // Iterate iterations times
-            for i in 0..ITERATIONS_NUMBER {
-                match actions[i] {
-                    Action::Deposit => {
-                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
-                    },
-                    Action::Withdraw => {
-                        withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
-                    },
-                    Action::Swap => {
-                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                        //assert_swap(); // todo!()
-                    },
-                    Action::UpdateRange => {
-                        update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
-                    },
-                }
-            }
-        }
-    }
-
-    proptest! {
-        // setup the config with amount of cases, usable for setting different values on ci vs local
-        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
-        #[test]
-        #[ignore]
-        fn test_complete_works_18dec(
-            (initial_lower_tick, initial_upper_tick) in get_initial_range(),
-            actions in get_strategy_list(),
-            percentages in get_percentage_list(),
-            account_indexes in get_account_index_list()
-        ) {
-            // Creating test core
-            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract_18dec(
+            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(340282366920938463463374607431768211455, "uosmo"),

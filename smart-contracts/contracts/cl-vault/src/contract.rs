@@ -279,7 +279,6 @@ mod tests {
         }
 
         let messages = migrate_response.messages.clone();
-        println!("{:?}", messages);
         assert_eq!(messages.len(), 6);
     }
 }
