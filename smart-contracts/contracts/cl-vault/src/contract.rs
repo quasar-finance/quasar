@@ -233,11 +233,10 @@ pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, Co
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Uint128};
 
     #[test]
     fn test_migration() {
@@ -248,36 +247,37 @@ mod tests {
             &String::from("tokenfactory/test/migration"),
         );
 
-        let user1 = Addr::unchecked("user1");
-        let user2 = Addr::unchecked("user2");
-        let initial_shares_user1 = Uint128::new(10000000000000000000);
-        let initial_shares_user2 = Uint128::new(20000000000000000000);
+        let user_shares = [
+            ("user1", 334336393064997666210680868153120255847u128),
+            ("user2", 3861723043195065215677860659781464267u128),
+            ("user3", 5207698598937150446323936506894565090u128),
+            ("user4", 100926648309343424566468024997861860u128),
+            ("user5", 89285540372043010706153009474481050u128),
+            ("user6", 0u128),
+            ("user7", 19497052606527749357594751011469352u128),
+        ];
 
-        SHARES
-            .save(deps.as_mut().storage, user1.clone(), &initial_shares_user1)
-            .unwrap();
-        SHARES
-            .save(deps.as_mut().storage, user2.clone(), &initial_shares_user2)
-            .unwrap();
+        for (user, shares) in user_shares.iter() {
+            let addr = Addr::unchecked(*user);
+            let initial_shares = Uint128::new(*shares);
+            SHARES.save(deps.as_mut().storage, addr.clone(), &initial_shares).unwrap();
+        }
 
         let migrate_msg = MigrateMsg {};
-
         let migrate_response = migrate(deps.as_mut(), env.clone(), migrate_msg).unwrap();
 
         assert_eq!(migrate_response.attributes[0].key, "migrate");
         assert_eq!(migrate_response.attributes[0].value, "successful");
 
-        let updated_shares_user1 = SHARES.load(deps.as_ref().storage, user1.clone()).unwrap();
-        let updated_shares_user2 = SHARES.load(deps.as_ref().storage, user2.clone()).unwrap();
-
-        let expected_shares_user1 = initial_shares_user1 / Uint128::new(10u128).pow(18);
-        let expected_shares_user2 = initial_shares_user2 / Uint128::new(10u128).pow(18);
-
-        assert_eq!(updated_shares_user1, expected_shares_user1);
-        assert_eq!(updated_shares_user2, expected_shares_user2);
+        for (user, shares) in user_shares.iter() {
+            let addr = Addr::unchecked(*user);
+            let updated_shares = SHARES.load(deps.as_ref().storage, addr.clone()).unwrap();
+            let expected_shares = Uint128::new(*shares) / Uint128::new(10u128).pow(18);
+            assert_eq!(updated_shares, expected_shares);
+        }
 
         let messages = migrate_response.messages.clone();
-        println!("{:?}", migrate_response.messages);
-        assert_eq!(messages.len(), 2);
+        println!("{:?}", messages);
+        assert_eq!(messages.len(), 6);
     }
 }
