@@ -151,7 +151,7 @@ mod test {
     #[ignore]
     fn move_range_same_single_side_works() {
         let (app, contract, cl_pool_id, admin) = init_test_contract( 
-        // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
+            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000, "uatom"),
