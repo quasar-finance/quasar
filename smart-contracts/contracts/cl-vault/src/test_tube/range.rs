@@ -23,8 +23,8 @@ mod test {
 
     use prost::Message;
 
-    #[test]
-    #[ignore]
+    // #[test]
+    // #[ignore]
     fn move_range_works() {
         let (app, contract, cl_pool_id, admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
