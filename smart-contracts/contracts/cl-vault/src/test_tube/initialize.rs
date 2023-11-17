@@ -33,36 +33,36 @@ pub mod initialize {
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
 
-    pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
-        init_test_contract(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            -5000000, // 0.5 spot price
-            500000,   // 1.5 spot price
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        )
-    }
+    // pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+    //     init_test_contract(
+    //         "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+    //         &[
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+    //         ],
+    //         MsgCreateConcentratedPool {
+    //             sender: "overwritten".to_string(),
+    //             denom0: DENOM_BASE.to_string(),
+    //             denom1: DENOM_QUOTE.to_string(),
+    //             tick_spacing: 100,
+    //             spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+    //         },
+    //         -5000000, // 0.5 spot price
+    //         500000,   // 1.5 spot price
+    //         vec![
+    //             v1beta1::Coin {
+    //                 denom: DENOM_BASE.to_string(),
+    //                 amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+    //             },
+    //             v1beta1::Coin {
+    //                 denom: DENOM_QUOTE.to_string(),
+    //                 amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+    //             },
+    //         ],
+    //         Uint128::zero(),
+    //         Uint128::zero(),
+    //     )
+    // }
 
     pub fn init_test_contract(
         filename: &str,
@@ -167,7 +167,34 @@ pub mod initialize {
     #[test]
     #[ignore]
     fn contract_default_init_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
+        let (app, contract_address, cl_pool_id, admin) = init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(340282366920938463463374607431768211455u128, "uatom"),
+                Coin::new(340282366920938463463374607431768211455u128, "uosmo"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uatom".to_string(),
+                denom1: "uosmo".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: "uatom".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);

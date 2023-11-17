@@ -19,7 +19,34 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(340282366920938463463374607431768211455u128, "uatom"),
+                Coin::new(340282366920938463463374607431768211455u128, "uosmo"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uatom".to_string(),
+                denom1: "uosmo".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: "uatom".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        );
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -88,7 +115,34 @@ mod tests {
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(340282366920938463463374607431768211455u128, "uatom"),
+                Coin::new(340282366920938463463374607431768211455u128, "uosmo"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uatom".to_string(),
+                denom1: "uosmo".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: "uatom".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        );
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -138,7 +192,34 @@ mod tests {
     // #[test]
     // #[ignore]
     fn move_range_works() {
-        let (app, contract, _cl_pool_id, admin) = default_init();
+        let (app, contract, _cl_pool_id, admin) = init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(340282366920938463463374607431768211455u128, "uatom"),
+                Coin::new(340282366920938463463374607431768211455u128, "uosmo"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uatom".to_string(),
+                denom1: "uosmo".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: "uatom".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        );
         let _alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -166,7 +247,34 @@ mod tests {
     #[test]
     #[ignore]
     fn default_init_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(340282366920938463463374607431768211455u128, "uatom"),
+                Coin::new(340282366920938463463374607431768211455u128, "uosmo"),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: "uatom".to_string(),
+                denom1: "uosmo".to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: "uatom".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+                v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: "1000000000000".to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
