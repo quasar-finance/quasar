@@ -26,7 +26,8 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract( // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
+        let (app, contract, cl_pool_id, admin) = init_test_contract( 
+        // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -149,7 +150,8 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_same_single_side_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract( // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
+        let (app, contract, cl_pool_id, admin) = init_test_contract( 
+        // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000, "uatom"),
@@ -265,7 +267,8 @@ mod test {
     #[test]
     #[ignore]
     fn test_swap_math_poc() {
-        let (app, _contract, _cl_pool_id, _admin) = init_test_contract( // TODO: Evaluate using default_init()
+        let (app, _contract, _cl_pool_id, _admin) = init_test_contract( 
+        // TODO: Evaluate using default_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000, "uatom"),
