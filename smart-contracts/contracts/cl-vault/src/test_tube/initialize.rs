@@ -135,6 +135,9 @@ pub mod initialize {
         )
         .unwrap();
 
+        // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
+        app.increase_time(1000000);
+
         // Instantiate
         let contract = wasm
             .instantiate(

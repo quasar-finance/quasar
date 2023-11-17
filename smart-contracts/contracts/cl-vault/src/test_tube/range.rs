@@ -55,7 +55,31 @@ mod test {
             Uint128::zero(),
         );
         let wasm = Wasm::new(&app);
-        // let cl = ConcentratedLiquidity::new(&app);
+        let cl = ConcentratedLiquidity::new(&app);
+
+        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
+        cl.create_position(
+            MsgCreatePosition {
+                pool_id: cl_pool_id,
+                sender: admin.address(),
+                lower_tick: -5000000,
+                upper_tick: 500000,
+                tokens_provided: vec![
+                    v1beta1::Coin {
+                        denom: "uatom".to_string(),
+                        amount: "10000000000".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: "uosmo".to_string(),
+                        amount: "10000000000".to_string(),
+                    },
+                ],
+                token_min_amount0: Uint128::zero().to_string(),
+                token_min_amount1: Uint128::zero().to_string(),
+            },
+            &admin,
+        )
+        .unwrap();
 
         let alice = app
             .init_account(&[
@@ -102,7 +126,7 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("400").unwrap(),
                         upper_price: Decimal::from_str("1466").unwrap(),
-                        max_slippage: Decimal::permille(5),
+                        max_slippage: Decimal::bps(9500),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                     },
@@ -154,8 +178,32 @@ mod test {
             Uint128::zero(),
         );
         let wasm = Wasm::new(&app);
-        //let cl = ConcentratedLiquidity::new(&app);
+        let cl = ConcentratedLiquidity::new(&app);
         let pm = PoolManager::new(&app);
+
+        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
+        cl.create_position(
+            MsgCreatePosition {
+                pool_id: cl_pool_id,
+                sender: admin.address(),
+                lower_tick: -5000000,
+                upper_tick: 500000,
+                tokens_provided: vec![
+                    v1beta1::Coin {
+                        denom: "uatom".to_string(),
+                        amount: "10000000000".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: "uosmo".to_string(),
+                        amount: "10000000000".to_string(),
+                    },
+                ],
+                token_min_amount0: Uint128::zero().to_string(),
+                token_min_amount1: Uint128::zero().to_string(),
+            },
+            &admin,
+        )
+        .unwrap();
 
         let alice = app
             .init_account(&[
@@ -192,7 +240,7 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("20.71").unwrap(),
                         upper_price: Decimal::from_str("45").unwrap(),
-                        max_slippage: Decimal::permille(5),
+                        max_slippage: Decimal::bps(9500),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                     },
