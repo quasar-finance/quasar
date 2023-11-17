@@ -16,8 +16,10 @@ mod tests {
         test_tube::default_init,
     };
 
-    #[test]
-    #[ignore]
+    // TODO: Those tests looks redundant with the ones we already have in deposit_withdraw.rs, range.rs
+
+    // #[test]
+    // #[ignore]
     fn multiple_deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let alice = app
@@ -85,8 +87,8 @@ mod tests {
         // verify the correct execution
     }
 
-    #[test]
-    #[ignore]
+    // #[test]
+    // #[ignore]
     fn single_deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let alice = app
