@@ -463,7 +463,7 @@ mod tests {
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -500_000i64..0, upper_tick in 1i64..50_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -507,7 +507,7 @@ mod tests {
         // setup the config with amount of cases, usable for setting different values on ci vs local
         #![proptest_config(ProptestConfig::with_cases(get_cases()))]
         #[test]
-        #[ignore]
+        //#[ignore]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
             actions in get_strategy_list(),

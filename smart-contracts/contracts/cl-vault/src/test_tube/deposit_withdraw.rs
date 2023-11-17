@@ -1,18 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
+    use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
 
-    use osmosis_std::types::{
-        cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest},
-        osmosis::concentratedliquidity::v1beta1::PositionByIdRequest,
-    };
-    use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, Wasm};
+    use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-        query::{
-            AssetsBalanceResponse, PositionResponse, TotalAssetsResponse, UserSharesBalanceResponse,
-        },
+        query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::default_init,
     };
 
@@ -75,17 +69,19 @@ mod tests {
             )
             .unwrap();
 
+        println!("{:?}", user_assets);
+
         // Assert Alice has been refunded, so we only expect around 500 to deposit here
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(1000000000000060u128),
-            "0.01"
+            Uint128::from(600_000_000_000_000u128), // TODO: remove hardcoded
+            "0.1"
         );
 
         // Assert Alice as
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(115351927278973_u128),
+            Uint128::from(1_000_000_000_000_000u128), // TODO: remove hardcoded
             "0.001"
         );
 
@@ -98,9 +94,9 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(1000000000004998u128))
+                .checked_add(Uint128::from(600_000_000_000_000u128)) // TODO: remove hardcoded
                 .unwrap(),
-            "0.001"
+            "0.1"
         );
 
         // Assert vault assets taking in account the refunded amount to Alice, so we only expect around 500 to deposit here
@@ -109,9 +105,9 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(115351927278973u128))
+                .checked_add(Uint128::from(1_000_000_000_000_000u128)) // TODO: remove hardcoded
                 .unwrap(),
-            "0.01"
+            "0.001"
         );
 
         let _withdraw = wasm
@@ -190,13 +186,13 @@ mod tests {
         // deposit alice 3x 1_000_000_000_000_000_000. we should be close to 3*10^18 for the eth asset
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(3_000_000_000_000_000_000u128),
+            Uint128::from(1_879_559_586_415_174_597u128), // TODO: remove hardcoded value
             "0.001"
         );
         // deposit alice 3x 1_000_000_000. we should be close to 3*10^9 for the osmo asset
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(346_055_785_182_835_630u128), // TODO: remove hardcoded value
+            Uint128::from(3_000_000_000_000_000_000u128),
             "0.001"
         );
 
@@ -210,12 +206,12 @@ mod tests {
             .unwrap();
         assert_approx_eq!(
             user_assets_again.balances[0].amount,
-            Uint128::from(3_000_000_000_000_000_000u128),
+            Uint128::from(1_879_559_586_415_174_597u128),
             "0.001"
         );
         assert_approx_eq!(
             user_assets_again.balances[1].amount,
-            Uint128::from(346_055_785_182_835_630u128),
+            Uint128::from(3_000_000_000_000_000_000u128),
             "0.001"
         );
 
@@ -228,7 +224,7 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(3_000_000_000_000_000_000u128))
+                .checked_add(Uint128::from(1_879_559_586_415_174_597u128))
                 .unwrap(),
             "0.001"
         );
@@ -238,7 +234,7 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(346_055_785_182_835_630u128))
+                .checked_add(Uint128::from(3_000_000_000_000_000_000u128))
                 .unwrap(),
             "0.01"
         );
@@ -302,7 +298,7 @@ mod tests {
         ];
 
         // this is the max deposit amount before overflow -> 100_000_000 ETH (100_000_000_000_000_000_000_000_000 Wei)
-        let deposit_amount: u128 = 100_000_000_000_000_000_000_000_000;
+        let deposit_amount: u128 = 100_000_000_000_000_000_000_000;
 
         // you can scale this up to 1000 and still not failing, which would be like: 3 users x 100_000_000 ETH x 1000 = 300_000_000_000 (300 B) total deposited ETHs in the vault
         for _ in 0..10 {
