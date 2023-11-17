@@ -168,7 +168,8 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
+        let balance = get_user_shares_balance(wasm, contract_address, account); 
+        // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
         // // Before queries
         // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
