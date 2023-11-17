@@ -268,7 +268,7 @@ mod test {
     #[ignore]
     fn test_swap_math_poc() {
         let (app, _contract, _cl_pool_id, _admin) = init_test_contract( 
-        // TODO: Evaluate using default_init()
+            // TODO: Evaluate using default_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(1_000_000_000_000, "uatom"),
