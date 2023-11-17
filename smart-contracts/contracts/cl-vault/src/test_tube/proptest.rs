@@ -168,7 +168,7 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        let balance = get_user_shares_balance(wasm, contract_address, account); 
+        let balance = get_user_shares_balance(wasm, contract_address, account);
         // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
         // // Before queries
@@ -516,7 +516,7 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract( 
+            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
                 // TODO: evaluate using default_init() here
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
