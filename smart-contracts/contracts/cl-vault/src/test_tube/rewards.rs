@@ -1,12 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use crate::msg::ExecuteMsg;
-    use crate::test_tube::initialize::initialize::init_test_contract;
-    use cosmwasm_std::{Coin, Decimal, Uint128};
-    use osmosis_std::types::cosmos::base::v1beta1::{self, Coin as OsmoCoin};
-    use osmosis_std::types::osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool;
+    use crate::test_tube::initialize::initialize::default_init;
+    use cosmwasm_std::Coin;
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
@@ -15,34 +12,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim() {
-        let (app, contract_address, cl_pool_id, _admin) = init_test_contract(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(340282366920938463463374607431768211455u128, "uatom"),
-                Coin::new(340282366920938463463374607431768211455u128, "uosmo"),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: "uatom".to_string(),
-                denom1: "uosmo".to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            -5000000, // 0.5 spot price
-            500000,   // 1.5 spot price
-            vec![
-                v1beta1::Coin {
-                    denom: "uatom".to_string(),
-                    amount: "1000000000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: "1000000000000".to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+        let (app, contract_address, cl_pool_id, _admin) = default_init();
         let alice = app
             .init_account(&[
                 Coin::new(1_000_000_000_000, "uatom"),
