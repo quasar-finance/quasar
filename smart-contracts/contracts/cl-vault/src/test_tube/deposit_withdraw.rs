@@ -102,8 +102,6 @@ mod tests {
             )
             .unwrap();
 
-        println!("{:?}", user_assets);
-
         // Assert Alice has been refunded, so we only expect around 500 to deposit here
         assert_approx_eq!(
             user_assets.balances[0].amount,
