@@ -343,6 +343,7 @@ mod tests {
             Uint128::zero(),
         );
         //let bank = Bank::new(&app);
+
         let wasm = Wasm::new(&app);
 
         // Create 3 accounts
