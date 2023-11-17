@@ -256,6 +256,7 @@ mod tests {
     fn multiple_deposit_withdraw_unused_funds_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
         //let bank = Bank::new(&app);
+
         let wasm = Wasm::new(&app);
 
         // Create 3 accounts

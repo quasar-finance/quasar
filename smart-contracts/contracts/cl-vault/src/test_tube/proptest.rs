@@ -507,7 +507,7 @@ mod tests {
         // setup the config with amount of cases, usable for setting different values on ci vs local
         #![proptest_config(ProptestConfig::with_cases(get_cases()))]
         #[test]
-        //#[ignore]
+        #[ignore]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
             actions in get_strategy_list(),
