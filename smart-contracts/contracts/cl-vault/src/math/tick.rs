@@ -91,6 +91,8 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
     }
 
     let mut geo_spacing;
+    let mut has_rebuilt_cache = false; // Flag to track if cache has been rebuilt
+
     if price > Decimal256::one() {
         let mut index = 0i64;
         loop {
@@ -102,10 +104,12 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
                     }
                     index += 1;
                 }
-                None => {
+                None if !has_rebuilt_cache => {
                     // Rebuild the cache if a tick is not found
                     build_tick_exp_cache(storage)?;
+                    has_rebuilt_cache = true;
                 }
+                None => return Err(ContractError::TickNotFoundAfterRebuild {}),
             }
         }
     } else {
@@ -119,10 +123,12 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
                     }
                     index -= 1;
                 }
-                None => {
+                None if !has_rebuilt_cache => {
                     // Rebuild the cache if a tick is not found
                     build_tick_exp_cache(storage)?;
+                    has_rebuilt_cache = true;
                 }
+                None => return Err(ContractError::TickNotFoundAfterRebuild {}),
             }
         }
     }
@@ -178,16 +184,6 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     } else {
         Ok(Decimal256::one() / p)
     }
-}
-
-// Iterate over the TICK_EXP_CACHE map and get all entries
-pub fn get_tick_exp_cache(storage: &mut dyn Storage) -> Result<Vec<i64>, ContractError> {
-    let keys: Vec<i64> = TICK_EXP_CACHE
-        .range(storage, None, None, cosmwasm_std::Order::Ascending)
-        .map(|item| item.unwrap().0)
-        .collect();
-
-    Ok(keys)
 }
 
 // TODO: Move this entrypoint to another place like execute.rs
