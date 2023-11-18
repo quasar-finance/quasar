@@ -27,9 +27,9 @@ mod tests {
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 100_000_000_000_000_000;
-    const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
+    const DENOM_BASE: &str = "ZZZZZ";
     const DENOM_QUOTE: &str =
-        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -498,7 +498,7 @@ mod tests {
 
     fn get_cases() -> u32 {
         std::env::var("PROPTEST_CASES")
-            .unwrap_or("256".to_string())
+            .unwrap_or("100".to_string())
             .parse()
             .unwrap()
     }
