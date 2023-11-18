@@ -24,6 +24,8 @@ pub enum ExtensionExecuteMsg {
     DistributeRewards {},
     /// Claim rewards belonging to a single user
     ClaimRewards {},
+    /// Purge cache tick
+    PurgeTickExpCache(), // TODO: Evaluate if needed, if not adjust test_tube test in range.rs
 }
 
 /// Apollo extension messages define functionality that is part of all apollo

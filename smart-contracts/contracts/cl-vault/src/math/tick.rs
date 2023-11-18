@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, Storage, Uint128};
+use cosmwasm_std::{Decimal, Decimal256, Response, Storage, Uint128};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -80,7 +80,6 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     Ok(price)
 }
 
-// TODO: hashmaps vs CW maps?
 pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i128, ContractError> {
     if price > Decimal256::from_str(MAX_SPOT_PRICE)?
         || price < Decimal256::from_str(MIN_SPOT_PRICE)?
@@ -88,24 +87,43 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
         return Err(ContractError::PriceBoundError { price });
     }
     if price == Decimal256::one() {
-        // return Ok(0i128);
         return Ok(0i128);
     }
 
     let mut geo_spacing;
     if price > Decimal256::one() {
         let mut index = 0i64;
-        geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
-        while geo_spacing.max_price < price {
-            index += 1;
-            geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
+        loop {
+            match TICK_EXP_CACHE.may_load(storage, index)? {
+                Some(data) => {
+                    geo_spacing = data;
+                    if geo_spacing.max_price >= price {
+                        break;
+                    }
+                    index += 1;
+                }
+                None => {
+                    // Rebuild the cache if a tick is not found
+                    build_tick_exp_cache(storage)?;
+                }
+            }
         }
     } else {
         let mut index = -1;
-        geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
-        while geo_spacing.initial_price > price {
-            index -= 1;
-            geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
+        loop {
+            match TICK_EXP_CACHE.may_load(storage, index)? {
+                Some(data) => {
+                    geo_spacing = data;
+                    if geo_spacing.initial_price <= price {
+                        break;
+                    }
+                    index -= 1;
+                }
+                None => {
+                    // Rebuild the cache if a tick is not found
+                    build_tick_exp_cache(storage)?;
+                }
+            }
         }
     }
     let price_in_this_exponent = price - geo_spacing.initial_price;
@@ -160,6 +178,33 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     } else {
         Ok(Decimal256::one() / p)
     }
+}
+
+// Iterate over the TICK_EXP_CACHE map and get all entries
+pub fn get_tick_exp_cache(storage: &mut dyn Storage) -> Result<Vec<i64>, ContractError> {
+    let keys: Vec<i64> = TICK_EXP_CACHE
+        .range(storage, None, None, cosmwasm_std::Order::Ascending)
+        .map(|item| item.unwrap().0)
+        .collect();
+
+    Ok(keys)
+}
+
+// TODO: Move this entrypoint to another place like execute.rs
+// Iterate over the TICK_EXP_CACHE map and remove each entry to purge the cached entries
+pub fn purge_tick_exp_cache(storage: &mut dyn Storage) -> Result<Response, ContractError> {
+    // TODO: -> assert_admin(deps, caller); if we leave this exposed
+
+    let keys: Vec<i64> = TICK_EXP_CACHE
+        .range(storage, None, None, cosmwasm_std::Order::Ascending)
+        .map(|item| item.unwrap().0)
+        .collect();
+
+    for key in keys {
+        TICK_EXP_CACHE.remove(storage, key);
+    }
+
+    Ok(Response::default())
 }
 
 pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
