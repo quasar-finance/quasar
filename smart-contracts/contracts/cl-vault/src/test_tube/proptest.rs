@@ -464,7 +464,7 @@ mod tests {
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in -500_000i64..0, upper_tick in 1i64..50_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
