@@ -35,8 +35,8 @@ mod test {
             // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
@@ -50,11 +50,11 @@ mod test {
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -74,11 +74,11 @@ mod test {
                 tokens_provided: vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                 ],
                 token_min_amount0: Uint128::zero().to_string(),
@@ -124,8 +124,8 @@ mod test {
             // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
@@ -139,11 +139,11 @@ mod test {
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -162,11 +162,11 @@ mod test {
                 tokens_provided: vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                 ],
                 token_min_amount0: Uint128::zero().to_string(),
@@ -178,8 +178,8 @@ mod test {
 
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -248,8 +248,8 @@ mod test {
             // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
@@ -263,11 +263,11 @@ mod test {
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: "10000000000".to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -287,11 +287,11 @@ mod test {
                 tokens_provided: vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "10000000000".to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                 ],
                 token_min_amount0: Uint128::zero().to_string(),
@@ -303,8 +303,8 @@ mod test {
 
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -365,8 +365,8 @@ mod test {
             // TODO: Evaluate using default_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),

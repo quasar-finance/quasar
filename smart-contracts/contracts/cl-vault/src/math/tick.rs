@@ -93,7 +93,7 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
     let mut geo_spacing;
     let mut has_rebuilt_cache = false; // Flag to track if cache has been rebuilt
 
-    if price > Decimal256::one() {
+    if price >= Decimal256::one() {
         let mut index = 0i64;
         loop {
             match TICK_EXP_CACHE.may_load(storage, index)? {
