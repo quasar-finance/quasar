@@ -179,7 +179,7 @@ mod tests {
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
 
-        let user_assets_bal: AssetsBalanceResponse = wasm
+        let _user_assets_bal: AssetsBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -190,7 +190,7 @@ mod tests {
             )
             .unwrap();
 
-        let vault_total_shares: TotalAssetsResponse = wasm
+        let _vault_total_shares: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 

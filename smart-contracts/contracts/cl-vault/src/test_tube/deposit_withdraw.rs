@@ -310,7 +310,7 @@ mod tests {
                         Coin::new(deposit_amount, DENOM_BASE),
                         Coin::new(deposit_amount, DENOM_QUOTE),
                     ], // 1eth = 6k osmo
-                    &user,
+                    user,
                 )
                 .unwrap();
             }
