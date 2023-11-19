@@ -13,7 +13,7 @@ use crate::rewards::{
     execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
-use crate::state::{SHARES, VAULT_DENOM};
+
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -29,11 +29,11 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128, Uint256,
+    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
 };
 use cw2::set_contract_version;
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgBurn;
+
+
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -183,59 +183,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::new().add_attribute("migrate", "successful"))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cosmwasm_std::{Addr, Uint128};
-
-    #[test]
-    fn test_migration() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-        VAULT_DENOM.save(
-            deps.as_mut().storage,
-            &String::from("tokenfactory/test/migration"),
-        );
-
-        let user_shares = [
-            ("user1", 334336393064997666210680868153120255847u128),
-            ("user2", 3861723043195065215677860659781464267u128),
-            ("user3", 5207698598937150446323936506894565090u128),
-            ("user4", 100926648309343424566468024997861860u128),
-            ("user5", 89285540372043010706153009474481050u128),
-            ("user6", 0u128),
-            ("user7", 19497052606527749357594751011469352u128),
-        ];
-
-        for (user, shares) in user_shares.iter() {
-            let addr = Addr::unchecked(*user);
-            let initial_shares = Uint128::new(*shares);
-            SHARES
-                .save(deps.as_mut().storage, addr.clone(), &initial_shares)
-                .unwrap();
-        }
-
-        let migrate_msg = MigrateMsg {};
-        let migrate_response = migrate(deps.as_mut(), env.clone(), migrate_msg).unwrap();
-
-        assert_eq!(migrate_response.attributes[0].key, "migrate");
-        assert_eq!(migrate_response.attributes[0].value, "successful");
-
-        for (user, shares) in user_shares.iter() {
-            let addr = Addr::unchecked(*user);
-            let updated_shares = SHARES.load(deps.as_ref().storage, addr.clone()).unwrap();
-            let expected_shares = Uint128::new(*shares) / Uint128::new(10u128).pow(18);
-            assert_eq!(updated_shares, expected_shares);
-        }
-
-        let messages = migrate_response.messages.clone();
-        assert_eq!(messages.len(), 6);
-    }
 }
