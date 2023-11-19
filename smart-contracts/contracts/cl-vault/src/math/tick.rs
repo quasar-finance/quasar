@@ -213,6 +213,8 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     Ok(())
 }
 
+/// Iterate over the the TICK_EXP_CACHE between the MIN_SPOT_PRICE and the MAX_SPOT_PRICE.
+/// If there are any cache items missing, that means that our cache is incorrect.
 pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError> {
     // iterate over the tick_exp_cache in both directions.
     // until we reach MAX or MIN price, we should have a cache hit at each increasing or decreasing index
@@ -220,6 +222,7 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
     let mut positive_index = 0i64;
     let max_spot_price = Decimal256::from_str(MAX_SPOT_PRICE)?;
 
+    // Verify positive indices
     while max_price < max_spot_price {
         let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index).map_err(|_| {
             ContractError::TickNotFound {
@@ -231,7 +234,7 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
         positive_index += 1;
     }
 
-    // Build negative indices
+    // Verify negative indices
     let mut min_price = Decimal256::one();
     let mut negative_index = 0;
     let min_spot_price = Decimal256::from_str(MIN_SPOT_PRICE)?;
