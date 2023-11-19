@@ -33,7 +33,10 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
-                &[Coin::new(5_000, "uatom"), Coin::new(5_000, "uosmo")],
+                &[
+                    Coin::new(1_000_000_000_000_000_000, "gwei"),
+                    Coin::new(6_000_000_000, "uosmo"),
+                ], // 1eth = 6k osmo
                 &alice,
             )
             .unwrap();

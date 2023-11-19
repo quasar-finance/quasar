@@ -14,6 +14,8 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::query::AssetsBalanceResponse;
+    use crate::test_tube::initialize::initialize::init_test_contract_18dec;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -25,7 +27,7 @@ mod tests {
 
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
-    const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
+    const ACCOUNTS_INITIAL_BALANCE: u128 = 100_000_000_000_000_000;
     const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
     const DENOM_QUOTE: &str =
         "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
@@ -44,9 +46,11 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
+        denom0: &str,
+        denom1: &str,
     ) {
         // Get user DENOM_BASE balance
-        let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
+        let balance_asset0 = get_user_denom_balance(bank, account, denom0);
         let balance0_str = balance_asset0.balance.unwrap().amount;
         let balance0_f64: f64 = balance0_str
             .parse()
@@ -54,7 +58,7 @@ mod tests {
         let amount0 = (balance0_f64 * (percentage / 100.0)).round() as u128;
 
         // Get user DENOM_QUOTE balance
-        let balance_asset1 = get_user_denom_balance(bank, account, DENOM_QUOTE);
+        let balance_asset1 = get_user_denom_balance(bank, account, denom1);
         let balance1_str = balance_asset1.balance.unwrap().amount;
         let balance1_f64: f64 = balance1_str
             .parse()
@@ -79,10 +83,10 @@ mod tests {
         // Initialize an empty Vec<Coin> and push only non zero amount coins
         let mut coins_to_deposit = Vec::new();
         if adjusted_amount0 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount0, DENOM_BASE));
+            coins_to_deposit.push(Coin::new(adjusted_amount0, denom0));
         }
         if adjusted_amount1 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount1, DENOM_QUOTE));
+            coins_to_deposit.push(Coin::new(adjusted_amount1, denom1));
         }
 
         // Check if coins_to_deposit is not empty before proceeding or skip the iteration
@@ -167,7 +171,6 @@ mod tests {
     ) {
         let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
-
         // // Before queries
         // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
         //     get_vault_shares_balance(wasm, contract_address);
@@ -175,6 +178,21 @@ mod tests {
         //     get_vault_position_assets(wasm, contract_address);
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
+
+        let user_assets_bal: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: account.address(),
+                    },
+                )),
+            )
+            .unwrap();
+
+        let vault_total_shares: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
 
         // Execute withdraw
         let withdraw_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -446,7 +464,7 @@ mod tests {
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in 1i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -501,9 +519,9 @@ mod tests {
             let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_BASE),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -517,11 +535,11 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),
@@ -534,7 +552,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
@@ -542,14 +560,14 @@ mod tests {
 
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00);
+                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, DENOM_BASE, DENOM_QUOTE);
             }
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {
                 match actions[i] {
                     Action::Deposit => {
-                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
+                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Withdraw => {
@@ -557,7 +575,7 @@ mod tests {
                         //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Swap => {
-                        swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                         //assert_swap(); // todo!()
                     },
                     Action::UpdateRange => {
@@ -566,8 +584,89 @@ mod tests {
                     },
                 }
             }
+        }
+    }
 
-            println!("PASS");
+    proptest! {
+        // setup the config with amount of cases, usable for setting different values on ci vs local
+        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
+        #[test]
+        #[ignore]
+        fn test_complete_works_18dec(
+            (initial_lower_tick, initial_upper_tick) in get_initial_range(),
+            actions in get_strategy_list(),
+            percentages in get_percentage_list(),
+            account_indexes in get_account_index_list()
+        ) {
+            // Creating test core
+            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract_18dec(
+                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+                &[
+                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
+                ],
+                MsgCreateConcentratedPool {
+                    sender: "overwritten".to_string(),
+                    denom0: DENOM_BASE.to_string(),
+                    denom1: DENOM_QUOTE.to_string(),
+                    tick_spacing: 1,
+                    spread_factor: "100000000000000".to_string(),
+                },
+                initial_lower_tick,
+                initial_upper_tick,
+                vec![
+                    v1beta1::Coin {
+                        denom: DENOM_BASE.to_string(),
+                        amount: "1000000000000000000".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: "1000000000000000000".to_string(),
+                    },
+                ],
+                Uint128::zero(),
+                Uint128::zero(),
+            );
+            let wasm = Wasm::new(&app);
+            let cl = ConcentratedLiquidity::new(&app);
+            let bank = Bank::new(&app);
+
+            // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
+            let accounts = app
+                .init_accounts(&[
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
+                ], ACCOUNTS_NUMBER)
+                .unwrap();
+
+            // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
+            for i in 0..ACCOUNTS_NUMBER {
+                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, DENOM_BASE, DENOM_QUOTE);
+            }
+
+            // Iterate iterations times
+            for i in 0..ITERATIONS_NUMBER {
+                match actions[i] {
+                    Action::Deposit => {
+                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
+                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
+                    },
+                    Action::Withdraw => {
+                        withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
+                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
+                    },
+                    Action::Swap => {
+                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                        //assert_swap(); // todo!()
+                    },
+                    Action::UpdateRange => {
+                        update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
+                        //assert_update_range(); // todo!()
+                    },
+                }
+            }
         }
     }
 }

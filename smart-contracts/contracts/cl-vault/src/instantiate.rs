@@ -131,7 +131,7 @@ pub fn handle_instantiate_create_position_reply(
     // todo do we want to mint the initial mint to the instantiater, or just not care?
     let mint_msg = MsgMint {
         sender: env.contract.address.to_string(),
-        amount: Some(coin(liquidity_amount.atomics().u128(), vault_denom).into()),
+        amount: Some(coin(liquidity_amount.to_uint_floor().into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
 
