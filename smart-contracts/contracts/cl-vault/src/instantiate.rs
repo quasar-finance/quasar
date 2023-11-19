@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, SubMsgResult,
-    Uint128,
+    Uint128, Deps,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, Pool,
@@ -11,13 +11,13 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 };
 
 use crate::helpers::must_pay_one_or_two;
-use crate::math::tick::build_tick_exp_cache;
+use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM, TICK_EXP_CACHE,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -36,6 +36,7 @@ pub fn handle_instantiate(
     }
 
     build_tick_exp_cache(deps.storage)?;
+    verify_tick_exp_cache(deps.storage)?;
 
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
 

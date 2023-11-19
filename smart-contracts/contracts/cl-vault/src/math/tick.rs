@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, Response, Storage, Uint128};
+use cosmwasm_std::{Decimal, Decimal256, Response, Storage, Uint128, Deps};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -255,10 +255,87 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     Ok(())
 }
 
+
+pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError> {
+    // iterate over the tick_exp_cache in both directions.
+    // until we reach MAX or MIN price, we should have a cache hit at each increasing or decreasing index
+    let mut max_price = Decimal256::one();
+    let mut positive_index = 0i64;
+    let max_spot_price = Decimal256::from_str(MAX_SPOT_PRICE)?;
+
+    while max_price < max_spot_price {
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index)?;
+
+        max_price = tick_exp_index_data.max_price;
+        positive_index += 1;
+    }
+
+    // Build negative indices
+    let mut min_price = Decimal256::one();
+    let mut negative_index = 0;
+    let min_spot_price = Decimal256::from_str(MIN_SPOT_PRICE)?;
+
+    while min_price > min_spot_price {
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index)?;
+
+        min_price = tick_exp_index_data.initial_price;
+        negative_index -= 1;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{testing::mock_dependencies, Order};
+
+    #[test]
+    fn test_verify_tick_cache() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap();
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_positive_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, 5);
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_last_positive_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        let tick = TICK_EXP_CACHE.range(deps.as_ref().storage, None, None, Order::Ascending).last().unwrap().unwrap().0;
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_last_negative_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        let tick = TICK_EXP_CACHE.range(deps.as_ref().storage, None, None, Order::Descending).last().unwrap().unwrap().0;
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_negative_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, -5);
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+    }
 
     #[test]
     fn test_test_tube_tick_to_price() {
