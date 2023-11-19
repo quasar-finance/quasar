@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, SubMsgResult,
-    Uint128, Deps,
+    Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, Pool,
@@ -17,7 +17,7 @@ use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM, TICK_EXP_CACHE,
+    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;

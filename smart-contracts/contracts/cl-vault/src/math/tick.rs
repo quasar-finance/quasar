@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, Response, Storage, Uint128, Deps};
+use cosmwasm_std::{Decimal, Decimal256, Response, Storage, Uint128};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -255,7 +255,6 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     Ok(())
 }
 
-
 pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError> {
     // iterate over the tick_exp_cache in both directions.
     // until we reach MAX or MIN price, we should have a cache hit at each increasing or decreasing index
@@ -265,7 +264,9 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
 
     while max_price < max_spot_price {
         let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index).map_err(|_| {
-            ContractError::TickNotFound{ tick: positive_index }
+            ContractError::TickNotFound {
+                tick: positive_index,
+            }
         })?;
 
         max_price = tick_exp_index_data.max_price;
@@ -279,7 +280,9 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
 
     while min_price > min_spot_price {
         let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index).map_err(|_| {
-            ContractError::TickNotFound{ tick: negative_index }
+            ContractError::TickNotFound {
+                tick: negative_index,
+            }
         })?;
 
         min_price = tick_exp_index_data.initial_price;
@@ -316,12 +319,16 @@ mod tests {
         let mut deps = mock_dependencies();
         build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
-        let tick = TICK_EXP_CACHE.range(deps.as_ref().storage, None, None, Order::Ascending).last().unwrap().unwrap().0;
+        let tick = TICK_EXP_CACHE
+            .range(deps.as_ref().storage, None, None, Order::Ascending)
+            .last()
+            .unwrap()
+            .unwrap()
+            .0;
 
         TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
         let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
         assert_eq!(err, ContractError::TickNotFound { tick })
-
     }
 
     #[test]
@@ -329,12 +336,16 @@ mod tests {
         let mut deps = mock_dependencies();
         build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
-        let tick = TICK_EXP_CACHE.range(deps.as_ref().storage, None, None, Order::Descending).last().unwrap().unwrap().0;
+        let tick = TICK_EXP_CACHE
+            .range(deps.as_ref().storage, None, None, Order::Descending)
+            .last()
+            .unwrap()
+            .unwrap()
+            .0;
 
         TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
         let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
         assert_eq!(err, ContractError::TickNotFound { tick })
-
     }
 
     #[test]

@@ -122,7 +122,7 @@ pub enum ContractError {
     InvalidCurrentTick {},
 
     #[error("Tick not found in tick cache, tick: {tick}")]
-    TickNotFound {tick: i64},
+    TickNotFound { tick: i64 },
 
     #[error("Tick corresponding to price not found in cache even after rebuilding")]
     TickNotFoundAfterRebuild {},
