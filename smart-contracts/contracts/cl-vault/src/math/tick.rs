@@ -186,21 +186,6 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     }
 }
 
-// Iterate over the TICK_EXP_CACHE map and remove each entry to purge the cached entries
-// This method is only used by tests
-pub fn purge_tick_exp_cache(storage: &mut dyn Storage) -> Result<Response, ContractError> {
-    let keys: Vec<i64> = TICK_EXP_CACHE
-        .range(storage, None, None, cosmwasm_std::Order::Ascending)
-        .map(|item| item.unwrap().0)
-        .collect();
-
-    for key in keys {
-        TICK_EXP_CACHE.remove(storage, key);
-    }
-
-    Ok(Response::default())
-}
-
 pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
     // Build positive indices
     let mut max_price = Decimal256::one();
