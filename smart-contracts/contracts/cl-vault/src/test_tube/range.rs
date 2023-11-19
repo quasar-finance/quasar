@@ -18,7 +18,7 @@ mod test {
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::init_test_contract, math::tick::purge_tick_exp_cache,
+        test_tube::initialize::initialize::init_test_contract,
     };
 
     use prost::Message;
