@@ -6,7 +6,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMs
 use crate::query::{
     query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
     query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, RangeAdminResponse,
+    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -146,6 +146,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                         address: range_admin.to_string(),
                     })?)
                 }
+                crate::msg::ClQueryMsg::VerifyTickCache => {
+                    Ok(to_binary(&query_verify_tick_cache(deps)?)?)
+                }
             },
         },
     }
@@ -181,55 +184,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let mut response = Response::new();
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .map(|val| -> Result<(Addr, Uint128), ContractError> {
-            let (user, shares) = val?;
-            // Convert Uint128 to Uint256 for old shares
-            let shares_256 = Uint256::from(shares.u128());
-
-            // Perform the division
-            let new_shares_256 = shares_256
-                .checked_div(Uint256::from_u128(10u128).pow(18))
-                .expect("Underflow");
-
-            // Convert back to Uint128 for new shares, handling potential overflow
-            let new_shares: Uint128 = Uint128::try_from(new_shares_256)
-                .expect("Conversion from Uint256 to Uint128 failed due to overflow");
-
-            let burn_amount_user =
-                Uint128::try_from(shares_256.checked_sub(Uint256::from(new_shares.u128()))?)
-                    .expect("Overflow/Underflow in burn amount calculation for user");
-
-            if burn_amount_user.gt(&Uint128::zero()) {
-                // Create a burn message for each user
-                let individual_burn = MsgBurn {
-                    amount: Some(OsmoCoin {
-                        amount: burn_amount_user.to_string(),
-                        denom: vault_denom.clone(),
-                    }),
-                    sender: env.contract.address.to_string(),
-                    burn_from_address: env.contract.address.to_string(),
-                };
-
-                // Add the burn message to the response
-                response = response.clone().add_message(individual_burn);
-            }
-
-            Ok((user, new_shares))
-        })
-        .collect();
-
-    for (user, new_shares) in vals? {
-        SHARES.save(deps.storage, user, &new_shares)?;
-    }
-
-    response = response.add_attribute("migrate", "successful");
-
-    Ok(response)
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]

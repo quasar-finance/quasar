@@ -1,6 +1,8 @@
 use crate::helpers::get_unused_balances;
+use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::vault::concentrated_liquidity::get_position;
+use crate::ContractError;
 use crate::{
     error::ContractResult,
     state::{
@@ -68,6 +70,23 @@ pub struct RangeAdminResponse {
 #[cw_serde]
 pub struct TotalVaultTokenSupplyResponse {
     pub total: Uint128,
+}
+
+#[cw_serde]
+pub struct VerifyTickCacheResponse {
+    pub result: Result<(), i64>,
+}
+
+pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
+    verify_tick_exp_cache(deps.storage).err().map(|e| {
+        if let ContractError::TickNotFound { tick } = e {
+            Ok(VerifyTickCacheResponse {
+                result: Err(tick),
+            })
+        } else {
+            Err(e)
+        }
+    }).unwrap_or(Ok(VerifyTickCacheResponse { result: Ok(()) }))
 }
 
 pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {

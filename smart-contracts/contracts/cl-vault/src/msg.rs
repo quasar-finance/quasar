@@ -101,6 +101,8 @@ pub enum ClQueryMsg {
     Position {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
+    #[returns(bool)]
+    VerifyTickCache,
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
