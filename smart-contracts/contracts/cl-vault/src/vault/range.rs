@@ -251,14 +251,16 @@ pub fn handle_initial_create_position_reply(
     let target_upper_tick = create_position_message.upper_tick;
 
     // get refunded amounts
+    // TODO added saturating sub as work around for https://github.com/osmosis-labs/osmosis/issues/6843
+    // should be a checked sub eventually
     let current_balance = CURRENT_BALANCE.load(deps.storage)?;
     let refunded_amounts = (
         current_balance
             .0
-            .checked_sub(Uint128::from_str(&create_position_message.amount0)?)?,
+            .saturating_sub(Uint128::from_str(&create_position_message.amount0)?),
         current_balance
             .1
-            .checked_sub(Uint128::from_str(&create_position_message.amount1)?)?,
+            .saturating_sub(Uint128::from_str(&create_position_message.amount1)?),
     );
 
     do_swap_deposit_merge(
