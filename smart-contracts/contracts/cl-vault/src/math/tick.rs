@@ -91,47 +91,22 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
     }
 
     let mut geo_spacing;
-    let mut has_rebuilt_cache = false; // Flag to track if cache has been rebuilt
-
-    if price >= Decimal256::one() {
+    if price > Decimal256::one() {
         let mut index = 0i64;
-        loop {
-            match TICK_EXP_CACHE.may_load(storage, index)? {
-                Some(data) => {
-                    geo_spacing = data;
-                    if geo_spacing.max_price >= price {
-                        break;
-                    }
-                    index += 1;
-                }
-                None if !has_rebuilt_cache => {
-                    // Rebuild the cache if a tick is not found
-                    build_tick_exp_cache(storage)?;
-                    has_rebuilt_cache = true;
-                }
-                None => return Err(ContractError::TickNotFoundAfterRebuild {}),
-            }
+        geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
+        while geo_spacing.max_price < price {
+            index += 1;
+            geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
         }
     } else {
         let mut index = -1;
-        loop {
-            match TICK_EXP_CACHE.may_load(storage, index)? {
-                Some(data) => {
-                    geo_spacing = data;
-                    if geo_spacing.initial_price <= price {
-                        break;
-                    }
-                    index -= 1;
-                }
-                None if !has_rebuilt_cache => {
-                    // Rebuild the cache if a tick is not found
-                    build_tick_exp_cache(storage)?;
-                    has_rebuilt_cache = true;
-                }
-                None => return Err(ContractError::TickNotFoundAfterRebuild {}),
-            }
+        geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
+        while geo_spacing.initial_price > price {
+            index -= 1;
+            geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
         }
     }
+
     let price_in_this_exponent = price - geo_spacing.initial_price;
 
     let ticks_filled_by_current_spacing =
