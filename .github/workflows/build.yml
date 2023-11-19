@@ -108,6 +108,6 @@ jobs:
         run: mkdir -p smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release && mv ./cl_vault.wasm  smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm
       - name: Run test-tube tests
         if: env.GIT_DIFF
-        run: cd smart-contracts && cargo test -- --include-ignored
+        run: cd smart-contracts && cargo test -- --include-ignored --test-threads=1
         env:
           PROPTEST_CASES: 10
