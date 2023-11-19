@@ -264,7 +264,9 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
     let max_spot_price = Decimal256::from_str(MAX_SPOT_PRICE)?;
 
     while max_price < max_spot_price {
-        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index)?;
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index).map_err(|_| {
+            ContractError::TickNotFound{ tick: positive_index }
+        })?;
 
         max_price = tick_exp_index_data.max_price;
         positive_index += 1;
@@ -276,7 +278,9 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
     let min_spot_price = Decimal256::from_str(MIN_SPOT_PRICE)?;
 
     while min_price > min_spot_price {
-        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index)?;
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index).map_err(|_| {
+            ContractError::TickNotFound{ tick: negative_index }
+        })?;
 
         min_price = tick_exp_index_data.initial_price;
         negative_index -= 1;

@@ -121,6 +121,9 @@ pub enum ContractError {
     #[error("Invalid current tick and deposit token combination")]
     InvalidCurrentTick {},
 
+    #[error("Tick not found in tick cache, tick: {tick}")]
+    TickNotFound {tick: i64},
+
     #[error("Tick corresponding to price not found in cache even after rebuilding")]
     TickNotFoundAfterRebuild {},
 }
