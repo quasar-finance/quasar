@@ -5,7 +5,7 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserRewardsResponse, UserSharesBalanceResponse,
+        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::VaultConfig,
 };
@@ -101,7 +101,7 @@ pub enum ClQueryMsg {
     Position {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
-    #[returns(bool)]
+    #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
 }
 
