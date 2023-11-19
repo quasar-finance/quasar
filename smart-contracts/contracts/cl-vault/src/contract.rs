@@ -98,9 +98,6 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
                 }
-                crate::msg::ExtensionExecuteMsg::PurgeTickExpCache {} => {
-                    purge_tick_exp_cache(deps.storage) // TODO: Move this to another domain if we implement it
-                }
             }
         }
     }

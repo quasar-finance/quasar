@@ -428,37 +428,6 @@ mod tests {
         numeric_part.parse::<u128>().unwrap()
     }
 
-    // ASSERT METHODS
-
-    // TODO: REMOVE THIS DEPRECATED
-    /*fn assert_deposit_withdraw(
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_address: &Addr,
-        accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: HashMap<String, Uint128>,
-    ) {
-        // TODO: multi-query foreach user created previously
-        for account in accounts {
-            let shares = get_user_shares_balance(wasm, contract_address, account);
-
-            // Check that the current account iterated shares balance is the same we expect from Hashmap
-            assert_eq!(
-                shares.balance,
-                accounts_shares_balance.get(&account.address()).unwrap()
-            );
-        }
-    }*/
-
-    /*
-    fn assert_swap() {
-        todo!()
-    }
-
-    fn assert_update_range() {
-        todo!()
-    }
-    */
-
     // COMPOSE STRATEGY
 
     // get_initial_range generates random lower and upper ticks for the initial position
@@ -569,19 +538,15 @@ mod tests {
                 match actions[i] {
                     Action::Deposit => {
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Withdraw => {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     // Action::Swap => {
                     //     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                    //     assert_swap(); // todo!()
                     // },
                     Action::UpdateRange => {
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
                     },
                 }
             }

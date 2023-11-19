@@ -186,11 +186,9 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     }
 }
 
-// TODO: Move this entrypoint to another place like execute.rs
 // Iterate over the TICK_EXP_CACHE map and remove each entry to purge the cached entries
+// This method is only used by tests
 pub fn purge_tick_exp_cache(storage: &mut dyn Storage) -> Result<Response, ContractError> {
-    // TODO: -> assert_admin(deps, caller); if we leave this exposed
-
     let keys: Vec<i64> = TICK_EXP_CACHE
         .range(storage, None, None, cosmwasm_std::Order::Ascending)
         .map(|item| item.unwrap().0)

@@ -342,7 +342,6 @@ pub fn do_swap_deposit_merge(
         (
             // current tick is above range
             if pool_details.current_tick < target_lower_tick {
-                // TODO: Maybe here <= ?
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(

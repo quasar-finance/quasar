@@ -18,7 +18,7 @@ mod test {
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::init_test_contract,
+        test_tube::initialize::initialize::init_test_contract, math::tick::purge_tick_exp_cache,
     };
 
     use prost::Message;
@@ -27,95 +27,6 @@ mod test {
     const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-
-    #[test]
-    #[ignore]
-    fn move_range_purge_cache_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
-            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            21205000,
-            27448000,
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
-
-        let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
-
-        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -5000000,
-                upper_tick: 500000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        // purge_tick_exp_cache
-        wasm.execute(
-            contract.as_str(),
-            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::PurgeTickExpCache {}),
-            &[],
-            &admin,
-        )
-        .unwrap();
-
-        let modify_range_resp = wasm
-            .execute(
-                contract.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("400").unwrap(),
-                        upper_price: Decimal::from_str("1466").unwrap(),
-                        max_slippage: Decimal::bps(9500),
-                        ratio_of_swappable_funds_to_use: Decimal::one(),
-                        twap_window_seconds: 45,
-                    },
-                )),
-                &[],
-                &admin,
-            )
-            .unwrap();
-
-        // TODO: Assert modify_range_resp
-    }
 
     #[test]
     #[ignore]
