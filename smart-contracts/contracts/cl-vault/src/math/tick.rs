@@ -307,7 +307,8 @@ mod tests {
         build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
         TICK_EXP_CACHE.remove(deps.as_mut().storage, 5);
-        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick: 5 })
     }
 
     #[test]
@@ -318,7 +319,9 @@ mod tests {
         let tick = TICK_EXP_CACHE.range(deps.as_ref().storage, None, None, Order::Ascending).last().unwrap().unwrap().0;
 
         TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
-        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick })
+
     }
 
     #[test]
@@ -329,7 +332,9 @@ mod tests {
         let tick = TICK_EXP_CACHE.range(deps.as_ref().storage, None, None, Order::Descending).last().unwrap().unwrap().0;
 
         TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
-        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick })
+
     }
 
     #[test]
@@ -338,7 +343,8 @@ mod tests {
         build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
         TICK_EXP_CACHE.remove(deps.as_mut().storage, -5);
-        verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick: -5 })
     }
 
     #[test]
