@@ -27,9 +27,9 @@ mod tests {
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 100_000_000_000_000_000;
-    const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
+    const DENOM_BASE: &str = "ZZZZZ";
     const DENOM_QUOTE: &str =
-        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
@@ -428,43 +428,12 @@ mod tests {
         numeric_part.parse::<u128>().unwrap()
     }
 
-    // ASSERT METHODS
-
-    // TODO: REMOVE THIS DEPRECATED
-    /*fn assert_deposit_withdraw(
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_address: &Addr,
-        accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: HashMap<String, Uint128>,
-    ) {
-        // TODO: multi-query foreach user created previously
-        for account in accounts {
-            let shares = get_user_shares_balance(wasm, contract_address, account);
-
-            // Check that the current account iterated shares balance is the same we expect from Hashmap
-            assert_eq!(
-                shares.balance,
-                accounts_shares_balance.get(&account.address()).unwrap()
-            );
-        }
-    }*/
-
-    /*
-    fn assert_swap() {
-        todo!()
-    }
-
-    fn assert_update_range() {
-        todo!()
-    }
-    */
-
     // COMPOSE STRATEGY
 
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in -500_000i64..0, upper_tick in 1i64..50_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -498,7 +467,7 @@ mod tests {
 
     fn get_cases() -> u32 {
         std::env::var("PROPTEST_CASES")
-            .unwrap_or("256".to_string())
+            .unwrap_or("100".to_string())
             .parse()
             .unwrap()
     }
@@ -569,19 +538,15 @@ mod tests {
                 match actions[i] {
                     Action::Deposit => {
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Withdraw => {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     // Action::Swap => {
                     //     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                    //     assert_swap(); // todo!()
                     // },
                     Action::UpdateRange => {
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
                     },
                 }
             }

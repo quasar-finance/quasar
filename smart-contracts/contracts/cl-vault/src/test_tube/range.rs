@@ -18,10 +18,15 @@ mod test {
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::init_test_contract,
+        test_tube::initialize::initialize::init_test_contract, math::tick::purge_tick_exp_cache,
     };
 
     use prost::Message;
+
+    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
+    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
+    const DENOM_BASE: &str = "uatom";
+    const DENOM_QUOTE: &str = "uosmo";
 
     #[test]
     #[ignore]
@@ -30,13 +35,13 @@ mod test {
             // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: "uatom".to_string(),
-                denom1: "uosmo".to_string(),
+                denom0: DENOM_BASE.to_string(),
+                denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
             },
@@ -44,12 +49,12 @@ mod test {
             27448000,
             vec![
                 v1beta1::Coin {
-                    denom: "uatom".to_string(),
-                    amount: "10000000000".to_string(),
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
                 v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: "10000000000".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -67,12 +72,12 @@ mod test {
                 upper_tick: 500000,
                 tokens_provided: vec![
                     v1beta1::Coin {
-                        denom: "uatom".to_string(),
-                        amount: "10000000000".to_string(),
+                        denom: DENOM_BASE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                     v1beta1::Coin {
-                        denom: "uosmo".to_string(),
-                        amount: "10000000000".to_string(),
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                 ],
                 token_min_amount0: Uint128::zero().to_string(),
@@ -84,8 +89,8 @@ mod test {
 
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -96,10 +101,10 @@ mod test {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
                     pool_id: cl_pool_id,
-                    token_out_denom: "uatom".to_string(),
+                    token_out_denom: DENOM_BASE.to_string(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: "uosmo".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
                     amount: "1000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
@@ -154,13 +159,13 @@ mod test {
             // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: "uatom".to_string(),
-                denom1: "uosmo".to_string(),
+                denom0: DENOM_BASE.to_string(),
+                denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
             },
@@ -168,12 +173,12 @@ mod test {
             27448000,
             vec![
                 v1beta1::Coin {
-                    denom: "uatom".to_string(),
-                    amount: "10000000000".to_string(),
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
                 v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: "10000000000".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -192,12 +197,12 @@ mod test {
                 upper_tick: 500000,
                 tokens_provided: vec![
                     v1beta1::Coin {
-                        denom: "uatom".to_string(),
-                        amount: "10000000000".to_string(),
+                        denom: DENOM_BASE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                     v1beta1::Coin {
-                        denom: "uosmo".to_string(),
-                        amount: "10000000000".to_string(),
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                     },
                 ],
                 token_min_amount0: Uint128::zero().to_string(),
@@ -209,8 +214,8 @@ mod test {
 
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -220,10 +225,10 @@ mod test {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
                     pool_id: cl_pool_id,
-                    token_out_denom: "uatom".to_string(),
+                    token_out_denom: DENOM_BASE.to_string(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: "uosmo".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
                     amount: "1000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
@@ -271,13 +276,13 @@ mod test {
             // TODO: Evaluate using default_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: "uatom".to_string(), //token0 is uatom
-                denom1: "uosmo".to_string(), //token1 is uosmo
+                denom0: DENOM_BASE.to_string(),  //token0 is uatom
+                denom1: DENOM_QUOTE.to_string(), //token1 is uosmo
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
             },
@@ -285,11 +290,11 @@ mod test {
             31500000, // 5500
             vec![
                 v1beta1::Coin {
-                    denom: "uatom".to_string(),
+                    denom: DENOM_BASE.to_string(),
                     amount: "1000000".to_string(),
                 },
                 v1beta1::Coin {
-                    denom: "uosmo".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
                     amount: "1000000".to_string(),
                 },
             ],
@@ -298,8 +303,8 @@ mod test {
         );
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -316,8 +321,8 @@ mod test {
             lower_tick: 30500000,
             upper_tick: 31500000,
             tokens_provided: vec![
-                coin(3349580, "uatom").into(),
-                coin(4280628569, "uosmo").into(),
+                coin(3349580, DENOM_BASE).into(),
+                coin(4280628569, DENOM_QUOTE).into(),
             ],
             token_min_amount0: "0".to_string(),
             token_min_amount1: "0".to_string(),

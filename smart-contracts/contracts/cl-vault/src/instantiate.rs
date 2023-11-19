@@ -11,7 +11,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 };
 
 use crate::helpers::must_pay_one_or_two;
-use crate::math::tick::build_tick_exp_cache;
+use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
@@ -36,6 +36,7 @@ pub fn handle_instantiate(
     }
 
     build_tick_exp_cache(deps.storage)?;
+    verify_tick_exp_cache(deps.storage)?;
 
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
 

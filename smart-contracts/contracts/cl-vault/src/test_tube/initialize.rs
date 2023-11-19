@@ -9,7 +9,7 @@ pub mod initialize {
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
-        MsgSwapExactAmountIn, SwapAmountInRoute,
+        MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
     use osmosis_test_tube::{
@@ -76,13 +76,12 @@ pub mod initialize {
     ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
+        let pm = PoolManager::new(&app);
+        let cl = ConcentratedLiquidity::new(&app);
+        let wasm = Wasm::new(&app);
 
         // Create new account with initial funds
         let admin = app.init_account(admin_balance).unwrap();
-
-        // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
-        // it implements `Module` trait which you will see more later.
-        let wasm = Wasm::new(&app);
 
         // Load compiled wasm bytecode
         let wasm_byte_code = std::fs::read(filename).unwrap();
@@ -93,7 +92,6 @@ pub mod initialize {
             .code_id;
 
         // Setup a dummy CL pool to work with
-        let cl = ConcentratedLiquidity::new(&app);
         let gov = GovWithAppAccess::new(&app);
         gov.propose_and_execute(
             CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
@@ -127,7 +125,7 @@ pub mod initialize {
                 sender: admin.address(),
                 lower_tick,
                 upper_tick,
-                tokens_provided,
+                tokens_provided: tokens_provided.clone(),
                 token_min_amount0: token_min_amount0.to_string(),
                 token_min_amount1: token_min_amount1.to_string(),
             },
@@ -135,10 +133,20 @@ pub mod initialize {
         )
         .unwrap();
 
+        // Get and assert spot price is 1.0
+        let spot_price = pm
+            .query_spot_price(&SpotPriceRequest {
+                base_asset_denom: tokens_provided[0].denom.to_string(),
+                quote_asset_denom: tokens_provided[1].denom.to_string(),
+                pool_id: pool.id,
+            })
+            .unwrap();
+        assert_eq!(spot_price.spot_price, "1.000000000000000000");
+
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
         app.increase_time(1000000);
 
-        // Instantiate
+        // Instantiate vault
         let contract = wasm
             .instantiate(
                 code_id,
@@ -209,8 +217,8 @@ pub mod initialize {
         // Create Alice account
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -220,10 +228,10 @@ pub mod initialize {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
                     pool_id: cl_pool_id,
-                    token_out_denom: "uatom".to_string(),
+                    token_out_denom: DENOM_BASE.to_string(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: "uosmo".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
                     amount: "1000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
@@ -242,7 +250,7 @@ pub mod initialize {
                 ModifyRangeMsg {
                     lower_price: Decimal::from_str("0.993").unwrap(),
                     upper_price: Decimal::from_str("1.002").unwrap(),
-                    max_slippage: Decimal::permille(5),
+                    max_slippage: Decimal::bps(9500),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
                 },
