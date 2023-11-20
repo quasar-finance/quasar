@@ -124,7 +124,6 @@ pub fn execute_build_tick_exp_cache(
     assert_admin(deps.as_ref(), &info.sender)?;
 
     build_tick_exp_cache(deps.storage)?;
-    verify_tick_exp_cache(deps.storage)?;
 
     Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
 }
