@@ -1,4 +1,5 @@
 use cosmwasm_schema::cw_serde;
+use cw_utils::nonpayable;
 use std::str::FromStr;
 
 use cosmwasm_std::{
@@ -16,7 +17,7 @@ use osmosis_std::types::osmosis::{
 use crate::{
     helpers::get_twap_price,
     helpers::get_unused_balances,
-    math::tick::price_to_tick,
+    math::tick::{build_tick_exp_cache, price_to_tick},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::CURRENT_SWAP,
@@ -554,6 +555,19 @@ pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Respon
         .add_attribute("status", "success"))
 }
 
+// Rebuild the tick exponent cache as range_admin account
+pub fn execute_build_tick_exp_cache(
+    deps: DepsMut,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_range_admin(deps.storage, &info.sender)?;
+
+    build_tick_exp_cache(deps.storage)?;
+
+    Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
+}
+
 #[cw_serde]
 pub enum SwapDirection {
     ZeroToOne,
@@ -572,11 +586,20 @@ mod tests {
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
-        math::tick::build_tick_exp_cache,
+        math::tick::{build_tick_exp_cache, verify_tick_exp_cache},
         rewards::CoinList,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
     };
+
+    #[test]
+    fn test_execute_build_tick_exp_cache() {
+        let mut deps = mock_dependencies();
+
+        build_tick_exp_cache(&mut deps.storage).unwrap();
+        let verify_resp = verify_tick_exp_cache(&mut deps.storage).unwrap();
+        assert_eq!((), verify_resp);
+    }
 
     #[test]
     fn test_assert_range_admin() {

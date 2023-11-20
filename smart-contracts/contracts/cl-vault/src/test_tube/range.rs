@@ -17,8 +17,8 @@ mod test {
 
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
-        query::PositionResponse,
-        test_tube::initialize::initialize::init_test_contract,
+        query::{PositionResponse, VerifyTickCacheResponse},
+        test_tube::initialize::initialize::{default_init, init_test_contract},
     };
 
     use prost::Message;
@@ -328,5 +328,40 @@ mod test {
             token_min_amount1: "0".to_string(),
         };
         let _position = cl.create_position(initial_position, &alice).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn admin_build_tick_cache_works() {
+        let (app, contract_address, _cl_pool_id, admin) = default_init();
+        let wasm = Wasm::new(&app);
+
+        // When we will implement this entrypoint, if we do, purge it first
+
+        // Execute build cache
+        let build_resp = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::BuildTickCache {}),
+                &[],
+                &admin,
+            )
+            .unwrap();
+        // Check if the response contains the expected event
+        let has_expected_event = build_resp.events.iter().any(|event| {
+            event.ty == "wasm" && event.attributes.iter().any(|attr| {
+                attr.key == "action" && attr.value == "execute_build_tick_exp_cache"
+            })
+        });
+        assert!(has_expected_event, "Expected event not found in build_resp.events");
+
+        // Verify query and assert
+        let verify_resp: VerifyTickCacheResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &crate::msg::ClQueryMsg::VerifyTickCache {},
+            )
+            .unwrap();
+        assert_eq!((), verify_resp.result.unwrap());
     }
 }
