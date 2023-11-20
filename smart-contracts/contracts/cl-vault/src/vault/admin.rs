@@ -116,7 +116,7 @@ pub fn execute_update_config(
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
-// Rebuild the tick exponent cache as range_admin account
+// Rebuild the tick exponent cache as admin
 pub fn execute_build_tick_exp_cache(
     deps: DepsMut,
     info: MessageInfo,
