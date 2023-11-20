@@ -27,6 +27,11 @@ pub fn execute_withdraw(
     recipient: Option<String>,
     shares_to_withdraw: Uint256,
 ) -> Result<Response, ContractError> {
+    assert!(
+        shares_to_withdraw > Uint256::zero(),
+        "amount to withdraw must be greater than zero"
+    );
+
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
@@ -39,6 +44,7 @@ pub fn execute_withdraw(
         .load(deps.storage, info.sender.clone())?
         .try_into()
         .unwrap();
+
     let left_over = user_shares
         .checked_sub(shares_to_withdraw)
         .map_err(|_| ContractError::InsufficientFunds)?;
@@ -91,7 +97,7 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?; // TODOSN: Rename this function name to something more explicative
+    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?;
 
     Ok(Response::new()
         .add_attribute("method", "withdraw")
