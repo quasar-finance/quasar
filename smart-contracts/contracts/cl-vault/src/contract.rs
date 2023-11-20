@@ -21,9 +21,9 @@ use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
 };
 use crate::vault::range::{
-    execute_build_tick_exp_cache, execute_update_range, get_range_admin,
-    handle_initial_create_position_reply, handle_iteration_create_position_reply,
-    handle_merge_response, handle_swap_reply, handle_withdraw_position_reply,
+    execute_update_range, get_range_admin, handle_initial_create_position_reply,
+    handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
+    handle_withdraw_position_reply,
 };
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
@@ -92,9 +92,6 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
-                }
-                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
-                    execute_build_tick_exp_cache(deps, info)
                 }
             }
         }
