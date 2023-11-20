@@ -6,15 +6,15 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMs
 use crate::query::{
     query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
     query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, RangeAdminResponse,
+    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
     execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
-use crate::state::{SHARES, VAULT_DENOM};
-use crate::vault::admin::execute_admin;
+
+use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -28,12 +28,8 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128, Uint256,
-};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgBurn;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -97,6 +93,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
                 }
+                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
+                    execute_build_tick_exp_cache(deps, info)
+                }
             }
         }
     }
@@ -146,6 +145,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                         address: range_admin.to_string(),
                     })?)
                 }
+                crate::msg::ClQueryMsg::VerifyTickCache => {
+                    Ok(to_binary(&query_verify_tick_cache(deps)?)?)
+                }
             },
         },
     }
@@ -180,106 +182,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let mut response = Response::new();
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let vals: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .map(|val| -> Result<(Addr, Uint128), ContractError> {
-            let (user, shares) = val?;
-            // Convert Uint128 to Uint256 for old shares
-            let shares_256 = Uint256::from(shares.u128());
-
-            // Perform the division
-            let new_shares_256 = shares_256
-                .checked_div(Uint256::from_u128(10u128).pow(18))
-                .expect("Underflow");
-
-            // Convert back to Uint128 for new shares, handling potential overflow
-            let new_shares: Uint128 = Uint128::try_from(new_shares_256)
-                .expect("Conversion from Uint256 to Uint128 failed due to overflow");
-
-            let burn_amount_user =
-                Uint128::try_from(shares_256.checked_sub(Uint256::from(new_shares.u128()))?)
-                    .expect("Overflow/Underflow in burn amount calculation for user");
-
-            if burn_amount_user.gt(&Uint128::zero()) {
-                // Create a burn message for each user
-                let individual_burn = MsgBurn {
-                    amount: Some(OsmoCoin {
-                        amount: burn_amount_user.to_string(),
-                        denom: vault_denom.clone(),
-                    }),
-                    sender: env.contract.address.to_string(),
-                    burn_from_address: env.contract.address.to_string(),
-                };
-
-                // Add the burn message to the response
-                response = response.clone().add_message(individual_burn);
-            }
-
-            Ok((user, new_shares))
-        })
-        .collect();
-
-    for (user, new_shares) in vals? {
-        SHARES.save(deps.storage, user, &new_shares)?;
-    }
-
-    response = response.add_attribute("migrate", "successful");
-
-    Ok(response)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cosmwasm_std::{Addr, Uint128};
-
-    #[test]
-    fn test_migration() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-        VAULT_DENOM.save(
-            deps.as_mut().storage,
-            &String::from("tokenfactory/test/migration"),
-        );
-
-        let user_shares = [
-            ("user1", 334336393064997666210680868153120255847u128),
-            ("user2", 3861723043195065215677860659781464267u128),
-            ("user3", 5207698598937150446323936506894565090u128),
-            ("user4", 100926648309343424566468024997861860u128),
-            ("user5", 89285540372043010706153009474481050u128),
-            ("user6", 0u128),
-            ("user7", 19497052606527749357594751011469352u128),
-        ];
-
-        for (user, shares) in user_shares.iter() {
-            let addr = Addr::unchecked(*user);
-            let initial_shares = Uint128::new(*shares);
-            SHARES
-                .save(deps.as_mut().storage, addr.clone(), &initial_shares)
-                .unwrap();
-        }
-
-        let migrate_msg = MigrateMsg {};
-        let migrate_response = migrate(deps.as_mut(), env.clone(), migrate_msg).unwrap();
-
-        assert_eq!(migrate_response.attributes[0].key, "migrate");
-        assert_eq!(migrate_response.attributes[0].value, "successful");
-
-        for (user, shares) in user_shares.iter() {
-            let addr = Addr::unchecked(*user);
-            let updated_shares = SHARES.load(deps.as_ref().storage, addr.clone()).unwrap();
-            let expected_shares = Uint128::new(*shares) / Uint128::new(10u128).pow(18);
-            assert_eq!(updated_shares, expected_shares);
-        }
-
-        let messages = migrate_response.messages.clone();
-        println!("{:?}", messages);
-        assert_eq!(messages.len(), 6);
-    }
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }

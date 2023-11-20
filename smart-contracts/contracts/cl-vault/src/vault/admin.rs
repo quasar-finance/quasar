@@ -1,5 +1,6 @@
 use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
+use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
@@ -114,14 +115,37 @@ pub fn execute_update_config(
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
+// Rebuild and verify the tick exponent cache
+pub fn execute_build_tick_exp_cache(
+    deps: DepsMut,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    build_tick_exp_cache(deps.storage)?;
+
+    Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::math::tick::verify_tick_exp_cache;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
         Addr, CosmosMsg, Decimal, Uint128,
     };
+
+    #[test]
+    fn test_execute_build_tick_exp_cache() {
+        let mut deps = mock_dependencies();
+
+        build_tick_exp_cache(&mut deps.storage).unwrap();
+        let verify_resp = verify_tick_exp_cache(&mut deps.storage).unwrap();
+        assert_eq!((), verify_resp);
+    }
 
     #[test]
     fn test_execute_claim_strategist_rewards_success() {

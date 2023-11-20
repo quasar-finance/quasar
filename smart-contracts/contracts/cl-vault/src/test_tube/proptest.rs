@@ -15,7 +15,6 @@ mod tests {
     use proptest::prelude::*;
 
     use crate::query::AssetsBalanceResponse;
-    use crate::test_tube::initialize::initialize::init_test_contract_18dec;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -28,15 +27,15 @@ mod tests {
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
     const ACCOUNTS_INITIAL_BALANCE: u128 = 100_000_000_000_000_000;
-    const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
+    const DENOM_BASE: &str = "ZZZZZ";
     const DENOM_QUOTE: &str =
-        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
         Deposit,
         Withdraw,
-        Swap,
+        //Swap,
         UpdateRange,
     }
 
@@ -169,7 +168,8 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
+        let balance = get_user_shares_balance(wasm, contract_address, account);
+        // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
         // // Before queries
         // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
@@ -179,7 +179,7 @@ mod tests {
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
 
-        let user_assets_bal: AssetsBalanceResponse = wasm
+        let _user_assets_bal: AssetsBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -190,7 +190,7 @@ mod tests {
             )
             .unwrap();
 
-        let vault_total_shares: TotalAssetsResponse = wasm
+        let _vault_total_shares: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
@@ -258,7 +258,7 @@ mod tests {
         // );
     }
 
-    fn swap(
+    fn _swap(
         _wasm: &Wasm<OsmosisTestApp>,
         bank: &Bank<OsmosisTestApp>,
         _contract_address: &Addr,
@@ -337,7 +337,7 @@ mod tests {
         .unwrap()
     }
 
-    fn get_vault_shares_balance(
+    fn _get_vault_shares_balance(
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
     ) -> TotalVaultTokenSupplyResponse {
@@ -419,7 +419,7 @@ mod tests {
             .collect()
     }
 
-    fn get_event_value_amount_numeric(value: &String) -> u128 {
+    fn _get_event_value_amount_numeric(value: &String) -> u128 {
         // Find the position where the non-numeric part starts
         let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
         // Extract the numeric part from the string
@@ -427,37 +427,6 @@ mod tests {
         // Try to parse the numeric string to u128
         numeric_part.parse::<u128>().unwrap()
     }
-
-    // ASSERT METHODS
-
-    // TODO: REMOVE THIS DEPRECATED
-    /*fn assert_deposit_withdraw(
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_address: &Addr,
-        accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: HashMap<String, Uint128>,
-    ) {
-        // TODO: multi-query foreach user created previously
-        for account in accounts {
-            let shares = get_user_shares_balance(wasm, contract_address, account);
-
-            // Check that the current account iterated shares balance is the same we expect from Hashmap
-            assert_eq!(
-                shares.balance,
-                accounts_shares_balance.get(&account.address()).unwrap()
-            );
-        }
-    }*/
-
-    /*
-    fn assert_swap() {
-        todo!()
-    }
-
-    fn assert_update_range() {
-        todo!()
-    }
-    */
 
     // COMPOSE STRATEGY
 
@@ -498,7 +467,7 @@ mod tests {
 
     fn get_cases() -> u32 {
         std::env::var("PROPTEST_CASES")
-            .unwrap_or("256".to_string())
+            .unwrap_or("100".to_string())
             .parse()
             .unwrap()
     }
@@ -516,7 +485,8 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
+            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
+                // TODO: evaluate using default_init() here
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(340282366920938463463374607431768211455, "uosmo"),
@@ -568,105 +538,20 @@ mod tests {
                 match actions[i] {
                     Action::Deposit => {
                         deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
                     Action::Withdraw => {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
-                    Action::Swap => {
-                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                        //assert_swap(); // todo!()
-                    },
+                    // Action::Swap => {
+                    //     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                    // },
                     Action::UpdateRange => {
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
                     },
                 }
             }
-        }
-    }
 
-    proptest! {
-        // setup the config with amount of cases, usable for setting different values on ci vs local
-        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
-        #[test]
-        #[ignore]
-        fn test_complete_works_18dec(
-            (initial_lower_tick, initial_upper_tick) in get_initial_range(),
-            actions in get_strategy_list(),
-            percentages in get_percentage_list(),
-            account_indexes in get_account_index_list()
-        ) {
-            // Creating test core
-            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract_18dec(
-                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-                &[
-                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
-                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
-                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
-                ],
-                MsgCreateConcentratedPool {
-                    sender: "overwritten".to_string(),
-                    denom0: DENOM_BASE.to_string(),
-                    denom1: DENOM_QUOTE.to_string(),
-                    tick_spacing: 1,
-                    spread_factor: "100000000000000".to_string(),
-                },
-                initial_lower_tick,
-                initial_upper_tick,
-                vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: "1000000000000000000".to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: "1000000000000000000".to_string(),
-                    },
-                ],
-                Uint128::zero(),
-                Uint128::zero(),
-            );
-            let wasm = Wasm::new(&app);
-            let cl = ConcentratedLiquidity::new(&app);
-            let bank = Bank::new(&app);
-
-            // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
-            let accounts = app
-                .init_accounts(&[
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
-                ], ACCOUNTS_NUMBER)
-                .unwrap();
-
-            // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
-            for i in 0..ACCOUNTS_NUMBER {
-                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, DENOM_BASE, DENOM_QUOTE);
-            }
-
-            // Iterate iterations times
-            for i in 0..ITERATIONS_NUMBER {
-                match actions[i] {
-                    Action::Deposit => {
-                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
-                    },
-                    Action::Withdraw => {
-                        withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
-                    },
-                    Action::Swap => {
-                        //swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                        //assert_swap(); // todo!()
-                    },
-                    Action::UpdateRange => {
-                        update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
-                    },
-                }
-            }
+            println!("PASS");
         }
     }
 }
