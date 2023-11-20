@@ -14,7 +14,7 @@ use crate::rewards::{
     handle_collect_spread_rewards_reply,
 };
 
-use crate::vault::admin::execute_admin;
+use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -92,6 +92,9 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
+                }
+                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
+                    execute_build_tick_exp_cache(deps, info)
                 }
             }
         }

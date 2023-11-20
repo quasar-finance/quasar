@@ -24,6 +24,8 @@ pub enum ExtensionExecuteMsg {
     DistributeRewards {},
     /// Claim rewards belonging to a single user
     ClaimRewards {},
+    /// Build tick exponent cache
+    BuildTickCache {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
