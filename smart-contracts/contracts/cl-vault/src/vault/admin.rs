@@ -29,6 +29,7 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
             execute_claim_strategist_rewards(deps, info)
         }
+        AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
     }
 }
 
@@ -134,7 +135,7 @@ pub fn execute_update_metadata(
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
-// Rebuild and verify the tick exponent cache
+// Rebuild the tick exponent cache as admin
 pub fn execute_build_tick_exp_cache(
     deps: DepsMut,
     info: MessageInfo,
@@ -149,8 +150,9 @@ pub fn execute_build_tick_exp_cache(
 
 #[cfg(test)]
 mod tests {
+    use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
+
     use super::*;
-    use crate::math::tick::verify_tick_exp_cache;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
