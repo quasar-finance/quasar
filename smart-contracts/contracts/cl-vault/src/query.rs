@@ -78,15 +78,16 @@ pub struct VerifyTickCacheResponse {
 }
 
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
-    verify_tick_exp_cache(deps.storage).err().map(|e| {
-        if let ContractError::TickNotFound { tick } = e {
-            Ok(VerifyTickCacheResponse {
-                result: Err(tick),
-            })
-        } else {
-            Err(e)
-        }
-    }).unwrap_or(Ok(VerifyTickCacheResponse { result: Ok(()) }))
+    verify_tick_exp_cache(deps.storage)
+        .err()
+        .map(|e| {
+            if let ContractError::TickNotFound { tick } = e {
+                Ok(VerifyTickCacheResponse { result: Err(tick) })
+            } else {
+                Err(e)
+            }
+        })
+        .unwrap_or(Ok(VerifyTickCacheResponse { result: Ok(()) }))
 }
 
 pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
