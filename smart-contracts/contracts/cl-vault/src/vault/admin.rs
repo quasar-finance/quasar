@@ -142,7 +142,8 @@ mod tests {
         let mut deps = mock_dependencies();
 
         build_tick_exp_cache(&mut deps.storage).unwrap();
-        verify_tick_exp_cache(&mut deps.storage).unwrap();
+        let verify_resp = verify_tick_exp_cache(&mut deps.storage).unwrap();
+        assert_eq!((), verify_resp);
     }
 
     #[test]
