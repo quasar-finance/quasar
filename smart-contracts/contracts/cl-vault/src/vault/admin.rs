@@ -131,6 +131,7 @@ pub fn execute_build_tick_exp_cache(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::math::tick::verify_tick_exp_cache;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
