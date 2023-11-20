@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
-
-    use crate::test_tube::default_init;
+    use crate::test_tube::initialize::initialize::default_init;
 
     #[test]
     #[ignore]

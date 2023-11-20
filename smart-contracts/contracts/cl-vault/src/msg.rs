@@ -5,7 +5,7 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserRewardsResponse, UserSharesBalanceResponse,
+        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::VaultConfig,
 };
@@ -24,6 +24,8 @@ pub enum ExtensionExecuteMsg {
     DistributeRewards {},
     /// Claim rewards belonging to a single user
     ClaimRewards {},
+    /// Build tick exponent cache
+    BuildTickCache {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -101,6 +103,8 @@ pub enum ClQueryMsg {
     Position {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
+    #[returns(VerifyTickCacheResponse)]
+    VerifyTickCache,
 }
 
 /// ExecuteMsg for an Autocompounding Vault.

@@ -97,7 +97,7 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?; // TODOSN: Rename this function name to something more explicative
+    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?;
 
     Ok(Response::new()
         .add_attribute("method", "withdraw")
