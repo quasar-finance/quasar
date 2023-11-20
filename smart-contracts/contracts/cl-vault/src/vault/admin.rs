@@ -1,6 +1,6 @@
 use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
-use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
+use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
