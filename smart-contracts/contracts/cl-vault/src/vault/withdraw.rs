@@ -115,10 +115,9 @@ fn withdraw(
 ) -> Result<Vec<MsgWithdrawPosition>, ContractError> {
     let positions = get_positions(deps.storage, &deps.querier)?;
     let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions
-        .iter()
-        .map(|position| {
-            let existing_liquidity: Decimal256 = position
-                .1
+        .into_iter()
+        .map(|(p, fp)| {
+            let existing_liquidity: Decimal256 = fp
                 .position
                 .ok_or(ContractError::PositionNotFound)?
                 .liquidity
@@ -141,7 +140,7 @@ fn withdraw(
 
             Ok(withdraw_from_position(
                 env,
-                position.1.position.unwrap().position_id,
+                p.position_id,
                 user_liquidity,
             )?)
         })

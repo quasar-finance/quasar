@@ -26,8 +26,8 @@ use super::helpers::CoinList;
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
-    let incentive_msgs = collect_incentives(deps.as_ref(), env)?;
-    let rewards_msgs = collect_spread_rewards(deps.as_ref(), env)?;
+    let incentive_msgs = collect_incentives(deps.as_ref(), &env)?;
+    let rewards_msgs = collect_spread_rewards(deps.as_ref(), &env)?;
 
     // TODO, we should dispatch 1 collect incentives per position, 1 collect spread rewards per position, and after both messages, a distribute rewards
     Ok(Response::new()
@@ -52,7 +52,6 @@ pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, C
 
 pub fn handle_collect_incentives_reply(
     deps: DepsMut,
-    env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
@@ -177,7 +176,7 @@ fn do_distribute_rewards(
     )])
 }
 
-fn collect_incentives(deps: Deps, env: Env) -> Result<Vec<MsgCollectIncentives>, ContractError> {
+fn collect_incentives(deps: Deps, env: &Env) -> Result<Vec<MsgCollectIncentives>, ContractError> {
     let position: Result<Vec<(_, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
@@ -185,14 +184,14 @@ fn collect_incentives(deps: Deps, env: Env) -> Result<Vec<MsgCollectIncentives>,
         .into_iter()
         .map(|(_, p)| MsgCollectIncentives {
             position_ids: vec![p.position_id],
-            sender: env.contract.address.into(),
+            sender: env.contract.address.to_string(),
         })
         .collect())
 }
 
 fn collect_spread_rewards(
     deps: Deps,
-    env: Env,
+    env: &Env,
 ) -> Result<Vec<MsgCollectSpreadRewards>, ContractError> {
     let position: Result<Vec<(_, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
@@ -201,7 +200,7 @@ fn collect_spread_rewards(
         .into_iter()
         .map(|(_, p)| MsgCollectSpreadRewards {
             position_ids: vec![p.position_id],
-            sender: env.contract.address.into(),
+            sender: env.contract.address.to_string(),
         })
         .collect())
 }
@@ -236,11 +235,11 @@ mod tests {
         let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
-            collect_incentives(deps.as_ref(), env).unwrap()[0].into()
+            collect_incentives(deps.as_ref(), &env).unwrap()[0].into()
         );
         assert_eq!(
             resp.messages[1].msg,
-            collect_spread_rewards(deps.as_ref(), env).unwrap()[0].into()
+            collect_spread_rewards(deps.as_ref(), &env).unwrap()[0].into()
         )
     }
 

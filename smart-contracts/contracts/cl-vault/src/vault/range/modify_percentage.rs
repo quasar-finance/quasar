@@ -93,6 +93,8 @@ pub fn increase_position_funds(
     token1: Coin,
 ) -> Result<Response, ContractError> {
     let position = get_position(&deps.querier, position_id)?.position.unwrap();
+    CURRENT_POSITION_ID.save(deps.storage, &position.position_id)?;
+
     let create = create_position(
         deps,
         &env,
@@ -104,7 +106,6 @@ pub fn increase_position_funds(
     )?;
 
     // we need to save the position we are adding to and merge the response of this
-    CURRENT_POSITION_ID.save(deps.storage, &position.position_id)?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         create,

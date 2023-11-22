@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128, Decimal256, Coin};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -92,6 +92,15 @@ pub enum ModifyRange {
         /// The new percentage to set the position at, Increasing requires free balance in the contract.
         /// Decreasing generates free balance in the contract
         new_ratio: Uint128,
+    },
+    IncreaseFunds{
+        position_id: u64,
+        token0: Coin,
+        token1: Coin,
+    },
+    DecreaseFunds{
+        position_id: u64,
+        liquidity: Decimal256,
     },
     /// Create a new position. This consumes all free balance up to max_percentage current free balance
     CreatePosition {

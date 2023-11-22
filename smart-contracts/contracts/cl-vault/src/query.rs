@@ -128,11 +128,11 @@ pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
         (0_u128, 0_u128),
         |(acc0, acc1), i| -> Result<(u128, u128), ContractError> {
             let asset0 =
-                i.1.asset0
+                i.1.asset0.as_ref()
                     .map(|v| v.amount.parse::<u128>().unwrap())
                     .unwrap_or(0_u128);
             let asset1 =
-                i.1.asset1
+                i.1.asset1.as_ref()
                     .map(|v| v.amount.parse::<u128>().unwrap())
                     .unwrap_or(0_u128);
 
