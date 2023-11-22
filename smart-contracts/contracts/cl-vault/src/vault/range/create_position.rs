@@ -35,7 +35,6 @@ pub fn create_new_position(
         Uint128::zero(),
     )?;
 
-
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             new_position,

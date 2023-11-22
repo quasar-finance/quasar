@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128, Decimal256, Coin};
+use cosmwasm_std::{Coin, Decimal, Decimal256, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -93,12 +93,12 @@ pub enum ModifyRange {
         /// Decreasing generates free balance in the contract
         new_ratio: Uint128,
     },
-    IncreaseFunds{
+    IncreaseFunds {
         position_id: u64,
         token0: Coin,
         token1: Coin,
     },
-    DecreaseFunds{
+    DecreaseFunds {
         position_id: u64,
         liquidity: Decimal256,
     },

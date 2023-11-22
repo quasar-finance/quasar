@@ -1,5 +1,7 @@
+use std::cmp::min;
 use std::str::FromStr;
 
+use crate::math::liquidity::{liquidity0, liquidity1};
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{Position, ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
@@ -293,7 +295,6 @@ pub fn get_max_utilization_for_ratio(
 
 // TODO, do we allocate to top up
 pub fn allocate_funds_per_position(
-    cur_price: Decimal,
     positions: Vec<(Position, FullPositionBreakdown)>,
     asset0: Uint128,
     asset1: Uint128,
@@ -340,21 +341,20 @@ fn get_min_ratio_per_position(
 ) -> Result<Vec<(Position, Decimal)>, ContractError> {
     // per position, calculate the ratio of asset1 and asset2 a position needs
     // TODO this should use the current price and the ranges instead of token, since a position might contain a small amount of tokens
-    let ps: Result<Vec<(Position, Decimal)>, ContractError> =
-        positions
-            .into_iter()
-            .map(|(p, fp)| {
-                let amount0 = fp
-                    .asset0
-                    .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
-                    .unwrap_or(Ok(Uint128::zero()))?;
-                let amount1 = fp
-                    .asset1
-                    .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
-                    .unwrap_or(Ok(Uint128::zero()))?;
-                Ok((p, Decimal::from_ratio(amount0, amount1)))
-            })
-            .collect();
+    let ps: Result<Vec<(Position, Decimal)>, ContractError> = positions
+        .into_iter()
+        .map(|(p, fp)| {
+            let amount0 = fp
+                .asset0
+                .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
+                .unwrap_or(Ok(Uint128::zero()))?;
+            let amount1 = fp
+                .asset1
+                .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
+                .unwrap_or(Ok(Uint128::zero()))?;
+            Ok((p, Decimal::from_ratio(amount0, amount1)))
+        })
+        .collect();
 
     let positions = ps?;
 
@@ -378,141 +378,211 @@ fn get_min_ratio_per_position(
 }
 
 /// get_liquidity_amount_for_unused_funds basically simulates an any deposit against the vault
-// pub fn get_liquidity_amount_for_unused_funds(
-//     deps: DepsMut,
-//     env: &Env,
-//     additional_excluded_funds: (Uint128, Uint128),
-// ) -> Result<Decimal256, ContractError> {
-//     // first get the ratio of token0:token1 in the position.
-//     let p = get_position(deps.storage, &deps.querier)?;
-//     // if there is no position, then we can assume that there are 0 unused funds
-//     // TODO this might now be true with multirange
-//     if p.position.is_none() {
-//         return Ok(Decimal256::zero());
-//     }
-//     let position_unwrapped = p.position.unwrap();
-//     let token0: Coin = p.asset0.unwrap().try_into()?;
-//     let token1: Coin = p.asset1.unwrap().try_into()?;
-//     // if any of the values are 0, we fill 1
-//     let ratio = if token0.amount.is_zero() {
-//         Decimal256::from_ratio(1_u128, token1.amount)
-//     } else if token1.amount.is_zero() {
-//         Decimal256::from_ratio(token0.amount, 1_u128)
-//     } else {
-//         Decimal256::from_ratio(token0.amount, token1.amount)
-//     };
-//     let pool_config = POOL_CONFIG.load(deps.storage)?;
-//     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+pub fn get_liquidity_amount_for_unused_funds(
+    deps: DepsMut,
+    env: &Env,
+    additional_excluded_funds: (Uint128, Uint128),
+) -> Result<Decimal256, ContractError> {
+    // first get the ratio of token0:token1 in the position.
+    let p = get_position(deps.storage, &deps.querier)?;
+    // if there is no position, then we can assume that there are 0 unused funds
+    // TODO this might now be true with multirange
+    if p.position.is_none() {
+        return Ok(Decimal256::zero());
+    }
+    let position_unwrapped = p.position.unwrap();
+    let token0: Coin = p.asset0.unwrap().try_into()?;
+    let token1: Coin = p.asset1.unwrap().try_into()?;
+    // if any of the values are 0, we fill 1
+    let ratio = if token0.amount.is_zero() {
+        Decimal256::from_ratio(1_u128, token1.amount)
+    } else if token1.amount.is_zero() {
+        Decimal256::from_ratio(token0.amount, 1_u128)
+    } else {
+        Decimal256::from_ratio(token0.amount, token1.amount)
+    };
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
-//     // then figure out based on current unused balance, what the max initial deposit could be
-//     // (with the ratio, what is the max tokens we can deposit)
-//     let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
-//     let unused_t0: Uint256 = tokens
-//         .find_coin(token0.denom)
-//         .amount
-//         .checked_sub(additional_excluded_funds.0)?
-//         .into();
-//     let unused_t1: Uint256 = tokens
-//         .find_coin(token1.denom)
-//         .amount
-//         .checked_sub(additional_excluded_funds.1)?
-//         .into();
+    // then figure out based on current unused balance, what the max initial deposit could be
+    // (with the ratio, what is the max tokens we can deposit)
+    let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
+    let unused_t0: Uint256 = tokens
+        .find_coin(token0.denom)
+        .amount
+        .checked_sub(additional_excluded_funds.0)?
+        .into();
+    let unused_t1: Uint256 = tokens
+        .find_coin(token1.denom)
+        .amount
+        .checked_sub(additional_excluded_funds.1)?
+        .into();
 
-//     let max_initial_deposit = get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;
+    let max_initial_deposit = get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;
 
-//     // then figure out how much liquidity this would give us.
-//     // Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
-//     // EDGE CASE: what if it's a one-sided position with only token1?
-//     // SOLUTION: take whichever token is greater than the other to plug into the formula 1 line above
-//     let position_liquidity = Decimal256::from_str(&position_unwrapped.liquidity)?;
-//     let max_initial_deposit_liquidity = if token0.amount > token1.amount {
-//         position_liquidity
-//             .checked_mul(Decimal256::new(max_initial_deposit.0))?
-//             .checked_div(Decimal256::new(token0.amount.into()))?
-//     } else {
-//         position_liquidity
-//             .checked_mul(Decimal256::new(max_initial_deposit.1))?
-//             .checked_div(Decimal256::new(token1.amount.into()))?
-//     };
+    // then figure out how much liquidity this would give us.
+    // Formula: current_position_liquidity * token0_initial_deposit_amount / token0_in_current_position
+    // EDGE CASE: what if it's a one-sided position with only token1?
+    // SOLUTION: take whichever token is greater than the other to plug into the formula 1 line above
+    let position_liquidity = Decimal256::from_str(&position_unwrapped.liquidity)?;
+    let max_initial_deposit_liquidity = if token0.amount > token1.amount {
+        position_liquidity
+            .checked_mul(Decimal256::new(max_initial_deposit.0))?
+            .checked_div(Decimal256::new(token0.amount.into()))?
+    } else {
+        position_liquidity
+            .checked_mul(Decimal256::new(max_initial_deposit.1))?
+            .checked_div(Decimal256::new(token1.amount.into()))?
+    };
 
-//     // subtract out the max deposit from both tokens, which will leave us with only one token, lets call this leftover_balance0 or 1
-//     let leftover_balance0 = unused_t0.checked_sub(max_initial_deposit.0)?;
-//     let leftover_balance1 = unused_t1.checked_sub(max_initial_deposit.1)?;
+    // subtract out the max deposit from both tokens, which will leave us with only one token, lets call this leftover_balance0 or 1
+    let leftover_balance0 = unused_t0.checked_sub(max_initial_deposit.0)?;
+    let leftover_balance1 = unused_t1.checked_sub(max_initial_deposit.1)?;
 
-//     // call get_single_sided_deposit_0_to_1_swap_amount or get_single_sided_deposit_1_to_0_swap_amount to see how much we would swap to enter with the rest of our funds
-//     let post_swap_liquidity = if leftover_balance0 > leftover_balance1 {
-//         let swap_amount = if pool_details.current_tick > position_unwrapped.upper_tick {
-//             leftover_balance0.try_into().unwrap()
-//         } else {
-//             get_single_sided_deposit_0_to_1_swap_amount(
-//                 leftover_balance0.try_into().unwrap(),
-//                 position_unwrapped.lower_tick,
-//                 pool_details.current_tick,
-//                 position_unwrapped.upper_tick,
-//             )?
-//         };
-//         // let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
-//         //     leftover_balance0.try_into().unwrap(),
-//         //     position_unwrapped.lower_tick,
-//         //     pool_details.current_tick,
-//         //     position_unwrapped.upper_tick,
-//         // )?;
+    // call get_single_sided_deposit_0_to_1_swap_amount or get_single_sided_deposit_1_to_0_swap_amount to see how much we would swap to enter with the rest of our funds
+    let post_swap_liquidity = if leftover_balance0 > leftover_balance1 {
+        let swap_amount = if pool_details.current_tick > position_unwrapped.upper_tick {
+            leftover_balance0.try_into().unwrap()
+        } else {
+            get_single_sided_deposit_0_to_1_swap_amount(
+                leftover_balance0.try_into().unwrap(),
+                position_unwrapped.lower_tick,
+                pool_details.current_tick,
+                position_unwrapped.upper_tick,
+            )?
+        };
+        // let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
+        //     leftover_balance0.try_into().unwrap(),
+        //     position_unwrapped.lower_tick,
+        //     pool_details.current_tick,
+        //     position_unwrapped.upper_tick,
+        // )?;
 
-//         // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
-//         // we are also mindful of the same edge case
-//         let leftover_balance0 = leftover_balance0.checked_sub(swap_amount.into())?;
+        // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
+        // we are also mindful of the same edge case
+        let leftover_balance0 = leftover_balance0.checked_sub(swap_amount.into())?;
 
-//         if leftover_balance0.is_zero() {
-//             // in this case we need to get the expected token1 from doing a full swap, meaning we need to multiply by the spot price
-//             let token1_from_swap_amount = Decimal256::new(swap_amount.into())
-//                 .checked_mul(tick_to_price(pool_details.current_tick)?)?;
-//             position_liquidity
-//                 .checked_mul(token1_from_swap_amount)?
-//                 .checked_div(Decimal256::new(token1.amount.into()))?
-//         } else {
-//             position_liquidity
-//                 .checked_mul(Decimal256::new(leftover_balance0))?
-//                 .checked_div(Decimal256::new(token0.amount.into()))?
-//         }
-//     } else {
-//         let swap_amount = if pool_details.current_tick < position_unwrapped.lower_tick {
-//             leftover_balance1.try_into().unwrap()
-//         } else {
-//             get_single_sided_deposit_1_to_0_swap_amount(
-//                 leftover_balance1.try_into().unwrap(),
-//                 position_unwrapped.lower_tick,
-//                 pool_details.current_tick,
-//                 position_unwrapped.upper_tick,
-//             )?
-//         };
-//         // let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
-//         //     leftover_balance1.try_into().unwrap(),
-//         //     position_unwrapped.lower_tick,
-//         //     pool_details.current_tick,
-//         //     position_unwrapped.upper_tick,
-//         // )?;
+        if leftover_balance0.is_zero() {
+            // in this case we need to get the expected token1 from doing a full swap, meaning we need to multiply by the spot price
+            let token1_from_swap_amount = Decimal256::new(swap_amount.into())
+                .checked_mul(tick_to_price(pool_details.current_tick)?)?;
+            position_liquidity
+                .checked_mul(token1_from_swap_amount)?
+                .checked_div(Decimal256::new(token1.amount.into()))?
+        } else {
+            position_liquidity
+                .checked_mul(Decimal256::new(leftover_balance0))?
+                .checked_div(Decimal256::new(token0.amount.into()))?
+        }
+    } else {
+        let swap_amount = if pool_details.current_tick < position_unwrapped.lower_tick {
+            leftover_balance1.try_into().unwrap()
+        } else {
+            get_single_sided_deposit_1_to_0_swap_amount(
+                leftover_balance1.try_into().unwrap(),
+                position_unwrapped.lower_tick,
+                pool_details.current_tick,
+                position_unwrapped.upper_tick,
+            )?
+        };
+        // let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
+        //     leftover_balance1.try_into().unwrap(),
+        //     position_unwrapped.lower_tick,
+        //     pool_details.current_tick,
+        //     position_unwrapped.upper_tick,
+        // )?;
 
-//         // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
-//         // we are also mindful of the same edge case
-//         let leftover_balance1 = leftover_balance1.checked_sub(swap_amount.into())?;
+        // subtract the resulting swap_amount from leftover_balance0 or 1, we can then use the same formula as above to get the correct liquidity amount.
+        // we are also mindful of the same edge case
+        let leftover_balance1 = leftover_balance1.checked_sub(swap_amount.into())?;
 
-//         if leftover_balance1.is_zero() {
-//             // in this case we need to get the expected token0 from doing a full swap, meaning we need to multiply by the spot price
-//             let token0_from_swap_amount = Decimal256::new(swap_amount.into())
-//                 .checked_div(tick_to_price(pool_details.current_tick)?)?;
-//             position_liquidity
-//                 .checked_mul(token0_from_swap_amount)?
-//                 .checked_div(Decimal256::new(token0.amount.into()))?
-//         } else {
-//             position_liquidity
-//                 .checked_mul(Decimal256::new(leftover_balance1))?
-//                 .checked_div(Decimal256::new(token1.amount.into()))?
-//         }
-//     };
+        if leftover_balance1.is_zero() {
+            // in this case we need to get the expected token0 from doing a full swap, meaning we need to multiply by the spot price
+            let token0_from_swap_amount = Decimal256::new(swap_amount.into())
+                .checked_div(tick_to_price(pool_details.current_tick)?)?;
+            position_liquidity
+                .checked_mul(token0_from_swap_amount)?
+                .checked_div(Decimal256::new(token0.amount.into()))?
+        } else {
+            position_liquidity
+                .checked_mul(Decimal256::new(leftover_balance1))?
+                .checked_div(Decimal256::new(token1.amount.into()))?
+        }
+    };
 
-//     // add together the liquidity from the initial deposit and the swap deposit and return that
-//     Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
-// }
+    // add together the liquidity from the initial deposit and the swap deposit and return that
+    Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
+}
+
+/// given a set of positions with external ratios between the positions, calculate the total liquidity gained by depositing asset01 and asset1 into this set of positions
+pub fn get_liquidity_for_positions(
+    positions: Vec<(Position, FullPositionBreakdown)>,
+    spot_price: Decimal256,
+    asset0: Uint128,
+    asset1: Uint128,
+) -> Result<Decimal256, ContractError> {
+    let ps = allocate_funds_per_position(positions, asset0, asset1)?;
+
+    let total_liquidity = ps
+        .into_iter()
+        .zip(positions)
+        .map(|((p1, asset0, asset1), (p2, fp))| {
+            if p1.position_id != p2.position_id {
+                todo!()
+            }
+
+            get_liquidity_for_position(fp, spot_price, asset0, asset1)
+        })
+        .try_fold(
+            Decimal256::zero(),
+            |acc, val| -> Result<Decimal256, ContractError> { Ok(acc.checked_add(val?)?) },
+        )?;
+
+    Ok(total_liquidity)
+}
+
+/// given a position, a spot price, calculate the max amount of liquidity that can be used by that position
+fn get_liquidity_for_position(
+    position: FullPositionBreakdown,
+    spot_price: Decimal256,
+    asset0: Uint128,
+    asset1: Uint128,
+) -> Result<Decimal256, ContractError> {
+    let p = position.position.unwrap();
+    let lower_price = tick_to_price(p.lower_tick)?;
+    let upper_price = tick_to_price(p.upper_tick)?;
+
+    // decide if our position is onesided,
+    // if so return liquidity of that side
+    // else return the min liquidity of liquidity0 and liquidity1
+    //
+    if spot_price < lower_price {
+        liquidity1(
+            Decimal256::from_ratio(asset1, 1_u128),
+            lower_price.sqrt(),
+            spot_price.sqrt(),
+        )
+    } else if upper_price < spot_price {
+        liquidity0(
+            Decimal256::from_ratio(asset0, 1_u128),
+            spot_price.sqrt(),
+            upper_price.sqrt(),
+        )
+    } else {
+        // liq0 ranges from spot price to upper price
+        let liq0 = liquidity0(
+            Decimal256::from_ratio(asset0, 1_u128),
+            spot_price.sqrt(),
+            upper_price.sqrt(),
+        )?;
+        let liq1 = liquidity1(
+            Decimal256::from_ratio(asset1, 1_u128),
+            lower_price.sqrt(),
+            spot_price.sqrt(),
+        )?;
+        Ok(min(liq0, liq1))
+    }
+}
 
 #[cfg(test)]
 mod tests {
