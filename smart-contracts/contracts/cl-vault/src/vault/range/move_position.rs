@@ -2,8 +2,8 @@ use cosmwasm_schema::cw_serde;
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
+    to_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::osmosis::{
@@ -36,7 +36,7 @@ use crate::{
     state::CURRENT_BALANCE,
 };
 
-use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position, get_positions};
+use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 
 pub fn move_position(
     deps: DepsMut,
@@ -69,7 +69,7 @@ pub fn move_position(
 pub fn move_position_ticks(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     old_position_id: u64,
     lower_tick: i64,
     upper_tick: i64,
@@ -82,6 +82,7 @@ pub fn move_position_ticks(
     let position = position_breakdown.position.unwrap();
 
     // fetch the position's ratio
+    let ps = POSITIONS.load(deps.storage, old_position_id)?;
 
     let withdraw_msg = MsgWithdrawPosition {
         position_id: position.position_id,
@@ -99,7 +100,7 @@ pub fn move_position_ticks(
             upper_tick,
             new_range_position_ids: vec![],
             max_slippage,
-            position_ratio: todo!(),
+            position_ratio: ps.ratio,
         }),
     )?;
 
@@ -323,7 +324,7 @@ pub fn do_swap_deposit_merge(
                 position_id,
                 ratio: modify.position_ratio,
             },
-        );
+        )?;
 
         SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
@@ -506,8 +507,8 @@ pub fn handle_iteration_create_position_reply(
 }
 
 // store new position id and exit
-pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
-    let merge_response: MergeResponse = data.try_into()?;
+pub fn handle_merge_response(_deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
+    let _: MergeResponse = data.try_into()?;
 
     Ok(Response::new()
         .add_attribute("action", "swap_deposit_merge")

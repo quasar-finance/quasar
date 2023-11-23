@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Coin, Decimal, Decimal256, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
+    to_binary, Coin, Decimal256, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
@@ -15,11 +15,9 @@ use crate::{
 /// increase the ratio that a position has in the vault for depositors
 pub fn add_ratio(
     deps: DepsMut,
-    env: Env,
     position_id: u64,
     old_ratio: Uint128,
     new_ratio: Uint128,
-    ratio_of_free_funds: Decimal,
 ) -> Result<Response, ContractError> {
     // check that our exisiting position is what we are moving
     let position = POSITIONS.load(deps.storage, position_id)?;
@@ -51,7 +49,6 @@ pub fn add_ratio(
 /// lower the ratio that a position has in the vault for depositors. To completely remove a position, use delete_position
 pub fn lower_ratio(
     deps: DepsMut,
-    env: Env,
     position_id: u64,
     old_ratio: Uint128,
     new_ratio: Uint128,
@@ -147,7 +144,7 @@ pub fn handle_add_to_position_reply(
 /// decrease the amount of funds in a position, these funds are returned to the vaults free balance.
 /// To completely withdraw a position, use delete position
 pub fn decrease_position_funds(
-    deps: DepsMut,
+    _deps: DepsMut,
     env: Env,
     position_id: u64,
     liquidity: Decimal256,

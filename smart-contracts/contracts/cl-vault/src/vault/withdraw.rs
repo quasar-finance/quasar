@@ -138,11 +138,11 @@ fn withdraw(
                 .checked_mul(existing_liquidity)?
                 .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
 
-            Ok(withdraw_from_position(env, p.position_id, user_liquidity)?)
+            withdraw_from_position(env, p.position_id, user_liquidity)
         })
         .collect();
 
-    Ok(withdraws?)
+    withdraws
 }
 
 pub fn handle_withdraw_user_reply(

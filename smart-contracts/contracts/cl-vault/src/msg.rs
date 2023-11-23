@@ -79,8 +79,6 @@ pub enum ModifyRange {
         /// The new percentage to set the position at, Increasing requires free balance in the contract.
         /// Decreasing generates free balance in the contract
         new_ratio: Uint128,
-        /// The ratio of free funds to use in adding to the position
-        ratio_of_free_funds: Decimal,
     },
     /// Increase or Decrease which percentage of the vault a range is
     LowerRatio {

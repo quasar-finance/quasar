@@ -46,20 +46,17 @@ pub fn execute_update_range(
             position_id,
             old_ratio,
             new_ratio,
-            ratio_of_free_funds,
         } => add_ratio(
             deps,
-            env,
             position_id,
             old_ratio,
             new_ratio,
-            ratio_of_free_funds,
         ),
         ModifyRange::LowerRatio {
             position_id,
             old_ratio,
             new_ratio,
-        } => lower_ratio(deps, env, position_id, old_ratio, new_ratio),
+        } => lower_ratio(deps, position_id, old_ratio, new_ratio),
         ModifyRange::IncreaseFunds {
             position_id,
             token0,

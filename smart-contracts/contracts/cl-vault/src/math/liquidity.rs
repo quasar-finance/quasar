@@ -1,5 +1,5 @@
 use crate::ContractError;
-use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, Uint512};
+use cosmwasm_std::{Decimal256, StdError, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn liquidity0(

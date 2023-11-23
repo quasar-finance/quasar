@@ -57,7 +57,7 @@ pub fn withdraw_from_position(
     let sender = env.contract.address.to_string();
 
     let withdraw_position = MsgWithdrawPosition {
-        position_id: position_id,
+        position_id,
         sender,
         liquidity_amount: liquidity_amount.atomics().to_string(),
     };

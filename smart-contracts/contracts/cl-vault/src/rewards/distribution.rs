@@ -112,7 +112,7 @@ pub fn execute_callback_distribute_rewards(
     deps: DepsMut,
     _env: Env,
 ) -> Result<Response, ContractError> {
-    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
+    let rewards = CURRENT_REWARDS.load(deps.storage)?;
 
     let attr = do_distribute_rewards(deps, rewards)?;
     Ok(Response::new().add_attributes(attr))

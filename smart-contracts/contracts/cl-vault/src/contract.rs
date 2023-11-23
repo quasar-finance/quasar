@@ -59,7 +59,7 @@ pub fn execute(
             asset: _,
             recipient: _,
         } => unimplemented!(),
-        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
+        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: _ } => {
             todo!()
             // execute_exact_deposit(deps, env, info, recipient)
         }
