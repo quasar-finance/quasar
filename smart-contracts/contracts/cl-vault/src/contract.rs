@@ -6,14 +6,15 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMs
 use crate::query::{
     query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
     query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, RangeAdminResponse,
+    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
     execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
-use crate::vault::admin::execute_admin;
+
+use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -92,6 +93,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
                 }
+                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
+                    execute_build_tick_exp_cache(deps, info)
+                }
             }
         }
     }
@@ -141,6 +145,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                         address: range_admin.to_string(),
                     })?)
                 }
+                crate::msg::ClQueryMsg::VerifyTickCache => {
+                    Ok(to_binary(&query_verify_tick_cache(deps)?)?)
+                }
             },
         },
     }
@@ -174,10 +181,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
     }
 }
 
-#[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
-
-#[cfg(test)]
-mod tests {}
