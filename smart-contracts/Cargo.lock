@@ -62,6 +62,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
+name = "apollo-cw-asset"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "423502406a307052f6877030f48b5fb4e9fb338fc5e7c8ca1064210def52876b"
+dependencies = [
+ "cosmwasm-std",
+ "cw-storage-plus 1.1.0",
+ "cw20 1.1.0",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "apollo-utils"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b05ef4d29df7a8d2459008f09ba1c9f1f0aa7ac1bdfaa510029c0cf6921c2c2"
+dependencies = [
+ "apollo-cw-asset",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw20 1.1.0",
+]
+
+[[package]]
 name = "arrayvec"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -394,6 +419,7 @@ version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-dex-router",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.2",
  "cw-vault-multi-standard",
@@ -673,6 +699,54 @@ dependencies = [
  "cw-utils 0.16.0",
  "schemars",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cw-controllers"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23b129ca74fa41111fd2e1727426532556dc63973420343b659f5c072b85d789"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.1.0",
+ "cw-utils 1.0.2",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cw-dex"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "485871c94ef1b9e6c24b2a10cd4b8a3e10c9fab73ffd20afc69506b333bc9744"
+dependencies = [
+ "apollo-cw-asset",
+ "apollo-utils",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.1.0",
+ "cw-utils 1.0.2",
+ "cw20 1.1.0",
+ "thiserror",
+]
+
+[[package]]
+name = "cw-dex-router"
+version = "0.2.1-rc.1"
+source = "git+https://github.com/quasar-finance/cw-dex-router?branch=master#0d07b8034587bc8f86f5579713c40c809a74146f"
+dependencies = [
+ "apollo-cw-asset",
+ "apollo-utils",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-controllers 1.1.1",
+ "cw-dex",
+ "cw-storage-plus 1.1.0",
+ "cw2 1.1.1",
+ "cw20 1.1.0",
  "thiserror",
 ]
 
