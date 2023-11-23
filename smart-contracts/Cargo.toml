@@ -10,6 +10,7 @@ members = [
   # "contracts/intergamm-bindings-test",
   "contracts/multihop-router",
   "contracts/cl-vault",
+  "contracts/range-middleware"
   # "packages/intergamm-bindings",
   "packages/quasar-types",
 ]
