@@ -1,29 +1,34 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Decimal, Empty};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
+
+use crate::{
+    admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
+    range::{execute::RangeExecuteMsg, query::RangeQueryMsg},
+    state::NewRange,
+};
 
 #[cw_serde]
-pub struct InstantiateMsg {}
-
-pub struct NewRange {
-    pub cl_vault_address: String,
-    pub lower_price: Decimal,
-    pub upper_price: Decimal,
+pub struct InstantiateMsg {
+    pub range_submitter_admin: String,
+    pub range_executor_admin: String,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// Submit a range to the range middleware
-    SubmitNewRange { pub new_range: NewRange },
-    /// Execute a new range
-    ExecuteNewRange {
-        pub cl_vault_address: String,
-        pub max_slippage: Decimal,
-        pub ratio_of_swappable_funds_to_use: Decimal,
-        pub twap_window_seconds: u64,
-        pub recommended_swap_route: SwapOperationsListUnchecked // taken from cw-dex-router 
-        pub force_swap_route: bool
-    }
+    /// range operations
+    RangeMsg(RangeExecuteMsg),
+    /// admin operations
+    AdminMsg(AdminExecuteMsg),
 }
 
 #[cw_serde]
 #[derive(QueryResponses)]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    /// range queries
+    #[returns(Empty)]
+    RangeQuery(RangeQueryMsg),
+    /// admin queries
+    #[returns(Empty)]
+    AdminQuery(AdminQueryMsg),
+}
