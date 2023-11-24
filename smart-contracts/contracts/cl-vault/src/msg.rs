@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Decimal;
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -63,9 +64,9 @@ pub struct ModifyRangeMsg {
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
     /// recommended swap route to take
-    pub recommended_swap_route: SwapOperationsListUnchecked,
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
     /// whether or not to force the swap route
-    pub force_swap_route: bool,
+    pub force_swap_route: Option<bool>,
 }
 
 #[cw_serde]

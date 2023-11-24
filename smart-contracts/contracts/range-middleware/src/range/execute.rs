@@ -3,7 +3,9 @@ use cl_vault::{
     query::PoolResponse,
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_binary, Addr, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
+use cosmwasm_std::{
+    to_binary, to_json_binary, Addr, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
+};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
 use crate::{
@@ -135,20 +137,20 @@ pub fn execute_new_range(
     // construct message to send to cl vault
     let msg = WasmMsg::Execute {
         contract_addr: cl_vault_address.clone(),
-        msg: to_binary(&VaultExecuteMsg::VaultExtension(
+        msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
             cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                 lower_price: new_range.lower_price,
                 upper_price: new_range.upper_price,
                 max_slippage,
                 ratio_of_swappable_funds_to_use,
                 twap_window_seconds,
+                force_swap_route: Some(force_swap_route),
+                recommended_swap_route: Some(recommended_swap_route),
             }),
         ))?,
 
         funds: vec![],
     };
-
-    todo!("we need to add recommended swap route here");
 
     Ok(Response::new()
         .add_message(msg)

@@ -77,6 +77,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                 }) => execute_update_range(
                     deps,
                     env,
@@ -86,6 +88,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                 ),
                 crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
                     execute_distribute_rewards(deps, env)

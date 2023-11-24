@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_storage_plus::{Deque, Item, Map};
 
 use crate::rewards::CoinList;
@@ -105,6 +106,10 @@ pub struct ModifyRangeState {
     pub ratio_of_swappable_funds_to_use: Decimal,
     // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
+    // the recommended path to take for the swap
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    // whether or not to force the swap route
+    pub force_swap_route: Option<bool>,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
