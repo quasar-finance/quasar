@@ -4,7 +4,7 @@ use cl_vault::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_binary, to_json_binary, Addr, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
+    to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
 };
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
@@ -64,7 +64,7 @@ pub fn execute_range_msg(
 
 pub fn submit_new_range(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     new_range: NewRange,
 ) -> Result<Response, ContractError> {
@@ -77,7 +77,7 @@ pub fn submit_new_range(
     let contract_info_result = deps
         .querier
         .query_wasm_contract_info(new_range.cl_vault_address.clone());
-    if (contract_info_result.is_err()) {
+    if contract_info_result.is_err() {
         return Err(ContractError::InvalidContractAddress {
             address: new_range.cl_vault_address.clone(),
         });
@@ -90,7 +90,7 @@ pub fn submit_new_range(
             ClQueryMsg::Pool {},
         )),
     );
-    if (pool_response_result.is_err()) {
+    if pool_response_result.is_err() {
         return Err(ContractError::ClExpectedQueryFailed {
             address: new_range.cl_vault_address.clone(),
         });
@@ -108,7 +108,7 @@ pub fn submit_new_range(
 
 pub fn execute_new_range(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     cl_vault_address: String,
     max_slippage: Decimal,

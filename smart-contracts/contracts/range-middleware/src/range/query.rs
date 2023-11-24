@@ -1,9 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{to_binary, to_json_binary, Binary, Deps, Env, StdResult};
+use cosmwasm_std::{to_json_binary, Binary, Deps, Env, StdResult};
 
 use crate::{
     state::{NewRange, PENDING_RANGES},
-    ContractError,
 };
 
 #[cw_serde]
@@ -17,7 +16,7 @@ pub enum RangeQueryMsg {
     GetQueuedRangeUpdatesForContract { contract_address: String },
 }
 
-pub fn query_range(deps: Deps, env: Env, query_msg: RangeQueryMsg) -> StdResult<Binary> {
+pub fn query_range(deps: Deps, _env: Env, query_msg: RangeQueryMsg) -> StdResult<Binary> {
     match query_msg {
         RangeQueryMsg::GetQueuedRangeUpdates {} => get_queued_range_updates(deps),
         RangeQueryMsg::GetQueuedRangeUpdatesForContract { contract_address } => {
@@ -36,7 +35,7 @@ pub fn get_queued_range_updates(deps: Deps) -> StdResult<Binary> {
         pending_ranges.push(pending_range);
     }
 
-    Ok(to_json_binary(&pending_ranges)?)
+    to_json_binary(&pending_ranges)
 }
 
 pub fn get_queued_range_updates_for_contract(
@@ -46,5 +45,5 @@ pub fn get_queued_range_updates_for_contract(
     let pending_range =
         PENDING_RANGES.load(deps.storage, deps.api.addr_validate(&contract_address)?)?;
 
-    Ok(to_json_binary(&pending_range)?)
+    to_json_binary(&pending_range)
 }

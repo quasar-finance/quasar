@@ -1,11 +1,10 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Empty};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
+use cosmwasm_std::{Empty};
+
 
 use crate::{
     admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
     range::{execute::RangeExecuteMsg, query::RangeQueryMsg},
-    state::NewRange,
 };
 
 #[cw_serde]

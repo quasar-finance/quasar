@@ -2,7 +2,7 @@ use crate::{
     error::ContractError,
     state::{RANGE_EXECUTOR_ADMIN, RANGE_SUBMITTER_ADMIN},
 };
-use cosmwasm_std::{Addr, Env, Storage};
+use cosmwasm_std::{Addr, Storage};
 
 pub fn is_range_submitter_admin(
     storage: &dyn Storage,
