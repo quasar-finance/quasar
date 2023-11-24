@@ -3,9 +3,7 @@ use cl_vault::{
     query::PoolResponse,
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
-};
+use cosmwasm_std::{to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
 use crate::{

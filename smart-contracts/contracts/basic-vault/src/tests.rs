@@ -2122,9 +2122,11 @@ fn test_dup_token_deposits() {
 
     for deposit_amount in deposit_amounts {
         // test params
-        let weights = [Decimal::from_str("0.2").unwrap(),
+        let weights = [
+            Decimal::from_str("0.2").unwrap(),
             Decimal::from_str("0.3").unwrap(),
-            Decimal::from_str("0.5").unwrap()];
+            Decimal::from_str("0.5").unwrap(),
+        ];
 
         let mut primitive_states: Vec<(String, String, Uint128, Uint128)> = Vec::new();
         let mut primitive_details: Vec<(String, String, Decimal)> = Vec::new();

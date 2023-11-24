@@ -1,6 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Empty};
-
+use cosmwasm_std::Empty;
 
 use crate::{
     admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
