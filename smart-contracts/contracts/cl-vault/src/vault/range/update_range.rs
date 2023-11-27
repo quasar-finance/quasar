@@ -46,12 +46,7 @@ pub fn execute_update_range(
             position_id,
             old_ratio,
             new_ratio,
-        } => add_ratio(
-            deps,
-            position_id,
-            old_ratio,
-            new_ratio,
-        ),
+        } => add_ratio(deps, position_id, old_ratio, new_ratio),
         ModifyRange::LowerRatio {
             position_id,
             old_ratio,
