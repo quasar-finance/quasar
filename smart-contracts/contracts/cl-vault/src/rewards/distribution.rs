@@ -235,11 +235,11 @@ mod tests {
         let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
-            collect_incentives(deps.as_ref(), &env).unwrap()[0].into()
+            collect_incentives(deps.as_ref(), &env).unwrap()[0].clone().into()
         );
         assert_eq!(
             resp.messages[1].msg,
-            collect_spread_rewards(deps.as_ref(), &env).unwrap()[0].into()
+            collect_spread_rewards(deps.as_ref(), &env).unwrap()[0].clone().into()
         )
     }
 
