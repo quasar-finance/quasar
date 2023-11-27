@@ -23,7 +23,7 @@ pub mod initialize {
 
     use crate::helpers::sort_tokens;
     use crate::msg::{
-        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
+        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRange, QueryMsg,
     };
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
@@ -238,13 +238,16 @@ pub mod initialize {
         )
         .unwrap();
 
+        // we should only have 1 position right now, move that position
+
         let _result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("0.993").unwrap(),
-                        upper_price: Decimal::from_str("1.002").unwrap(),
+                    ModifyRange::MovePosition {
+                        old_position_id: 1,
+                        new_lower_price: Decimal::from_str("0.993").unwrap(),
+                        new_upper_price: Decimal::from_str("1.002").unwrap(),
                         max_slippage: Decimal::permille(5),
                     },
                 )),
