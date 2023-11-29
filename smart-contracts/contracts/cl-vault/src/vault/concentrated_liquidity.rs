@@ -2,8 +2,8 @@ use cosmwasm_std::{
     Coin, Decimal256, DepsMut, Env, Order, QuerierWrapper, StdError, Storage, Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
-    Pool,
+    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgAddToPosition, MsgCreatePosition,
+    MsgWithdrawPosition, Pool,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
@@ -47,6 +47,23 @@ pub fn create_position(
         token_min_amount1: token_min_amount1.to_string(),
     };
     Ok(create_position)
+}
+
+pub fn add_to_position(
+    deps: DepsMut,
+    env: &Env,
+    position_id: u64,
+    amount0: Uint128,
+    amount1: Uint128,
+) -> Result<MsgAddToPosition, ContractError> {
+    Ok(MsgAddToPosition {
+        position_id,
+        sender: env.contract.address.to_string(),
+        amount0: amount0.to_string(),
+        amount1: amount1.into(),
+        token_min_amount0: Uint128::zero().into(),
+        token_min_amount1: Uint128::zero().into(),
+    })
 }
 
 pub fn withdraw_from_position(

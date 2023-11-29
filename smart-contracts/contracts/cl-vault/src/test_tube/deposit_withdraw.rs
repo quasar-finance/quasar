@@ -59,13 +59,13 @@ mod tests {
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
+                    crate::msg::ClQueryMsg::Positions {},
                 )),
             )
             .unwrap();
         let position = ConcentratedLiquidity::new(&app)
             .query_position_by_id(&PositionByIdRequest {
-                position_id: pos_id.position_ids[0],
+                position_id: pos_id.positions[0].position_id,
             })
             .unwrap();
         // This amount should decrease the amount of shares we get back
@@ -140,13 +140,13 @@ mod tests {
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
+                    crate::msg::ClQueryMsg::Positions {},
                 )),
             )
             .unwrap();
         let position = ConcentratedLiquidity::new(&app)
             .query_position_by_id(&PositionByIdRequest {
-                position_id: pos_id.position_ids[0],
+                position_id: pos_id.positions[0].position_id,
             })
             .unwrap();
         // This amount should decrease the amount of shares we get back

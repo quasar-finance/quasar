@@ -14,6 +14,9 @@ use crate::rewards::{
 };
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
+use crate::vault::deposit::{
+    execute_exact_deposit, execute_mint_callback, handle_deposit_create_position_reply,
+};
 // use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
@@ -59,9 +62,8 @@ pub fn execute(
             asset: _,
             recipient: _,
         } => unimplemented!(),
-        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: _ } => {
-            todo!()
-            // execute_exact_deposit(deps, env, info, recipient)
+        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
+            execute_exact_deposit(deps, env, info, recipient)
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             execute_withdraw(deps, env, info, recipient, amount.into())
@@ -86,6 +88,9 @@ pub fn execute(
                     }
                     crate::msg::CallbackExecuteMsg::Merge(msg) => {
                         execute_merge(deps, env, info, msg)
+                    }
+                    crate::msg::CallbackExecuteMsg::MintUserDeposit {} => {
+                        execute_mint_callback(deps, env)
                     }
                 },
             }
@@ -137,8 +142,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             handle_instantiate_create_position_reply(deps, env, msg.result)
         }
         Replies::DepositCreatePosition => {
-            todo!()
-            // handle_deposit_create_position_reply(deps, env, msg.result)
+            handle_deposit_create_position_reply(deps, env, msg.result)
         }
         Replies::CollectIncentives => handle_collect_incentives_reply(deps, msg.result),
         Replies::CollectSpreadRewards => handle_collect_spread_rewards_reply(deps, env, msg.result),

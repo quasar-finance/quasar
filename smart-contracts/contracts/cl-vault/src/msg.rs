@@ -52,6 +52,8 @@ pub enum CallbackExecuteMsg {
     DistributeRewards(),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// mint shares after all positions of the user deposit are done
+    MintUserDeposit {},
 }
 
 /// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position

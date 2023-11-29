@@ -78,10 +78,14 @@ pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("curren
 pub struct CurrentDeposit {
     pub token0_in: Uint128,
     pub token1_in: Uint128,
-    pub sender: Addr,
+    pub original_id: u64,
+    pub refund0: Option<Uint128>,
+    pub refund1: Option<Uint128>,
+    pub liquidity_out: Option<Decimal256>,
 }
 
-pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
+pub const CURRENT_DEPOSIT: Deque<CurrentDeposit> = Deque::new("current_deposit");
+pub const CURRENT_DEPOSITOR: Item<Addr> = Item::new("current_depositor");
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
