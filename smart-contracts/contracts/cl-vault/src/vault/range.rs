@@ -372,18 +372,23 @@ pub fn do_swap_deposit_merge(
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
-    let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            pool_config.token0,
-            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-            balance0.checked_sub(swap_amount)?,
-        ),
-        SwapDirection::OneToZero => (
-            pool_config.token1,
-            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-            balance1.checked_sub(swap_amount)?,
-        ),
-    };
+    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
+        match swap_direction {
+            SwapDirection::ZeroToOne => (
+                pool_config.token0,
+                pool_config.token1,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+                balance0.checked_sub(swap_amount)?,
+            ),
+            SwapDirection::OneToZero => (
+                pool_config.token1,
+                pool_config.token0,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+                balance1.checked_sub(swap_amount)?,
+            ),
+        };
 
     CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
 
@@ -397,6 +402,9 @@ pub fn do_swap_deposit_merge(
         swap_amount,
         &token_in_denom,
         token_out_min_amount,
+        &token_out_denom,
+        mrs.recommended_swap_route,
+        mrs.force_swap_route.unwrap_or(false),
     )?;
 
     Ok(Response::new()

@@ -409,6 +409,7 @@ dependencies = [
 name = "cl-vault"
 version = "0.1.0"
 dependencies = [
+ "apollo-cw-asset",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-dex-router",

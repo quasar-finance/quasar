@@ -40,6 +40,7 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
+apollo-cw-asset = "0.1.0"
 cosmwasm-schema = "1.1.3"
 cosmwasm-std = "1.1.3"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", feature = ["library"]}

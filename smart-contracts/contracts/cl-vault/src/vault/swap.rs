@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage, Uint128};
+use apollo_cw_asset::AssetInfo;
+use cosmwasm_std::{Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage, Uint128, WasmMsg, WasmQuery};
+use cw_dex_router::{operations::SwapOperationsListUnchecked, msg::QueryMsg};
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::poolmanager::v1beta1::SwapAmountInRoute,
 };
 
-use crate::{state::POOL_CONFIG, ContractError};
+use crate::{state::{POOL_CONFIG, DEX_ROUTER}, ContractError};
 
 /// estimate_swap can be used to pass correct token_out_min_amount values into swap()
 /// for now this function can only be used for our pool
@@ -64,9 +66,14 @@ pub fn swap(
     token_in_amount: Uint128,
     token_in_denom: &String,
     token_out_min_amount: Uint128,
+    token_out_denom: &String,
+    recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    force_swap_route: bool,
 ) -> Result<CosmosMsg, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let dex_router = DEX_ROUTER.load(deps.storage)?;
 
+    
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
             base_token: pool_config.token0,
@@ -87,7 +94,15 @@ pub fn swap(
         token_out_denom,
     };
 
-    let swap_msg: CosmosMsg =
+    let swap_msg: CosmosMsg = match dex_router {
+        Some(dex_router_address) => {
+            let offer_asset = AssetInfo::Native(token_in_denom.to_string());
+            let recommended_out = deps.querier.query_wasm_smart(dex_router_address, &QueryMsg::BestPathForPair { offer_asset: (), ask_asset: (), exclude_paths: () })?;
+
+            Ok()
+        },
+        None => todo!(),
+    }
         osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
             sender: env.contract.address.to_string(),
             routes: vec![pool_route],
@@ -132,6 +147,7 @@ mod tests {
         let token_in_amount = Uint128::new(100);
         let token_in_denom = "token0".to_string();
         let token_out_min_amount = Uint128::new(100);
+        let token_out_denom = "token1".to_string();
 
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
@@ -143,6 +159,9 @@ mod tests {
             token_in_amount,
             &token_in_denom,
             token_out_min_amount,
+            &token_out_denom,
+            None,
+            false,
         )
         .unwrap();
 
@@ -178,6 +197,7 @@ mod tests {
         let token_in_amount = Uint128::new(100);
         let token_in_denom = "token3".to_string();
         let token_out_min_amount = Uint128::new(100);
+        let token_out_denom = "token1".to_string();
 
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
@@ -189,6 +209,9 @@ mod tests {
             token_in_amount,
             &token_in_denom,
             token_out_min_amount,
+            &token_out_denom,
+            None,
+            false,
         )
         .unwrap_err();
 

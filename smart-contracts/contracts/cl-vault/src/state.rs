@@ -30,6 +30,8 @@ pub struct VaultConfig {
     pub treasury: Addr,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
+    /// cw-dex-router contract address
+    pub dex_router: Option<Addr>,
 }
 
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
@@ -92,6 +94,9 @@ pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
+
+/// DEX_ROUTER: The address of the dex router contract
+pub const DEX_ROUTER: Item<Option<Addr>> = Item::new("dex_router");
 
 #[cw_serde]
 pub struct ModifyRangeState {
