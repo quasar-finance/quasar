@@ -30,8 +30,6 @@ pub struct VaultConfig {
     pub treasury: Addr,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
-    /// cw-dex-router contract address
-    pub dex_router: Option<Addr>,
 }
 
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
