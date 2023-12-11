@@ -1,5 +1,5 @@
 use crate::ContractError;
-use cosmwasm_std::{Decimal256, StdError, Uint256, Uint512};
+use cosmwasm_std::{Decimal256, StdError, Uint128, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn liquidity0(
@@ -42,6 +42,61 @@ pub fn liquidity0(
 
     // since we start with Decimal and multiply with big_factor, we expect to be able to convert back here
     Ok(Decimal256::new(intermediate_2.atomics()))
+}
+
+/// asset0 calculates the
+pub fn asset0(
+    liquidity: Decimal256,
+    sqrt_price_a: Decimal256,
+    sqrt_price_b: Decimal256,
+) -> Result<Uint128, ContractError> {
+    let mut sqrt_price_a = sqrt_price_a.atomics();
+    let mut sqrt_price_b = sqrt_price_b.atomics();
+    let liquidity = liquidity.atomics();
+
+    if sqrt_price_a > sqrt_price_b {
+        std::mem::swap(&mut sqrt_price_a, &mut sqrt_price_b);
+    }
+
+    let diff = sqrt_price_b.checked_sub(sqrt_price_a)?;
+
+    if diff.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "liquidity0 diff is zero",
+        )));
+    }
+
+    let product = sqrt_price_a.checked_mul(sqrt_price_b)?;
+
+    let total = liquidity.checked_mul(diff)?.checked_div(product)?;
+
+    Ok(total.try_into()?)
+}
+
+pub fn asset1(
+    liquidity: Decimal256,
+    sqrt_price_a: Decimal256,
+    sqrt_price_b: Decimal256,
+) -> Result<Uint128, ContractError> {
+    let mut sqrt_price_a = sqrt_price_a.atomics();
+    let mut sqrt_price_b = sqrt_price_b.atomics();
+    let liquidity = liquidity.atomics();
+
+    if sqrt_price_a > sqrt_price_b {
+        std::mem::swap(&mut sqrt_price_a, &mut sqrt_price_b);
+    }
+
+    let diff = sqrt_price_b.checked_sub(sqrt_price_a)?;
+
+    if diff.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "liquidity0 diff is zero",
+        )));
+    }
+
+    let total = liquidity.checked_div(diff)?;
+
+    Ok(total.try_into()?)
 }
 
 // TODO figure out if liquidity1 need to be Uint512's aswell, currently I (Laurens) don't believe so since we should only need more precision if we multiply decimals
