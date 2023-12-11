@@ -1,8 +1,8 @@
 use std::cmp::{min, Ordering};
-use std::ops::Add;
 use std::str::FromStr;
 
-use crate::math::liquidity::{liquidity0, liquidity1};
+use crate::debug;
+use crate::math::liquidity::{asset0, asset1, liquidity0, liquidity1};
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{Position, ADMIN_ADDRESS, POSITIONS, STRATEGIST_REWARDS, USER_REWARDS};
@@ -10,9 +10,11 @@ use crate::state::{Position, ADMIN_ADDRESS, POSITIONS, STRATEGIST_REWARDS, USER_
 use crate::vault::concentrated_liquidity::get_positions;
 use crate::vault::range::move_position::SwapDirection;
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Order,
-    OverflowError, OverflowOperation, QuerierWrapper, StdError, Storage, Uint128, Uint256,
+    coin, Addr, CheckedMultiplyRatioError, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
+    MessageInfo, Order, OverflowError, OverflowOperation, QuerierWrapper, Storage, Uint128,
+    Uint256,
 };
 
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::FullPositionBreakdown;
@@ -299,64 +301,62 @@ pub fn get_max_utilization_for_ratio(
 // TODO, do we allocate to top up
 pub fn allocate_funds_per_position(
     positions: Vec<(Position, FullPositionBreakdown)>,
-    asset0: Uint128,
-    asset1: Uint128,
+    spot_price: Decimal,
+    token0: Uint128,
+    token1: Uint128,
 ) -> Result<Vec<(Position, Uint128, Uint128)>, ContractError> {
     // get the wanted ratio per position
-    let ps = get_min_ratio_per_position(positions)?;
+    let ps = get_min_ratio_per_position(positions, spot_price)?;
 
-    // divide the assets over the positions
-    let total = get_total_ratio(&ps)?;
+    let (total0, total1) = ps.iter().try_fold(
+        (Uint128::zero(), Uint128::zero()),
+        |(acc0, acc1), (_, pr)| -> Result<(Uint128, Uint128), ContractError> {
+            Ok((acc0.checked_add(pr.asset0)?, acc1.checked_add(pr.asset1)?))
+        },
+    )?;
 
-    // for token0, we want to deposit position_ratio.numerator/total.numerator * total_token_1
-    // for token1, we want to deposit position_ratio.denominator/total.denominator
+    // assuming we have the ratio wanted_token0/total_token0 and wanted_token1/total_token1
+    // ratio = min(wanted_token0/total_token0, wanted_token1/total_token1)
+    // for token0 and token1, we want to allocate
+    // allocate0 = token0 * ratio
+    // allocate1 = token1 * ratio
     let psf: Result<Vec<(Position, Uint128, Uint128)>, ContractError> = ps
         .into_iter()
         .map(|(ps, ps_ratio)| {
-            Ok((
-                ps,
-                ps_ratio
-                    .asset0
-                    .checked_div(total.asset0)?
-                    .checked_mul(asset0)?,
-                ps_ratio
-                    .asset1
-                    .checked_div(total.asset1)?
-                    .checked_mul(asset1)?,
-            ))
+            let ratio = min(
+                Decimal::from_ratio(ps_ratio.asset0, total0),
+                Decimal::from_ratio(ps_ratio.asset1, total1),
+            );
+
+            Ok((ps, token0 * ratio, token1 * ratio))
         })
         .collect();
     psf
-}
-
-/// Calculate the total ratio after a set if positions
-fn get_total_ratio(
-    positions_ratios: &Vec<(Position, PositionRatio)>,
-) -> Result<PositionRatio, ContractError> {
-    let total = positions_ratios
-        .iter()
-        .try_fold(PositionRatio::zero(), |acc, (_, r)| acc.checked_add(r))?;
-    Ok(total)
 }
 
 /// per position, calculate the ratio of tokens that position needs, multiplied with the ratio of that position
 /// within the vault
 fn get_min_ratio_per_position(
     positions: Vec<(Position, FullPositionBreakdown)>,
+    spot_price: Decimal,
 ) -> Result<Vec<(Position, PositionRatio)>, ContractError> {
     // per position, calculate the ratio of asset1 and asset2 a position needs
-    // TODO this should use the current price and the ranges instead of token, since a position might contain a small amount of tokens
+
+    // for each position, we take some set amount of liquidity and calculate how many asset0 and asset1 those would give us
+    // we assume
+    let liquidity: Decimal256 = Decimal::new(100_000_000_000_000_000_000_000_u128.into()).into();
     let ps: Result<Vec<(Position, PositionRatio)>, ContractError> = positions
         .into_iter()
         .map(|(p, fp)| {
-            let amount0 = fp
-                .asset0
-                .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
-                .unwrap_or(Ok(Uint128::zero()))?;
-            let amount1 = fp
-                .asset1
-                .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
-                .unwrap_or(Ok(Uint128::zero()))?;
+            let pos = fp.position.unwrap();
+            let upper_price_sqrt = tick_to_price(pos.upper_tick)?.sqrt();
+            let lower_price_sqrt = tick_to_price(pos.lower_tick)?.sqrt();
+            let spot_price_sqrt: Decimal256 = spot_price.sqrt().into();
+
+            let amount0 =
+                asset0(liquidity, spot_price_sqrt, upper_price_sqrt).unwrap_or(Uint128::zero());
+            let amount1 =
+                asset1(liquidity, lower_price_sqrt, spot_price_sqrt).unwrap_or(Uint128::zero());
             Ok((p, PositionRatio::new(amount0, amount1)))
         })
         .collect();
@@ -374,132 +374,27 @@ fn get_min_ratio_per_position(
     let positions: Result<Vec<(Position, PositionRatio)>, ContractError> = positions
         .into_iter()
         .map(|(p, internal_ratio)| {
-            let external_ratio = PositionRatio::new(p.ratio, total_ratio);
-            let total_ratio = internal_ratio.checked_mul(external_ratio)?;
+            let external_ratio = Decimal::from_ratio(p.ratio, total_ratio);
+            let total_ratio = internal_ratio.checked_mul_ratio(external_ratio)?;
             Ok((p, total_ratio))
         })
         .collect();
     positions
 }
 
-/// get_liquidity_amount_for_unused_funds basically simulates an any deposit against the vault
-pub fn get_liquidity_amount_for_unused_funds(
-    deps: DepsMut,
-    env: &Env,
-    additional_excluded_funds: (Uint128, Uint128),
-    spot_price: Decimal256,
-) -> Result<Decimal256, ContractError> {
-    let pool = POOL_CONFIG.load(deps.storage)?;
-    let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
-    let unused_t0 = tokens
-        .find_coin(pool.token0)
-        .amount
-        .checked_sub(additional_excluded_funds.0)?
-        .into();
-    let unused_t1 = tokens
-        .find_coin(pool.token1)
-        .amount
-        .checked_sub(additional_excluded_funds.1)?
-        .into();
 
-    get_perfect_liquidity(deps, unused_t0, unused_t1, spot_price)
-}
-
-pub fn get_perfect_liquidity(
-    deps: DepsMut<'_>,
+/// Calculate the total value of two assets in asset0
+pub fn get_asset0_value(
     token0: Uint128,
     token1: Uint128,
-    spot_price: Decimal256,
-) -> Result<Decimal256, ContractError> {
-    let double_bleh = get_positions(deps.storage, &deps.querier)?;
-    let bleh = get_min_ratio_per_position(double_bleh.clone())?;
-    let mut total_ratio = get_total_ratio(&bleh)?;
+    spot_price: Decimal,
+) -> Result<Uint128, ContractError> {
 
-    // using the spot price, convert our unused_t0 and unused_t1 to funds in the correct ratio of our current positions
-    let mut current_ratio = PositionRatio::new(token0, token1);
-    total_ratio.simplify();
-    current_ratio.simplify();
+    let total = token0.checked_add(
+        token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()),
+    )?;
 
-    // for now call token0 x and token1 y, we are going to calculate which amounts we have per token assuming a perfect swap before we calculate the liquidity resulting from that
-    // when calculating a swap from x to y, we calculate x''=x/((1+P_c*a)/b)
-    // knowing x'', we can simply calculate x'/y, since if we swap x'', x'/y=a/b
-    // when calculating a swap from y to x, we calculate y''=a*P_c*y/(b+1)
-    // if current_ratio > total_ratio, we need to swap token0 to token1, if current_ratio < total_ratio, we swap token1 to token0
-
-    // our formulas assume that we have no assets of the other token outstanding. Since we are converting using perfect swaps anyway, we can just convert all of token0 to token1 and vice versa when needed and do the math
-
-    // decide on the swap direction, if a side of the current ratio
-    let swap_direction = if current_ratio.asset0 > total_ratio.asset0 {
-        SwapDirection::ZeroToOne
-    } else if current_ratio.asset0 < total_ratio.asset0 {
-        SwapDirection::OneToZero
-    } else {
-        // if no swap is need, get needed liquidity
-        return Ok(get_liquidity_for_positions(double_bleh, spot_price, token0, token1)?);
-    };
-
-
-
-    let (t0, t1): (Uint128, Uint128) = match swap_direction {
-        SwapDirection::ZeroToOne => {
-            let x = Decimal256::from_ratio(token0, 1_u128)
-                + Decimal256::from_ratio(token1, 1_u128) / spot_price;
-            let x_to_swap = x
-                / ((Decimal256::one()
-                    + spot_price * Decimal256::from_ratio(total_ratio.asset0, 1_u128))
-                    / Decimal256::from_ratio(total_ratio.asset1, 1_u128));
-            let leftover_x = x.saturating_sub(x_to_swap);
-            (
-                leftover_x.to_uint_floor().try_into()?,
-                (x_to_swap * spot_price).to_uint_floor().try_into()?,
-            )
-        } 
-        SwapDirection::OneToZero => {
-            let y = Decimal256::from_ratio(token1, 1_u128)
-                + Decimal256::from_ratio(token0, 1_u128) * spot_price;
-            let y_to_swap = Decimal256::from_ratio(total_ratio.asset0, 1_u128)
-                * spot_price
-                * y
-                / (Decimal256::from_ratio(total_ratio.asset1, 1_u128) + Decimal256::one());
-            let leftover_y = y.saturating_sub(y_to_swap);
-            (
-                leftover_y.to_uint_floor().try_into()?,
-                (y_to_swap / spot_price).to_uint_floor().try_into()?,
-            )
-        } 
-    };
-
-    // calculate the liquidity
-    let liquidity = get_liquidity_for_positions(double_bleh, spot_price, t0, t1)?;
-
-    Ok(liquidity)
-}
-
-/// given a set of positions with external ratios between the positions, calculate the total liquidity gained by depositing asset01 and asset1 into this set of positions
-pub fn get_liquidity_for_positions(
-    positions: Vec<(Position, FullPositionBreakdown)>,
-    spot_price: Decimal256,
-    asset0: Uint128,
-    asset1: Uint128,
-) -> Result<Decimal256, ContractError> {
-    let ps = allocate_funds_per_position(positions.clone(), asset0, asset1)?;
-
-    let total_liquidity = ps
-        .into_iter()
-        .zip(positions)
-        .map(|((p1, asset0, asset1), (p2, fp))| {
-            if p1.position_id != p2.position_id {
-                todo!()
-            }
-
-            get_liquidity_for_position(fp, spot_price, asset0, asset1)
-        })
-        .try_fold(
-            Decimal256::zero(),
-            |acc, val| -> Result<Decimal256, ContractError> { Ok(acc.checked_add(val?)?) },
-        )?;
-
-    Ok(total_liquidity)
+    Ok(total)
 }
 
 /// given a position, a spot price, calculate the max amount of liquidity that can be used by that position
@@ -545,6 +440,7 @@ fn get_liquidity_for_position(
     }
 }
 
+#[cw_serde]
 pub struct PositionRatio {
     pub asset0: Uint128,
     pub asset1: Uint128,
@@ -585,7 +481,7 @@ impl PositionRatio {
     pub fn checked_mul(self, other: Self) -> Result<Self, OverflowError> {
         let asset0 = self.asset0.full_mul(other.asset0);
         let asset1 = self.asset1.full_mul(other.asset1);
-        let mut pr = Self {
+        let pr = Self {
             asset0: asset0.try_into().map_err(|_| OverflowError {
                 operation: OverflowOperation::Mul,
                 operand1: self.asset0.to_string(),
@@ -597,20 +493,25 @@ impl PositionRatio {
                 operand2: other.asset1.to_string(),
             })?,
         };
-        pr.simplify();
         Ok(pr)
+    }
+
+    pub fn checked_mul_ratio(self, other: Decimal) -> Result<Self, CheckedMultiplyRatioError> {
+        let asset0 = self
+            .asset0
+            .checked_multiply_ratio(other.numerator(), other.denominator())?;
+        let asset1 = self
+            .asset1
+            .checked_multiply_ratio(other.numerator(), other.denominator())?;
+        Ok(Self { asset0, asset1 })
     }
 
     pub fn checked_add(self, other: &Self) -> Result<Self, OverflowError> {
         let asset0 = self.asset0.checked_add(other.asset0)?;
         let asset1 = self.asset1.checked_add(other.asset1)?;
-        let mut pr = Self {
-            asset0,
-            asset1,
-        };
-        pr.simplify();
+        let pr = Self { asset0, asset1 };
         Ok(pr)
-    }   
+    }
 }
 
 #[cfg(test)]
