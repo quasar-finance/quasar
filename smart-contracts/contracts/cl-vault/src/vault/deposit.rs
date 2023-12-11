@@ -18,11 +18,7 @@ use osmosis_std::types::{
 
 use crate::{
     error::ContractResult,
-    helpers::{
-        allocate_funds_per_position, get_liquidity_amount_for_unused_funds,
-        get_liquidity_for_positions, get_perfect_liquidity, get_spot_price, must_pay_one_or_two,
-        sort_tokens,
-    },
+    helpers::{allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
@@ -60,13 +56,15 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     CURRENT_DEPOSITOR.save(deps.storage, &recipient)?;
 
-
     let positions = get_positions(deps.storage, &deps.querier)?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    let psf = allocate_funds_per_position(positions.clone(), token0.amount, token1.amount)?;
+    let spot_price = get_spot_price(deps.storage, &deps.querier)?;
+
+    let psf =
+        allocate_funds_per_position(positions.clone(), spot_price, token0.amount, token1.amount)?;
 
     let position_funds = psf.iter().zip(positions);
 
@@ -79,6 +77,7 @@ pub(crate) fn execute_exact_deposit(
             }
 
             // we want to make sure deposit 1 is item 1 in the queue, deposit 2 item 2 in the queue
+            // TODO can this be less complex?
             CURRENT_DEPOSIT.push_back(
                 deps.storage,
                 &CurrentDeposit {
@@ -208,6 +207,7 @@ pub fn handle_deposit_create_position_reply(
 }
 
 pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+    // process the users deposits
     let mut deposits: Vec<CurrentDeposit> = vec![];
     // empty the current deposit queue
     while !CURRENT_DEPOSIT.is_empty(deps.storage)? {
@@ -215,47 +215,12 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         deposits.push(deposit);
     }
 
-    // get the total liquidity according to the current ratio
-    let positions = get_positions(deps.storage, &deps.querier)?;
-    let (total0, total1) = positions.iter().try_fold(
+    let deposited_assets = deposits.iter().try_fold(
         (Uint128::zero(), Uint128::zero()),
-        |(acc0, acc1), (_, fp)| -> Result<(Uint128, Uint128), ContractError> {
-            Ok((
-                acc0.checked_add(
-                    fp.asset0
-                        .as_ref()
-                        .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
-                        .unwrap_or(Ok(Uint128::zero()))?,
-                )?,
-                acc1.checked_add(
-                    fp.asset1
-                        .as_ref()
-                        .map(|c| -> Result<Uint128, ContractError> { Ok(c.amount.parse()?) })
-                        .unwrap_or(Ok(Uint128::zero()))?,
-                )?,
-            ))
+        |(acc0, acc1), deposit| -> Result<(Uint128, Uint128), ContractError> {
+            Ok((acc0 + deposit.token0_in, acc1 + deposit.token1_in))
         },
     )?;
-
-    let spot_price = get_spot_price(deps.storage, &deps.querier)?;
-
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-    let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.clone())?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
-
-    // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
-    let existing_liquidity =
-        get_perfect_liquidity(deps.branch(), total0, total1, spot_price.into())?;
-
-    let user_liquidity = deposits.iter().try_fold(Decimal256::zero(), |acc, c| {
-        acc.checked_add(c.liquidity_out.unwrap())
-    })?;
 
     let refunded = deposits.iter().try_fold(
         (Uint128::zero(), Uint128::zero()),
@@ -267,23 +232,47 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         },
     )?;
 
-    let user_shares: Uint128 = if total_vault_shares.is_zero() {
-        existing_liquidity.to_uint_floor().try_into()?
-    } else {
-        let liquidity_amount_of_unused_funds: Decimal256 = get_liquidity_amount_for_unused_funds(
-            deps.branch(),
-            &env,
-            refunded,
-            spot_price.into(),
-        )?;
-        let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?; // can be this?
+    let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
-        // user_shares = total_vault_shares * user_liq / total_liq
-        total_vault_shares
-            .multiply_ratio(user_liquidity.numerator(), user_liquidity.denominator())
-            .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
-            .try_into()?
-    };
+    let user_value = get_asset0_value(
+        deposited_assets.0,
+        deposited_assets.1,
+        spot_price.into(),
+    )?;
+
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+
+    let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
+        .supply_of(vault_denom.clone())?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
+
+    let positions = get_positions(deps.storage, &deps.querier)?;
+    let vault_assets = positions.iter().try_fold(
+        (Uint128::zero(), Uint128::zero()),
+        |(acc0, acc1), (_, fp)| -> Result<(Uint128, Uint128), ContractError> {
+            Ok((
+                acc0.checked_add(fp.asset0.as_ref().unwrap().amount.parse()?)?,
+                acc1.checked_add(fp.asset1.as_ref().unwrap().amount.parse()?)?,
+            ))
+        },
+    )?;
+
+    // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
+    let total_vault_value = get_asset0_value(
+        vault_assets.0,
+        vault_assets.1,
+        spot_price.into(),
+    )?;
+
+    // this depends on the vault being instantiated with some amount of value
+    let user_shares: Uint128 = total_vault_shares
+        .multiply_ratio(user_value, Uint256::one())
+        .multiply_ratio(Uint256::one(), total_vault_value)
+        .try_into()?;
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -305,7 +294,7 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
 
     // save the shares in the user map
     SHARES.update(
-        deps.storage,
+        deps.branch().storage,
         current_depositor.clone(),
         |old| -> Result<Uint128, ContractError> {
             if let Some(existing_user_shares) = old {
