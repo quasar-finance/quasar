@@ -382,17 +382,14 @@ fn get_min_ratio_per_position(
     positions
 }
 
-
 /// Calculate the total value of two assets in asset0
 pub fn get_asset0_value(
     token0: Uint128,
     token1: Uint128,
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
-
-    let total = token0.checked_add(
-        token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()),
-    )?;
+    let total = token0
+        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
 
     Ok(total)
 }

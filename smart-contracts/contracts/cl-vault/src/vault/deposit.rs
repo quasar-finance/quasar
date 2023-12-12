@@ -234,11 +234,7 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
 
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
-    let user_value = get_asset0_value(
-        deposited_assets.0,
-        deposited_assets.1,
-        spot_price.into(),
-    )?;
+    let user_value = get_asset0_value(deposited_assets.0, deposited_assets.1, spot_price.into())?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
@@ -262,11 +258,7 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
     )?;
 
     // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
-    let total_vault_value = get_asset0_value(
-        vault_assets.0,
-        vault_assets.1,
-        spot_price.into(),
-    )?;
+    let total_vault_value = get_asset0_value(vault_assets.0, vault_assets.1, spot_price.into())?;
 
     // this depends on the vault being instantiated with some amount of value
     let user_shares: Uint128 = total_vault_shares

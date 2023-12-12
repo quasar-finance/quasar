@@ -117,7 +117,7 @@ pub fn execute_callback_distribute_rewards(
     let attr = do_distribute_rewards(deps.branch(), rewards)?;
 
     CURRENT_REWARDS.remove(deps.storage);
-    
+
     Ok(Response::new().add_attributes(attr))
 }
 

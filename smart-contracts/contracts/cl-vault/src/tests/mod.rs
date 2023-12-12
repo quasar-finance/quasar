@@ -3,7 +3,7 @@ mod deposit_withdraw;
 mod initialize;
 // mod proptest;
 // mod range;
-mod rewards;
 mod multirange_deposit;
+mod rewards;
 
 pub(crate) use crate::tests::initialize::default_init;
