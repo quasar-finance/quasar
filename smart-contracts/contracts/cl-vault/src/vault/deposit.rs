@@ -198,7 +198,7 @@ pub fn handle_deposit_create_position_reply(
     );
 
     // Merge our positions together and mint the user shares to the cl-vault
-    let mut response = Response::new()
+    let response = Response::new()
         .add_submessage(merge_submsg)
         .add_attribute("method", "create_position_reply")
         .add_attribute("action", "exact_deposit");
