@@ -1,4 +1,3 @@
-
 use crate::{msg::ExecuteMsg, tests::default_init};
 use cosmwasm_std::Coin;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;

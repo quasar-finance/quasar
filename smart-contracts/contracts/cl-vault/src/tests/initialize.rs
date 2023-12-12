@@ -1,4 +1,3 @@
-
 use std::str::FromStr;
 
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};

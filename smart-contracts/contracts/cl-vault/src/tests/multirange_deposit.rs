@@ -1,4 +1,3 @@
-
 use cosmwasm_std::{coin, Coin};
 
 use osmosis_std::types::{
