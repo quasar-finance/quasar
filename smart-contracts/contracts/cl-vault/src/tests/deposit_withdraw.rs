@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     use cosmwasm_std::{coin, Coin};
 
     use osmosis_std::types::{
@@ -11,7 +9,7 @@ mod tests {
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{PositionResponse, UserBalanceResponse},
-        test_tube::default_init,
+        tests::default_init,
     };
 
     #[test]
@@ -291,4 +289,3 @@ mod tests {
             .unwrap();
         // verify the correct execution
     }
-}

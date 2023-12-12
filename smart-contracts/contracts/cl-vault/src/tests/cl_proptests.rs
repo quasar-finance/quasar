@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     use cosmwasm_std::{Coin, Decimal, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::osmosis::{
@@ -13,7 +11,7 @@ mod tests {
     use crate::{
         msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PoolResponse, UserBalanceResponse},
-        test_tube::default_init,
+        tests::default_init,
     };
 
     #[test]
@@ -198,4 +196,3 @@ mod tests {
             .denoms[0]
         );
     }
-}

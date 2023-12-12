@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod test {
+
     use std::str::FromStr;
 
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
@@ -269,4 +268,3 @@ mod test {
         };
         let position = cl.create_position(initial_position, &alice).unwrap();
     }
-}

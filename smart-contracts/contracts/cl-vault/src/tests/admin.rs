@@ -1,7 +1,4 @@
-#[cfg(test)]
-mod tests {
-
-    use crate::test_tube::default_init;
+    use crate::tests::default_init;
 
     #[test]
     #[ignore]
@@ -9,4 +6,3 @@ mod tests {
         let (_app, _contract_address, _cl_pool_id, _admin) = default_init();
         // change the range admin and verify that it works
     }
-}

@@ -109,12 +109,15 @@ pub fn handle_collect_spread_rewards_reply(
 }
 
 pub fn execute_callback_distribute_rewards(
-    deps: DepsMut,
+    mut deps: DepsMut,
     _env: Env,
 ) -> Result<Response, ContractError> {
     let rewards = CURRENT_REWARDS.load(deps.storage)?;
 
-    let attr = do_distribute_rewards(deps, rewards)?;
+    let attr = do_distribute_rewards(deps.branch(), rewards)?;
+
+    CURRENT_REWARDS.remove(deps.storage);
+    
     Ok(Response::new().add_attributes(attr))
 }
 

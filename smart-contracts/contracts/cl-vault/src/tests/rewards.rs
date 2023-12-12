@@ -1,6 +1,4 @@
-#[cfg(test)]
-mod tests {
-    use crate::{msg::ExecuteMsg, test_tube::default_init};
+    use crate::{msg::ExecuteMsg, tests::default_init};
     use cosmwasm_std::Coin;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
@@ -155,4 +153,3 @@ mod tests {
             )
             .unwrap();
     }
-}

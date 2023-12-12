@@ -1,5 +1,3 @@
-#[cfg(test)]
-pub mod initialize {
     use std::str::FromStr;
 
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
@@ -295,4 +293,3 @@ pub mod initialize {
             .denoms[0]
         );
     }
-}

@@ -4,6 +4,6 @@ mod initialize;
 // mod proptest;
 // mod range;
 mod rewards;
+mod multirange_deposit;
 
-#[cfg(test)]
-pub(crate) use crate::test_tube::initialize::initialize::default_init;
+pub(crate) use crate::tests::initialize::default_init;

@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod tests {
+
     use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
@@ -560,4 +559,3 @@ mod tests {
             println!("PASS");
         }
     }
-}

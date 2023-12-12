@@ -13,7 +13,7 @@ mod vault;
 pub use crate::error::ContractError;
 
 #[cfg(test)]
-mod test_tube;
+mod tests;
 
 #[cfg(test)]
 mod test_helpers;
