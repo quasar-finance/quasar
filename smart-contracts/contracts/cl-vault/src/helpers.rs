@@ -30,19 +30,24 @@ pub(crate) fn must_pay_one_or_two(
         return Err(ContractError::IncorrectAmountFunds);
     }
 
-    let token0 = info
-        .funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.0)
-        .unwrap_or(coin(0, denoms.0));
+    get_one_or_two(&info.funds, denoms)
+}
 
-    let token1 = info
-        .funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.1)
-        .unwrap_or(coin(0, denoms.1));
+pub(crate) fn get_one_or_two(
+    tokens: &Vec<Coin>,
+    denoms: (String, String),
+) -> ContractResult<(Coin, Coin)> {
+    let token0 = tokens
+    .clone()
+    .into_iter()
+    .find(|coin| coin.denom == denoms.0)
+    .unwrap_or(coin(0, denoms.0));
+
+    let token1 = tokens
+    .clone()
+    .into_iter()
+    .find(|coin| coin.denom == denoms.1)
+    .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
 }
