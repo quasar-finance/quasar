@@ -53,5 +53,5 @@ serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
-osmosis-test-tube = "20.1.1"
+osmosis-test-tube = "21.0.0-beta.1"
 proptest = "1.2.0"
