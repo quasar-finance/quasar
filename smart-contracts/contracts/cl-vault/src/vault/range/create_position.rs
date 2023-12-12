@@ -2,12 +2,12 @@ use cosmwasm_std::{Decimal, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint12
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::{
-    helpers::get_unused_balances,
+    helpers::{get_unused_balances, get_one_or_two},
     math::tick::price_to_tick,
     reply::Replies,
-    state::{Position, CURRENT_RATIO, POSITIONS},
+    state::{Position, CURRENT_RATIO, POSITIONS, PoolConfig, POOL_CONFIG},
     vault::concentrated_liquidity::create_position,
-    ContractError,
+    ContractError, rewards::CoinList,
 };
 
 pub fn create_new_position(
@@ -20,8 +20,13 @@ pub fn create_new_position(
     let lower_tick = price_to_tick(deps.storage, lower_price.into())?;
     let upper_tick = price_to_tick(deps.storage, upper_price.into())?;
 
+    let pool = POOL_CONFIG.load(deps.storage)?;
+
     // get the current free liquidity
     let tokens = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let (token0, token1) = get_one_or_two(tokens.coins(), (pool.token0, pool.token1))?;
+
+
     CURRENT_RATIO.save(deps.storage, &ratio)?;
 
     // create a new position between the given ticks add free liquidity
@@ -30,7 +35,7 @@ pub fn create_new_position(
         &env,
         lower_tick.try_into().unwrap(),
         upper_tick.try_into().unwrap(),
-        tokens.coins(),
+        CoinList::from_coins(vec![token0, token1]).coins(),
         Uint128::zero(),
         Uint128::zero(),
     )?;
