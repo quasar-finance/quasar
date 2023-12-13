@@ -4,9 +4,9 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
-    query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
+    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -130,6 +130,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
             crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::DexRouter {} => Ok(to_binary(&query_dex_router(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)
@@ -189,8 +190,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    DEX_ROUTER.save(deps.storage, &None)?;
 
     Ok(Response::new().add_attribute("migrate", "successful"))
 }

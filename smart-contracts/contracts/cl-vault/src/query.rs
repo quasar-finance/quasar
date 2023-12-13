@@ -1,6 +1,7 @@
 use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
+use crate::state::DEX_ROUTER;
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use crate::{
@@ -110,6 +111,15 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
         decimals: 6,
         admin,
     })
+}
+
+pub fn query_dex_router(deps: Deps) -> ContractResult<Option<String>> {
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+
+    match dex_router {
+        Some(dex_router) => Ok(Some(dex_router.to_string())),
+        _ => Ok(None),
+    }
 }
 
 pub fn query_info(deps: Deps) -> ContractResult<VaultInfoResponse> {

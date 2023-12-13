@@ -48,6 +48,11 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
+    /// Update the dex router address.
+    UpdateDexRouter {
+        /// The new dex router address.
+        address: Option<String>,
+    },
     ClaimStrategistRewards {},
 }
 
@@ -83,6 +88,8 @@ pub enum ExtensionQueryMsg {
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
+    /// Query the DexRouter address
+    DexRouter {},
 }
 
 /// Extension query messages for user balance related queries

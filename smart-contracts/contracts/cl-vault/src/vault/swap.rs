@@ -80,7 +80,7 @@ pub fn swap(
     force_swap_route: bool,
 ) -> Result<CosmosMsg, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let dex_router = DEX_ROUTER.load(deps.storage)?;
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {

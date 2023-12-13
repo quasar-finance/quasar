@@ -94,7 +94,7 @@ pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 
 /// DEX_ROUTER: The address of the dex router contract
-pub const DEX_ROUTER: Item<Option<Addr>> = Item::new("dex_router");
+pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 #[cw_serde]
 pub struct ModifyRangeState {
