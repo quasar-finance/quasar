@@ -18,7 +18,7 @@ use osmosis_std::types::{
 
 use crate::{
     error::ContractResult,
-    helpers::{allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two},
+    helpers::{allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two, get_unused_balances, get_one_or_two},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
@@ -27,7 +27,7 @@ use crate::{
         SHARES, VAULT_DENOM,
     },
     vault::concentrated_liquidity::{create_position, get_positions},
-    ContractError,
+    ContractError, debug,
 };
 
 use super::concentrated_liquidity::{add_to_position, get_position};
@@ -119,6 +119,8 @@ pub(crate) fn execute_exact_deposit(
     let mint = ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
         crate::msg::CallbackExecuteMsg::MintUserDeposit {},
     ));
+
+    // TODO save any funds we did not use in the positions so we can refund them, allocate_funds_per_position does not guarantee that all funds are used
 
     Ok(Response::new()
         .add_submessages(msgs??)
@@ -215,6 +217,8 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         deposits.push(deposit);
     }
 
+    debug!(deps, "deposits:", deposits);
+
     let deposited_assets = deposits.iter().try_fold(
         (Uint128::zero(), Uint128::zero()),
         |(acc0, acc1), deposit| -> Result<(Uint128, Uint128), ContractError> {
@@ -247,6 +251,12 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         .into();
 
     let positions = get_positions(deps.storage, &deps.querier)?;
+
+    // TODO add unused assets to vault assets here
+    let pool = POOL_CONFIG.load(deps.storage)?;
+    let unused_funds = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let (unused0, unused1) = get_one_or_two(&unused_funds.coins(), (pool.token0, pool.token1))?;
+
     let vault_assets = positions.iter().try_fold(
         (Uint128::zero(), Uint128::zero()),
         |(acc0, acc1), (_, fp)| -> Result<(Uint128, Uint128), ContractError> {
@@ -258,12 +268,20 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
     )?;
 
     // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
-    let total_vault_value = get_asset0_value(vault_assets.0, vault_assets.1, spot_price.into())?;
+    let total_vault_value = get_asset0_value(vault_assets.0.checked_add(unused0.amount)?, vault_assets.1.checked_add(unused1.amount)?, spot_price.into())?;
+
+    debug!(deps, "positions", positions);
+    debug!(deps, "unused_funds", vec![unused0, unused1]);
+
+
+    debug!(deps, "total_vault_value", total_vault_value);
+    debug!(deps, "user_value", user_value);
+
 
     // this depends on the vault being instantiated with some amount of value
     let user_shares: Uint128 = total_vault_shares
-        .multiply_ratio(user_value, Uint256::one())
-        .multiply_ratio(Uint256::one(), total_vault_value)
+        .checked_mul(user_value.into())?
+        .checked_div(total_vault_value.into())?
         .try_into()?;
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
@@ -302,7 +320,9 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
         .add_attribute("method", "create_position_reply")
-        .add_attribute("action", "exact_deposit");
+        .add_attribute("action", "exact_deposit")
+        .add_attribute("used_token0", deposited_assets.0)
+        .add_attribute("used_token1", deposited_assets.1);
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = refund_bank_msg {

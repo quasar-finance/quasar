@@ -24,7 +24,7 @@ pub fn create_new_position(
 
     // get the current free liquidity
     let tokens = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let (token0, token1) = get_one_or_two(tokens.coins(), (pool.token0, pool.token1))?;
+    let (token0, token1) = get_one_or_two(&tokens.coins(), (pool.token0, pool.token1))?;
 
 
     CURRENT_RATIO.save(deps.storage, &ratio)?;

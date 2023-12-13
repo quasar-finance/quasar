@@ -303,7 +303,7 @@ pub fn get_max_utilization_for_ratio(
     }
 }
 
-// TODO, do we allocate to top up
+// TODO, allocating funds gives a ratio for each position, we should theb
 pub fn allocate_funds_per_position(
     positions: Vec<(Position, FullPositionBreakdown)>,
     spot_price: Decimal,
