@@ -47,8 +47,8 @@ cw-utils = "1.0.2"
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 cw2 = "1.0.1"
 num_enum = "0.7.0"
-osmosis-std = "0.20.1"
-prost = {version = "0.11", default-features = false}
+osmosis-std = "0.21.0-beta.2"
+prost = {version = "0.12.3", default-features = false}
 serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
 
