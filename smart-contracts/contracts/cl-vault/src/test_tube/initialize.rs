@@ -106,7 +106,6 @@ pub mod initialize {
                 }],
             },
             admin.address(),
-            false,
             &admin,
         )
         .unwrap();
