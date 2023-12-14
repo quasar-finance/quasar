@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Decimal;
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -47,6 +48,11 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
+    /// Update the dex router address.
+    UpdateDexRouter {
+        /// The new dex router address.
+        address: Option<String>,
+    },
     ClaimStrategistRewards {},
 }
 
@@ -62,6 +68,10 @@ pub struct ModifyRangeMsg {
     pub ratio_of_swappable_funds_to_use: Decimal,
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
+    /// recommended swap route to take
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    /// whether or not to force the swap route
+    pub force_swap_route: Option<bool>,
 }
 
 #[cw_serde]
@@ -78,6 +88,8 @@ pub enum ExtensionQueryMsg {
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
+    /// Query the DexRouter address
+    DexRouter {},
 }
 
 /// Extension query messages for user balance related queries

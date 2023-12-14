@@ -35,8 +35,8 @@ pub fn execute_admin_msg(
 
 pub fn update_range_submitter_admin(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     new_admin: String,
 ) -> Result<Response, ContractError> {
     RANGE_SUBMITTER_ADMIN.save(deps.storage, &deps.api.addr_validate(&new_admin)?)?;
@@ -46,8 +46,8 @@ pub fn update_range_submitter_admin(
 
 pub fn update_range_executor_admin(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _env: Env,
+    _info: MessageInfo,
     new_admin: String,
 ) -> Result<Response, ContractError> {
     RANGE_EXECUTOR_ADMIN.save(deps.storage, &deps.api.addr_validate(&new_admin)?)?;
