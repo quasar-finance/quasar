@@ -34,7 +34,7 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
-cl-vault = {path = "../cl-vault"}
+cl-vault = {path = "../cl-vault", features = ["library"]}
 cosmwasm-schema = "1.5.0"
 cosmwasm-std = {version = "1.5.0", features = [
   "cosmwasm_1_3", # Enable this if you only deploy to chains that have CosmWasm 1.4 or higher  # "cosmwasm_1_4",
