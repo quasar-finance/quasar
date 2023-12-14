@@ -86,6 +86,8 @@ pub struct CurrentDeposit {
 
 pub const CURRENT_DEPOSIT: Deque<CurrentDeposit> = Deque::new("current_deposit");
 pub const CURRENT_DEPOSITOR: Item<Addr> = Item::new("current_depositor");
+pub const CURRENT_DEPOSIT_LEFTOVER: Item<(Uint128, Uint128)> =
+    Item::new("current_deposit_leftover");
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");

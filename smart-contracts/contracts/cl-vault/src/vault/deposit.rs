@@ -17,17 +17,21 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
-    helpers::{allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two, get_unused_balances, get_one_or_two},
+    helpers::{
+        allocate_funds_per_position, get_asset0_value, get_one_or_two, get_spot_price,
+        get_unused_balances, must_pay_one_or_two,
+    },
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
     state::{
-        CurrentDeposit, Position, CURRENT_DEPOSIT, CURRENT_DEPOSITOR, POOL_CONFIG, POSITIONS,
-        SHARES, VAULT_DENOM,
+        CurrentDeposit, Position, CURRENT_DEPOSIT, CURRENT_DEPOSITOR, CURRENT_DEPOSIT_LEFTOVER,
+        POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM,
     },
     vault::concentrated_liquidity::{create_position, get_positions},
-    ContractError, debug,
+    ContractError,
 };
 
 use super::concentrated_liquidity::{add_to_position, get_position};
@@ -64,9 +68,12 @@ pub(crate) fn execute_exact_deposit(
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
     let psf =
-        allocate_funds_per_position(positions.clone(), spot_price, token0.amount, token1.amount)?;
+        allocate_funds_per_position(deps.branch(), positions.clone(), spot_price, token0.amount, token1.amount)?;
 
     let position_funds = psf.iter().zip(positions);
+
+    // sum up the amount that allocate_funds_per_position allocated to each position
+    let mut total_allocated = (Uint128::zero(), Uint128::zero());
 
     // create an AddToPosition message per position
     let msgs: Result<Result<Vec<SubMsg>, ContractError>, ContractError> = position_funds
@@ -89,6 +96,8 @@ pub(crate) fn execute_exact_deposit(
                     original_id: pos1.position_id,
                 },
             )?;
+
+            total_allocated = (total_allocated.0 + *amount0, total_allocated.1 + amount1);
 
             create_position(
                 deps.branch(),
@@ -121,6 +130,13 @@ pub(crate) fn execute_exact_deposit(
     ));
 
     // TODO save any funds we did not use in the positions so we can refund them, allocate_funds_per_position does not guarantee that all funds are used
+    CURRENT_DEPOSIT_LEFTOVER.save(
+        deps.storage,
+        &(
+            token0.amount - total_allocated.0,
+            token1.amount - total_allocated.1,
+        ),
+    )?;
 
     Ok(Response::new()
         .add_submessages(msgs??)
@@ -268,15 +284,17 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
     )?;
 
     // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
-    let total_vault_value = get_asset0_value(vault_assets.0.checked_add(unused0.amount)?, vault_assets.1.checked_add(unused1.amount)?, spot_price.into())?;
+    let total_vault_value = get_asset0_value(
+        vault_assets.0.checked_add(unused0.amount)?,
+        vault_assets.1.checked_add(unused1.amount)?,
+        spot_price.into(),
+    )?;
 
     debug!(deps, "positions", positions);
     debug!(deps, "unused_funds", vec![unused0, unused1]);
 
-
     debug!(deps, "total_vault_value", total_vault_value);
     debug!(deps, "user_value", user_value);
-
 
     // this depends on the vault being instantiated with some amount of value
     let user_shares: Uint128 = total_vault_shares
@@ -315,7 +333,14 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         },
     )?;
 
-    let refund_bank_msg = refund_bank_msg(deps, refunded.0, refunded.1, current_depositor)?;
+    let leftover = CURRENT_DEPOSIT_LEFTOVER.load(deps.storage)?;
+
+    let refund_bank_msg = refund_bank_msg(
+        deps,
+        refunded.0 + leftover.0,
+        refunded.1 + leftover.1,
+        current_depositor,
+    )?;
     let mut response = Response::new()
         .add_message(mint_msg)
         .add_attributes(mint_attrs)

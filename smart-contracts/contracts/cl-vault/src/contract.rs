@@ -4,8 +4,8 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_info, query_metadata, query_pool, query_positions, query_total_assets,
-    query_total_vault_token_supply, query_user_balance, query_user_rewards,
+    query_full_positions, query_info, query_metadata, query_pool, query_positions,
+    query_total_assets, query_total_vault_token_supply, query_user_balance, query_user_rewards,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -99,7 +99,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {
@@ -109,7 +109,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_binary(&query_total_assets(deps)?)?)
+            Ok(to_binary(&query_total_assets(deps, env)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
@@ -130,6 +130,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
                 crate::msg::ClQueryMsg::Positions {} => Ok(to_binary(&query_positions(deps)?)?),
                 crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
+                crate::msg::ClQueryMsg::FullPosition {} => {
+                    Ok(to_binary(&query_full_positions(deps)?)?)
+                }
             },
         },
     }

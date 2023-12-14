@@ -2,12 +2,13 @@ use cosmwasm_std::{Decimal, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint12
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::{
-    helpers::{get_unused_balances, get_one_or_two},
+    helpers::{get_one_or_two, get_one_or_two_coins, get_unused_balances},
     math::tick::price_to_tick,
     reply::Replies,
-    state::{Position, CURRENT_RATIO, POSITIONS, PoolConfig, POOL_CONFIG},
+    rewards::CoinList,
+    state::{PoolConfig, Position, CURRENT_RATIO, POOL_CONFIG, POSITIONS},
     vault::concentrated_liquidity::create_position,
-    ContractError, rewards::CoinList,
+    ContractError,
 };
 
 pub fn create_new_position(
@@ -24,8 +25,7 @@ pub fn create_new_position(
 
     // get the current free liquidity
     let tokens = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let (token0, token1) = get_one_or_two(&tokens.coins(), (pool.token0, pool.token1))?;
-
+    let coins = get_one_or_two_coins(&tokens.coins(), (pool.token0, pool.token1))?;
 
     CURRENT_RATIO.save(deps.storage, &ratio)?;
 
@@ -35,7 +35,7 @@ pub fn create_new_position(
         &env,
         lower_tick.try_into().unwrap(),
         upper_tick.try_into().unwrap(),
-        CoinList::from_coins(vec![token0, token1]).coins(),
+        CoinList::from_coins(coins).coins(),
         Uint128::zero(),
         Uint128::zero(),
     )?;

@@ -3,7 +3,7 @@ use cosmwasm_std::{Coin, Decimal, Decimal256, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
-    query::{PoolResponse, PositionResponse, RangeAdminResponse},
+    query::{FullPositionResponse, PoolResponse, PositionResponse, RangeAdminResponse},
     state::VaultConfig,
 };
 
@@ -154,6 +154,8 @@ pub enum ClQueryMsg {
     Positions {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
+    #[returns(FullPositionResponse)]
+    FullPosition {},
 }
 
 /// ExecuteMsg for an Autocompounding Vault.

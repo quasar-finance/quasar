@@ -4,14 +4,16 @@ use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest},
-    osmosis::{concentratedliquidity::v1beta1::PositionByIdRequest, poolmanager::v1beta1::SpotPriceRequest},
+    osmosis::{
+        concentratedliquidity::v1beta1::PositionByIdRequest, poolmanager::v1beta1::SpotPriceRequest,
+    },
 };
-use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, Wasm, PoolManager};
+use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
 use crate::{
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
-    tests::{default_init, helpers::get_share_price_in_asset0},
+    tests::{default_init, helpers::{get_share_price_in_asset0, get_full_positions}},
 };
 
 #[test]
@@ -40,27 +42,46 @@ fn multi_position_deposit_works() {
         .unwrap();
 
     // make sure we have some fee uosmo and uatom to create the new position
-    bank.send(MsgSend{ from_address: admin.address(), to_address: contract_address.to_string(), amount: vec![ Coin::new(1_000, "uatom").into(),
-    Coin::new(1_000, "uosmo").into()] }, &admin).unwrap();
+    bank.send(
+        MsgSend {
+            from_address: admin.address(),
+            to_address: contract_address.to_string(),
+            amount: vec![
+                Coin::new(1_000, "uatom").into(),
+                Coin::new(1_000, "uosmo").into(),
+            ],
+        },
+        &admin,
+    )
+    .unwrap();
 
     let wasm = Wasm::new(&app);
 
     let shares: UserBalanceResponse = wasm
-    .query(
-        contract_address.as_str(),
-        &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-            crate::msg::UserBalanceQueryMsg::UserSharesBalance {
-                user: alice.address(),
-            },
-        )),
-    )
-    .unwrap();
+        .query(
+            contract_address.as_str(),
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                crate::msg::UserBalanceQueryMsg::UserSharesBalance {
+                    user: alice.address(),
+                },
+            )),
+        )
+        .unwrap();
 
-    let spot_price: Decimal = PoolManager::new(&app).query_spot_price(&SpotPriceRequest { pool_id: cl_pool_id, base_asset_denom: "uatom".into(), quote_asset_denom: "uosmo".into() }).unwrap().spot_price.parse().unwrap();
-    let share_price: Decimal = get_share_price_in_asset0(&wasm, spot_price, contract_address.as_str()).unwrap();
+    let spot_price: Decimal = PoolManager::new(&app)
+        .query_spot_price(&SpotPriceRequest {
+            pool_id: cl_pool_id,
+            base_asset_denom: "uatom".into(),
+            quote_asset_denom: "uosmo".into(),
+        })
+        .unwrap()
+        .spot_price
+        .parse()
+        .unwrap();
+    let share_price: Decimal =
+        get_share_price_in_asset0(&wasm, spot_price, contract_address.as_str()).unwrap();
     println!("shares: {}", shares.balance);
     println!("share price: {}", share_price);
-
 
     // create a new position
     let _res = wasm
@@ -78,8 +99,6 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-    
-
     // depositing
     let res = wasm
         .execute(
@@ -90,7 +109,7 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-        let shares: UserBalanceResponse = wasm
+    let shares: UserBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -100,17 +119,43 @@ fn multi_position_deposit_works() {
             )),
         )
         .unwrap();
-    
-        // println!("res: {:?}", res);
 
-        let spot_price: Decimal = PoolManager::new(&app).query_spot_price(&SpotPriceRequest { pool_id: cl_pool_id, base_asset_denom: "uatom".into(), quote_asset_denom: "uosmo".into() }).unwrap().spot_price.parse().unwrap();
-        let share_price: Decimal = get_share_price_in_asset0(&wasm, spot_price, contract_address.as_str()).unwrap();
-        println!("shares: {}", shares.balance);
-        println!("share price: {}", share_price);
+    let spot_price: Decimal = PoolManager::new(&app)
+        .query_spot_price(&SpotPriceRequest {
+            pool_id: cl_pool_id,
+            base_asset_denom: "uatom".into(),
+            quote_asset_denom: "uosmo".into(),
+        })
+        .unwrap()
+        .spot_price
+        .parse()
+        .unwrap();
+    let share_price: Decimal =
+        get_share_price_in_asset0(&wasm, spot_price, contract_address.as_str()).unwrap();
+    println!("shares: {}", shares.balance);
+    println!("share price: {}", share_price);
 
-        // create a new position
-        // this introduction might introduce new funds into the system, and therefore change the share price
-        let _res = wasm
+    // create a new position
+    // this introduction should not introduce new funds as long as we free up some funds first
+
+    let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
+    let fp = positions.get(0).unwrap().full_breakdown.position.clone().unwrap();
+
+    let _res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                crate::msg::ModifyRange::DecreaseFunds {
+                    position_id: fp.position_id,
+                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap() / Decimal::from_ratio(2_u128, 1_u128)).into(),
+                },
+            )),
+            &vec![],
+            &admin,
+        )
+        .unwrap();
+
+    let _res = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
@@ -125,16 +170,16 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-         // depositing
+    // depositing
     let res = wasm
-    .execute(
-        contract_address.as_str(),
-        &ExecuteMsg::ExactDeposit { recipient: None },
-        &[Coin::new(5000, "uatom"), Coin::new(5000, "uosmo")],
-        &alice,
-    )
-    .unwrap();
-        let shares: UserBalanceResponse = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::ExactDeposit { recipient: None },
+            &[Coin::new(5000, "uatom"), Coin::new(5000, "uosmo")],
+            &alice,
+        )
+        .unwrap();
+    let shares: UserBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -147,8 +192,18 @@ fn multi_position_deposit_works() {
 
     // println!("res: {:?}", res);
 
-    let spot_price: Decimal = PoolManager::new(&app).query_spot_price(&SpotPriceRequest { pool_id: cl_pool_id, base_asset_denom: "uatom".into(), quote_asset_denom: "uosmo".into() }).unwrap().spot_price.parse().unwrap();
-    let share_price: Decimal = get_share_price_in_asset0(&wasm, spot_price, contract_address.as_str()).unwrap();
+    let spot_price: Decimal = PoolManager::new(&app)
+        .query_spot_price(&SpotPriceRequest {
+            pool_id: cl_pool_id,
+            base_asset_denom: "uatom".into(),
+            quote_asset_denom: "uosmo".into(),
+        })
+        .unwrap()
+        .spot_price
+        .parse()
+        .unwrap();
+    let share_price: Decimal =
+        get_share_price_in_asset0(&wasm, spot_price, contract_address.as_str()).unwrap();
     println!("shares: {}", shares.balance);
     println!("share price: {}", share_price);
 }

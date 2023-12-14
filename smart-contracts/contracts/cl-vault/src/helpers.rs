@@ -38,18 +38,41 @@ pub(crate) fn get_one_or_two(
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
     let token0 = tokens
-    .clone()
-    .into_iter()
-    .find(|coin| coin.denom == denoms.0)
-    .unwrap_or(coin(0, denoms.0));
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.0)
+        .unwrap_or(coin(0, denoms.0));
 
     let token1 = tokens
-    .clone()
-    .into_iter()
-    .find(|coin| coin.denom == denoms.1)
-    .unwrap_or(coin(0, denoms.1));
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.1)
+        .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
+}
+
+pub(crate) fn get_one_or_two_coins(
+    tokens: &Vec<Coin>,
+    denoms: (String, String),
+) -> ContractResult<Vec<Coin>> {
+    let (token0, token1) = get_one_or_two(tokens, denoms)?;
+
+    let mut tokens = vec![];
+
+    if token0.amount > Uint128::zero() {
+        tokens.push(token0)
+    }
+
+    if token1.amount > Uint128::zero() {
+        tokens.push(token1)
+    }
+
+    if tokens.is_empty() {
+        return Err(ContractError::IncorrectAmountFunds);
+    }
+
+    return Ok(tokens);
 }
 
 /// get_spot_price
@@ -305,6 +328,7 @@ pub fn get_max_utilization_for_ratio(
 
 // TODO, allocating funds gives a ratio for each position, we should theb
 pub fn allocate_funds_per_position(
+    deps: DepsMut,
     positions: Vec<(Position, FullPositionBreakdown)>,
     spot_price: Decimal,
     token0: Uint128,
@@ -325,17 +349,25 @@ pub fn allocate_funds_per_position(
     // for token0 and token1, we want to allocate
     // allocate0 = token0 * ratio
     // allocate1 = token1 * ratio
-    let psf: Result<Vec<(Position, Uint128, Uint128)>, ContractError> = ps
-        .into_iter()
-        .map(|(ps, ps_ratio)| {
-            let ratio = min(
-                Decimal::from_ratio(ps_ratio.asset0, total0),
-                Decimal::from_ratio(ps_ratio.asset1, total1),
-            );
+    // afterwards we need to normalize all ratios to a 1 total
+    let ratios = ps.into_iter().map(|(ps, ps_ratio)| {
+        let r0 = Decimal::from_ratio(ps_ratio.asset0, total0);
+        let r1 = Decimal::from_ratio(ps_ratio.asset1, total1);            
+        let ratio = min(r0, r1);
+        
+        (ps, ratio)
+    });
 
-            Ok((ps, token0 * ratio, token1 * ratio))
+    let total_ratio = ratios.clone().fold(Decimal::zero(), |acc, (_, ratio)| acc + ratio);
+
+    let psf: Result<Vec<(Position, Uint128, Uint128)>, ContractError> = ratios.into_iter()
+        .into_iter()
+        .map(|(ps, ratio)| {
+           let normalized = ratio / total_ratio;
+
+            Ok((ps, token0 * normalized, token1 * normalized))
         })
-        .collect();
+        .collect();   
     psf
 }
 

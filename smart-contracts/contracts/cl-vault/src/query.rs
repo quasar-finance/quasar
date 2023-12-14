@@ -1,3 +1,4 @@
+use crate::helpers::{get_unused_balances, get_one_or_two};
 use crate::state::{Position, POSITIONS};
 use crate::vault::concentrated_liquidity::get_positions;
 use crate::ContractError;
@@ -6,9 +7,12 @@ use crate::{
     state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, USER_REWARDS, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, Order, OverflowError, OverflowOperation, StdError, Uint128};
+use cosmwasm_std::{coin, Coin, Deps, Order, OverflowError, OverflowOperation, StdError, Uint128, Env};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    ConcentratedliquidityQuerier, FullPositionBreakdown,
+};
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -34,6 +38,17 @@ pub struct PoolResponse {
 #[cw_serde]
 pub struct PositionResponse {
     pub positions: Vec<Position>,
+}
+
+#[cw_serde]
+pub struct FullPositionResponse {
+    pub positions: Vec<FullPosition>,
+}
+
+#[cw_serde]
+pub struct FullPosition {
+    pub position: Position,
+    pub full_breakdown: FullPositionBreakdown,
 }
 
 #[cw_serde]
@@ -107,6 +122,33 @@ pub fn query_positions(deps: Deps) -> ContractResult<PositionResponse> {
     })
 }
 
+pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionResponse> {
+    let ps: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    let positions = ps?;
+    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+
+    let full_positions: Result<Vec<FullPosition>, ContractError> = positions
+        .into_iter()
+        .map(|(id, position)| {
+            let fp = cl_querier.position_by_id(id)?;
+
+            let full_position = fp.position.unwrap();
+
+            Ok(FullPosition {
+                position: position,
+                full_breakdown: full_position,
+            })
+        })
+        .collect();
+
+    Ok(FullPositionResponse {
+        positions: full_positions?,
+    })
+}
+
 pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserBalanceResponse> {
     let balance = SHARES
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?
@@ -121,11 +163,15 @@ pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserReward
     Ok(UserRewardsResponse { rewards })
 }
 
-pub fn query_total_assets(deps: Deps) -> ContractResult<TotalAssetsResponse> {
+pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
     let positions = get_positions(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
+    let unused_balance = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let (unused0, unused1) = get_one_or_two(&unused_balance.coins(), (pool.token0.clone(), pool.token1.clone()))?;
+
+
     let (asset0, asset1) = positions.iter().try_fold(
-        (0_u128, 0_u128),
+        (unused0.amount.u128(), unused1.amount.u128()),
         |(acc0, acc1), i| -> Result<(u128, u128), ContractError> {
             let asset0 =
                 i.1.asset0
