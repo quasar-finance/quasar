@@ -356,22 +356,25 @@ pub fn allocate_funds_per_position(
     // afterwards we need to normalize all ratios to a 1 total
     let ratios = ps.into_iter().map(|(ps, ps_ratio)| {
         let r0 = Decimal::from_ratio(ps_ratio.asset0, total0);
-        let r1 = Decimal::from_ratio(ps_ratio.asset1, total1);            
+        let r1 = Decimal::from_ratio(ps_ratio.asset1, total1);
         let ratio = min(r0, r1);
-        
+
         (ps, ratio)
     });
 
-    let total_ratio = ratios.clone().fold(Decimal::zero(), |acc, (_, ratio)| acc + ratio);
+    let total_ratio = ratios
+        .clone()
+        .fold(Decimal::zero(), |acc, (_, ratio)| acc + ratio);
 
-    let psf: Result<Vec<(Position, Uint128, Uint128)>, ContractError> = ratios.into_iter()
+    let psf: Result<Vec<(Position, Uint128, Uint128)>, ContractError> = ratios
+        .into_iter()
         .into_iter()
         .map(|(ps, ratio)| {
-           let normalized = ratio / total_ratio;
+            let normalized = ratio / total_ratio;
 
             Ok((ps, token0 * normalized, token1 * normalized))
         })
-        .collect();   
+        .collect();
     psf
 }
 

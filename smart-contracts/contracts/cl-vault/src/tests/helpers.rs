@@ -1,4 +1,4 @@
-use cosmwasm_std::{Decimal, Fraction, Coin};
+use cosmwasm_std::{Coin, Decimal, Fraction};
 use osmosis_test_tube::{Runner, Wasm};
 
 use crate::{
@@ -54,10 +54,7 @@ where
     Ok(res.positions)
 }
 
-pub fn get_total_assets<'a, R>(
-    wasm: &Wasm<'a, R>,
-    contract: &str,
-) -> Result<(Coin, Coin), String>
+pub fn get_total_assets<'a, R>(wasm: &Wasm<'a, R>, contract: &str) -> Result<(Coin, Coin), String>
 where
     R: Runner<'a>,
 {
@@ -69,7 +66,7 @@ where
     Ok((total_assets.token0, total_assets.token1))
 }
 
-/// assert that amount a and amount b 
+/// assert that amount a and amount b
 #[macro_export]
 macro_rules! assert_approx_eq {
     ($a:expr, $b:expr) => {{

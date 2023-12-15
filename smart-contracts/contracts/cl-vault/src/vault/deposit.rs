@@ -67,8 +67,13 @@ pub(crate) fn execute_exact_deposit(
 
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
-    let psf =
-        allocate_funds_per_position(deps.branch(), positions.clone(), spot_price, token0.amount, token1.amount)?;
+    let psf = allocate_funds_per_position(
+        deps.branch(),
+        positions.clone(),
+        spot_price,
+        token0.amount,
+        token1.amount,
+    )?;
 
     let position_funds = psf.iter().zip(positions);
 

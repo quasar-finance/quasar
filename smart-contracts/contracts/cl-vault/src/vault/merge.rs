@@ -28,17 +28,7 @@ pub struct MergeResponse {
     pub new_position_id: u64,
 }
 
-pub fn execute_merge(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: MergePositionMsg,
-) -> ContractResult<Response> {
-    //check that the sender is our contract
-    if env.contract.address != info.sender {
-        return Err(ContractError::Unauthorized {});
-    }
-
+pub fn execute_merge(deps: DepsMut, env: Env, msg: MergePositionMsg) -> ContractResult<Response> {
     // save the ratio we want to save the merged position under
     CURRENT_RATIO.save(deps.storage, &msg.ratio)?;
 

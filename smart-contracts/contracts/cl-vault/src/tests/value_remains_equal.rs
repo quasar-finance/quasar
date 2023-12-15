@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{coin, Coin, Decimal, Uint128, assert_approx_eq};
+use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest},
@@ -13,7 +13,10 @@ use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManage
 use crate::{
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
-    tests::{default_init, helpers::{get_share_price_in_asset0, get_full_positions, get_total_assets}},
+    tests::{
+        default_init,
+        helpers::{get_full_positions, get_share_price_in_asset0, get_total_assets},
+    },
 };
 
 #[test]
@@ -79,11 +82,16 @@ fn multi_position_deposit_works() {
     assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
     assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
 
-
     // create a new position
     // this introduction should not introduce new funds as long as we free up some funds first
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
-    let fp = positions.get(1).unwrap().full_breakdown.position.clone().unwrap();
+    let fp = positions
+        .get(1)
+        .unwrap()
+        .full_breakdown
+        .position
+        .clone()
+        .unwrap();
 
     let _res = wasm
         .execute(
@@ -91,7 +99,9 @@ fn multi_position_deposit_works() {
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                 crate::msg::ModifyRange::DecreaseFunds {
                     position_id: fp.position_id,
-                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap() / Decimal::from_ratio(2_u128, 1_u128)).into(),
+                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap()
+                        / Decimal::from_ratio(2_u128, 1_u128))
+                    .into(),
                 },
             )),
             &vec![],
@@ -123,39 +133,54 @@ fn multi_position_deposit_works() {
     assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
 
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
-    let fp = positions.get(0).unwrap().full_breakdown.position.clone().unwrap();
+    let fp = positions
+        .get(0)
+        .unwrap()
+        .full_breakdown
+        .position
+        .clone()
+        .unwrap();
     let _res = wasm
-    .execute(
-        contract_address.as_str(),
-        &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-            crate::msg::ModifyRange::DecreaseFunds {
-                position_id: fp.position_id,
-                liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap() / Decimal::from_ratio(2_u128, 1_u128)).into(),
-            },
-        )),
-        &vec![],
-        &admin,
-    )
-    .unwrap();
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                crate::msg::ModifyRange::DecreaseFunds {
+                    position_id: fp.position_id,
+                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap()
+                        / Decimal::from_ratio(2_u128, 1_u128))
+                    .into(),
+                },
+            )),
+            &vec![],
+            &admin,
+        )
+        .unwrap();
 
-let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
+    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
+    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
 
-let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
-    let fp = positions.get(0).unwrap().full_breakdown.position.clone().unwrap();
+    let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
+    let fp = positions
+        .get(0)
+        .unwrap()
+        .full_breakdown
+        .position
+        .clone()
+        .unwrap();
     let _res = wasm
-    .execute(
-        contract_address.as_str(),
-        &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-            crate::msg::ModifyRange::DeletePosition { position_id: fp.position_id },
-        )),
-        &vec![],
-        &admin,
-    )
-    .unwrap();
-let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
-
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                crate::msg::ModifyRange::DeletePosition {
+                    position_id: fp.position_id,
+                },
+            )),
+            &vec![],
+            &admin,
+        )
+        .unwrap();
+    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
+    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
 }

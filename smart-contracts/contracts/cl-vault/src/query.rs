@@ -1,4 +1,4 @@
-use crate::helpers::{get_unused_balances, get_one_or_two};
+use crate::helpers::{get_one_or_two, get_unused_balances};
 use crate::state::{Position, POSITIONS};
 use crate::vault::concentrated_liquidity::get_positions;
 use crate::ContractError;
@@ -7,7 +7,9 @@ use crate::{
     state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, USER_REWARDS, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Deps, Order, OverflowError, OverflowOperation, StdError, Uint128, Env};
+use cosmwasm_std::{
+    coin, Coin, Deps, Env, Order, OverflowError, OverflowOperation, StdError, Uint128,
+};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
@@ -167,8 +169,10 @@ pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsRes
     let positions = get_positions(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
     let unused_balance = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let (unused0, unused1) = get_one_or_two(&unused_balance.coins(), (pool.token0.clone(), pool.token1.clone()))?;
-
+    let (unused0, unused1) = get_one_or_two(
+        &unused_balance.coins(),
+        (pool.token0.clone(), pool.token1.clone()),
+    )?;
 
     let (asset0, asset1) = positions.iter().try_fold(
         (unused0.amount.u128(), unused1.amount.u128()),

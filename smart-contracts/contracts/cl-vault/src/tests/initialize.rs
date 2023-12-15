@@ -19,7 +19,8 @@ use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
 
 use crate::helpers::sort_tokens;
 use crate::msg::{
-    ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRange, QueryMsg,
+    ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRange, NewVaultConfig,
+    QueryMsg,
 };
 use crate::query::PoolResponse;
 use crate::state::VaultConfig;
@@ -146,9 +147,9 @@ pub fn init_test_contract(
     let instantiate_msg = InstantiateMsg {
         admin: admin.address(),
         pool_id: pool.id,
-        config: VaultConfig {
+        config: NewVaultConfig {
             performance_fee: Decimal::percent(5),
-            treasury: Addr::unchecked(admin.address()),
+            treasury: admin.address(),
             swap_max_slippage: Decimal::percent(5),
         },
         vault_token_subdenom: "utestvault".to_string(),

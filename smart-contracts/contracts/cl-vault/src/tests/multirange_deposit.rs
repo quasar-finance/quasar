@@ -13,7 +13,10 @@ use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManage
 use crate::{
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
-    tests::{default_init, helpers::{get_share_price_in_asset0, get_full_positions}},
+    tests::{
+        default_init,
+        helpers::{get_full_positions, get_share_price_in_asset0},
+    },
 };
 
 #[test]
@@ -139,7 +142,13 @@ fn multi_position_deposit_works() {
     // this introduction should not introduce new funds as long as we free up some funds first
 
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
-    let fp = positions.get(0).unwrap().full_breakdown.position.clone().unwrap();
+    let fp = positions
+        .get(0)
+        .unwrap()
+        .full_breakdown
+        .position
+        .clone()
+        .unwrap();
 
     let _res = wasm
         .execute(
@@ -147,7 +156,9 @@ fn multi_position_deposit_works() {
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                 crate::msg::ModifyRange::DecreaseFunds {
                     position_id: fp.position_id,
-                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap() / Decimal::from_ratio(2_u128, 1_u128)).into(),
+                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap()
+                        / Decimal::from_ratio(2_u128, 1_u128))
+                    .into(),
                 },
             )),
             &vec![],
