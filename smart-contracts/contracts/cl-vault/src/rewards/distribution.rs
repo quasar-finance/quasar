@@ -39,7 +39,7 @@ pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, C
         .add_submessages(
             rewards_msgs
                 .into_iter()
-                .map(|m| SubMsg::reply_on_success(m, Replies::CollectIncentives as u64)),
+                .map(|m| SubMsg::reply_on_success(m, Replies::CollectSpreadRewards as u64)),
         )
         .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
