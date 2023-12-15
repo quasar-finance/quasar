@@ -4,6 +4,7 @@ use cosmwasm_std::{
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::{
+    helpers::{get_one_or_two, get_unused_balances},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
@@ -91,6 +92,14 @@ pub fn increase_position_funds(
 ) -> Result<Response, ContractError> {
     let position = get_position(&deps.querier, position_id)?.position.unwrap();
     CURRENT_POSITION_ID.save(deps.storage, &position.position_id)?;
+
+    let pool = POOL_CONFIG.load(deps.storage)?;
+    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let (unused0, unused1) = get_one_or_two(&unused_balances.coins(), (pool.token0, pool.token1))?;
+
+    if unused0.amount < token0.amount || unused1.amount > token1.amount {
+        return Err(ContractError::InsufficientFunds);
+    }
 
     let create = create_position(
         deps,
