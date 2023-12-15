@@ -82,17 +82,21 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
                 }
-                crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(msg) => match msg {
-                    crate::msg::CallbackExecuteMsg::DistributeRewards() => {
-                        execute_callback_distribute_rewards(deps, env)
+                crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(msg) => {
+                    // only our contract is allowed to call callbacks
+                    if env.contract.address != info.sender {
+                        return Err(ContractError::Unauthorized {});
                     }
-                    crate::msg::CallbackExecuteMsg::Merge(msg) => {
-                        execute_merge(deps, env, info, msg)
+                    match msg {
+                        crate::msg::CallbackExecuteMsg::DistributeRewards() => {
+                            execute_callback_distribute_rewards(deps, env)
+                        }
+                        crate::msg::CallbackExecuteMsg::Merge(msg) => execute_merge(deps, env, msg),
+                        crate::msg::CallbackExecuteMsg::MintUserDeposit {} => {
+                            execute_mint_callback(deps, env)
+                        }
                     }
-                    crate::msg::CallbackExecuteMsg::MintUserDeposit {} => {
-                        execute_mint_callback(deps, env)
-                    }
-                },
+                }
             }
         }
     }
