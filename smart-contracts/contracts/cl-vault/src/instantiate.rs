@@ -34,7 +34,7 @@ pub fn handle_instantiate(
         )));
     }
 
-    VAULT_CONFIG.save(deps.storage, &msg.config)?;
+    VAULT_CONFIG.save(deps.storage, &msg.config.into_vault_config(deps.api)?)?;
 
     let pool: Pool = PoolmanagerQuerier::new(&deps.querier)
         .pool(msg.pool_id)?

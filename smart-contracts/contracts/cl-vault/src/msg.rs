@@ -1,8 +1,9 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, Decimal, Decimal256, Uint128};
+use cosmwasm_std::{Api, Coin, Decimal, Decimal256, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
+    error::ContractResult,
     query::{FullPositionResponse, PoolResponse, PositionResponse, RangeAdminResponse},
     state::VaultConfig,
 };
@@ -40,7 +41,7 @@ pub enum AdminExtensionExecuteMsg {
     /// Update the configuration of the vault.
     UpdateConfig {
         /// The config updates.
-        updates: VaultConfig,
+        updates: NewVaultConfig,
     },
     ClaimStrategistRewards {},
 }
@@ -177,7 +178,7 @@ pub struct InstantiateMsg {
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
     /// Configurable parameters for the contract.
-    pub config: VaultConfig,
+    pub config: NewVaultConfig,
     /// The subdenom that will be used for the native vault token, e.g.
     /// the denom of the vault token will be:
     /// "factory/{vault_contract}/{vault_token_subdenom}".
@@ -185,6 +186,27 @@ pub struct InstantiateMsg {
     // create a position upon initialization
     pub initial_lower_tick: i64,
     pub initial_upper_tick: i64,
+}
+
+#[cw_serde]
+pub struct NewVaultConfig {
+    /// Percentage of profit to be charged as performance fee
+    pub performance_fee: Decimal,
+    /// Account to receive fee payments
+    pub treasury: String,
+    /// swap max slippage
+    pub swap_max_slippage: Decimal,
+}
+
+impl NewVaultConfig {
+    pub fn into_vault_config(&self, api: &dyn Api) -> ContractResult<VaultConfig> {
+        let treasury = api.addr_validate(self.treasury.as_str())?;
+        Ok(VaultConfig {
+            performance_fee: self.performance_fee,
+            treasury,
+            swap_max_slippage: self.swap_max_slippage,
+        })
+    }
 }
 
 #[cw_serde]

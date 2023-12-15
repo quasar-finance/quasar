@@ -1,5 +1,6 @@
 use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
+use crate::msg::NewVaultConfig;
 use crate::rewards::CoinList;
 use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
@@ -102,12 +103,12 @@ pub fn execute_update_range_admin(
 pub fn execute_update_config(
     deps: DepsMut,
     info: MessageInfo,
-    updates: VaultConfig,
+    updates: NewVaultConfig,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
     assert_admin(deps.as_ref(), &info.sender)?;
 
-    VAULT_CONFIG.save(deps.storage, &updates)?;
+    VAULT_CONFIG.save(deps.storage, &updates.into_vault_config(deps.api)?)?;
 
     Ok(Response::default()
         .add_attribute("action", "execute_update_config")
@@ -322,8 +323,8 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let new_config = VaultConfig {
-            treasury: Addr::unchecked("new_treasury"),
+        let new_config = NewVaultConfig {
+            treasury: "new_treasury".into(),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
@@ -332,7 +333,11 @@ mod tests {
         assert!(execute_update_config(deps.as_mut(), info_admin, new_config.clone()).is_ok());
         assert_eq!(
             VAULT_CONFIG.load(deps.as_mut().storage).unwrap(),
-            new_config
+            VaultConfig {
+                performance_fee: new_config.performance_fee,
+                treasury: Addr::unchecked(new_config.treasury),
+                swap_max_slippage: new_config.swap_max_slippage
+            }
         );
     }
 
@@ -350,8 +355,8 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let new_config = VaultConfig {
-            treasury: Addr::unchecked("new_treasury"),
+        let new_config = NewVaultConfig {
+            treasury: "new_treasury".into(),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
@@ -378,8 +383,8 @@ mod tests {
             .save(deps.as_mut().storage, &old_config)
             .unwrap();
 
-        let new_config = VaultConfig {
-            treasury: Addr::unchecked("new_treasury"),
+        let new_config = NewVaultConfig {
+            treasury: "new_treasury".into(),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
         };
@@ -406,7 +411,15 @@ mod tests {
 
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
-        let res = execute_update_config(deps.as_mut(), info_admin, old_config.clone());
+        let res = execute_update_config(
+            deps.as_mut(),
+            info_admin,
+            NewVaultConfig {
+                performance_fee: old_config.performance_fee,
+                treasury: old_config.treasury.to_string(),
+                swap_max_slippage: old_config.swap_max_slippage,
+            },
+        );
         assert!(res.is_ok());
         assert_eq!(
             VAULT_CONFIG.load(deps.as_mut().storage).unwrap(),
