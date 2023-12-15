@@ -8,7 +8,7 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
-    state::{Position, CURRENT_POSITION_ID, CURRENT_RATIO, POSITIONS},
+    state::{Position, CURRENT_POSITION_ID, CURRENT_RATIO, POOL_CONFIG, POSITIONS},
     vault::concentrated_liquidity::{create_position, get_position, withdraw_from_position},
     ContractError,
 };
@@ -127,7 +127,7 @@ pub fn handle_add_to_position_reply(
     let response: MsgCreatePositionResponse = result.try_into()?;
 
     let current_id = CURRENT_POSITION_ID.load(deps.storage)?;
-    let ratio = CURRENT_RATIO.load(deps.storage)?;
+    let ratio = POSITIONS.load(deps.storage, current_id)?.ratio;
 
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
