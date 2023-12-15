@@ -267,13 +267,17 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
 }
 
 pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
+    if amount.abs() < multiple {
+        return 0; // Return 0 when amount is less than multiple
+    }
+
     let remainder = amount % multiple;
     if remainder == 0 {
-        amount
+        amount // Amount is already a multiple of 'multiple'
     } else if amount < 0 {
-        amount - remainder
+        amount + remainder.abs() // Round down to the nearest multiple
     } else {
-        amount + multiple - remainder
+        amount + (multiple - remainder) // Round up to the nearest multiple
     }
 }
 
@@ -736,6 +740,7 @@ mod tests {
 
     #[test]
     fn test_round_up_to_nearest_multiple() {
+        assert_eq!(round_up_to_nearest_multiple(2, 10), 0);
         assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
         assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
         assert_eq!(round_up_to_nearest_multiple(12, 5), 15);
@@ -748,6 +753,7 @@ mod tests {
         assert_eq!(round_up_to_nearest_multiple(19, 5), 20);
         assert_eq!(round_up_to_nearest_multiple(20, 5), 20);
         // does it also work for negative inputs?
+        assert_eq!(round_up_to_nearest_multiple(-2, 10), 0);
         assert_eq!(round_up_to_nearest_multiple(-10, 5), -10);
         assert_eq!(round_up_to_nearest_multiple(-11, 5), -10);
         assert_eq!(round_up_to_nearest_multiple(-12, 5), -10);
