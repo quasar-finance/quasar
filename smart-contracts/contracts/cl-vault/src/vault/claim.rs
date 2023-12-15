@@ -20,7 +20,7 @@ pub fn execute_claim_user_rewards(
     let send_rewards_msg = user_rewards.claim(recipient)?;
 
     // todo: check if user rewards are claimed correctly
-    USER_REWARDS.save(deps.storage, Addr::unchecked(recipient), &user_rewards)?;
+    USER_REWARDS.remove(deps.storage, deps.api.addr_validate(recipient)?);
 
     Ok(Response::new()
         .add_message(send_rewards_msg)

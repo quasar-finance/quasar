@@ -158,6 +158,9 @@ pub fn handle_withdraw_user_reply(
     let amount0 = Uint128::new(response.amount0.parse()?).checked_add(user_dust0)?;
     let amount1 = Uint128::new(response.amount1.parse()?).checked_add(user_dust1)?;
 
+    CURRENT_WITHDRAWER.remove(deps.storage);
+    CURRENT_WITHDRAWER_DUST.remove(deps.storage);
+
     let coin0 = coin(amount0.u128(), pool_config.token0);
     let coin1 = coin(amount1.u128(), pool_config.token1);
 
