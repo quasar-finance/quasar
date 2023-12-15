@@ -113,6 +113,17 @@ fn withdraw(
     env: &Env,
     user_shares: Uint128,
 ) -> Result<Vec<MsgWithdrawPosition>, ContractError> {
+    let bq = BankQuerier::new(&deps.querier);
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    
+    let total_vault_shares: Uint128 = bq
+    .supply_of(vault_denom)?
+    .amount
+    .unwrap()
+    .amount
+    .parse::<u128>()?
+    .into();
+
     let positions = get_positions(deps.storage, &deps.querier)?;
     let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions
         .into_iter()
@@ -122,17 +133,6 @@ fn withdraw(
                 .ok_or(ContractError::PositionNotFound)?
                 .liquidity
                 .parse()?;
-
-            let bq = BankQuerier::new(&deps.querier);
-            let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-            let total_vault_shares: Uint128 = bq
-                .supply_of(vault_denom)?
-                .amount
-                .unwrap()
-                .amount
-                .parse::<u128>()?
-                .into();
 
             let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
                 .checked_mul(existing_liquidity)?
