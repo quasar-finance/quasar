@@ -41,7 +41,7 @@ pub fn update_range_submitter_admin(
 ) -> Result<Response, ContractError> {
     RANGE_SUBMITTER_ADMIN.save(deps.storage, &deps.api.addr_validate(&new_admin)?)?;
 
-    Ok(Response::default())
+    Ok(Response::default().add_attribute("new_submitter_admin", new_admin))
 }
 
 pub fn update_range_executor_admin(
@@ -52,5 +52,5 @@ pub fn update_range_executor_admin(
 ) -> Result<Response, ContractError> {
     RANGE_EXECUTOR_ADMIN.save(deps.storage, &deps.api.addr_validate(&new_admin)?)?;
 
-    Ok(Response::default())
+    Ok(Response::default().add_attribute("new_executor_admin", new_admin))
 }
