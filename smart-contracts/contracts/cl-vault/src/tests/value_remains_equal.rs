@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{assert_approx_eq, coin, Coin, Decimal, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Uint128};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest},
@@ -8,15 +8,17 @@ use osmosis_std::types::{
         concentratedliquidity::v1beta1::PositionByIdRequest, poolmanager::v1beta1::SpotPriceRequest,
     },
 };
-use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm};
+use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Runner, Wasm};
 
 use crate::{
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
     tests::{
         default_init,
-        helpers::{get_full_positions, get_share_price_in_asset0, get_total_assets},
-    },
+        helpers::{
+            get_full_positions, get_share_price, get_share_price_in_asset0, get_total_assets,
+        },
+    }, assert_eq_with_diff, assert_total_assets,
 };
 
 #[test]
@@ -77,10 +79,7 @@ fn multi_position_deposit_works() {
             &admin,
         )
         .unwrap();
-
-    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
+    assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
     // create a new position
     // this introduction should not introduce new funds as long as we free up some funds first
@@ -108,10 +107,7 @@ fn multi_position_deposit_works() {
             &admin,
         )
         .unwrap();
-
-    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
+    assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
     let _res = wasm
         .execute(
@@ -128,9 +124,7 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
+        assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
     let fp = positions
@@ -156,9 +150,7 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
+        assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
     let fp = positions
@@ -180,7 +172,5 @@ fn multi_position_deposit_works() {
             &admin,
         )
         .unwrap();
-    let current_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    assert_approx_eq!(total_assets.0.amount, current_assets.0.amount, "0.000001");
-    assert_approx_eq!(total_assets.1.amount, current_assets.1.amount, "0.000001");
+    assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 }

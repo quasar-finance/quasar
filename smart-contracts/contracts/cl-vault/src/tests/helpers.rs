@@ -1,12 +1,84 @@
-use cosmwasm_std::{Coin, Decimal, Fraction};
-use osmosis_test_tube::{Runner, Wasm};
+use std::str::FromStr;
+
+use cosmwasm_std::{Coin, Decimal, Fraction, Uint128};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
+use osmosis_test_tube::{Module, PoolManager, Runner, Wasm};
 
 use crate::{
-    msg::QueryMsg,
+    msg::{ClQueryMsg, ExtensionQueryMsg, QueryMsg},
     query::{
-        FullPosition, FullPositionResponse, TotalAssetsResponse, TotalVaultTokenSupplyResponse,
+        FullPosition, FullPositionsResponse, TotalAssetsResponse, TotalVaultTokenSupplyResponse,
     },
 };
+
+pub fn get_share_price<'a, R>(
+    app: &'a R,
+    cl_pool_id: u64,
+    contract_address: &str,
+) -> Decimal 
+where R: Runner<'a>,
+{
+    let wasm = Wasm::new(app);
+
+    let spot_price: Decimal = PoolManager::new(app)
+        .query_spot_price(&SpotPriceRequest {
+            pool_id: cl_pool_id,
+            base_asset_denom: "uatom".into(),
+            quote_asset_denom: "uosmo".into(),
+        })
+        .unwrap()
+        .spot_price
+        .parse()
+        .unwrap();
+    let share_price: Decimal =
+        get_share_price_in_asset0(&wasm, spot_price, contract_address).unwrap();
+    share_price
+}
+
+pub fn get_unused_funds<'a, R>(
+    wasm: &Wasm<'a, R>,
+    contract: &str,
+) -> Result<(Uint128, Uint128), String>
+where
+    R: Runner<'a>,
+{
+    let (token0, token1) = get_total_assets(wasm, contract)?;
+    let full_positions: FullPositionsResponse = wasm
+        .query(
+            contract,
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
+                ClQueryMsg::FullPositions {},
+            )),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let position_funds = full_positions.positions.iter().fold(
+        (Uint128::zero(), Uint128::zero()),
+        |(acc0, acc1), fp| {
+            let c0 = fp
+                .full_breakdown
+                .asset0
+                .clone()
+                .map(|c| c.amount.parse().unwrap())
+                .unwrap_or(Uint128::zero());
+
+            let c1 = fp
+                .full_breakdown
+                .asset1
+                .clone()
+                .map(|c| c.amount.parse().unwrap())
+                .unwrap_or(Uint128::zero());
+
+            (c0 + acc0, c1 + acc1)
+        },
+    );
+
+    Ok((
+        token0.amount - position_funds.0,
+        token1.amount - position_funds.1,
+    ))
+}
+
 
 /// get the share price of a single share in asset0, thus share/token
 pub fn get_share_price_in_asset0<'a, R>(
@@ -43,11 +115,11 @@ pub fn get_full_positions<'a, R>(
 where
     R: Runner<'a>,
 {
-    let res: FullPositionResponse = wasm
+    let res: FullPositionsResponse = wasm
         .query(
             contract,
             &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
-                crate::msg::ClQueryMsg::FullPosition {},
+                crate::msg::ClQueryMsg::FullPositions {},
             )),
         )
         .map_err(|e| e.to_string())?;
@@ -64,36 +136,4 @@ where
         .map_err(|e| e.to_string())?;
 
     Ok((total_assets.token0, total_assets.token1))
-}
-
-/// assert that amount a and amount b
-#[macro_export]
-macro_rules! assert_approx_eq {
-    ($a:expr, $b:expr) => {{
-        let eps = 99999;
-        let total = 100000
-        let (a, b) = (&$a, &$b);
-        assert!(
-            a in [(b - (b * eps / total))..(b * total / eps)],
-            "assertion failed: `(left !== right)` \
-             (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
-            *a,
-            *b,
-            eps,
-            (*a - *b).abs()
-        );
-    }};
-    // ($a:expr, $b:expr, $ratio:expr) => {{
-    //     let (a, b) = (&$a, &$b);
-    //     let eps = $eps;
-    //     assert!(
-    //         (*a - *b).abs() < eps,
-    //         "assertion failed: `(left !== right)` \
-    //          (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
-    //         *a,
-    //         *b,
-    //         eps,
-    //         (*a - *b).abs()
-    //     );
-    // }};
 }
