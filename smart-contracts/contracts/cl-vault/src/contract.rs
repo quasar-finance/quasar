@@ -134,7 +134,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
                 crate::msg::ClQueryMsg::Positions {} => Ok(to_binary(&query_positions(deps)?)?),
                 crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
-                crate::msg::ClQueryMsg::FullPosition {} => {
+                crate::msg::ClQueryMsg::FullPositions {} => {
                     Ok(to_binary(&query_full_positions(deps)?)?)
                 }
             },

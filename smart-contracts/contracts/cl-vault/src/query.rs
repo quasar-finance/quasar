@@ -43,7 +43,7 @@ pub struct PositionResponse {
 }
 
 #[cw_serde]
-pub struct FullPositionResponse {
+pub struct FullPositionsResponse {
     pub positions: Vec<FullPosition>,
 }
 
@@ -124,7 +124,7 @@ pub fn query_positions(deps: Deps) -> ContractResult<PositionResponse> {
     })
 }
 
-pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionResponse> {
+pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionsResponse> {
     let ps: Result<Vec<(u64, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
@@ -146,7 +146,7 @@ pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionResponse> 
         })
         .collect();
 
-    Ok(FullPositionResponse {
+    Ok(FullPositionsResponse {
         positions: full_positions?,
     })
 }
