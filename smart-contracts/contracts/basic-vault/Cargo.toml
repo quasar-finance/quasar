@@ -23,22 +23,22 @@ library = []
 cosmwasm-schema = "1.2.1"
 cosmwasm-std = {version = "1.2.1", features = ["staking"]}
 cw-asset = "3.0"
-cw-controllers = "0.16.0"
+cw-controllers = "1.1.2"
 cw-storage-plus = "1.0.1"
-cw-utils = "0.16.0"
-cw2 = "0.16.0"
-cw20 = "0.16.0"
+cw-utils = "1.0.3"
+cw2 = "1.1.2"
+cw20 = "1.1.2"
 cw20-base = {version = "0.16.0", features = ["library"]}
 cw20-staking = {repository = "https://github.com/CosmWasm/cw-tokens.git", revision = "1db4b7387953538d7a0123d3732385981d18db57"}
 lp-strategy = {path = "../lp-strategy", features = ["library"], default-features = false}
 vault-rewards = {path = "../vault-rewards", features = ["library"], default-features = false}
 # osmosis-std = {version = "0.13.2"}
 quasar-types = {path = "../../packages/quasar-types"}
-serde-json-wasm = {version = "0.4.1", default-features = false}
+serde-json-wasm = {version = "1.0.0", default-features = false}
 thiserror = "1.0.23"
 
 [dev-dependencies]
 anyhow = "1"
 cw-multi-test = {workspace = true}
 derivative = "2"
-prost = "0.9"
+prost = "0.12.3"
