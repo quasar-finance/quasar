@@ -11,12 +11,9 @@ use crate::{
     },
 };
 
-pub fn get_share_price<'a, R>(
-    app: &'a R,
-    cl_pool_id: u64,
-    contract_address: &str,
-) -> Decimal 
-where R: Runner<'a>,
+pub fn get_share_price<'a, R>(app: &'a R, cl_pool_id: u64, contract_address: &str) -> Decimal
+where
+    R: Runner<'a>,
 {
     let wasm = Wasm::new(app);
 
@@ -52,6 +49,8 @@ where
         )
         .map_err(|e| e.to_string())?;
 
+        println!("about to iterate");
+
     let position_funds = full_positions.positions.iter().fold(
         (Uint128::zero(), Uint128::zero()),
         |(acc0, acc1), fp| {
@@ -72,13 +71,13 @@ where
             (c0 + acc0, c1 + acc1)
         },
     );
+    println!("got unused");
 
     Ok((
         token0.amount - position_funds.0,
         token1.amount - position_funds.1,
     ))
 }
-
 
 /// get the share price of a single share in asset0, thus share/token
 pub fn get_share_price_in_asset0<'a, R>(

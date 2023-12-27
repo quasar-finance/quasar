@@ -259,7 +259,9 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
 
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
-    let user_value = get_asset0_value(deposited_assets.0, deposited_assets.1, spot_price.into())?;
+    debug!(deps, "deposited_assets_in_pos", deposited_assets);
+
+    let user_value = get_asset0_value(deposited_assets.0 - refunded.0, deposited_assets.1 - refunded.1, spot_price.into())?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
@@ -288,12 +290,25 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         },
     )?;
 
+    debug!(deps, "spot price", spot_price);
+    debug!(deps, "vault assets:", vault_assets);
+    debug!(deps, "unused in the vault:", (unused0.clone(), unused1.clone()));
+
+    let leftover = CURRENT_DEPOSIT_LEFTOVER.load(deps.storage)?;
+
     // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
+    // TODO does this include the users liquidity, it looks like it, but it probably should not
+    // let total_vault_value = get_asset0_value(
+    //     vault_assets.0.checked_add(unused0.amount)?,
+    //     vault_assets.1.checked_add(unused1.amount)?,
+    //     spot_price.into(),
+    // )?.checked_sub(get_asset0_value(deposited_assets.0, deposited_assets.1, spot_price.into())?)?.checked_sub(get_asset0_value(leftover.0, leftover.1, spot_price.into())?)?;
+
     let total_vault_value = get_asset0_value(
         vault_assets.0.checked_add(unused0.amount)?,
         vault_assets.1.checked_add(unused1.amount)?,
         spot_price.into(),
-    )?;
+    )?.checked_sub(get_asset0_value(deposited_assets.0, deposited_assets.1, spot_price.into())?)?;
 
     debug!(deps, "positions", positions);
     debug!(deps, "unused_funds", vec![unused0, unused1]);
@@ -341,11 +356,13 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
     let leftover = CURRENT_DEPOSIT_LEFTOVER.load(deps.storage)?;
 
     let refund_bank_msg = refund_bank_msg(
-        deps,
+        deps.branch(),
         refunded.0 + leftover.0,
         refunded.1 + leftover.1,
         current_depositor,
     )?;
+
+    debug!(deps, "refund msg", refund_bank_msg);
     let mut response = Response::new()
         .add_message(mint_msg)
         .add_attributes(mint_attrs)

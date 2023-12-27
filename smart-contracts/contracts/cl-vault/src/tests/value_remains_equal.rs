@@ -11,6 +11,7 @@ use osmosis_std::types::{
 use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Runner, Wasm};
 
 use crate::{
+    assert_eq_with_diff, assert_total_assets,
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
     tests::{
@@ -18,7 +19,7 @@ use crate::{
         helpers::{
             get_full_positions, get_share_price, get_share_price_in_asset0, get_total_assets,
         },
-    }, assert_eq_with_diff, assert_total_assets,
+    },
 };
 
 #[test]
@@ -124,7 +125,7 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-        assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
+    assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
     let fp = positions
@@ -150,7 +151,7 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-        assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
+    assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
     let fp = positions

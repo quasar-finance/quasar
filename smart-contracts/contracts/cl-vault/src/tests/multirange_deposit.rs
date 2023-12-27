@@ -11,11 +11,13 @@ use osmosis_std::types::{
 use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
 use crate::{
+    assert_share_price, assert_total_assets,
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
     tests::{
         default_init,
-        helpers::{get_full_positions, get_share_price, get_unused_funds}}, assert_total_assets, assert_share_price,
+        helpers::{get_full_positions, get_share_price, get_unused_funds},
+    }, assert_unused_funds,
 };
 
 use super::helpers::get_total_assets;
@@ -35,6 +37,8 @@ fn multi_position_deposit_works() {
             Coin::new(1_000_000_000_000, "uosmo"),
         ])
         .unwrap();
+
+    let wasm = Wasm::new(&app);
 
     let bank = Bank::new(&app);
     // our initial balance, 89874uosmo
@@ -60,7 +64,9 @@ fn multi_position_deposit_works() {
     )
     .unwrap();
 
-    let wasm = Wasm::new(&app);
+    // total assets increase after we deposit
+    let mut total_assets: (Coin, Coin) =
+        get_total_assets(&wasm, contract_address.as_str()).unwrap();
     let original_share_price = get_share_price(&app, cl_pool_id, contract_address.as_str());
 
     // create a new position
@@ -78,21 +84,50 @@ fn multi_position_deposit_works() {
             &admin,
         )
         .unwrap();
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+    println!("here-1");
 
-    let total_assets: (Coin, Coin) = get_total_assets(&wasm, contract_address.as_str()).unwrap();
     // depositing
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+    let unused_funds = get_unused_funds(&wasm, contract_address.as_str()).unwrap();
+    
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+
+    println!("total-vault-value pre deposit: {:?}", total_assets);
     let _res = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None },
-            &[Coin::new(5000000, "uatom"), Coin::new(5000000, "uosmo")],
+            &[Coin::new(5_000_000, "uatom"), Coin::new(5_000_000, "uosmo")],
             &alice,
         )
         .unwrap();
+    println!("herehere");
+
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+    println!("herehear");
+    assert_unused_funds!(&wasm, contract_address.as_str(), unused_funds);
+    println!("what how much us unused!?!?");
     assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
+    println!("total");
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+    println!("here0");
 
-
-    get_share_price(&app, cl_pool_id, contract_address.as_str());
 
     // create a new position
     // this introduction should not introduce new funds as long as we free up some funds first
@@ -105,6 +140,7 @@ fn multi_position_deposit_works() {
         .clone()
         .unwrap();
 
+    println!("here1");
     let _res = wasm
         .execute(
             contract_address.as_str(),
@@ -121,7 +157,14 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-        get_share_price(&app, cl_pool_id, contract_address.as_str());
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+
+    println!("here2");
 
     let _res = wasm
         .execute(
@@ -138,9 +181,14 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-    assert_share_price!(&app, contract_address.as_str(), original_share_price, cl_pool_id);
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+    println!("here3");
 
-    let total_assets: (Coin, Coin) = get_total_assets(&wasm, contract_address.as_str()).unwrap();
     // depositing more funds
     let _res = wasm
         .execute(
@@ -150,7 +198,13 @@ fn multi_position_deposit_works() {
             &alice,
         )
         .unwrap();
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
     assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
-    get_share_price(&app, cl_pool_id, contract_address.as_str());
-}
+    println!("here4");
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );}
