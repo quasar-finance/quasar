@@ -382,8 +382,8 @@ pub fn handle_icq_ack(
     //     .add_attribute("ack_bin_icq", ack_bin.to_string())
     // )
 
-    let ack: InterchainQueryPacketAck = from_json(&ack_bin)?;
-    let buf: InterchainQueryPacketAckData = from_json(ack.result)?;
+    // let ack: InterchainQueryPacketAck = from_json(&ack_bin)?;
+    let buf: InterchainQueryPacketAckData = from_json(ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(buf.data.0.as_ref())?;
 
     println!("{:?}", resp);
@@ -553,14 +553,15 @@ pub fn handle_icq_ack(
         }
     }
 
-    for r in resp.responses {
-        attrs.push(Attribute::new("response_log", r.log))
-    }
+    // for r in resp.responses {
+    //     attrs.push(Attribute::new("response_log", r.log))
+    // }
 
     Ok(Response::new()
         .add_submessages(msges)
         .add_attributes(attrs)
-        .add_attribute("ack_bin_icq", ack_bin.to_string()))
+        // .add_attribute("ack_bin_icq", ack_bin.to_string())
+    )
 }
 
 pub fn handle_ica_ack(
