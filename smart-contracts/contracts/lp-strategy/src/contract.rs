@@ -488,57 +488,11 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 // It's recommended to migrate either pending acks or traps, not both at the same time!
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    // remove old traps
-    for key in msg.delete_traps.clone() {
-        TRAPS.remove(deps.storage, key)
-    }
-
-    // remove old pending acks
-    for key in msg.delete_pending_acks.clone() {
-        PENDING_ACK.remove(deps.storage, key)
-    }
-
-    // add a new fresh unlocked ibc lock
-    IBC_LOCK.save(deps.storage, &Lock::new())?;
-
-    let mut fjq = vec![];
-    while !FAILED_JOIN_QUEUE.is_empty(deps.storage)? {
-        let fj = FAILED_JOIN_QUEUE.pop_front(deps.storage)?;
-        fjq.push(fj.unwrap());
-    }
-
-    if !fjq.is_empty() {
-        TRAPS.save(
-            deps.storage,
-            (1, "undefined-purge".to_string()),
-            &Trap {
-                error: "rejoin purge".to_string(),
-                step: crate::helpers::IbcMsgKind::Ica(
-                    crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                        bonds: fjq
-                            .into_iter()
-                            .map(|b| OngoingDeposit {
-                                claim_amount: Uint128::new(1),
-                                raw_amount: RawAmount::LocalDenom(b.amount),
-                                owner: b.owner,
-                                bond_id: b.bond_id,
-                            })
-                            .collect(),
-                    }),
-                ),
-                last_succesful: false,
-            },
-        )?;
-    }
-
+  
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true")
-        .add_attribute("deleted_traps", msg.delete_traps.len().to_string())
-        .add_attribute(
-            "deleted_pending_acks",
-            msg.delete_pending_acks.len().to_string(),
-        ))
+    )
 }
 
 #[cfg(test)]
