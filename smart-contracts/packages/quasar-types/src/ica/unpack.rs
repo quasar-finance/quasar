@@ -27,9 +27,9 @@ impl Unpack for MsgJoinSwapExternAmountInResponse {
     // For some reason, MsgJoinSwapExternAmountInResponse's type url on Osmosis is the same as MsgJoinSwapExternAmountIn
     fn unpack(msg: Any) -> Result<Self, Error> {
         // the type url is intended to MsgJoinSwapExternAmountIn
-        if msg.type_url != MsgJoinSwapExternAmountIn::TYPE_URL {
+        if msg.type_url != MsgJoinSwapExternAmountInResponse::TYPE_URL {
             return Err(Error::UnpackInvalidTypeUrl {
-                expected: MsgJoinSwapExternAmountIn::TYPE_URL.to_string(),
+                expected: MsgJoinSwapExternAmountInResponse::TYPE_URL.to_string(),
                 actual: msg.type_url,
             });
         }
@@ -40,9 +40,9 @@ impl Unpack for MsgJoinSwapExternAmountInResponse {
 
 impl Unpack for MsgLockTokensResponse {
     fn unpack(msg: Any) -> Result<Self, Error> {
-        if msg.type_url != MsgLockTokens::TYPE_URL {
+        if msg.type_url != MsgLockTokensResponse::TYPE_URL {
             return Err(Error::UnpackInvalidTypeUrl {
-                expected: MsgLockTokens::TYPE_URL.to_string(),
+                expected: MsgLockTokensResponse::TYPE_URL.to_string(),
                 actual: msg.type_url,
             });
         }
@@ -53,9 +53,9 @@ impl Unpack for MsgLockTokensResponse {
 
 impl Unpack for MsgExitSwapShareAmountInResponse {
     fn unpack(msg: Any) -> Result<Self, Error> {
-        if msg.type_url != MsgExitSwapShareAmountIn::TYPE_URL {
+        if msg.type_url != MsgExitSwapShareAmountInResponse::TYPE_URL {
             return Err(Error::UnpackInvalidTypeUrl {
-                expected: MsgExitSwapShareAmountIn::TYPE_URL.to_string(),
+                expected: MsgExitSwapShareAmountInResponse::TYPE_URL.to_string(),
                 actual: msg.type_url,
             });
         }
@@ -67,7 +67,7 @@ impl Unpack for MsgExitSwapShareAmountInResponse {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::Binary;
-    use osmosis_std::types::osmosis::lockup::MsgLockTokensResponse;
+    use osmosis_std::types::osmosis::{lockup::MsgLockTokensResponse, gamm::v1beta1::MsgJoinSwapExternAmountInResponse};
 
     use crate::ica::{packet::AckBody, traits::Unpack};
 
@@ -75,12 +75,12 @@ mod tests {
     fn unpack_lock_tokens_response() {
         // we take a raw response from Osmosis, decode it to an any, and then try to unpack the any
         let raw =
-            Binary::from_base64("CiMKHS9vc21vc2lzLmxvY2t1cC5Nc2dMb2NrVG9rZW5zEgIIAQ==").unwrap();
+            Binary::from_base64("EkwKNy9vc21vc2lzLmdhbW0udjFiZXRhMS5Nc2dKb2luU3dhcEV4dGVybkFtb3VudEluUmVzcG9uc2USEQoPMTY1ODM0MjY1MjA1Mzgz").unwrap();
         let any = AckBody::from_bytes(raw.0.as_ref())
             .unwrap()
             .to_any()
             .unwrap();
-        let resp = MsgLockTokensResponse::unpack(any).unwrap();
-        assert_eq!(resp.id, 1)
+        let resp = MsgJoinSwapExternAmountInResponse::unpack(any).unwrap();
+        assert_eq!(resp.share_out_amount, 165834265205383_u128.to_string())
     }
 }
