@@ -3,10 +3,10 @@ use crate::{error::Error, ica::traits::Unpack};
 use cosmos_sdk_proto::Any;
 use osmosis_std::types::osmosis::{
     gamm::v1beta1::{
-        MsgExitSwapShareAmountIn, MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountIn,
+        MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountIn,
         MsgJoinSwapExternAmountInResponse,
     },
-    lockup::{MsgLockTokens, MsgLockTokensResponse},
+    lockup::MsgLockTokensResponse,
 };
 use prost::Message;
 
@@ -67,7 +67,7 @@ impl Unpack for MsgExitSwapShareAmountInResponse {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::Binary;
-    use osmosis_std::types::osmosis::{lockup::MsgLockTokensResponse, gamm::v1beta1::MsgJoinSwapExternAmountInResponse};
+    use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 
     use crate::ica::{packet::AckBody, traits::Unpack};
 

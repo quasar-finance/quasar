@@ -369,20 +369,6 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    // let ack: InterchainQueryPacketAck = from_json(&ack_bin)?;
-    // println!("{:?}", ack);
-    // let resp: CosmosResponse = CosmosResponse::decode(ack.data().0.as_ref())?;
-
-    // let mut attrs = Vec::new();
-    // for r in resp.responses {
-    //     attrs.push(Attribute::new("response_log", r.log))
-    // }
-
-    // Ok(Response::new().add_attributes(attrs)
-    //     .add_attribute("ack_bin_icq", ack_bin.to_string())
-    // )
-
-    // let ack: InterchainQueryPacketAck = from_json(&ack_bin)?;
     let buf: InterchainQueryPacketAckData = from_json(ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(buf.data.0.as_ref())?;
 
@@ -553,15 +539,7 @@ pub fn handle_icq_ack(
         }
     }
 
-    // for r in resp.responses {
-    //     attrs.push(Attribute::new("response_log", r.log))
-    // }
-
-    Ok(Response::new()
-        .add_submessages(msges)
-        .add_attributes(attrs)
-        // .add_attribute("ack_bin_icq", ack_bin.to_string())
-    )
+    Ok(Response::new().add_submessages(msges).add_attributes(attrs))
 }
 
 pub fn handle_ica_ack(
@@ -616,7 +594,6 @@ fn handle_join_pool(
     ack_bin: Binary,
     data: &mut PendingBond,
 ) -> Result<Response, ContractError> {
-    println!("ack_bin join pool : {}", ack_bin);
     // TODO move the below locking logic to a separate function
     // get the ica address of the channel id
     let ica_channel = ICA_CHANNEL.load(storage)?;
@@ -665,9 +642,7 @@ fn handle_join_pool(
         outgoing,
         channel,
     )?;
-    Ok(Response::new()
-        .add_submessage(msg)
-        .add_attribute("ack_bin_join_pool", ack_bin.to_string()))
+    Ok(Response::new().add_submessage(msg))
 }
 
 fn handle_lock_tokens_ack(
@@ -678,7 +653,6 @@ fn handle_lock_tokens_ack(
     ack_bin: Binary,
     querier: QuerierWrapper,
 ) -> Result<Response, ContractError> {
-    println!("ack_bin lock tokens ack : {}", ack_bin);
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let resp = MsgLockTokensResponse::unpack(ack)?;
 
@@ -739,8 +713,7 @@ fn handle_lock_tokens_ack(
     Ok(Response::new()
         .add_submessages(callback_submsgs)
         .add_attribute("locked_tokens", ack_bin.to_base64())
-        .add_attribute("lock_id", resp.id.to_string())
-        .add_attribute("ack_bin_lock_tokens", ack_bin.to_string()))
+        .add_attribute("lock_id", resp.id.to_string()))
 }
 
 fn handle_exit_pool_ack(
@@ -749,7 +722,6 @@ fn handle_exit_pool_ack(
     mut data: PendingReturningUnbonds,
     ack_bin: Binary,
 ) -> Result<Response, ContractError> {
-    println!("exit pool data : {:?}", data);
     let ack = AckBody::from_bytes(ack_bin.0.as_ref())?.to_any()?;
     let msg = MsgExitSwapShareAmountInResponse::unpack(ack)?;
     let total_exited_tokens =
@@ -766,8 +738,7 @@ fn handle_exit_pool_ack(
     let sub_msg = transfer_batch_unbond(storage, env, data, total_exited_tokens)?;
     Ok(Response::new()
         .add_submessage(sub_msg)
-        .add_attribute("transfer-funds", total_exited_tokens.to_string())
-        .add_attribute("ack_bin_exit_pool", ack_bin.to_string()))
+        .add_attribute("transfer-funds", total_exited_tokens.to_string()))
 }
 
 fn handle_return_transfer_ack(
@@ -775,7 +746,6 @@ fn handle_return_transfer_ack(
     _querier: QuerierWrapper,
     _data: PendingReturningUnbonds,
 ) -> Result<Response, ContractError> {
-    println!("return transfer data : {:?}", _data);
     IBC_LOCK.update(storage, |lock| -> Result<Lock, ContractError> {
         Ok(lock.unlock_unbond())
     })?;

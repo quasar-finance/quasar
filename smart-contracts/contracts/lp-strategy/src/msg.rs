@@ -42,8 +42,7 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-}
+pub struct MigrateMsg {}
 
 #[cw_serde]
 #[derive(QueryResponses)]
