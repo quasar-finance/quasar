@@ -359,22 +359,9 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let msgs: Result<Vec<WasmMsg>, StdError> = cw20_base::state::BALANCES
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|val| {
-            let (addr, _) = val?;
-            update_user_reward_index(deps.storage, &addr)
-        })
-        .collect();
-
-    let wrapped_msges = msgs?.into_iter().map(CosmosMsg::Wasm);
-
     Ok(Response::new()
-        .add_attribute(
-            "updated-rewards-indexes-msges",
-            wrapped_msges.len().to_string(),
-        )
-        .add_messages(wrapped_msges))
+        .add_attribute("migrate", CONTRACT_NAME)
+        .add_attribute("success", "true"))
 }
 
 #[cfg(test)]
