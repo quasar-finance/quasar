@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
@@ -14,9 +13,15 @@ use crate::rewards::{
     execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
+use std::str::FromStr;
 
+use crate::helpers::get_unused_balances;
+use crate::state::{
+    MigrationData, PoolConfig, Position, CURRENT_BALANCE, MIGRATION_DATA, POOL_CONFIG, POSITION,
+};
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
+use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
@@ -29,13 +34,15 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Decimal256, SubMsg, SubMsgResult, Uint128, Coin};
+use cosmwasm_std::{
+    to_binary, Binary, Coin, Decimal256, Deps, DepsMut, Env, MessageInfo, Reply, Response, SubMsg,
+    SubMsgResult, Uint128,
+};
 use cw2::set_contract_version;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse, Pool};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse, Pool,
+};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use crate::helpers::get_unused_balances;
-use crate::state::{CURRENT_BALANCE, MIGRATION_DATA, MigrationData, POOL_CONFIG, PoolConfig, POSITION, Position};
-use crate::vault::concentrated_liquidity::{create_position, get_position};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -183,8 +190,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
-        Replies::WithdrawToMigrate => handle_migration_withdrawal_reply(deps,env,msg.result),
-        Replies::CreateMigratedPosition => handle_create_migrated_position_reply(deps,env,msg.result),
+        Replies::WithdrawToMigrate => handle_migration_withdrawal_reply(deps, env, msg.result),
+        Replies::CreateMigratedPosition => {
+            handle_create_migrated_position_reply(deps, env, msg.result)
+        }
         Replies::Unknown => unimplemented!(),
     }
 }
@@ -198,7 +207,7 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
     let migration_data = MigrationData {
         new_pool_id: msg.pool_id,
         lower_tick: msg.lower_tick,
-        upper_tick: msg.upper_tick
+        upper_tick: msg.upper_tick,
     };
 
     MIGRATION_DATA.save(deps.storage, &migration_data)?;
@@ -208,7 +217,7 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
         sender: env.contract.address.to_string(),
         liquidity_amount: Decimal256::from_str(position.liquidity.as_str())?
             .atomics()
-            .to_string()
+            .to_string(),
     };
 
     Ok(Response::default()
@@ -216,17 +225,18 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
             withdraw_msg,
             Replies::WithdrawToMigrate.into(),
         ))
-        .add_attribute("migration","initiated")
+        .add_attribute("migration", "initiated")
         .add_attribute("action", "modify_range")
         .add_attribute("method", "withdraw_position")
         .add_attribute("position_id", position.position_id.to_string())
-        .add_attribute("liquidity_amount", position.liquidity)
-
-    )
-
+        .add_attribute("liquidity_amount", position.liquidity))
 }
 
-fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult) -> ContractResult<Response>  {
+fn handle_migration_withdrawal_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> ContractResult<Response> {
     //remove old positions
     POSITION.remove(deps.storage);
 
@@ -243,7 +253,7 @@ fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    if (new_pool.token0 != pool_config.token0) || (new_pool.token1==pool_config.token1) {
+    if (new_pool.token0 != pool_config.token0) || (new_pool.token1 != pool_config.token1) {
         return Err(ContractError::PoolTokenMismatch {});
     }
 
@@ -305,13 +315,12 @@ fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult
     )?;
 
     Ok(Response::new()
-           .add_submessage(SubMsg::reply_on_success(
-               create_positon_msg,
-               Replies::CreateMigratedPosition.into(),
-           ))
-           .add_attribute("migration", "in_progress")
-           .add_attribute("position","created")
-    )
+        .add_submessage(SubMsg::reply_on_success(
+            create_positon_msg,
+            Replies::CreateMigratedPosition.into(),
+        ))
+        .add_attribute("migration", "in_progress")
+        .add_attribute("position", "created"))
 }
 
 pub fn handle_create_migrated_position_reply(
@@ -328,7 +337,5 @@ pub fn handle_create_migrated_position_reply(
         },
     )?;
 
-    Ok(Response::new()
-           .add_attribute("migration", "completed")
-    )
+    Ok(Response::new().add_attribute("migration", "completed"))
 }
