@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
@@ -28,8 +29,14 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Decimal256, SubMsg, SubMsgResult, Uint128, Coin, Decimal, coin};
 use cw2::set_contract_version;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse, Pool};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
+use crate::helpers::get_unused_balances;
+use crate::state::{CURRENT_BALANCE, MIGRATION_DATA, MigrationData, MODIFY_RANGE_STATE, ModifyRangeState, POOL_CONFIG, PoolConfig, POSITION, Position, VAULT_DENOM};
+use crate::vault::concentrated_liquidity::{create_position, get_position};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -177,13 +184,152 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
+        Replies::WithdrawToMigrate => handle_migration_withdrawal_reply(deps,env,msg.result),
+        Replies::CreateMigratedPosition => handle_create_migrated_position_reply(deps,env,msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    // Step 1: Withdraw current position from the existing pool
+    let position_breakdown = get_position(deps.storage, &deps.querier)?;
+    let position = position_breakdown.position.unwrap();
 
-    Ok(Response::new().add_attribute("migrate", "successful"))
+    let migration_data = MigrationData {
+        new_pool_id: msg.pool_id,
+        lower_tick: msg.lower_tick,
+        upper_tick: msg.upper_tick
+    };
+
+    MIGRATION_DATA.save(deps.storage, &migration_data)?;
+
+    let withdraw_msg = MsgWithdrawPosition {
+        position_id: position.position_id,
+        sender: env.contract.address.to_string(),
+        liquidity_amount: Decimal256::from_str(position.liquidity.as_str())?
+            .atomics()
+            .to_string()
+    };
+
+    Ok(Response::default()
+        .add_submessage(SubMsg::reply_on_success(
+            withdraw_msg,
+            Replies::WithdrawToMigrate.into(),
+        ))
+        .add_attribute("migration","initiated")
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "withdraw_position")
+        .add_attribute("position_id", position.position_id.to_string())
+        .add_attribute("liquidity_amount", position.liquidity)
+
+    )
+
+}
+
+fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult) -> ContractResult<Response>  {
+    //remove old positions
+    POSITION.remove(deps.storage);
+
+    let migration_data = MIGRATION_DATA.load(deps.storage)?;
+    // Step 2: Verify pool assets if they match
+    let new_pool: Pool = PoolmanagerQuerier::new(&deps.querier)
+        .pool(migration_data.new_pool_id)?
+        .pool
+        .ok_or(ContractError::PoolNotFound {
+            pool_id: migration_data.new_pool_id,
+        })?
+        .try_into()
+        .unwrap();
+
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
+    if (new_pool.token0 != pool_config.token0) || (new_pool.token1==pool_config.token1) {
+        return Err(ContractError::PoolTokenMismatch {});
+    }
+
+    //calculate total assets after withdrawal
+    let msg: MsgWithdrawPositionResponse = data.try_into()?;
+
+    let mut amount0: Uint128 = msg.amount0.parse()?;
+    let mut amount1: Uint128 = msg.amount1.parse()?;
+
+    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+
+    let unused_balance0 = unused_balances
+        .find_coin(pool_config.token0.clone())
+        .amount
+        .checked_sub(amount0)?;
+    let unused_balance1 = unused_balances
+        .find_coin(pool_config.token1.clone())
+        .amount
+        .checked_sub(amount1)?;
+
+    amount0 = amount0.checked_add(unused_balance0)?;
+    amount1 = amount1.checked_add(unused_balance1)?;
+
+    CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
+
+    let mut tokens_provided = vec![];
+    if !amount0.is_zero() {
+        tokens_provided.push(Coin {
+            denom: pool_config.token0.clone(),
+            amount: amount0,
+        })
+    }
+    if !amount1.is_zero() {
+        tokens_provided.push(Coin {
+            denom: pool_config.token1.clone(),
+            amount: amount1,
+        })
+    }
+
+    //save new pool info
+    POOL_CONFIG.save(
+        deps.storage,
+        &PoolConfig {
+            pool_id: new_pool.id,
+            token0: new_pool.token0.clone(),
+            token1: new_pool.token1.clone(),
+        },
+    )?;
+
+    // create position in new pool
+    let create_positon_msg = create_position(
+        deps,
+        &env,
+        migration_data.lower_tick,
+        migration_data.upper_tick,
+        tokens_provided,
+        Uint128::zero(),
+        Uint128::zero(),
+    )?;
+
+    Ok(Response::new()
+           .add_submessage(SubMsg::reply_on_success(
+               create_positon_msg,
+               Replies::CreateMigratedPosition.into(),
+           ))
+           .add_attribute("migration", "in_progress")
+           .add_attribute("position","created")
+    )
+}
+
+pub fn handle_create_migrated_position_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let response: MsgCreatePositionResponse = data.try_into()?;
+
+    POSITION.save(
+        deps.storage,
+        &Position {
+            position_id: response.position_id,
+        },
+    )?;
+
+    Ok(Response::new()
+           .add_attribute("migration", "completed")
+    )
 }
