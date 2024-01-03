@@ -138,7 +138,7 @@ pub struct MigrationData {
     pub upper_tick: i64,
 }
 
-pub static MIGRATION_DATA: Item<MigrationData> = Item::new("migration_data");
+pub const MIGRATION_DATA: Item<MigrationData> = Item::new("migration_data");
 
 #[cfg(test)]
 mod tests {

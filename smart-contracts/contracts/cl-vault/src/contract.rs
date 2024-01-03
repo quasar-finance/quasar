@@ -29,13 +29,12 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Decimal256, SubMsg, SubMsgResult, Uint128, Coin, Decimal, coin};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Decimal256, SubMsg, SubMsgResult, Uint128, Coin};
 use cw2::set_contract_version;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse, Pool};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 use crate::helpers::get_unused_balances;
-use crate::state::{CURRENT_BALANCE, MIGRATION_DATA, MigrationData, MODIFY_RANGE_STATE, ModifyRangeState, POOL_CONFIG, PoolConfig, POSITION, Position, VAULT_DENOM};
+use crate::state::{CURRENT_BALANCE, MIGRATION_DATA, MigrationData, POOL_CONFIG, PoolConfig, POSITION, Position};
 use crate::vault::concentrated_liquidity::{create_position, get_position};
 
 // version info for migration info
@@ -273,13 +272,13 @@ fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult
     let mut tokens_provided = vec![];
     if !amount0.is_zero() {
         tokens_provided.push(Coin {
-            denom: pool_config.token0.clone(),
+            denom: pool_config.token0,
             amount: amount0,
         })
     }
     if !amount1.is_zero() {
         tokens_provided.push(Coin {
-            denom: pool_config.token1.clone(),
+            denom: pool_config.token1,
             amount: amount1,
         })
     }
@@ -289,8 +288,8 @@ fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult
         deps.storage,
         &PoolConfig {
             pool_id: new_pool.id,
-            token0: new_pool.token0.clone(),
-            token1: new_pool.token1.clone(),
+            token0: new_pool.token0,
+            token1: new_pool.token1,
         },
     )?;
 
@@ -317,7 +316,7 @@ fn handle_migration_withdrawal_reply(deps: DepsMut, env: Env, data: SubMsgResult
 
 pub fn handle_create_migrated_position_reply(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = data.try_into()?;
