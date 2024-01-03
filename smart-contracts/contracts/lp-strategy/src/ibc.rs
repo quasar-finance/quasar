@@ -306,7 +306,6 @@ pub fn handle_transfer_ack(
 ) -> Result<Response, ContractError> {
     // once the ibc transfer to the ICA account has succeeded, we send the join pool message
     // we need to save and fetch
-    println!("ibc_pkt : {:?}", pkt);
     let config = CONFIG.load(storage)?;
 
     let share_out_min_amount = calculate_share_out_min_amount(storage)?;
@@ -369,10 +368,8 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let buf: InterchainQueryPacketAckData = from_json(ack_bin)?;
-    let resp: CosmosResponse = CosmosResponse::decode(buf.data.0.as_ref())?;
-
-    println!("{:?}", resp);
+    let ack_json: InterchainQueryPacketAckData = from_json(ack_bin)?;
+    let resp: CosmosResponse = CosmosResponse::decode(ack_json.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
     let raw_balance = QueryBalanceResponse::decode(resp.responses[0].key.as_ref())?
