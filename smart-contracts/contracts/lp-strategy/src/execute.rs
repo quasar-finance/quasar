@@ -734,22 +734,20 @@ mod tests {
 
         let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
-        let ibc_ack = InterchainQueryPacketAck {
-            data: Binary::from(
-                &CosmosResponse {
-                    responses: vec![
-                        raw_balance,
-                        quote_balance,
-                        lp_balance,
-                        exit_pool,
-                        spot_price,
-                        join_pool,
-                        lock,
-                    ],
-                }
-                .encode_to_vec()[..],
-            ),
-        };
+        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+            &CosmosResponse {
+                responses: vec![
+                    raw_balance,
+                    quote_balance,
+                    lp_balance,
+                    exit_pool,
+                    spot_price,
+                    join_pool,
+                    lock,
+                ],
+            }
+            .encode_to_vec()[..],
+        ));
 
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 
@@ -944,22 +942,20 @@ mod tests {
 
         let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
-        let ibc_ack = InterchainQueryPacketAck {
-            data: Binary::from(
-                &CosmosResponse {
-                    responses: vec![
-                        raw_balance,
-                        quote_balance,
-                        lp_balance,
-                        exit_pool,
-                        spot_price,
-                        join_pool,
-                        lock,
-                    ],
-                }
-                .encode_to_vec()[..],
-            ),
-        };
+        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+            &CosmosResponse {
+                responses: vec![
+                    raw_balance,
+                    quote_balance,
+                    lp_balance,
+                    exit_pool,
+                    spot_price,
+                    join_pool,
+                    lock,
+                ],
+            }
+            .encode_to_vec()[..],
+        ));
 
         let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
 

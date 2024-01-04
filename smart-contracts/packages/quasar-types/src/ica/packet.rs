@@ -111,7 +111,7 @@ impl<'de> Visitor<'de> for TypeVisitor {
 
 #[derive(Message)]
 pub struct AckBody {
-    #[prost(bytes = "vec", tag = "1")]
+    #[prost(bytes = "vec", tag = "2")]
     pub body: ::prost::alloc::vec::Vec<u8>,
 }
 
