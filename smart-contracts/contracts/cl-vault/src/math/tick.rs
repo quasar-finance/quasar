@@ -80,7 +80,6 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     Ok(price)
 }
 
-// TODO: hashmaps vs CW maps?
 pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i128, ContractError> {
     if price > Decimal256::from_str(MAX_SPOT_PRICE)?
         || price < Decimal256::from_str(MIN_SPOT_PRICE)?
@@ -88,12 +87,8 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
         return Err(ContractError::PriceBoundError { price });
     }
     if price == Decimal256::one() {
-        // return Ok(0i128);
         return Ok(0i128);
     }
-
-    // TODO: move this to instantiate?
-    build_tick_exp_cache(storage)?;
 
     let mut geo_spacing;
     if price > Decimal256::one() {
@@ -111,6 +106,7 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
             geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
         }
     }
+
     let price_in_this_exponent = price - geo_spacing.initial_price;
 
     let ticks_filled_by_current_spacing =
@@ -165,7 +161,7 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     }
 }
 
-fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
+pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
     // Build positive indices
     let mut max_price = Decimal256::one();
     let mut cur_exp_index = 0i64;
@@ -217,14 +213,117 @@ fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> 
     Ok(())
 }
 
+/// Iterate over the the TICK_EXP_CACHE between the MIN_SPOT_PRICE and the MAX_SPOT_PRICE.
+/// If there are any cache items missing, that means that our cache is incorrect.
+pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError> {
+    // iterate over the tick_exp_cache in both directions.
+    // until we reach MAX or MIN price, we should have a cache hit at each increasing or decreasing index
+    let mut max_price = Decimal256::one();
+    let mut positive_index = 0i64;
+    let max_spot_price = Decimal256::from_str(MAX_SPOT_PRICE)?;
+
+    // Verify positive indices
+    while max_price < max_spot_price {
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index).map_err(|_| {
+            ContractError::TickNotFound {
+                tick: positive_index,
+            }
+        })?;
+
+        max_price = tick_exp_index_data.max_price;
+        positive_index += 1;
+    }
+
+    // Verify negative indices
+    let mut min_price = Decimal256::one();
+    let mut negative_index = 0;
+    let min_spot_price = Decimal256::from_str(MIN_SPOT_PRICE)?;
+
+    while min_price > min_spot_price {
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index).map_err(|_| {
+            ContractError::TickNotFound {
+                tick: negative_index,
+            }
+        })?;
+
+        min_price = tick_exp_index_data.initial_price;
+        negative_index -= 1;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{testing::mock_dependencies, Order};
+
+    #[test]
+    fn test_verify_tick_cache() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap();
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_positive_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, 5);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick: 5 })
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_last_positive_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        let tick = TICK_EXP_CACHE
+            .range(deps.as_ref().storage, None, None, Order::Ascending)
+            .last()
+            .unwrap()
+            .unwrap()
+            .0;
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick })
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_last_negative_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        let tick = TICK_EXP_CACHE
+            .range(deps.as_ref().storage, None, None, Order::Descending)
+            .last()
+            .unwrap()
+            .unwrap()
+            .0;
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick })
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_negative_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, -5);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick: -5 })
+    }
 
     #[test]
     fn test_test_tube_tick_to_price() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let tick_index = 27445000_i128;
         let _expected_price = Decimal256::from_str("30352").unwrap();
@@ -349,6 +448,8 @@ mod tests {
     #[test]
     fn test_price_to_tick() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let mut price = Decimal256::from_str("30352").unwrap();
         let mut expected_tick_index = 38035200;

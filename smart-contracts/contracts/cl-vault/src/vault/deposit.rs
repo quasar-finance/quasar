@@ -105,6 +105,7 @@ pub fn handle_deposit_create_position_reply(
     data: SubMsgResult,
 ) -> ContractResult<Response> {
     let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
+
     let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
@@ -129,13 +130,14 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
+    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refunded = (
-        current_deposit.token0_in.checked_sub(Uint128::new(
+        current_deposit.token0_in.saturating_sub(Uint128::new(
             create_deposit_position_resp.amount0.parse::<u128>()?,
-        ))?,
-        current_deposit.token1_in.checked_sub(Uint128::new(
+        )),
+        current_deposit.token1_in.saturating_sub(Uint128::new(
             create_deposit_position_resp.amount1.parse::<u128>()?,
-        ))?,
+        )),
     );
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
@@ -184,7 +186,6 @@ pub fn handle_deposit_create_position_reply(
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    // TODOSN: Document the following refund_bank_msg purpose
     let bank_msg = refund_bank_msg(
         current_deposit.clone(),
         &create_deposit_position_resp,
@@ -247,18 +248,17 @@ fn refund_bank_msg(
     denom0: String,
     denom1: String,
 ) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
+    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refund0 = current_deposit
         .token0_in
-        .checked_sub(Uint128::new(resp.amount0.parse::<u128>()?))?;
-
+        .saturating_sub(Uint128::new(resp.amount0.parse::<u128>()?));
     let refund1 = current_deposit
         .token1_in
-        .checked_sub(Uint128::new(resp.amount1.parse::<u128>()?))?;
+        .saturating_sub(Uint128::new(resp.amount1.parse::<u128>()?));
 
     let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];
 
-    // TODOSN: Document this explaining what s happening below
     if !refund0.is_zero() {
         attributes.push(attr("refund0_amount", refund0));
         attributes.push(attr("refund0_denom", denom0.as_str()));

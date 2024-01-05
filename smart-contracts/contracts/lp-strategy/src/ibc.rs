@@ -40,11 +40,13 @@ use quasar_types::ibc::{enforce_order_and_version, ChannelInfo, ChannelType, Han
 use quasar_types::ica::handshake::enforce_ica_order_and_metadata;
 use quasar_types::ica::packet::{ica_send, AckBody};
 use quasar_types::ica::traits::Unpack;
-use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
+use quasar_types::icq::{
+    CosmosResponse, InterchainQueryPacketAck, InterchainQueryPacketAckData, ICQ_ORDERING,
+};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    from_binary, from_json, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
@@ -297,8 +299,8 @@ pub fn handle_succesful_ack(
 pub fn handle_transfer_ack(
     storage: &mut dyn Storage,
     env: Env,
-    _ack_bin: Binary,
-    _pkt: &IbcPacketAckMsg,
+    ack_bin: Binary,
+    pkt: &IbcPacketAckMsg,
     mut pending: PendingBond,
     transferred_amount: Uint128,
 ) -> Result<Response, ContractError> {
@@ -349,10 +351,13 @@ pub fn handle_transfer_ack(
         Ok(old.checked_add(total_amount)?)
     })?;
 
-    Ok(Response::new().add_submessage(msg).add_attribute(
-        "transfer-ack",
-        format!("{}-{}", &total_amount, config.base_denom),
-    ))
+    Ok(Response::new()
+        .add_submessage(msg)
+        .add_attribute(
+            "transfer-ack",
+            format!("{}-{}", &total_amount, config.base_denom),
+        )
+        .add_attribute("ack_bin_transfer", ack_bin.to_string()))
 }
 
 // TODO move the parsing of the ICQ to it's own function, ideally we'd have a type that is contstructed in create ICQ and is parsed from a proto here
@@ -363,11 +368,11 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
-    let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
+    let ack_json: InterchainQueryPacketAckData = from_json(ack_bin)?;
+    let resp: CosmosResponse = CosmosResponse::decode(ack_json.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
-    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())?
+    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].key.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
@@ -387,22 +392,22 @@ pub fn handle_icq_ack(
     USABLE_COMPOUND_BALANCE.save(storage, &usable_base_token_compound_balance)?;
 
     // TODO the quote balance should be able to be compounded aswell
-    let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())?
+    let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].key.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
     // TODO we can make the LP_SHARES cache less error prone here by using the actual state of lp shares
     //  We then need to query locked shares aswell, since they are not part of balance
-    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())?
+    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].key.as_ref())?
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
     let exit_total_pool =
-        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].key.as_ref())?;
 
-    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].key.as_ref())?.spot_price;
 
     let mut response_idx = 4;
     let join_pool = if SIMULATED_JOIN_AMOUNT_IN
@@ -413,7 +418,7 @@ pub fn handle_icq_ack(
         // found, increment response index
         response_idx += 1;
         // decode result
-        QueryCalcJoinPoolSharesResponse::decode(resp.responses[response_idx].value.as_ref())?
+        QueryCalcJoinPoolSharesResponse::decode(resp.responses[response_idx].key.as_ref())?
     } else {
         QueryCalcJoinPoolSharesResponse {
             share_out_amount: "0".to_string(),
@@ -428,7 +433,7 @@ pub fn handle_icq_ack(
             // found, increment response index
             response_idx += 1;
             // decode result
-            let lock = LockedResponse::decode(resp.responses[response_idx].value.as_ref())?.lock;
+            let lock = LockedResponse::decode(resp.responses[response_idx].key.as_ref())?.lock;
             // parse the locked lp shares on Osmosis, a bit messy
             let gamms = if let Some(lock) = lock {
                 lock.coins
@@ -463,9 +468,7 @@ pub fn handle_icq_ack(
         response_idx += 1;
 
         // decode result
-        QueryCalcExitPoolCoinsFromSharesResponse::decode(
-            resp.responses[response_idx].value.as_ref(),
-        )?
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[response_idx].key.as_ref())?
     } else {
         QueryCalcExitPoolCoinsFromSharesResponse { tokens_out: vec![] }
     };
@@ -823,16 +826,18 @@ pub(crate) fn on_packet_timeout(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        state::{Config, LOCK_ADMIN, SIMULATED_JOIN_AMOUNT_IN},
-        test_helpers::{create_query_response, default_setup},
-    };
     use cosmos_sdk_proto::cosmos::base::v1beta1::Coin as OsmoCoin;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
         Addr, Empty, IbcEndpoint, IbcOrder,
     };
+
+    use crate::{
+        state::{Config, LOCK_ADMIN, SIMULATED_JOIN_AMOUNT_IN},
+        test_helpers::{create_query_response, default_setup},
+    };
+
+    use super::*;
 
     #[test]
     fn handle_icq_ack_works() {
@@ -847,12 +852,8 @@ mod tests {
                     lock_period: 100,
                     pool_id: 1,
                     pool_denom: "gamm/pool/1".to_string(),
-                    base_denom:
-                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
-                            .to_string(),
-                    quote_denom:
-                        "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901"
-                            .to_string(),
+                    base_denom: "uosmo".to_string(),
+                    quote_denom: "stake".to_string(),
                     local_denom:
                         "ibc/FA0006F056DB6719B8C16C551FC392B62F5729978FC0B125AC9A432DBB2AA1A5"
                             .to_string(),
@@ -877,7 +878,8 @@ mod tests {
             .unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2xVNlV3cFJDa1JwWW1Ndk1qY3pPVFJHUWpBNU1rUXlSVU5EUkRVMk1USXpRemMwUmpNMlJUUkRNVVk1TWpZd01ERkRSVUZFUVRsRFFUazNSVUUyTWpKQ01qVkdOREZGTlVWQ01oSUpNVEV5TWpFek1qUTNDbFE2VWdwUUNrUnBZbU12UXpFME1FRkdSRFUwTWtGRk56ZENSRGRFUTBNNE0wWXhNMFpFUkRoRE5VVTFRa0k0UXpRNU1qazNPRFZGTmtWRE1rWTBRell6TmtZNU9FWXhOemt3TVJJSU1qWTROekV6TnpRS0tUb25DaVVLRFdkaGJXMHZjRzl2YkM4NE1ETVNGRFkxTURnM05qazBPREF4TURZeU5EWXdNVEE0Q3FzQk9xZ0JDbElLUkdsaVl5OHlOek01TkVaQ01Ea3lSREpGUTBORU5UWXhNak5ETnpSR016WkZORU14UmpreU5qQXdNVU5GUVVSQk9VTkJPVGRGUVRZeU1rSXlOVVkwTVVVMVJVSXlFZ295TlRZNE56QTROelExQ2xJS1JHbGlZeTlETVRRd1FVWkVOVFF5UVVVM04wSkVOMFJEUXpnelJqRXpSa1JFT0VNMVJUVkNRamhETkRreU9UYzROVVUyUlVNeVJqUkROak0yUmprNFJqRTNPVEF4RWdveU1UY3dOVFkxTXpNNENoZzZGZ29VTUM0NE5EVXdNREkxTVRBd01EQXdNREF3TURBS2h3RTZoQUVLZ1FFSTVQVmtFajl2YzIxdk1YZGxlbkZoZG5ZNE5uQjVOSE5tWXpOM1pubDBiVFY1Ym1ONk5YcG1Oakk1Wm10NE4yb3daM0JsTlhwNWRtTnlPVGwwZUhNNWRuWjNjemNhQkFpQjZra2lDd2lBa3JqRG1QNy8vLzhCS2ljS0RXZGhiVzB2Y0c5dmJDODRNRE1TRmpJek5EQXpOVGs0TWpBd09UTTVOVFV6TkRJNU1EUT0ifQ==").unwrap();
+        let ack_bin = Binary::from_base64("eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMmMwZVVSQmIwdERaMVl4WWpOT2RHSjRTVUpOUVc5UFRXZDNTME5uYjBaak0xSm9ZVEpWVTBGVVFVdEdSRWxUUTJoQlMwTXlaR2hpVnpCMlkwYzVkbUpET0hoRlowVjNRMmxSZVVsbmIxQkRaMVo2WkVkR2NscFNTVWRQVkdzd1QxUnJkME5uT0V0Q1dGWjJZekl4ZGtWbldUVlBWRlYzVFZSQlMwZEVTVmREYUZGNFRHcEJkMDFFUVhkTlJFRjNUVVJCZDAxRVFYZE5SRUYzVFVGd05FMXVXVXRrUVdkRVJXbzVkbU15TVhaTlYxRXhXbGRrZUU0eVZtNWhibHAwVDBSV2EyTlhjR3hqTTBwb1lsaGFkMXA2VW1oT1NGSjRZVWRhTldNemJHeFpNbFkxVG5wYWNtSklaREZsVkZFeFdtMTRkR1J1UmpSUFdFWjVUVEp6WVVGblowZEpaM05KWjBwTE5IYzFhaXN2THk4dlFWTnZaVU5uZEc1WlZ6RjBURE5DZG1JeWQzWk5Va2xRVDFSck1VMUVRWGRPZWtVeFRVUlJlazFVWXpNaWZRPT0ifQ==").unwrap();
+        println!("{}", ack_bin);
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
@@ -1067,23 +1069,21 @@ mod tests {
             .encode_to_vec(),
         );
 
-        let ibc_ack = InterchainQueryPacketAck {
-            data: Binary::from(
-                &CosmosResponse {
-                    responses: vec![
-                        raw_balance.clone(),
-                        quote_balance.clone(),
-                        lp_balance.clone(),
-                        exit_pool.clone(),
-                        spot_price,
-                        join_pool.clone(),
-                        //lock, we're not sending lock for simplicity and to test indexing logic without one value works
-                        exit_pool_unbonds,
-                    ],
-                }
-                .encode_to_vec()[..],
-            ),
-        };
+        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+            &CosmosResponse {
+                responses: vec![
+                    raw_balance.clone(),
+                    quote_balance.clone(),
+                    lp_balance.clone(),
+                    exit_pool.clone(),
+                    spot_price,
+                    join_pool.clone(),
+                    //lock, we're not sending lock for simplicity and to test indexing logic without one value works
+                    exit_pool_unbonds,
+                ],
+            }
+            .encode_to_vec()[..],
+        ));
 
         // mock the value of shares we had before sending the query
         SIMULATED_EXIT_SHARES_IN
@@ -1140,23 +1140,21 @@ mod tests {
             .encode_to_vec(),
         );
 
-        let ibc_ack = InterchainQueryPacketAck {
-            data: Binary::from(
-                &CosmosResponse {
-                    responses: vec![
-                        raw_balance,
-                        quote_balance,
-                        lp_balance,
-                        exit_pool,
-                        spot_price,
-                        join_pool,
-                        //lock, we're not sending lock for simplicity and to test indexing logic without one value works
-                        exit_pool_unbonds,
-                    ],
-                }
-                .encode_to_vec()[..],
-            ),
-        };
+        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+            &CosmosResponse {
+                responses: vec![
+                    raw_balance,
+                    quote_balance,
+                    lp_balance,
+                    exit_pool,
+                    spot_price,
+                    join_pool,
+                    //lock, we're not sending lock for simplicity and to test indexing logic without one value works
+                    exit_pool_unbonds,
+                ],
+            }
+            .encode_to_vec()[..],
+        ));
 
         // simulate that we received another ICQ ACK, shouldn't return any messages
         let _res =

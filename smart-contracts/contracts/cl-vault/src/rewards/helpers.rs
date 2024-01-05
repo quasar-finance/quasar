@@ -13,7 +13,7 @@ impl CoinList {
     }
 
     /// calculates the ratio of the current rewards
-    pub fn ratio(&self, ratio: Decimal) -> CoinList {
+    pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
         CoinList(
             self.0
                 .iter()
@@ -65,7 +65,7 @@ impl CoinList {
 
     /// substract a percentage from self, mutate self and return the subtracted rewards
     pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<CoinList> {
-        let to_sub = self.ratio(ratio);
+        let to_sub = self.mul_ratio(ratio);
 
         // actually subtract the funds
         self.sub(&to_sub)?;
@@ -218,7 +218,7 @@ mod tests {
             ])
             .unwrap();
 
-        let ratio = rewards.ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
+        let ratio = rewards.mul_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
         assert_eq!(
             ratio,
             CoinList(vec![

@@ -3,7 +3,10 @@ use cosmwasm_std::Decimal;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
-    query::{PoolResponse, PositionResponse, RangeAdminResponse},
+    query::{
+        AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
+        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+    },
     state::VaultConfig,
 };
 
@@ -21,6 +24,8 @@ pub enum ExtensionExecuteMsg {
     DistributeRewards {},
     /// Claim rewards belonging to a single user
     ClaimRewards {},
+    /// Build tick exponent cache
+    BuildTickCache {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -53,6 +58,10 @@ pub struct ModifyRangeMsg {
     pub upper_price: Decimal,
     /// max position slippage
     pub max_slippage: Decimal,
+    /// desired percent of funds to use during the swap step
+    pub ratio_of_swappable_funds_to_use: Decimal,
+    /// twap window to use in seconds
+    pub twap_window_seconds: u64,
 }
 
 #[cw_serde]
@@ -73,8 +82,13 @@ pub enum ExtensionQueryMsg {
 
 /// Extension query messages for user balance related queries
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum UserBalanceQueryMsg {
+    #[returns(UserSharesBalanceResponse)]
     UserSharesBalance { user: String },
+    #[returns(AssetsBalanceResponse)]
+    UserAssetsBalance { user: String },
+    #[returns(UserRewardsResponse)]
     UserRewards { user: String },
 }
 
@@ -89,6 +103,8 @@ pub enum ClQueryMsg {
     Position {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
+    #[returns(VerifyTickCacheResponse)]
+    VerifyTickCache,
 }
 
 /// ExecuteMsg for an Autocompounding Vault.

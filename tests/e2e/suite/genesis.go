@@ -295,7 +295,6 @@ func modifyPoolIncentivesModule() genesisModifiers {
 			"params": map[string]any{
 				"minted_denom": "uosmo",
 			},
-			"pool_to_gauges": nil,
 		}
 		err := dyno.Set(gen, v, "app_state", "poolincentives")
 		return gen, err

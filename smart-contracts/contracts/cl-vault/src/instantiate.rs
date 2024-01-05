@@ -11,6 +11,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 };
 
 use crate::helpers::must_pay_one_or_two;
+use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
@@ -33,6 +34,9 @@ pub fn handle_instantiate(
             "performance fee cannot be more than 1.0",
         )));
     }
+
+    build_tick_exp_cache(deps.storage)?;
+    verify_tick_exp_cache(deps.storage)?;
 
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
 
@@ -128,7 +132,7 @@ pub fn handle_instantiate_create_position_reply(
     // todo do we want to mint the initial mint to the instantiater, or just not care?
     let mint_msg = MsgMint {
         sender: env.contract.address.to_string(),
-        amount: Some(coin(liquidity_amount.atomics().u128(), vault_denom).into()),
+        amount: Some(coin(liquidity_amount.to_uint_floor().into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
 

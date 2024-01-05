@@ -24,7 +24,7 @@ use crate::execute::{bond, claim, force_claim, force_unbond, unbond, update_cap}
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
-    QueryMsg, VaultTokenInfoResponse,
+    PrimitiveInitMsg, QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
     query_deposit_ratio, query_investment, query_pending_bonds, query_pending_bonds_by_id,
@@ -32,7 +32,7 @@ use crate::query::{
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP, CLAIMS,
-    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, VAULT_REWARDS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, OLD_INVESTMENT, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -361,22 +361,22 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let msgs: Result<Vec<WasmMsg>, StdError> = cw20_base::state::BALANCES
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|val| {
-            let (addr, _) = val?;
-            update_user_reward_index(deps.storage, &addr)
-        })
-        .collect();
+    let old_invest = OLD_INVESTMENT.load(deps.storage)?;
 
-    let wrapped_msges = msgs?.into_iter().map(CosmosMsg::Wasm);
+    // grab the local_denom from the first primitive (for our context this will always be same as what deposit denom should be)
+    let PrimitiveInitMsg::LP(lp_init) = old_invest.primitives.first().unwrap().init.clone();
+    let deposit_denom = lp_init.local_denom;
+    let new_invest = InvestmentInfo {
+        owner: old_invest.owner,
+        min_withdrawal: old_invest.min_withdrawal,
+        deposit_denom,
+        primitives: old_invest.primitives,
+    };
+    INVESTMENT.save(deps.storage, &new_invest)?;
 
     Ok(Response::new()
-        .add_attribute(
-            "updated-rewards-indexes-msges",
-            wrapped_msges.len().to_string(),
-        )
-        .add_messages(wrapped_msges))
+        .add_attribute("migrate", CONTRACT_NAME)
+        .add_attribute("success", "true"))
 }
 
 #[cfg(test)]
