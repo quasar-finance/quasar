@@ -21,7 +21,7 @@ use crate::state::{
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
-use crate::vault::concentrated_liquidity::{create_position, get_position};
+use crate::vault::concentrated_liquidity::{create_position, get_position, withdraw_from_position};
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
     execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
@@ -204,22 +204,19 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown.position.unwrap();
 
+    // Prepare migration data
     let migration_data = MigrationData {
         new_pool_id: msg.pool_id,
-        lower_tick: msg.lower_tick,
-        upper_tick: msg.upper_tick,
+        lower_tick: position.lower_tick,
+        upper_tick: position.upper_tick,
     };
-
     MIGRATION_DATA.save(deps.storage, &migration_data)?;
 
-    let withdraw_msg = MsgWithdrawPosition {
-        position_id: position.position_id,
-        sender: env.contract.address.to_string(),
-        liquidity_amount: Decimal256::from_str(position.liquidity.as_str())?
-            .atomics()
-            .to_string(),
-    };
+    // Use the existing function to create the withdraw message
+    let liquidity_amount = Decimal256::from_str(position.liquidity.as_str())?;
+    let withdraw_msg = withdraw_from_position(deps.storage, &env, liquidity_amount)?;
 
+    // Create the submessage for withdrawal
     Ok(Response::default()
         .add_submessage(SubMsg::reply_on_success(
             withdraw_msg,
