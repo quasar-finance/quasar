@@ -326,6 +326,7 @@ pub fn handle_create_migrated_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = data.try_into()?;
+    MIGRATION_DATA.remove(deps.storage);
 
     POSITION.save(
         deps.storage,
