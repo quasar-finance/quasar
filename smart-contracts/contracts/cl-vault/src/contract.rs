@@ -40,7 +40,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse, Pool,
+    MsgCreatePositionResponse, MsgWithdrawPositionResponse, Pool,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 
