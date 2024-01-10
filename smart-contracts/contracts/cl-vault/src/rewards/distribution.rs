@@ -1,14 +1,14 @@
 use cosmwasm_std::{
-    Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult,
-    Uint128, StdResult,
+    Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, StdResult, SubMsg,
+    SubMsgResult, Uint128,
 };
 
 use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS,
-        VAULT_CONFIG, VAULT_DENOM, CURRENT_REWARDS_INDEX,
+        CURRENT_REWARDS, CURRENT_REWARDS_INDEX, IS_DISTRIBUTING, POSITION, SHARES,
+        STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -114,7 +114,10 @@ pub fn execute_distribute_rewards(
 }
 
 // TODO: deprecate this separate function and merge the content ^ in distribute_rewards so we fix bowworing
-fn distribute_rewards(deps: &mut DepsMut, amount_of_users: Uint128) -> Result<Vec<Attribute>, ContractError> {
+fn distribute_rewards(
+    deps: &mut DepsMut,
+    amount_of_users: Uint128,
+) -> Result<Vec<Attribute>, ContractError> {
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
         return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
@@ -130,7 +133,13 @@ fn distribute_rewards(deps: &mut DepsMut, amount_of_users: Uint128) -> Result<Ve
     // Prepare the bank querier and get the total shares
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_shares: Uint128 = bq.supply_of(vault_denom)?.amount.unwrap().amount.parse::<u128>()?.into();
+    let total_shares: Uint128 = bq
+        .supply_of(vault_denom)?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
 
     // Get state item for last processed user index as start
     let mut start = CURRENT_REWARDS_INDEX.load(deps.storage)?;
@@ -186,7 +195,6 @@ fn distribute_rewards(deps: &mut DepsMut, amount_of_users: Uint128) -> Result<Ve
     ];
     Ok(attributes)
 }
-
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
