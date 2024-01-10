@@ -149,7 +149,7 @@ pub fn execute_distribute_rewards(
     let mut distributed_rewards = CoinList::new();
     let mut next_batch_address: Option<Addr> = None;
 
-    // Use `try_fold` to iterate over the range, collect user rewards, and construct the vector
+    // Iterate over the range, collect user rewards, and construct the vector
     let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
         .range(deps.storage, range_min, None, Order::Ascending)
         .enumerate()
@@ -181,10 +181,13 @@ pub fn execute_distribute_rewards(
         })?;
 
     // Subtract CoinList from current rewards
-    CURRENT_REWARDS.update(deps.storage, |mut old_rewards| -> StdResult<_> {
-        old_rewards.sub(&distributed_rewards)?;
-        Ok(old_rewards)
-    })?;
+    CURRENT_REWARDS.update(
+        deps.storage,
+        |mut old_rewards| -> ContractResult<CoinList> {
+            old_rewards.sub(&distributed_rewards.clone())?;
+            Ok(old_rewards)
+        },
+    )?;
 
     // After processing the rewards, save the next batch address or clear the states
     if let Some(next_address) = next_batch_address {
