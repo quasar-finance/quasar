@@ -8,7 +8,7 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
-    state::{Position, CURRENT_POSITION_ID, CURRENT_RATIO, POOL_CONFIG, POSITIONS},
+    state::{Position, CURRENT_POSITION_ID, POOL_CONFIG, POSITIONS},
     vault::concentrated_liquidity::{create_position, get_position, withdraw_from_position},
     ContractError,
 };

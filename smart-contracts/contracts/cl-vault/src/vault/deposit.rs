@@ -27,14 +27,12 @@ use crate::{
     reply::Replies,
     rewards::CoinList,
     state::{
-        CurrentDeposit, Position, CURRENT_DEPOSIT, CURRENT_DEPOSITOR, CURRENT_DEPOSIT_LEFTOVER,
+        CurrentDeposit, CURRENT_DEPOSIT, CURRENT_DEPOSITOR, CURRENT_DEPOSIT_LEFTOVER,
         POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM,
     },
     vault::concentrated_liquidity::{create_position, get_positions},
     ContractError,
 };
-
-use super::concentrated_liquidity::{add_to_position, get_position};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
@@ -67,6 +65,7 @@ pub(crate) fn execute_exact_deposit(
 
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
+
     let psf = allocate_funds_per_position(
         deps.branch(),
         positions.clone(),
@@ -80,12 +79,12 @@ pub(crate) fn execute_exact_deposit(
     // sum up the amount that allocate_funds_per_position allocated to each position
     let mut total_allocated = (Uint128::zero(), Uint128::zero());
 
-    // create an AddToPosition message per position
+    // create a position for each position
     let msgs: Result<Result<Vec<SubMsg>, ContractError>, ContractError> = position_funds
         .map(|((pos1, amount0, amount1), (pos2, fp))| {
             if pos1.position_id != pos2.position_id {
-                // return err
-                todo!()
+                // this would be a programming error
+                panic!("Position ids in the zipped iterator don't match")
             }
 
             // we want to make sure deposit 1 is item 1 in the queue, deposit 2 item 2 in the queue

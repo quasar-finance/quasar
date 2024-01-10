@@ -140,6 +140,6 @@ pub fn assert_unused_funds_impl(
     (actual0, actual1): (Uint128, Uint128),
 ) {
     let (expected0, expected1) = get_unused_funds(wasm, contract_address).unwrap();
-    assert_eq_with_diff!(actual0, "actual token0", expected0, "expected token0", "0.000001", Uint128::new(5));
-    assert_eq_with_diff!(actual1, "actual token1", expected1, "expected token1", "0.000001", Uint128::new(5))
+    assert_eq_with_diff!(actual0, "actual token0", expected0, "expected token0", "0.00000001", Uint128::new(1));
+    assert_eq_with_diff!(actual1, "actual token1", expected1, "expected token1", "0.00000001", Uint128::new(1))
 }
