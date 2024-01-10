@@ -97,7 +97,7 @@ pub fn increase_position_funds(
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
     let (unused0, unused1) = get_one_or_two(&unused_balances.coins(), (pool.token0, pool.token1))?;
 
-    if unused0.amount < token0.amount || unused1.amount > token1.amount {
+    if unused0.amount < token0.amount || unused1.amount < token1.amount {
         return Err(ContractError::InsufficientFunds);
     }
 
