@@ -256,10 +256,13 @@ mod tests {
         let position = Position { position_id };
         POSITION.save(deps.as_mut().storage, &position).unwrap();
 
+        // TODO: implement execute_collect_rewards
+
+        // TODO: implement amount of users here iterating many times
         let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
-            collect_incentives(deps.as_ref(), env).unwrap().into()
+            get_collect_incentives_msg(deps.as_ref(), env).unwrap().into()
         )
     }
 
