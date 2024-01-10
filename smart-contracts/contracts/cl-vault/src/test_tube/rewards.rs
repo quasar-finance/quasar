@@ -2,7 +2,7 @@
 mod tests {
     use crate::msg::ExecuteMsg;
     use crate::test_tube::initialize::initialize::default_init;
-    use cosmwasm_std::Coin;
+    use cosmwasm_std::{Coin, Uint128};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -158,7 +158,9 @@ mod tests {
         let _res = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {}),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: todo!(),
+                }),
                 &[],
                 &alice,
             )

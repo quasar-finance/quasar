@@ -8,8 +8,8 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, IS_DISTRIBUTING, NEXT_DISTRIBUTE_ADDRESS, POSITION, SHARES,
-        STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        CURRENT_REWARDS, HAS_FEE_BEEN_CALCULATED, IS_DISTRIBUTING, NEXT_DISTRIBUTE_ADDRESS,
+        POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -104,7 +104,8 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    if !IS_DISTRIBUTING.load(deps.storage).unwrap() {
+    let is_distributing = IS_DISTRIBUTING.load(deps.storage)?;
+    if !is_distributing {
         return Err(ContractError::IsNotDistributing {});
     }
 
@@ -115,11 +116,12 @@ pub fn execute_distribute_rewards(
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // Calculate the strategist fee and update the strategist rewards
-    // TODO: We should do that only once per distribution batch, likely the first transaction so we need to save this at state
-    let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |old| -> StdResult<_> {
-        Ok(old.add(strategist_fee)?)
-    })?;
+    let has_fee_been_calculated = HAS_FEE_BEEN_CALCULATED.load(deps.storage)?;
+    if !has_fee_been_calculated {
+        let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
+        STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+        HAS_FEE_BEEN_CALCULATED.save(deps.storage, &true)?;
+    }
 
     // Prepare the bank querier and get the total shares
     let bq = BankQuerier::new(&deps.querier);
@@ -178,8 +180,10 @@ pub fn execute_distribute_rewards(
             Ok(())
         })?;
 
-    CURRENT_REWARDS.update(deps.storage, |old_rewards| -> StdResult<_> {
-        old_rewards.sub(&distributed_rewards)?
+    // Subtract CoinList from current rewards
+    CURRENT_REWARDS.update(deps.storage, |mut old_rewards| -> StdResult<_> {
+        old_rewards.sub(&distributed_rewards)?;
+        Ok(old_rewards)
     })?;
 
     // After processing the rewards, save the next batch address or clear the states
@@ -261,7 +265,7 @@ mod tests {
         // TODO: implement execute_collect_rewards
 
         // TODO: implement amount of users here iterating many times
-        let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
+        let resp = execute_distribute_rewards(deps.as_mut(), env.clone(), todo!()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
             get_collect_incentives_msg(deps.as_ref(), env)
