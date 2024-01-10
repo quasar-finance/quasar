@@ -182,7 +182,7 @@ fn distribute_rewards(
     })?;
 
     // Determine if this is the last execution
-    let is_last_execution = end >= total_shares.u128(); // Assuming total_shares is the upper bound
+    let is_last_execution = false; // TODO find upper bond to determine last exec
     if is_last_execution {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
     }
