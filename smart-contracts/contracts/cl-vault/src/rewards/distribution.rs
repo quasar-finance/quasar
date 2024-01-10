@@ -105,16 +105,17 @@ pub fn execute_distribute_rewards(
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
     if !IS_DISTRIBUTING.load(deps.storage).unwrap() {
-        return Err(ContractError::IsDistributing {});
+        return Err(ContractError::IsNotDistributing {});
     }
 
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
-        Ok(Response::new().add_attribute("total_rewards_amount", "0"))
+        return Ok(Response::new().add_attribute("total_rewards_amount", "0"));
     }
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // Calculate the strategist fee and update the strategist rewards
+    // TODO: We should do that only once per distribution batch, likely the first transaction so we need to save this at state
     let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| -> StdResult<_> {
         Ok(old.add(strategist_fee)?)
@@ -181,7 +182,7 @@ pub fn execute_distribute_rewards(
         old_rewards.sub(&distributed_rewards)?
     })?;
 
-    // After processing the rewards, you save the next batch address or clear the state
+    // After processing the rewards, save the next batch address or clear the states
     if let Some(next_address) = next_batch_address {
         NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &Some(next_address))?;
     } else {

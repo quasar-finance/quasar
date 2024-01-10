@@ -126,4 +126,7 @@ pub enum ContractError {
 
     #[error("Vault is already distributing rewards")]
     IsDistributing {},
+
+    #[error("Vault is not distributing rewards, claiming is needed first")]
+    IsNotDistributing {},
 }
