@@ -24,6 +24,12 @@ use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+
+    if DISTRIBUTING.load() {
+        return ContractError::;
+    }
+    DISTRIBUTING.save(deps.storage, true);
+
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
     let msg = collect_incentives(deps.as_ref(), env)?;
 
@@ -87,11 +93,43 @@ pub fn handle_collect_spread_rewards_reply(
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(response.collected_spread_rewards)?;
 
+
+    CURRENT_REWARDS.save(store, &rewards)?;
+
     // update the rewards map against all user's locked up vault shares
     distribute_rewards(deps, rewards)?;
 
     // TODO add a nice response
     Ok(Response::new())
+}
+
+pub fn execute_distribute_rewards(amount_of_users: Uint128) {
+    let rewards = CURRENT_REWARDS.load(store)?;
+
+    let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
+        .range(deps.branch().storage, None, None, Order::Ascending)
+        .map(|v| -> Result<(Addr, CoinList), ContractError> {
+            let (address, user_shares) = v?;
+            // calculate the amount of each asset the user should get in rewards
+            // we need to always round down here, so we never expect more rewards than we have
+            let user_rewards = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
+            Ok((address, user_rewards))
+        })
+        .collect();
+
+    // add or create a new entry for the user to get rewards
+    user_rewards?
+        .into_iter()
+        .try_for_each(|(addr, reward)| -> ContractResult<()> {
+            USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
+                if let Some(old_user_rewards) = old {
+                    Ok(reward.add(old_user_rewards)?)
+                } else {
+                    Ok(reward)
+                }
+            })?;
+            Ok(())
+        })?;
 }
 
 fn distribute_rewards(
