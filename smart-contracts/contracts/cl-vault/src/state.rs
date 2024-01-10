@@ -84,8 +84,8 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
+pub const NEXT_DISTRIBUTE_ADDRESS: Item<Option<Addr>> = Item::new("next_distribute_address");
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
-pub const CURRENT_REWARDS_INDEX: Item<u128> = Item::new("current_rewards_index");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 

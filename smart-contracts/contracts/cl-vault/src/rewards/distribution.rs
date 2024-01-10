@@ -1,13 +1,14 @@
 use cosmwasm_std::{
-    Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, StdResult, SubMsg,
-    SubMsgResult, Uint128,
+    Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, StdResult, SubMsg, SubMsgResult,
+    Uint128,
 };
+use cw_storage_plus::Bound;
 
 use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, CURRENT_REWARDS_INDEX, IS_DISTRIBUTING, POSITION, SHARES,
+        CURRENT_REWARDS, IS_DISTRIBUTING, NEXT_DISTRIBUTE_ADDRESS, POSITION, SHARES,
         STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
@@ -107,20 +108,9 @@ pub fn execute_distribute_rewards(
         return Err(ContractError::IsDistributing {});
     }
 
-    distribute_rewards(&mut deps, amount_of_users)?;
-
-    // TODO add a nice response
-    Ok(Response::new())
-}
-
-// TODO: deprecate this separate function and merge the content ^ in distribute_rewards so we fix bowworing
-fn distribute_rewards(
-    deps: &mut DepsMut,
-    amount_of_users: Uint128,
-) -> Result<Vec<Attribute>, ContractError> {
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
-        return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
+        Ok(Response::new().add_attribute("total_rewards_amount", "0"))
     }
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
@@ -142,25 +132,37 @@ fn distribute_rewards(
         .into();
 
     // Get state item for last processed user index as start
-    let mut start = CURRENT_REWARDS_INDEX.load(deps.storage)?;
-    let end = start + amount_of_users.u128();
+    let next_distribute_address = NEXT_DISTRIBUTE_ADDRESS
+        .may_load(deps.storage)?
+        .unwrap_or_default();
+
+    // Prepare the range parameter for the SHARES.range query
+    let range_min = match next_distribute_address {
+        Some(addr) => Some(Bound::exclusive(addr)),
+        None => None,
+    };
 
     // Create a new CoinList store distributed rewards for later subtraction
     let mut distributed_rewards = CoinList::new();
+    let mut next_batch_address: Option<Addr> = None;
 
-    // Get all users and their current pre-distribution rewards within the range
-    // TODO: We cannot use numbers as min and max, probably we need to just iterate in a sorting way
-    //       and save the latest key + 1 so we know the next address to start from. Check that new users would be appended at the end of the list.
+    // Use `try_fold` to iterate over the range, collect user rewards, and construct the vector
     let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
-        .range(deps.storage, Some(todo!()), Some(todo!()), Order::Ascending)
-        .take(amount_of_users.u128() as usize) // Process only the specified amount of users
-        .map(|item| {
+        .range(deps.storage, range_min, None, Order::Ascending)
+        .enumerate()
+        .try_fold(Vec::new(), |mut acc, (index, item)| {
             let (address, user_shares) = item?;
+            // If we've reached the desired number of users, capture the next address for the next batch
+            if index == amount_of_users.u128() as usize {
+                next_batch_address = Some(address);
+                return Ok(acc); // Return the accumulated rewards
+            }
+            // If we've not yet reached the desired number, process as normal
             let user_reward = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
             distributed_rewards.add(user_reward.clone())?; // Add the reward to the distributed sum
-            Ok((address, user_reward))
-        })
-        .collect();
+            acc.push((address, user_reward)); // Collect user rewards
+            Ok(acc)
+        });
 
     // Update the user rewards
     user_rewards?
@@ -175,25 +177,24 @@ fn distribute_rewards(
             Ok(())
         })?;
 
-    CURRENT_REWARDS_INDEX.save(deps.storage, &end)?; // TODO: +1 needed? so the next start is end+1?
-
     CURRENT_REWARDS.update(deps.storage, |old_rewards| -> StdResult<_> {
         old_rewards.sub(&distributed_rewards)?
     })?;
 
-    // Determine if this is the last execution
-    let is_last_execution = false; // TODO find upper bond to determine last exec
-    if is_last_execution {
+    // After processing the rewards, you save the next batch address or clear the state
+    if let Some(next_address) = next_batch_address {
+        NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &Some(next_address))?;
+    } else {
+        NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &None)?;
         IS_DISTRIBUTING.save(deps.storage, &false)?;
     }
 
-    // Construct a response with appropriate attributes
-    let attributes = vec![
-        Attribute::new("total_rewards_amount", format!("{:?}", rewards.coins())),
-        Attribute::new("last_processed_user_index", end.to_string()),
-        Attribute::new("is_last_execution", is_last_execution.to_string()),
-    ];
-    Ok(attributes)
+    Ok(Response::new()
+        .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
+        .add_attribute(
+            "is_last_execution",
+            next_batch_address.is_none().to_string(),
+        ))
 }
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
@@ -262,7 +263,9 @@ mod tests {
         let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
-            get_collect_incentives_msg(deps.as_ref(), env).unwrap().into()
+            get_collect_incentives_msg(deps.as_ref(), env)
+                .unwrap()
+                .into()
         )
     }
 
