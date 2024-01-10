@@ -1,14 +1,14 @@
 use cosmwasm_std::{
     Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult,
-    Uint128,
+    Uint128, StdResult,
 };
 
 use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
-        VAULT_DENOM,
+        CURRENT_REWARDS, IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS,
+        VAULT_CONFIG, VAULT_DENOM, CURRENT_REWARDS_INDEX,
     },
     ContractError,
 };
@@ -23,15 +23,14 @@ use osmosis_std::types::{
 use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-
-    if DISTRIBUTING.load() {
-        return ContractError::;
+pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+    if IS_DISTRIBUTING.load(deps.storage).unwrap() {
+        return Err(ContractError::IsDistributing {});
     }
-    DISTRIBUTING.save(deps.storage, true);
-
+    IS_DISTRIBUTING.save(deps.storage, &true);
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
-    let msg = collect_incentives(deps.as_ref(), env)?;
+
+    let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         msg,
@@ -66,7 +65,7 @@ pub fn handle_collect_incentives_reply(
     )?;
 
     // collect the spread rewards
-    let msg = collect_spread_rewards(deps.as_ref(), env)?;
+    let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         msg,
         Replies::CollectSpreadRewards as u64,
@@ -93,104 +92,103 @@ pub fn handle_collect_spread_rewards_reply(
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(response.collected_spread_rewards)?;
 
-
-    CURRENT_REWARDS.save(store, &rewards)?;
-
-    // update the rewards map against all user's locked up vault shares
-    distribute_rewards(deps, rewards)?;
+    CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
     // TODO add a nice response
     Ok(Response::new())
 }
 
-pub fn execute_distribute_rewards(amount_of_users: Uint128) {
-    let rewards = CURRENT_REWARDS.load(store)?;
+pub fn execute_distribute_rewards(
+    deps: DepsMut,
+    _env: Env,
+    amount_of_users: Uint128,
+) -> Result<Response, ContractError> {
+    if !IS_DISTRIBUTING.load(deps.storage).unwrap() {
+        return Err(ContractError::IsDistributing {});
+    }
 
-    let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
-        .range(deps.branch().storage, None, None, Order::Ascending)
-        .map(|v| -> Result<(Addr, CoinList), ContractError> {
-            let (address, user_shares) = v?;
-            // calculate the amount of each asset the user should get in rewards
-            // we need to always round down here, so we never expect more rewards than we have
-            let user_rewards = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
-            Ok((address, user_rewards))
-        })
-        .collect();
+    distribute_rewards(&mut deps, amount_of_users)?;
 
-    // add or create a new entry for the user to get rewards
-    user_rewards?
-        .into_iter()
-        .try_for_each(|(addr, reward)| -> ContractResult<()> {
-            USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
-                if let Some(old_user_rewards) = old {
-                    Ok(reward.add(old_user_rewards)?)
-                } else {
-                    Ok(reward)
-                }
-            })?;
-            Ok(())
-        })?;
+    // TODO add a nice response
+    Ok(Response::new())
 }
 
-fn distribute_rewards(
-    mut deps: DepsMut,
-    mut rewards: CoinList,
-) -> Result<Vec<Attribute>, ContractError> {
+// TODO: deprecate this separate function and merge the content ^ in distribute_rewards so we fix bowworing
+fn distribute_rewards(deps: &mut DepsMut, amount_of_users: Uint128) -> Result<Vec<Attribute>, ContractError> {
+    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
         return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
     }
-
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
-    // calculate the strategist fee
+    // Calculate the strategist fee and update the strategist rewards
     let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| -> StdResult<_> {
+        Ok(old.add(strategist_fee)?)
+    })?;
 
+    // Prepare the bank querier and get the total shares
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    let total_shares: Uint128 = bq.supply_of(vault_denom)?.amount.unwrap().amount.parse::<u128>()?.into();
 
-    let total_shares: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+    // Get state item for last processed user index as start
+    let mut start = CURRENT_REWARDS_INDEX.load(deps.storage)?;
+    let end = start + amount_of_users.u128();
 
-    // for each user with locked tokens, we distribute some part of the rewards to them
-    // get all users and their current pre-distribution rewards
+    // Create a new CoinList store distributed rewards for later subtraction
+    let mut distributed_rewards = CoinList::new();
+
+    // Get all users and their current pre-distribution rewards within the range
+    // TODO: We cannot use numbers as min and max, probably we need to just iterate in a sorting way
+    //       and save the latest key + 1 so we know the next address to start from. Check that new users would be appended at the end of the list.
     let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
-        .range(deps.branch().storage, None, None, Order::Ascending)
-        .map(|v| -> Result<(Addr, CoinList), ContractError> {
-            let (address, user_shares) = v?;
-            // calculate the amount of each asset the user should get in rewards
-            // we need to always round down here, so we never expect more rewards than we have
-            let user_rewards = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
-            Ok((address, user_rewards))
+        .range(deps.storage, Some(todo!()), Some(todo!()), Order::Ascending)
+        .take(amount_of_users.u128() as usize) // Process only the specified amount of users
+        .map(|item| {
+            let (address, user_shares) = item?;
+            let user_reward = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
+            distributed_rewards.add(user_reward.clone())?; // Add the reward to the distributed sum
+            Ok((address, user_reward))
         })
         .collect();
 
-    // add or create a new entry for the user to get rewards
+    // Update the user rewards
     user_rewards?
         .into_iter()
         .try_for_each(|(addr, reward)| -> ContractResult<()> {
             USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
-                if let Some(old_user_rewards) = old {
-                    Ok(reward.add(old_user_rewards)?)
-                } else {
-                    Ok(reward)
-                }
+                Ok(match old {
+                    Some(old_rewards) => reward.add(old_rewards)?,
+                    None => reward,
+                })
             })?;
             Ok(())
         })?;
 
-    Ok(vec![Attribute::new(
-        "total_rewards_amount",
-        format!("{:?}", rewards.coins()),
-    )])
+    CURRENT_REWARDS_INDEX.save(deps.storage, &end)?; // TODO: +1 needed? so the next start is end+1?
+
+    CURRENT_REWARDS.update(deps.storage, |old_rewards| -> StdResult<_> {
+        old_rewards.sub(&distributed_rewards)?
+    })?;
+
+    // Determine if this is the last execution
+    let is_last_execution = end >= total_shares.u128(); // Assuming total_shares is the upper bound
+    if is_last_execution {
+        IS_DISTRIBUTING.save(deps.storage, &false)?;
+    }
+
+    // Construct a response with appropriate attributes
+    let attributes = vec![
+        Attribute::new("total_rewards_amount", format!("{:?}", rewards.coins())),
+        Attribute::new("last_processed_user_index", end.to_string()),
+        Attribute::new("is_last_execution", is_last_execution.to_string()),
+    ];
+    Ok(attributes)
 }
 
-fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
+
+fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
     Ok(MsgCollectIncentives {
         position_ids: vec![position.position_id],
@@ -198,7 +196,10 @@ fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, Cont
     })
 }
 
-fn collect_spread_rewards(deps: Deps, env: Env) -> Result<MsgCollectSpreadRewards, ContractError> {
+fn get_collect_spread_rewards_msg(
+    deps: Deps,
+    env: Env,
+) -> Result<MsgCollectSpreadRewards, ContractError> {
     let position = POSITION.load(deps.storage)?;
     Ok(MsgCollectSpreadRewards {
         position_ids: vec![position.position_id],

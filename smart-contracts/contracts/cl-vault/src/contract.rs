@@ -10,7 +10,7 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_distribute_rewards, handle_collect_incentives_reply,
+    execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
 
@@ -87,8 +87,11 @@ pub fn execute(
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
                 ),
-                crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
-                    execute_distribute_rewards(deps, env)
+                crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
+                    execute_collect_rewards(deps, env)
+                }
+                crate::msg::ExtensionExecuteMsg::DistributeRewards { amount_of_users } => {
+                    execute_distribute_rewards(deps, env, amount_of_users)
                 }
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
