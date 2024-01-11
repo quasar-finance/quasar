@@ -186,6 +186,8 @@ pub fn execute_distribute_rewards(
         },
     )?;
 
+    let is_last_execution = next_batch_address.is_none();
+
     // After processing the rewards, save the next batch address or clear the states
     if let Some(next_address) = next_batch_address {
         NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &Some(next_address))?;
@@ -198,7 +200,7 @@ pub fn execute_distribute_rewards(
         .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
         .add_attribute(
             "is_last_execution",
-            next_batch_address.is_none().to_string(),
+            is_last_execution.to_string(),
         ))
 }
 
