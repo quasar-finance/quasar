@@ -1,15 +1,13 @@
 use cosmwasm_std::{
     Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
 };
-use cw_storage_plus::Bound;
 
 use crate::{
-    debug,
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, HAS_FEE_BEEN_CALCULATED, IS_DISTRIBUTING, NEXT_DISTRIBUTE_ADDRESS,
-        POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        CURRENT_REWARDS, DISTRIBUTION_SNAPSHOT, HAS_FEE_BEEN_CALCULATED, IS_DISTRIBUTING, POSITION,
+        SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -29,13 +27,22 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     if is_distributing {
         return Err(ContractError::IsDistributing {});
     }
+
     IS_DISTRIBUTING.save(deps.storage, &true)?;
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
-    let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
+    // Collect the current addresses related to SHARES
+    let current_addresses: Result<Vec<Addr>, StdError> = SHARES
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    // Ppush each address back to the Deque
+    for address in current_addresses? {
+        DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &address)?;
+    }
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
+        get_collect_incentives_msg(deps.as_ref(), env)?,
         Replies::CollectIncentives as u64,
     )))
 }
@@ -140,69 +147,49 @@ pub fn execute_distribute_rewards(
         .parse::<u128>()?
         .into();
 
-    // Get state item for last processed user index as start
-    let next_distribute_address = NEXT_DISTRIBUTE_ADDRESS.load(deps.storage)?;
-
-    // Prepare the range parameter for the SHARES.range query
-    let range_min = next_distribute_address.map(Bound::exclusive);
-
-    // Create a new CoinList store distributed rewards for later subtraction
+    let total_rewards = CURRENT_REWARDS.load(deps.storage)?;
     let mut distributed_rewards = CoinList::new();
-    let mut next_batch_address: Option<Addr> = None;
 
-    debug!(deps, "pre-iter", "i");
+    let mut users_processed: u128 = 0;
 
-    // Iterate over the range, collect user rewards, and construct the vector
-    let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
-        .range(deps.storage, range_min, None, Order::Ascending)
-        .enumerate()
-        .try_fold(Vec::new(), |mut acc, (index, item)| {
-            let (address, user_shares) = item?;
-            // If we've reached the desired number of users, capture the next address for the next batch
-            if index == amount_of_users.u128() as usize {
-                next_batch_address = Some(address);
-                return Ok(acc); // Return the accumulated rewards
-            }
+    while users_processed < amount_of_users.u128() {
+        // Attempt to pop a user address from the front of the snapshot Deque
+        if let Some(user_address) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
+            // Calculate the user's reward based on their shares and the total shares
+            let user_shares = SHARES.load(deps.storage, user_address.clone())?;
+            let reward_ratio = Decimal::from_ratio(user_shares, total_shares);
+            let user_reward = total_rewards.mul_ratio(reward_ratio);
+            let user_reward_clone = user_reward.clone();
 
-            debug!(deps, "iterating", "ii");
-            // If we've not yet reached the desired number, process as normal
-            let user_reward = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
-            distributed_rewards.merge(user_reward.coins())?; // Add the reward to the distributed sum
-            acc.push((address, user_reward)); // Collect user rewards
-            Ok(acc)
-        });
-
-    // Update the user rewards
-    user_rewards?
-        .into_iter()
-        .try_for_each(|(addr, reward)| -> ContractResult<()> {
-            debug!(deps, "iterating", "iii");
-
-            USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
+            // Merge the new reward with any existing rewards for the user
+            USER_REWARDS.update(deps.storage, user_address, |old| -> ContractResult<CoinList> {
                 Ok(match old {
-                    Some(old_rewards) => reward.add(old_rewards)?,
-                    None => reward,
+                    Some(old_rewards) => user_reward_clone.add(old_rewards)?,
+                    None => user_reward_clone,
                 })
             })?;
-            Ok(())
-        })?;
 
-    // Subtract CoinList from current rewards
+            // Accumulate the distributed rewards to be subtracted later
+            distributed_rewards.merge(user_reward.coins())?;
+            users_processed += 1;
+        } else {
+            // No more addresses in the snapshot Deque to process
+            break;
+        }
+    }
+
+    // Subtract all accumulated all distributed rewards from the current rewards
     CURRENT_REWARDS.update(
         deps.storage,
         |mut old_rewards| -> ContractResult<CoinList> {
-            old_rewards.sub(&distributed_rewards.clone())?;
+            old_rewards.sub(&distributed_rewards)?;
             Ok(old_rewards)
         },
     )?;
 
-    let is_last_distribution = next_batch_address.is_none();
-
-    // After processing the rewards, save the next batch address or clear the states
-    if let Some(next_address) = next_batch_address {
-        NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &Some(next_address))?;
-    } else {
-        NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &None)?;
+    // If the Deque is empty, we've finished distributing rewards so we clear the semaphore flag
+    let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
+    if is_last_distribution {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
     }
 

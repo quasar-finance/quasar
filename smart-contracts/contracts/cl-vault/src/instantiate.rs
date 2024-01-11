@@ -17,7 +17,7 @@ use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, IS_DISTRIBUTING, METADATA,
-    NEXT_DISTRIBUTE_ADDRESS, POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
+    POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
     VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
@@ -61,7 +61,6 @@ pub fn handle_instantiate(
 
     STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
     IS_DISTRIBUTING.save(deps.storage, &false)?;
-    NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &None)?;
 
     METADATA.save(
         deps.storage,
