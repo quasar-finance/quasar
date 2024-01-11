@@ -18,7 +18,7 @@ use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, IS_DISTRIBUTING, METADATA,
     NEXT_DISTRIBUTE_ADDRESS, POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
-    VAULT_DENOM,
+    VAULT_DENOM, HAS_FEE_BEEN_CALCULATED,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -62,6 +62,7 @@ pub fn handle_instantiate(
     STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
     IS_DISTRIBUTING.save(deps.storage, &false)?;
     NEXT_DISTRIBUTE_ADDRESS.save(deps.storage, &None)?;
+    HAS_FEE_BEEN_CALCULATED.save(deps.storage, &false)?;
 
     METADATA.save(
         deps.storage,

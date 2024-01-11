@@ -105,7 +105,7 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap_or(false);
+    let is_distributing = IS_DISTRIBUTING.may_load(deps.storage)?.unwrap_or(false);
     if !is_distributing {
         return Err(ContractError::IsNotDistributing {});
     }
@@ -121,6 +121,7 @@ pub fn execute_distribute_rewards(
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
+    // TODO should we move this to the collect call
     // Calculate the strategist fee and update the strategist rewards
     let has_fee_been_calculated = HAS_FEE_BEEN_CALCULATED.load(deps.storage)?;
     if !has_fee_been_calculated {
