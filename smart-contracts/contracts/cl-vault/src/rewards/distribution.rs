@@ -140,10 +140,7 @@ pub fn execute_distribute_rewards(
         .unwrap_or_default();
 
     // Prepare the range parameter for the SHARES.range query
-    let range_min = match next_distribute_address {
-        Some(addr) => Some(Bound::exclusive(addr)),
-        None => None,
-    };
+    let range_min =  next_distribute_address.map(Bound::exclusive);
 
     // Create a new CoinList store distributed rewards for later subtraction
     let mut distributed_rewards = CoinList::new();
@@ -162,7 +159,7 @@ pub fn execute_distribute_rewards(
             }
             // If we've not yet reached the desired number, process as normal
             let user_reward = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
-            distributed_rewards.add(user_reward.clone())?; // Add the reward to the distributed sum
+            distributed_rewards.merge(user_reward.coins())?; // Add the reward to the distributed sum
             acc.push((address, user_reward)); // Collect user rewards
             Ok(acc)
         });
