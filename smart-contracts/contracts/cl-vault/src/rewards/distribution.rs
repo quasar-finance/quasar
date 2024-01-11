@@ -116,7 +116,7 @@ pub fn execute_distribute_rewards(
         IS_DISTRIBUTING.save(deps.storage, &false)?;
         return Ok(Response::new()
             .add_attribute("total_rewards_amount", "0")
-            .add_attribute("is_last_execution", "true"));
+            .add_attribute("is_last_distribution", "true"));
     }
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -196,7 +196,7 @@ pub fn execute_distribute_rewards(
         },
     )?;
 
-    let is_last_execution = next_batch_address.is_none();
+    let is_last_distribution = next_batch_address.is_none();
 
     // After processing the rewards, save the next batch address or clear the states
     if let Some(next_address) = next_batch_address {
@@ -208,7 +208,7 @@ pub fn execute_distribute_rewards(
 
     Ok(Response::new()
         .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
-        .add_attribute("is_last_execution", is_last_execution.to_string()))
+        .add_attribute("is_last_distribution", is_last_distribution.to_string()))
 }
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
@@ -284,7 +284,6 @@ mod tests {
         // TODO: implement amount of users here iterating many times
         let distribute_resp =
             execute_distribute_rewards(deps.as_mut(), env, Uint128::new(1u128)).unwrap();
-        println!("{:?}", distribute_resp);
 
         // TODO: query is_distributing and assert it is false, and user_rewards empty
     }

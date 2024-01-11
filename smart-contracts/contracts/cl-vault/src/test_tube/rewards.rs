@@ -8,13 +8,15 @@ mod tests {
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
+    use osmosis_test_tube::RunnerError::ExecuteError;
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    const ACCOUNTS_NUM: usize = 10;
+    const ACCOUNTS_NUM: u64 = 10;
     const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000;
     const DEPOSIT_AMOUNT: u128 = 5_000_000;
     const SWAPS_NUM: usize = 50;
+    const SWAPS_AMOUNT: &str = "1000000000";
 
     #[test]
     #[ignore]
@@ -22,16 +24,15 @@ mod tests {
         let (app, contract_address, cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
-        let mut accounts = Vec::new();
-        for _ in 0..ACCOUNTS_NUM {
-            let account = app
-                .init_account(&[
+        let accounts = app
+            .init_accounts(
+                &[
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ])
-                .unwrap();
-            accounts.push(account);
-        }
+                ],
+                ACCOUNTS_NUM,
+            )
+            .unwrap();
 
         // Depositing with users
         let wasm = Wasm::new(&app);
@@ -65,7 +66,7 @@ mod tests {
                         }],
                         token_in: Some(OsmoCoin {
                             denom: DENOM_QUOTE.to_string(),
-                            amount: "1000000000".to_string(),
+                            amount: SWAPS_AMOUNT.to_string(),
                         }),
                         token_out_min_amount: "1".to_string(),
                     },
@@ -75,7 +76,7 @@ mod tests {
         }
 
         // Collect and Distribute Rewards
-        let _res = wasm
+        let result = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
@@ -83,32 +84,92 @@ mod tests {
                 claimer,
             )
             .unwrap();
+        // Extract 'tokens_out' attribute value for 'total_collect_incentives'
+        let tokens_out_incentives = result
+            .events
+            .iter()
+            .find(|e| e.ty == "total_collect_incentives")
+            .and_then(|event| {
+                event
+                    .attributes
+                    .iter()
+                    .find(|attr| attr.key == "tokens_out")
+                    .map(|attr| &attr.value)
+            });
+        // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
+        let tokens_out_spread_rewards = result
+            .events
+            .iter()
+            .find(|e| e.ty == "total_collect_spread_rewards")
+            .and_then(|event| {
+                event
+                    .attributes
+                    .iter()
+                    .find(|attr| attr.key == "tokens_out")
+                    .map(|attr| &attr.value)
+            });
+
+        // Assert that 'tokens_out' values for both events are empty
+        assert_ne!(tokens_out_incentives, Some(&"".to_string()));
+        assert_ne!(tokens_out_spread_rewards, Some(&"".to_string()));
 
         for _ in 0..(ACCOUNTS_NUM - 1) {
             // Adjust the number of distribute actions as needed
-            let result = wasm.execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1), // hardcoding 1
-                }),
-                &[],
-                claimer,
-            );
-            // TODO: Assert is_last_distribution is false as we are iterating ACCOUNTS_NUM - 1 and we expect the process to do not finish in this loop
+            let result = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::VaultExtension(
+                        crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                            amount_of_users: Uint128::new(1), // hardcoding 1
+                        },
+                    ),
+                    &[],
+                    claimer,
+                )
+                .unwrap();
+
+            // Extract the 'is_last_distribution' attribute from the 'wasm' event
+            let is_last_distribution =
+                result
+                    .events
+                    .iter()
+                    .find(|e| e.ty == "wasm")
+                    .and_then(|event| {
+                        event
+                            .attributes
+                            .iter()
+                            .find(|attr| attr.key == "is_last_distribution")
+                            .map(|attr| &attr.value)
+                    });
+            assert_eq!(is_last_distribution, Some(&"false".to_string()));
         }
 
         // TODO Distribute one more time
-        let result = wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                amount_of_users: Uint128::new(1),
-            }),
-            &[],
-            claimer,
-        );
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                claimer,
+            )
+            .unwrap();
 
-        // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
-
+        // Extract the 'is_last_distribution' attribute from the 'wasm' event
+        let is_last_distribution =
+            result
+                .events
+                .iter()
+                .find(|e| e.ty == "wasm")
+                .and_then(|event| {
+                    event
+                        .attributes
+                        .iter()
+                        .find(|attr| attr.key == "is_last_distribution")
+                        .map(|attr| &attr.value)
+                });
+        assert_eq!(is_last_distribution, Some(&"true".to_string()));
         // TODO: Assert users balances increased accordingly to distribution amounts
     }
 
@@ -118,12 +179,15 @@ mod tests {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
-            let accounts = app
-                .init_accounts(&[
+        let accounts = app
+            .init_accounts(
+                &[
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ], ACCOUNTS_NUM.try_into().unwrap())
-                .unwrap();
+                ],
+                ACCOUNTS_NUM,
+            )
+            .unwrap();
 
         // Depositing with users
         let wasm = Wasm::new(&app);
@@ -144,8 +208,8 @@ mod tests {
         // Declare claimer accounts
         let claimer = &accounts[0];
 
-        // Collect and Distribute Rewards
-        let _res = wasm
+        // Collect and Distribute Rewards (there should be anything)
+        let result = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
@@ -153,31 +217,89 @@ mod tests {
                 claimer,
             )
             .unwrap();
+        // Extract 'tokens_out' attribute value for 'total_collect_incentives'
+        let tokens_out_incentives = result
+            .events
+            .iter()
+            .find(|e| e.ty == "total_collect_incentives")
+            .and_then(|event| {
+                event
+                    .attributes
+                    .iter()
+                    .find(|attr| attr.key == "tokens_out")
+                    .map(|attr| &attr.value)
+            });
+        // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
+        let tokens_out_spread_rewards = result
+            .events
+            .iter()
+            .find(|e| e.ty == "total_collect_spread_rewards")
+            .and_then(|event| {
+                event
+                    .attributes
+                    .iter()
+                    .find(|attr| attr.key == "tokens_out")
+                    .map(|attr| &attr.value)
+            });
+        // Assert that 'tokens_out' values for both events are empty
+        assert_eq!(tokens_out_incentives, Some(&"".to_string()));
+        assert_eq!(tokens_out_spread_rewards, Some(&"".to_string()));
 
-            // since there are no rewards, the first call to distribute rewards will flip IS_DISTRIBUTING to false
-            let result = wasm.execute(
+        // Try to collect one more time, this should be failing
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
+                &[],
+                claimer,
+            )
+            .unwrap_err();
+        // Assert that the response is an error
+        assert!(
+            matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Vault is already distributing"))
+        );
+
+        // Distribute just one time, as there are no rewards we expect this to clear the state even if 1 user < 10 users
+        let result = wasm
+            .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1), // hardcoding 1
+                    amount_of_users: Uint128::new(1),
                 }),
                 &[],
                 claimer,
-            ).unwrap();
-            // TODO: Assert is_last_distribution is true
-        
+            )
+            .unwrap();
 
-        // TODO Distribute one more time
-        let result = wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                amount_of_users: Uint128::new(1),
-            }),
-            &[],
-            claimer,
-        ).unwrap_err();
+        // Extract the 'is_last_distribution' attribute from the 'wasm' event
+        let is_last_distribution =
+            result
+                .events
+                .iter()
+                .find(|e| e.ty == "wasm")
+                .and_then(|event| {
+                    event
+                        .attributes
+                        .iter()
+                        .find(|attr| attr.key == "is_last_distribution")
+                        .map(|attr| &attr.value)
+                });
+        assert_eq!(is_last_distribution, Some(&"true".to_string()));
 
-        // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
-
-        // TODO: Assert users balances has not increased, accordingly to 0 distribution
+        // Distribute one more time, we expect to receive an Error here as IS_DISTRIBUTING is false
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                claimer,
+            )
+            .unwrap_err();
+        // Assert that the response is an error
+        assert!(
+            matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Vault is not distributing rewards, claiming is needed first: execute wasm contract failed"))
+        );
     }
 }
