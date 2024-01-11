@@ -84,7 +84,7 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
-pub const DISTRIBUTION_SNAPSHOT: Deque<Addr> = Deque::new("distribution_snapshot");
+pub const DISTRIBUTION_SNAPSHOT: Deque<(Addr, Uint128)> = Deque::new("distribution_snapshot");
 pub const HAS_FEE_BEEN_CALCULATED: Item<bool> = Item::new("has_fee_been_calculated");
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");

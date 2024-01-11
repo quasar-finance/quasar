@@ -7,8 +7,8 @@ mod tests {
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
-    use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
     use osmosis_test_tube::RunnerError::ExecuteError;
+    use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";

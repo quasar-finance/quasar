@@ -31,14 +31,15 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     IS_DISTRIBUTING.save(deps.storage, &true)?;
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
-    // Collect the current addresses related to SHARES
-    let current_addresses: Result<Vec<Addr>, StdError> = SHARES
-        .keys(deps.storage, None, None, Order::Ascending)
+    // Collect all shares
+    let shares: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|res| res.map_err(ContractError::Std))
         .collect();
 
-    // Ppush each address back to the Deque
-    for address in current_addresses? {
-        DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &address)?;
+    // Push back each item into the Deque
+    for (address, shares) in shares? {
+        DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address, shares))?;
     }
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
@@ -149,25 +150,27 @@ pub fn execute_distribute_rewards(
 
     let total_rewards = CURRENT_REWARDS.load(deps.storage)?;
     let mut distributed_rewards = CoinList::new();
-
     let mut users_processed: u128 = 0;
 
     while users_processed < amount_of_users.u128() {
-        // Attempt to pop a user address from the front of the snapshot Deque
-        if let Some(user_address) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
-            // Calculate the user's reward based on their shares and the total shares
-            let user_shares = SHARES.load(deps.storage, user_address.clone())?;
-            let reward_ratio = Decimal::from_ratio(user_shares, total_shares);
+        // Attempt to pop a (user_address, share_amount) tuple from the front of the snapshot Deque
+        if let Some((user_address, share_amount)) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
+            // Calculate the user's reward based on the share amount directly
+            let reward_ratio = Decimal::from_ratio(share_amount, total_shares.u128());
             let user_reward = total_rewards.mul_ratio(reward_ratio);
             let user_reward_clone = user_reward.clone();
 
             // Merge the new reward with any existing rewards for the user
-            USER_REWARDS.update(deps.storage, user_address, |old| -> ContractResult<CoinList> {
-                Ok(match old {
-                    Some(old_rewards) => user_reward_clone.add(old_rewards)?,
-                    None => user_reward_clone,
-                })
-            })?;
+            USER_REWARDS.update(
+                deps.storage,
+                user_address,
+                |old| -> ContractResult<CoinList> {
+                    Ok(match old {
+                        Some(old_rewards) => user_reward_clone.add(old_rewards)?,
+                        None => user_reward_clone,
+                    })
+                },
+            )?;
 
             // Accumulate the distributed rewards to be subtracted later
             distributed_rewards.merge(user_reward.coins())?;
