@@ -10,7 +10,7 @@ use crate::{
         IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
         VAULT_DENOM,
     },
-    ContractError,
+    ContractError, debug,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -103,6 +103,12 @@ pub fn handle_collect_spread_rewards_reply(
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(response.collected_spread_rewards)?;
 
+
+    // calculate and update the strategist fee
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
     // TODO add a nice response
@@ -120,23 +126,13 @@ pub fn execute_distribute_rewards(
     }
 
     // Get current rewards to distribute, if there are not clear the state and return
-    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
+    let rewards = CURRENT_REWARDS.load(deps.storage)?;
     deps.api.debug(format!("{:?}", rewards).as_str());
     if rewards.is_empty() {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
         return Ok(Response::new()
             .add_attribute("total_rewards_amount", "0")
             .add_attribute("is_last_distribution", "true"));
-    }
-
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
-
-    // Calculate the strategist fee and update the strategist rewards
-    let has_fee_been_calculated = HAS_FEE_BEEN_CALCULATED.load(deps.storage).unwrap_or(false);
-    if !has_fee_been_calculated {
-        let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
-        STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
-        HAS_FEE_BEEN_CALCULATED.save(deps.storage, &true)?;
     }
 
     // Prepare the bank querier and get the total shares
@@ -159,12 +155,16 @@ pub fn execute_distribute_rewards(
     while users_processed < amount_of_users.u128() {
         // Attempt to pop a (user_address, share_amount) tuple from the front of the snapshot Deque
         if let Some((user_address, share_amount)) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
-            deps.api.debug(format!("{:?}", user_address).as_str());
-            deps.api.debug(format!("{:?}", share_amount).as_str());
+            debug!(deps, "user_address", user_address);
+            debug!(deps, "share_amount", share_amount);
+
             // Calculate the user's reward based on the share amount directly
             let reward_ratio = Decimal::from_ratio(share_amount, total_shares.u128());
             let user_reward = rewards.mul_ratio(reward_ratio);
             let user_reward_clone = user_reward.clone();
+
+            debug!(deps, "user_reward_clone", user_reward_clone);
+
 
             // Merge the new reward with any existing rewards for the user
             USER_REWARDS.update(
@@ -180,8 +180,7 @@ pub fn execute_distribute_rewards(
 
             // Accumulate the distributed rewards to be subtracted later
             distributed_rewards.merge(user_reward.coins())?;
-            deps.api
-                .debug(format!("{:?}", distributed_rewards).as_str());
+            debug!(deps, "distributed_rewards", distributed_rewards);
             users_processed += 1;
         } else {
             // No more addresses in the snapshot Deque to process
