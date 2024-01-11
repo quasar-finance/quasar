@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, StdResult, SubMsg, SubMsgResult,
-    Uint128,
+    Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
 };
 use cw_storage_plus::Bound;
 
@@ -26,7 +25,8 @@ use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    if IS_DISTRIBUTING.load(deps.storage).unwrap() {
+    let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap_or(false);
+    if is_distributing {
         return Err(ContractError::IsDistributing {});
     }
     IS_DISTRIBUTING.save(deps.storage, &true)?;
@@ -105,16 +105,20 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let is_distributing = IS_DISTRIBUTING.load(deps.storage)?;
+    let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap_or(false);
     if !is_distributing {
         return Err(ContractError::IsNotDistributing {});
     }
 
+    // Get current rewards to distribute, if there are not clear the state and return
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
-        return Ok(Response::new().add_attribute("total_rewards_amount", "0"));
+        return Ok(Response::new()
+            .add_attribute("total_rewards_amount", "0")
+            .add_attribute("is_last_execution", "true"));
     }
+
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // Calculate the strategist fee and update the strategist rewards
@@ -268,15 +272,21 @@ mod tests {
         POSITION.save(deps.as_mut().storage, &position).unwrap();
 
         // TODO: implement execute_collect_rewards
-
-        // TODO: implement amount of users here iterating many times
-        let resp = execute_distribute_rewards(deps.as_mut(), env.clone(), todo!()).unwrap();
+        let collect_resp = execute_collect_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
-            resp.messages[0].msg,
-            get_collect_incentives_msg(deps.as_ref(), env)
+            collect_resp.messages[0].msg,
+            get_collect_incentives_msg(deps.as_ref(), env.clone())
                 .unwrap()
                 .into()
-        )
+        );
+        // TODO: query is_distributing and assert it is true
+
+        // TODO: implement amount of users here iterating many times
+        let distribute_resp =
+            execute_distribute_rewards(deps.as_mut(), env, Uint128::new(1u128)).unwrap();
+        println!("{:?}", distribute_resp);
+
+        // TODO: query is_distributing and assert it is false, and user_rewards empty
     }
 
     // #[test]

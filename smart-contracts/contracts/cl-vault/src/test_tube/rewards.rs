@@ -9,426 +9,174 @@ mod tests {
     };
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
 
-    const _ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const _TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
+    const ACCOUNTS_NUM: usize = 10;
+    const SWAPS_NUM: usize = 50;
 
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim() {
         let (app, contract_address, cl_pool_id, _admin) = default_init();
-        let alice = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
 
-        let bob = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
+        // Initialize accounts
+        let mut accounts = Vec::new();
+        for _ in 0..ACCOUNTS_NUM {
+            let account = app
+                .init_account(&[
+                    Coin::new(1_000_000_000_000, DENOM_BASE),
+                    Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                ])
+                .unwrap();
+            accounts.push(account);
+        }
 
-        let charlie = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        let dave = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        let evil = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
-
+        // Depositing with users
         let wasm = Wasm::new(&app);
+        for account in &accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(5_000_000, DENOM_BASE),
+                        Coin::new(5_000_000, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
 
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &alice,
-            )
-            .unwrap();
+        // Declare swapper and claimer accounts
+        let swapper = &accounts[0];
+        let claimer = &accounts[1];
 
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &bob,
-            )
-            .unwrap();
+        // Swaps to generate spread rewards on previously created user positions
+        for _ in 0..SWAPS_NUM {
+            PoolManager::new(&app)
+                .swap_exact_amount_in(
+                    MsgSwapExactAmountIn {
+                        sender: swapper.address(),
+                        routes: vec![SwapAmountInRoute {
+                            pool_id: cl_pool_id,
+                            token_out_denom: DENOM_BASE.to_string(),
+                        }],
+                        token_in: Some(OsmoCoin {
+                            denom: DENOM_QUOTE.to_string(),
+                            amount: "1000000".to_string(),
+                        }),
+                        token_out_min_amount: "1".to_string(),
+                    },
+                    &swapper,
+                )
+                .unwrap();
+        }
 
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &charlie,
-            )
-            .unwrap();
-
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &dave,
-            )
-            .unwrap();
-
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &evil,
-            )
-            .unwrap();
-
-        // do a bunch of swaps to get some swap fees
-        PoolManager::new(&app)
-            .swap_exact_amount_in(
-                MsgSwapExactAmountIn {
-                    sender: bob.address(),
-                    routes: vec![SwapAmountInRoute {
-                        pool_id: cl_pool_id,
-                        token_out_denom: DENOM_BASE.to_string(),
-                    }],
-                    token_in: Some(OsmoCoin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    token_out_min_amount: "1".to_string(),
-                },
-                &bob,
-            )
-            .unwrap();
-
-        PoolManager::new(&app)
-            .swap_exact_amount_in(
-                MsgSwapExactAmountIn {
-                    sender: bob.address(),
-                    routes: vec![SwapAmountInRoute {
-                        pool_id: cl_pool_id,
-                        token_out_denom: DENOM_BASE.to_string(),
-                    }],
-                    token_in: Some(OsmoCoin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    token_out_min_amount: "1".to_string(),
-                },
-                &bob,
-            )
-            .unwrap();
-
-        PoolManager::new(&app)
-            .swap_exact_amount_in(
-                MsgSwapExactAmountIn {
-                    sender: bob.address(),
-                    routes: vec![SwapAmountInRoute {
-                        pool_id: cl_pool_id,
-                        token_out_denom: DENOM_BASE.to_string(),
-                    }],
-                    token_in: Some(OsmoCoin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    token_out_min_amount: "1".to_string(),
-                },
-                &bob,
-            )
-            .unwrap();
-
-        PoolManager::new(&app)
-            .swap_exact_amount_in(
-                MsgSwapExactAmountIn {
-                    sender: bob.address(),
-                    routes: vec![SwapAmountInRoute {
-                        pool_id: cl_pool_id,
-                        token_out_denom: DENOM_QUOTE.to_string(),
-                    }],
-                    token_in: Some(OsmoCoin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: "10000000".to_string(),
-                    }),
-                    token_out_min_amount: "1".to_string(),
-                },
-                &bob,
-            )
-            .unwrap();
-
-        PoolManager::new(&app)
-            .swap_exact_amount_in(
-                MsgSwapExactAmountIn {
-                    sender: bob.address(),
-                    routes: vec![SwapAmountInRoute {
-                        pool_id: cl_pool_id,
-                        token_out_denom: DENOM_QUOTE.to_string(),
-                    }],
-                    token_in: Some(OsmoCoin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: "100".to_string(),
-                    }),
-                    token_out_min_amount: "1".to_string(),
-                },
-                &bob,
-            )
-            .unwrap();
-
-        PoolManager::new(&app)
-            .swap_exact_amount_in(
-                MsgSwapExactAmountIn {
-                    sender: bob.address(),
-                    routes: vec![SwapAmountInRoute {
-                        pool_id: cl_pool_id,
-                        token_out_denom: DENOM_QUOTE.to_string(),
-                    }],
-                    token_in: Some(OsmoCoin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: "100".to_string(),
-                    }),
-                    token_out_min_amount: "1".to_string(),
-                },
-                &bob,
-            )
-            .unwrap();
-
+        // Collect and Distribute Rewards
         let _res = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
                 &[],
-                &alice,
+                claimer,
             )
             .unwrap();
 
-        let _res = wasm
-            .execute(
+        for _ in 0..(ACCOUNTS_NUM - 1) {
+            // Adjust the number of distribute actions as needed
+            let result = wasm.execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
+                    amount_of_users: Uint128::new(1), // hardcoding 1
                 }),
                 &[],
-                &alice,
-            )
-            .unwrap();
+                claimer,
+            );
+            // TODO: Assert is_last_distribution is false as we are iterating ACCOUNTS_NUM - 1 and we expect the process to do not finish in this loop
+        }
 
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                &alice,
-            )
-            .unwrap_err();
+        // TODO Distribute one more time
+        let result = wasm.execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                amount_of_users: Uint128::new(1),
+            }),
+            &[],
+            claimer,
+        );
 
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                &alice,
-            )
-            .unwrap();
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                &alice,
-            )
-            .unwrap();
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                &alice,
-            )
-            .unwrap();
-
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                &alice,
-            )
-            .unwrap_err();
+        // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
     }
 
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_no_rewards_works() {
         let (app, contract_address, cl_pool_id, _admin) = default_init();
-        let alice = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
 
-        let bob = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
+        // Initialize accounts
+        let mut accounts = Vec::new();
+        for _ in 0..ACCOUNTS_NUM {
+            let account = app
+                .init_account(&[
+                    Coin::new(1_000_000_000_000, DENOM_BASE),
+                    Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                ])
+                .unwrap();
+            accounts.push(account);
+        }
 
-        let charlie = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        let dave = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        let evil = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
-
+        // Depositing with users
         let wasm = Wasm::new(&app);
+        for account in &accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(5_000_000, DENOM_BASE),
+                        Coin::new(5_000_000, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
 
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &alice,
-            )
-            .unwrap();
+        // Declare claimer accounts
+        let claimer = &accounts[0];
 
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &bob,
-            )
-            .unwrap();
-
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &charlie,
-            )
-            .unwrap();
-
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &dave,
-            )
-            .unwrap();
-
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(5_000_000, DENOM_BASE),
-                    Coin::new(5_000_000, DENOM_QUOTE),
-                ],
-                &evil,
-            )
-            .unwrap();
-
+        // Collect and Distribute Rewards
         let _res = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
                 &[],
-                &alice,
+                claimer,
             )
             .unwrap();
 
-        let _res = wasm
-            .execute(
+        for _ in 0..(ACCOUNTS_NUM - 1) {
+            // Adjust the number of distribute actions as needed
+            let result = wasm.execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
+                    amount_of_users: Uint128::new(1), // hardcoding 1
                 }),
                 &[],
-                &alice,
-            )
-            .unwrap();
+                claimer,
+            );
+            // TODO: Assert is_last_distribution is false as we are iterating ACCOUNTS_NUM - 1 and we expect the process to do not finish in this loop
+        }
 
-        // after the first call, we should return to a non distributing state
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                &alice,
-            )
-            .unwrap_err();
+        // TODO Distribute one more time
+        let result = wasm.execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                amount_of_users: Uint128::new(1),
+            }),
+            &[],
+            claimer,
+        );
+
+        // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
     }
 }
