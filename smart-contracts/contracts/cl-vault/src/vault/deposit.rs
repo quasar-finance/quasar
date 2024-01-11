@@ -129,6 +129,7 @@ pub fn handle_deposit_create_position_reply(
         .amount
         .parse::<u128>()?
         .into();
+    deps.api.debug(format!("{:?}", "i").as_str());
 
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refunded = (
@@ -139,11 +140,14 @@ pub fn handle_deposit_create_position_reply(
             create_deposit_position_resp.amount1.parse::<u128>()?,
         )),
     );
+    deps.api.debug(format!("{:?}", "ii").as_str());
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
+        deps.api.debug(format!("{:?}", "xx").as_str());
         existing_liquidity.to_uint_floor().try_into()?
     } else {
+        deps.api.debug(format!("{:?}", "yy").as_str());
         let liquidity_amount_of_unused_funds: Decimal256 =
             get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
         let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
@@ -157,6 +161,7 @@ pub fn handle_deposit_create_position_reply(
             .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
             .try_into()?
     };
+    deps.api.debug(format!("{:?}", "zz").as_str());
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -168,6 +173,7 @@ pub fn handle_deposit_create_position_reply(
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
+    deps.api.debug(format!("{:?}", "zzz").as_str());
 
     // save the shares in the user map
     SHARES.update(
@@ -181,12 +187,14 @@ pub fn handle_deposit_create_position_reply(
             }
         },
     )?;
+    deps.api.debug(format!("{:?}", "zzzz").as_str());
 
     // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
     // thus we calculate which tokens are not used
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     let bank_msg = refund_bank_msg(
+        &deps,
         current_deposit.clone(),
         &create_deposit_position_resp,
         pool_config.token0,
@@ -243,18 +251,22 @@ pub fn handle_deposit_create_position_reply(
 }
 
 fn refund_bank_msg(
+    deps: &DepsMut,
     current_deposit: CurrentDeposit,
     resp: &MsgCreatePositionResponse,
     denom0: String,
     denom1: String,
 ) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
+    deps.api.debug(format!("{:?}", "iii").as_str());
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let refund0 = current_deposit
         .token0_in
         .saturating_sub(Uint128::new(resp.amount0.parse::<u128>()?));
+    deps.api.debug(format!("{:?}", "iiii").as_str());
     let refund1 = current_deposit
         .token1_in
         .saturating_sub(Uint128::new(resp.amount1.parse::<u128>()?));
+    deps.api.debug(format!("{:?}", "iiiii").as_str());
 
     let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];
@@ -290,7 +302,7 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
@@ -420,6 +432,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_2_leftover() {
+        let mut deps = mock_dependencies();
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
@@ -439,7 +452,14 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            &deps.as_mut(),
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -452,6 +472,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token1_leftover() {
+        let mut deps = mock_dependencies();
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
@@ -471,7 +492,14 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            &deps.as_mut(),
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -484,6 +512,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_token0_leftover() {
+        let mut deps = mock_dependencies();
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
@@ -503,7 +532,14 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            &deps.as_mut(),
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
@@ -516,6 +552,7 @@ mod tests {
 
     #[test]
     fn refund_bank_msg_none_leftover() {
+        let mut deps = mock_dependencies();
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
@@ -535,7 +572,14 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(
+            &deps.as_mut(),
+            current_deposit.clone(),
+            &resp,
+            denom0,
+            denom1,
+        )
+        .unwrap();
         assert!(response.is_none());
     }
 
