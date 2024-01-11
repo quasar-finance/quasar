@@ -65,7 +65,7 @@ mod tests {
                         }],
                         token_in: Some(OsmoCoin {
                             denom: DENOM_QUOTE.to_string(),
-                            amount: "1000000".to_string(),
+                            amount: "1000000000".to_string(),
                         }),
                         token_out_min_amount: "1".to_string(),
                     },
