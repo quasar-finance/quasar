@@ -32,6 +32,27 @@ mod tests {
             ])
             .unwrap();
 
+        let charlie = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let dave = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let evil = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
         let wasm = Wasm::new(&app);
 
         let _ = wasm
@@ -46,6 +67,54 @@ mod tests {
             )
             .unwrap();
 
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &bob,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &charlie,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &dave,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &evil,
+            )
+            .unwrap();
+
         // do a bunch of swaps to get some swap fees
         PoolManager::new(&app)
             .swap_exact_amount_in(
@@ -57,7 +126,7 @@ mod tests {
                     }],
                     token_in: Some(OsmoCoin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100".to_string(),
+                        amount: "1000000".to_string(),
                     }),
                     token_out_min_amount: "1".to_string(),
                 },
@@ -75,7 +144,7 @@ mod tests {
                     }],
                     token_in: Some(OsmoCoin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100".to_string(),
+                        amount: "1000000".to_string(),
                     }),
                     token_out_min_amount: "1".to_string(),
                 },
@@ -93,7 +162,7 @@ mod tests {
                     }],
                     token_in: Some(OsmoCoin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100".to_string(),
+                        amount: "1000000".to_string(),
                     }),
                     token_out_min_amount: "1".to_string(),
                 },
@@ -111,7 +180,7 @@ mod tests {
                     }],
                     token_in: Some(OsmoCoin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "100".to_string(),
+                        amount: "10000000".to_string(),
                     }),
                     token_out_min_amount: "1".to_string(),
                 },
@@ -158,12 +227,208 @@ mod tests {
         let _res = wasm
             .execute(
                 contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
+                &[],
+                &alice,
+            )
+            .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: todo!(),
+                    amount_of_users: Uint128::new(1),
                 }),
                 &[],
                 &alice,
             )
             .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap_err();
+
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap();
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap();
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap_err();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_rewards_single_distribute_claim_no_rewards_works() {
+        let (app, contract_address, cl_pool_id, _admin) = default_init();
+        let alice = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let bob = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let charlie = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let dave = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let evil = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        let wasm = Wasm::new(&app);
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &alice,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &bob,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &charlie,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &dave,
+            )
+            .unwrap();
+
+        let _ = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(5_000_000, DENOM_BASE),
+                    Coin::new(5_000_000, DENOM_QUOTE),
+                ],
+                &evil,
+            )
+            .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
+                &[],
+                &alice,
+            )
+            .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap();
+
+        // after the first call, we should return to a non distributing state
+        let _res = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+                    amount_of_users: Uint128::new(1),
+                }),
+                &[],
+                &alice,
+            )
+            .unwrap_err();
     }
 }

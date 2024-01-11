@@ -5,6 +5,7 @@ use cosmwasm_std::{
 use cw_storage_plus::Bound;
 
 use crate::{
+    debug,
     error::ContractResult,
     reply::Replies,
     state::{
@@ -28,7 +29,7 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     if IS_DISTRIBUTING.load(deps.storage).unwrap() {
         return Err(ContractError::IsDistributing {});
     }
-    IS_DISTRIBUTING.save(deps.storage, &true);
+    IS_DISTRIBUTING.save(deps.storage, &true)?;
     CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
     let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
@@ -111,6 +112,7 @@ pub fn execute_distribute_rewards(
 
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
+        IS_DISTRIBUTING.save(deps.storage, &false)?;
         return Ok(Response::new().add_attribute("total_rewards_amount", "0"));
     }
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -135,16 +137,16 @@ pub fn execute_distribute_rewards(
         .into();
 
     // Get state item for last processed user index as start
-    let next_distribute_address = NEXT_DISTRIBUTE_ADDRESS
-        .may_load(deps.storage)?
-        .unwrap_or_default();
+    let next_distribute_address = NEXT_DISTRIBUTE_ADDRESS.load(deps.storage)?;
 
     // Prepare the range parameter for the SHARES.range query
-    let range_min =  next_distribute_address.map(Bound::exclusive);
+    let range_min = next_distribute_address.map(Bound::exclusive);
 
     // Create a new CoinList store distributed rewards for later subtraction
     let mut distributed_rewards = CoinList::new();
     let mut next_batch_address: Option<Addr> = None;
+
+    debug!(deps, "pre-iter", "i");
 
     // Iterate over the range, collect user rewards, and construct the vector
     let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
@@ -157,6 +159,8 @@ pub fn execute_distribute_rewards(
                 next_batch_address = Some(address);
                 return Ok(acc); // Return the accumulated rewards
             }
+
+            debug!(deps, "iterating", "ii");
             // If we've not yet reached the desired number, process as normal
             let user_reward = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
             distributed_rewards.merge(user_reward.coins())?; // Add the reward to the distributed sum
@@ -168,6 +172,8 @@ pub fn execute_distribute_rewards(
     user_rewards?
         .into_iter()
         .try_for_each(|(addr, reward)| -> ContractResult<()> {
+            debug!(deps, "iterating", "iii");
+
             USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
                 Ok(match old {
                     Some(old_rewards) => reward.add(old_rewards)?,
@@ -198,10 +204,7 @@ pub fn execute_distribute_rewards(
 
     Ok(Response::new()
         .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
-        .add_attribute(
-            "is_last_execution",
-            is_last_execution.to_string(),
-        ))
+        .add_attribute("is_last_execution", is_last_execution.to_string()))
 }
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
