@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use cosmwasm_std::{
     Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
 };
