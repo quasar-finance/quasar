@@ -1,6 +1,6 @@
 use cosmwasm_std::Attribute;
-use osmosis_test_tube::ExecuteResponse;
 use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
+use osmosis_test_tube::ExecuteResponse;
 
 pub fn get_event_attributes_by_ty_and_key(
     response: &ExecuteResponse<MsgExecuteContractResponse>,

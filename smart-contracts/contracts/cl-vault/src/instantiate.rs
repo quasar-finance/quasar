@@ -16,8 +16,9 @@ use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, PoolConfig, Position, ADMIN_ADDRESS, IS_DISTRIBUTING, METADATA, POOL_CONFIG,
-    POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM, HAS_FEE_BEEN_CALCULATED, DISTRIBUTED_REWARDS,
+    Metadata, PoolConfig, Position, ADMIN_ADDRESS, DISTRIBUTED_REWARDS, HAS_FEE_BEEN_CALCULATED,
+    IS_DISTRIBUTING, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS,
+    VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;

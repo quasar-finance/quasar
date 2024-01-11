@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::msg::ExecuteMsg;
-    use crate::test_tube::helpers::{get_event_value_amount_numeric, get_event_attributes_by_ty_and_key};
+    use crate::test_tube::helpers::{
+        get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
+    };
     use crate::test_tube::initialize::initialize::default_init;
     use cosmwasm_std::{Coin, Uint128};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -87,12 +89,20 @@ mod tests {
             .unwrap();
         println!("collect result {:?}", result);
         // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
-        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(&result, "total_collect_spread_rewards", vec!["tokens_out"]);
+        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
+            &result,
+            "total_collect_spread_rewards",
+            vec!["tokens_out"],
+        );
 
         // Assert that 'tokens_out' values for events are empty
         assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
-        let tokens_out_spread_rewards_u128: u128 = get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-        println!("tokens_out_spread_rewards_u128 {}", tokens_out_spread_rewards_u128);
+        let tokens_out_spread_rewards_u128: u128 =
+            get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
+        println!(
+            "tokens_out_spread_rewards_u128 {}",
+            tokens_out_spread_rewards_u128
+        );
         let expected_rewards_per_user = tokens_out_spread_rewards_u128 as u64 / ACCOUNTS_NUM;
         println!("expected_rewards_per_user {}", expected_rewards_per_user);
 
@@ -113,7 +123,8 @@ mod tests {
             println!("distribute result {:?}", result);
 
             // Extract the 'is_last_distribution' attribute from the 'wasm' event
-            let is_last_distribution= get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
+            let is_last_distribution =
+                get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
             assert_eq!(is_last_distribution[0].value, "false".to_string());
         }
 
@@ -152,9 +163,11 @@ mod tests {
                 claimer,
             )
             .unwrap();
+        println!("distribute result {:?}", result);
 
         // Extract the 'is_last_distribution' attribute from the 'wasm' event
-        let is_last_distribution= get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
+        let is_last_distribution =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
         assert_eq!(is_last_distribution[0].value, "true".to_string());
 
         // TODO: Assert USER_REWARDS increased accordingly to distribution amounts
@@ -164,7 +177,7 @@ mod tests {
             let result = wasm
                 .execute(
                     contract_address.as_str(),
-                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {  }) ,
+                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {}),
                     &[],
                     account,
                 )
@@ -173,7 +186,6 @@ mod tests {
             println!("claim result {:?}", result);
             // TODO: Assert Attribute { key: "amount", value: "2499uosmo" }
         }
-
     }
 
     #[test]
@@ -221,8 +233,16 @@ mod tests {
             )
             .unwrap();
         // Extract 'tokens_out' attribute value for 'total_collect_incentives' and 'total_collect_spread_rewards'
-        let tokens_out_incentives = get_event_attributes_by_ty_and_key(&result, "total_collect_incentives", vec!["tokens_out"]);
-        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(&result, "total_collect_spread_rewards", vec!["tokens_out"]);
+        let tokens_out_incentives = get_event_attributes_by_ty_and_key(
+            &result,
+            "total_collect_incentives",
+            vec!["tokens_out"],
+        );
+        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
+            &result,
+            "total_collect_spread_rewards",
+            vec!["tokens_out"],
+        );
 
         // Assert that 'tokens_out' values for both events are empty
         assert_eq!(tokens_out_incentives[0].value, "".to_string());
@@ -255,7 +275,8 @@ mod tests {
             .unwrap();
 
         // Extract the 'is_last_distribution' attribute from the 'wasm' event
-        let is_last_distribution= get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
+        let is_last_distribution =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
         assert_eq!(is_last_distribution[0].value, "true".to_string());
 
         // Distribute one more time, we expect to receive an Error here as IS_DISTRIBUTING is false

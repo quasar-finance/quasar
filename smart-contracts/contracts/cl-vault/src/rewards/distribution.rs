@@ -6,8 +6,9 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, DISTRIBUTION_SNAPSHOT, HAS_FEE_BEEN_CALCULATED, IS_DISTRIBUTING, POSITION,
-        SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM, DISTRIBUTED_REWARDS,
+        CURRENT_REWARDS, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT, HAS_FEE_BEEN_CALCULATED,
+        IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
+        VAULT_DENOM,
     },
     ContractError,
 };
@@ -149,7 +150,9 @@ pub fn execute_distribute_rewards(
         .parse::<u128>()?
         .into();
 
-    let mut distributed_rewards = DISTRIBUTED_REWARDS.load(deps.storage).unwrap_or(CoinList::new());
+    let mut distributed_rewards = DISTRIBUTED_REWARDS
+        .load(deps.storage)
+        .unwrap_or(CoinList::new());
 
     let mut users_processed: u128 = 0;
 
@@ -177,7 +180,8 @@ pub fn execute_distribute_rewards(
 
             // Accumulate the distributed rewards to be subtracted later
             distributed_rewards.merge(user_reward.coins())?;
-            deps.api.debug(format!("{:?}", distributed_rewards).as_str());
+            deps.api
+                .debug(format!("{:?}", distributed_rewards).as_str());
             users_processed += 1;
         } else {
             // No more addresses in the snapshot Deque to process
