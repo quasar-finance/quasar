@@ -45,7 +45,7 @@ var (
 	}
 )
 
-func TestWasmdLPDeposit(t *testing.T) {
+func TestWasmdTestSuite(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -55,14 +55,14 @@ func TestWasmdLPDeposit(t *testing.T) {
 	b.Link(testsuite.Quasar2OsmosisPath)
 	b.AutomatedRelay()
 
-	s := &WasmdLPDeposit{
+	s := &WasmdTestSuite{
 		E2EBuilder:   b,
 		E2ETestSuite: b.Build(),
 	}
 	suite.Run(t, s)
 }
 
-type WasmdLPDeposit struct {
+type WasmdTestSuite struct {
 	E2EBuilder *testsuite.E2ETestSuiteBuilder
 
 	*testsuite.E2ETestSuite
@@ -88,7 +88,7 @@ type WasmdLPDeposit struct {
 	BasicVaultContractAddress string
 }
 
-func (s *WasmdLPDeposit) SetupSuite() {
+func (s *WasmdTestSuite) SetupSuite() {
 	t := s.T()
 	ctx := context.Background()
 
@@ -171,7 +171,7 @@ func (s *WasmdLPDeposit) SetupSuite() {
 
 // TestLpStrategyContract_SuccessfulDeposit tests the lp strategy contract creating an ICA channel between the contract and osmosis
 // and depositing 1000uqsr tokens to the contract which it must ibc transfer to its ICA account at osmosis.
-func (s *WasmdLPDeposit) TestLpStrategyContract_SuccessfulDeposit() {
+func (s *WasmdTestSuite) TestLpStrategyContract_SuccessfulDeposit() {
 	t := s.T()
 	ctx := context.Background()
 

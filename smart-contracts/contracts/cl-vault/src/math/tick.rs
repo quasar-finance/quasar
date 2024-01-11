@@ -578,4 +578,14 @@ mod tests {
         price = Decimal256::from_str(MIN_SPOT_PRICE).unwrap() / Decimal256::from_str("10").unwrap();
         assert!(price_to_tick(deps.as_mut().storage, price).is_err());
     }
+
+    #[test]
+    fn test_tick_to_price_to_tick() {
+        let lower = 220000;
+        let upper = 210000;
+        let upper_price = tick_to_price(lower).unwrap();
+        let lower_price = tick_to_price(upper).unwrap();
+        println!("upper price: {}", upper_price);
+        println!("lower price: {}", lower_price);
+    }
 }
