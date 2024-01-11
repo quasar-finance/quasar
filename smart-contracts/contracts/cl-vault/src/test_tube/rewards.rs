@@ -129,28 +129,28 @@ mod tests {
         }
 
         // Initialize accounts
-        // let extra_accounts = app
-        //     .init_accounts(
-        //         &[
-        //             Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-        //             Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-        //         ],
-        //         ACCOUNTS_NUM,
-        //     )
-        //     .unwrap();
-        // for account in &extra_accounts {
-        //     let _ = wasm
-        //         .execute(
-        //             contract_address.as_str(),
-        //             &ExecuteMsg::ExactDeposit { recipient: None },
-        //             &[
-        //                 Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-        //                 Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-        //             ],
-        //             account,
-        //         )
-        //         .unwrap();
-        // }
+        let extra_accounts = app
+            .init_accounts(
+                &[
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+                ],
+                ACCOUNTS_NUM,
+            )
+            .unwrap();
+        for account in &extra_accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
 
         // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm

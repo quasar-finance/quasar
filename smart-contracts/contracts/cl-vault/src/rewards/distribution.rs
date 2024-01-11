@@ -8,7 +8,7 @@ use crate::{
     state::{
         CURRENT_REWARDS, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT, HAS_FEE_BEEN_CALCULATED,
         IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
-        VAULT_DENOM,
+        VAULT_DENOM, CURRENT_TOTAL_SUPPLY,
     },
     ContractError, debug,
 };
@@ -42,6 +42,19 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     for (address, shares) in shares? {
         DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address, shares))?;
     }
+
+        // Prepare the bank querier and get the total shares
+        let bq = BankQuerier::new(&deps.querier);
+        let vault_denom = VAULT_DENOM.load(deps.storage)?;
+        let total_supply: Uint128 = bq
+            .supply_of(vault_denom)?
+            .amount
+            .unwrap()
+            .amount
+            .parse::<u128>()?
+            .into();
+
+    CURRENT_TOTAL_SUPPLY.save(deps.storage, &total_supply)?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         get_collect_incentives_msg(deps.as_ref(), env)?,
@@ -134,17 +147,8 @@ pub fn execute_distribute_rewards(
             .add_attribute("total_rewards_amount", "0")
             .add_attribute("is_last_distribution", "true"));
     }
-
-    // Prepare the bank querier and get the total shares
-    let bq = BankQuerier::new(&deps.querier);
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_shares: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+    
+    let total_shares = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
 
     let mut distributed_rewards = DISTRIBUTED_REWARDS
         .load(deps.storage)
