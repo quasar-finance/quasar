@@ -13,11 +13,11 @@ USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar 
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
 RELAYER_ACC="$(cat ./keys/qsr.key)"
 
-ALICE_GENESIS_COINS=20000token,200000000stake,1000000000uqsr
-BOB_GENESIS_COINS=10000token,100000000stake,1000000000uqsr
-USER_1_GENESIS_COINS=10000000000stake,10000000000uqsr
-USER_2_GENESIS_COINS=10000000000stake,10000000000uqsr
-RELAYER_ACC_GENESIS_COINS=10000000uqsr,10000000000stake
+ALICE_GENESIS_COINS=20000token,200000000stake,1000000000000000uqsr
+BOB_GENESIS_COINS=10000token,100000000stake,1000000000000000uqsr
+USER_1_GENESIS_COINS=10000000000stake,1000000000000000uqsr
+USER_2_GENESIS_COINS=10000000000stake,1000000000000000uqsr
+RELAYER_ACC_GENESIS_COINS=1000000000000000uqsr,10000000000stake
 
 # Remove previous setup
 rm -rf $HOME_QSR

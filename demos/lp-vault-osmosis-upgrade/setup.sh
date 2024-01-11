@@ -46,39 +46,39 @@ RLY_PID_2=$!
 echo "ibc transferring uosmo"
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100000000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
 sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100000000002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100000000003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 100000000004usdc --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 100000000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 100000000002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 100000000003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 100000000004usdc --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
 sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf 100000000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
 sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf 100000000002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf 100000000003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf 100000000004usdc --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
 osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p 100000000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
 sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p 100000000002stake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p 100000000003fakestake --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
-sleep 6
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p 100000000004usdc --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
 
-sleep 6
+arr=()
+# shellcheck disable=SC2039
+for n in {1..20}; do
+  KEY_NAME="test"$n
+  RES=$(quasarnoded keys add $KEY_NAME --keyring-backend test --output json)
+  ADDR=$(echo $RES | jq -r '.address')
+  # shellcheck disable=SC2039
+  # shellcheck disable=SC2206
+  arr+=($ADDR)
+done
+
+echo "Creating 20 new accounts"
+# shellcheck disable=SC2039
+for n in {0..19}; do
+  # shellcheck disable=SC2039
+  echo "sending balance in qsr"
+  quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec ${arr[$n]} 10000000uqsr --from bob --keyring-backend test --gas 20000uqsr --chain-id quasar --gas auto -y
+  sleep 2
+  echo "sending balance in osmo"
+  osmosisd tx ibc-transfer transfer transfer channel-0 ${arr[$n]} 100000000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo --gas 2000000
+  sleep 6
+done
 
 quasarnoded query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+
+./contract_setup.sh
 
 # Check platform
 platform='unknown'

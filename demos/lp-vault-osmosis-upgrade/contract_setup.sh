@@ -10,6 +10,8 @@ INIT3='{"lock_period":6,"pool_id":2,"pool_denom":"gamm/pool/2","base_denom":"uos
 
 cd ../../smart-contracts
 
+#docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
+
 platform='unknown'
 unamestr=$(uname)
 if [ "$unamestr" = 'Linux' ]; then
@@ -88,7 +90,7 @@ sleep 6
 quasarnoded tx wasm execute $ADDR3 '{"set_depositor":{"depositor":"'$VAULT_ADDR'"}}' --from alice --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID -y
 sleep 6
 
-quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID -b block --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
 
 sleep 20
 rly transact flush
@@ -98,31 +100,50 @@ sleep 10
 
 quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf"}}' --output json
 
-#quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
-#sleep 6
-#quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from bob --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
-#sleep 6
-#quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
-#sleep 6
-#quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user2 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
-#sleep 6
-#quasarnoded tx wasm execute $VAULT_ADDR '{"clear_cache":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
-#
-#sleep 20
-#rly transact flush
-#sleep 10
-#quasarnoded tx wasm execute $VAULT_ADDR '{"clear_cache":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+sleep 6
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from bob --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+sleep 6
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from alice --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+sleep 6
+quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from user2 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+sleep 6
+
+for n in {1..20}; do
+  KEY_NAME="test"$n
+  quasarnoded tx wasm execute $VAULT_ADDR '{"bond":{}}' -y --from $KEY_NAME --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID --amount 1000000ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518
+  sleep 6
+done
+
+sleep 20
+rly transact flush
+sleep 10
+quasarnoded tx wasm execute $VAULT_ADDR '{"clear_cache":{}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
 
 VAULT_ADDR=quasar1unyuj8qnmygvzuex3dwmg9yzt9alhvyeat0uu0jedg2wj33efl5qtefy4k
 quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf"}}' --output json
-#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"}}' --output json
-#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
-#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p"}}' --output json
+quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"}}' --output json
+quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
+quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p"}}' --output json
+
+
 
 if [ $platform = 'macos' ]; then
     say "contracts deployment ready"
 fi
 
+
+#quasarnoded tx wasm execute $VAULT_ADDR '{"force_unbond":{"addresses":["quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf", "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"]}}' -y --from alice --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
+#sleep 20
+#
+#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf"}}' --output json
+#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"}}' --output json
+#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"}}' --output json
+#quasarnoded query wasm contract-state smart $VAULT_ADDR '{"balance":{"address":"quasar185fflsvwrz0cx46w6qada7mdy92m6kx4xruj7p"}}' --output json
+#
+#
+#sleep 20
+#quasarnoded tx wasm execute $VAULT_ADDR '{"force_claim":{"addresses":["quasar1zaavvzxez0elundtn32qnk9lkm8kmcszvnk6zf", "quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu"]}}' -y --from alice --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
 #quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"100000"}}' -y --from user1 --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
 #quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"400000"}}' -y --from bob --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID
 #quasarnoded tx wasm execute $VAULT_ADDR '{"unbond":{"amount":"400000"}}' -y --from alice --keyring-backend test --gas auto --fees 10000uqsr --chain-id $CHAIN_ID

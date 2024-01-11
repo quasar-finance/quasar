@@ -10,11 +10,11 @@ USER_1="guard cream sadness conduct invite crumble clock pudding hole grit liar 
 USER_2="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
 RELAYER_ACC="$(cat ./keys/osmo.key)"
 
-ALICE_GENESIS_COINS=20000000uosmo,2000000000stake,1000000000000fakestake
+ALICE_GENESIS_COINS=1000000000000000000000uosmo,2000000000stake,1000000000000fakestake
 BOB_GENESIS_COINS=10000000000000uosmo,10000000000000stake,10000000000000fakestake,100000000000000usdc
 USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
 USER_2_GENESIS_COINS=10000000000stake,10000000000uosmo
-RELAYER_ACC_GENESIS_COINS=10000000uosmo,10000000000stake
+RELAYER_ACC_GENESIS_COINS=1000000000000000000000uosmo,10000000000stake
 
 echo $HOME_OSMOSIS
 
