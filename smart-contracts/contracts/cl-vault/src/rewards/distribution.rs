@@ -7,7 +7,7 @@ use crate::{
     reply::Replies,
     state::{
         CURRENT_REWARDS, DISTRIBUTION_SNAPSHOT, HAS_FEE_BEEN_CALCULATED, IS_DISTRIBUTING, POSITION,
-        SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM, DISTRIBUTED_REWARDS,
     },
     ContractError,
 };
@@ -120,6 +120,7 @@ pub fn execute_distribute_rewards(
 
     // Get current rewards to distribute, if there are not clear the state and return
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
+    deps.api.debug(format!("{:?}", rewards).as_str());
     if rewards.is_empty() {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
         return Ok(Response::new()
@@ -130,7 +131,7 @@ pub fn execute_distribute_rewards(
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
 
     // Calculate the strategist fee and update the strategist rewards
-    let has_fee_been_calculated = HAS_FEE_BEEN_CALCULATED.load(deps.storage)?;
+    let has_fee_been_calculated = HAS_FEE_BEEN_CALCULATED.load(deps.storage).unwrap_or(false);
     if !has_fee_been_calculated {
         let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
         STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
@@ -148,8 +149,8 @@ pub fn execute_distribute_rewards(
         .parse::<u128>()?
         .into();
 
-    let total_rewards = CURRENT_REWARDS.load(deps.storage)?;
-    let mut distributed_rewards = CoinList::new();
+    let mut distributed_rewards = DISTRIBUTED_REWARDS.load(deps.storage).unwrap_or(CoinList::new());
+
     let mut users_processed: u128 = 0;
 
     while users_processed < amount_of_users.u128() {
@@ -157,7 +158,7 @@ pub fn execute_distribute_rewards(
         if let Some((user_address, share_amount)) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
             // Calculate the user's reward based on the share amount directly
             let reward_ratio = Decimal::from_ratio(share_amount, total_shares.u128());
-            let user_reward = total_rewards.mul_ratio(reward_ratio);
+            let user_reward = rewards.mul_ratio(reward_ratio);
             let user_reward_clone = user_reward.clone();
 
             // Merge the new reward with any existing rewards for the user
@@ -174,6 +175,7 @@ pub fn execute_distribute_rewards(
 
             // Accumulate the distributed rewards to be subtracted later
             distributed_rewards.merge(user_reward.coins())?;
+            deps.api.debug(format!("{:?}", distributed_rewards).as_str());
             users_processed += 1;
         } else {
             // No more addresses in the snapshot Deque to process
@@ -181,19 +183,24 @@ pub fn execute_distribute_rewards(
         }
     }
 
-    // Subtract all accumulated all distributed rewards from the current rewards
-    CURRENT_REWARDS.update(
-        deps.storage,
-        |mut old_rewards| -> ContractResult<CoinList> {
-            old_rewards.sub(&distributed_rewards)?;
-            Ok(old_rewards)
-        },
-    )?;
-
     // If the Deque is empty, we've finished distributing rewards so we clear the semaphore flag
     let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
     if is_last_distribution {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
+        HAS_FEE_BEEN_CALCULATED.save(deps.storage, &false)?;
+
+        // Subtract all accumulated all distributed rewards from the current rewards
+        CURRENT_REWARDS.update(
+            deps.storage,
+            |mut old_rewards| -> ContractResult<CoinList> {
+                old_rewards.sub(&distributed_rewards)?;
+                Ok(old_rewards)
+            },
+        )?;
+        // Clear distributed rewards state
+        DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
+    } else {
+        DISTRIBUTED_REWARDS.save(deps.storage, &distributed_rewards)?;
     }
 
     Ok(Response::new()

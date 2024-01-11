@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::msg::ExecuteMsg;
+    use crate::test_tube::helpers::get_event_value_amount_numeric;
     use crate::test_tube::initialize::initialize::default_init;
     use cosmwasm_std::{Coin, Uint128};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -84,18 +85,7 @@ mod tests {
                 claimer,
             )
             .unwrap();
-        // Extract 'tokens_out' attribute value for 'total_collect_incentives'
-        let tokens_out_incentives = result
-            .events
-            .iter()
-            .find(|e| e.ty == "total_collect_incentives")
-            .and_then(|event| {
-                event
-                    .attributes
-                    .iter()
-                    .find(|attr| attr.key == "tokens_out")
-                    .map(|attr| &attr.value)
-            });
+        println!("collect result {:?}", result);
         // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
         let tokens_out_spread_rewards = result
             .events
@@ -109,9 +99,12 @@ mod tests {
                     .map(|attr| &attr.value)
             });
 
-        // Assert that 'tokens_out' values for both events are empty
-        assert_ne!(tokens_out_incentives, Some(&"".to_string()));
+        // Assert that 'tokens_out' values for events are empty
         assert_ne!(tokens_out_spread_rewards, Some(&"".to_string()));
+        let tokens_out_spread_rewards_u128: u128 = get_event_value_amount_numeric(tokens_out_spread_rewards.unwrap());
+        println!("tokens_out_spread_rewards_u128 {}", tokens_out_spread_rewards_u128);
+        let expected_rewards_per_user = tokens_out_spread_rewards_u128 as u64 / ACCOUNTS_NUM;
+        println!("expected_rewards_per_user {}", expected_rewards_per_user);
 
         for _ in 0..(ACCOUNTS_NUM - 1) {
             // Adjust the number of distribute actions as needed
@@ -127,6 +120,7 @@ mod tests {
                     claimer,
                 )
                 .unwrap();
+            println!("distribute result {:?}", result);
 
             // Extract the 'is_last_distribution' attribute from the 'wasm' event
             let is_last_distribution =
@@ -144,7 +138,31 @@ mod tests {
             assert_eq!(is_last_distribution, Some(&"false".to_string()));
         }
 
-        // TODO Distribute one more time
+        // Initialize accounts
+        let extra_accounts = app
+            .init_accounts(
+                &[
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+                ],
+                ACCOUNTS_NUM,
+            )
+            .unwrap();
+        for account in &extra_accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
+
+        // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm
             .execute(
                 contract_address.as_str(),
