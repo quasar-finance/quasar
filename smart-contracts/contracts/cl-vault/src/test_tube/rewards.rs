@@ -12,6 +12,8 @@ mod tests {
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
     const ACCOUNTS_NUM: usize = 10;
+    const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000;
+    const DEPOSIT_AMOUNT: u128 = 5_000_000;
     const SWAPS_NUM: usize = 50;
 
     #[test]
@@ -24,8 +26,8 @@ mod tests {
         for _ in 0..ACCOUNTS_NUM {
             let account = app
                 .init_account(&[
-                    Coin::new(1_000_000_000_000, DENOM_BASE),
-                    Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
                 ])
                 .unwrap();
             accounts.push(account);
@@ -39,8 +41,8 @@ mod tests {
                     contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
-                        Coin::new(5_000_000, DENOM_BASE),
-                        Coin::new(5_000_000, DENOM_QUOTE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
                     ],
                     account,
                 )
@@ -120,8 +122,8 @@ mod tests {
         for _ in 0..ACCOUNTS_NUM {
             let account = app
                 .init_account(&[
-                    Coin::new(1_000_000_000_000, DENOM_BASE),
-                    Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
                 ])
                 .unwrap();
             accounts.push(account);
@@ -135,8 +137,8 @@ mod tests {
                     contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
-                        Coin::new(5_000_000, DENOM_BASE),
-                        Coin::new(5_000_000, DENOM_QUOTE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
                     ],
                     account,
                 )
