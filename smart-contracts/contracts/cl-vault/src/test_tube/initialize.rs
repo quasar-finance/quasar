@@ -45,7 +45,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
