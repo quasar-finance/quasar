@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use cosmwasm_std::{
     Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
 };
@@ -156,6 +158,8 @@ pub fn execute_distribute_rewards(
     while users_processed < amount_of_users.u128() {
         // Attempt to pop a (user_address, share_amount) tuple from the front of the snapshot Deque
         if let Some((user_address, share_amount)) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
+            deps.api.debug(format!("{:?}", user_address).as_str());
+            deps.api.debug(format!("{:?}", share_amount).as_str());
             // Calculate the user's reward based on the share amount directly
             let reward_ratio = Decimal::from_ratio(share_amount, total_shares.u128());
             let user_reward = rewards.mul_ratio(reward_ratio);
