@@ -322,6 +322,7 @@ pub fn get_liquidity_amount_for_unused_funds(
 ) -> Result<Decimal256, ContractError> {
     // first get the ratio of token0:token1 in the position.
     let p = get_position(deps.storage, &deps.querier)?;
+    deps.api.debug(format!("{:?}", "looooo").as_str());
     // if there is no position, then we can assume that there are 0 unused funds
     if p.position.is_none() {
         return Ok(Decimal256::zero());
@@ -337,12 +338,15 @@ pub fn get_liquidity_amount_for_unused_funds(
     } else {
         Decimal256::from_ratio(token0.amount, token1.amount)
     };
+    deps.api.debug(format!("{:?}", "ysuss").as_str());
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     // then figure out based on current unused balance, what the max initial deposit could be
     // (with the ratio, what is the max tokens we can deposit)
+    deps.api.debug(format!("{:?}", "lo").as_str());
     let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
+    deps.api.debug(format!("{:?}", "lol").as_str());
 
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let unused_t0: Uint256 = tokens
@@ -350,11 +354,13 @@ pub fn get_liquidity_amount_for_unused_funds(
         .amount
         .saturating_sub(additional_excluded_funds.0)
         .into();
+    deps.api.debug(format!("{:?}", "loll").as_str());
     let unused_t1: Uint256 = tokens
         .find_coin(token1.denom)
         .amount
         .saturating_sub(additional_excluded_funds.1)
         .into();
+    deps.api.debug(format!("{:?}", "lolll").as_str());
 
     let max_initial_deposit = get_max_utilization_for_ratio(unused_t0, unused_t1, ratio)?;
 
