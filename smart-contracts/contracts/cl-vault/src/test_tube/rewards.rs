@@ -118,16 +118,12 @@ mod tests {
         let (app, contract_address, _cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
-        let mut accounts = Vec::new();
-        for _ in 0..ACCOUNTS_NUM {
-            let account = app
-                .init_account(&[
+            let accounts = app
+                .init_accounts(&[
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ])
+                ], ACCOUNTS_NUM.try_into().unwrap())
                 .unwrap();
-            accounts.push(account);
-        }
 
         // Depositing with users
         let wasm = Wasm::new(&app);
@@ -158,8 +154,7 @@ mod tests {
             )
             .unwrap();
 
-        for _ in 0..(ACCOUNTS_NUM - 1) {
-            // Adjust the number of distribute actions as needed
+            // since there are no rewards, the first call to distribute rewards will flip IS_DISTRIBUTING to false
             let result = wasm.execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
@@ -167,9 +162,9 @@ mod tests {
                 }),
                 &[],
                 claimer,
-            );
-            // TODO: Assert is_last_distribution is false as we are iterating ACCOUNTS_NUM - 1 and we expect the process to do not finish in this loop
-        }
+            ).unwrap();
+            // TODO: Assert is_last_distribution is true
+        
 
         // TODO Distribute one more time
         let result = wasm.execute(
@@ -179,7 +174,7 @@ mod tests {
             }),
             &[],
             claimer,
-        );
+        ).unwrap_err();
 
         // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
 
