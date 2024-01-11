@@ -106,12 +106,14 @@ mod tests {
         );
 
         // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
+
+        // TODO: Assert users balances increased accordingly to distribution amounts
     }
 
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_no_rewards_works() {
-        let (app, contract_address, cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
         let mut accounts = Vec::new();
@@ -178,5 +180,7 @@ mod tests {
         );
 
         // TODO Assert is_last_distribution is true and state is cleared such as IS_DISTRIBUTING and USER_REWARDS
+
+        // TODO: Assert users balances has not increased, accordingly to 0 distribution
     }
 }
