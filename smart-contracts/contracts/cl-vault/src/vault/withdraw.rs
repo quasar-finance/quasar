@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    attr, coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
@@ -157,21 +157,18 @@ pub fn handle_withdraw_user_reply(
     let coin0 = coin(amount0.u128(), pool_config.token0);
     let coin1 = coin(amount1.u128(), pool_config.token1);
 
-    let withdraw_attrs = vec![
-        attr("token0_amount", coin0.amount),
-        attr("token1_amount", coin1.amount),
-    ];
-
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
         amount: sort_tokens(vec![coin0, coin1]),
     };
-    Ok(Response::new()
-        .add_message(msg)
-        .add_attribute("method", "withdraw_position_reply")
-        .add_attribute("action", "withdraw")
-        .add_attributes(withdraw_attrs))
+    Ok(Response::new().add_message(msg).add_event(
+        Event::new("withdraw_cl_position")
+            .add_attribute("method", "withdraw_position_reply")
+            .add_attribute("action", "withdraw")
+            .add_attribute("token0_amount", coin0.amount)
+            .add_attribute("token1_amount", coin1.amount),
+    ))
 }
 
 #[cfg(test)]
