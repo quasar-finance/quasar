@@ -34,9 +34,9 @@ impl CoinList {
     }
 
     /// merge any values already in Rewards and append any others
-    pub fn update_rewards(&mut self, rewards: &Vec<OsmoCoin>) -> ContractResult<()> {
+    pub fn update_rewards(&mut self, rewards: &[OsmoCoin]) -> ContractResult<()> {
         let parsed_rewards: ContractResult<Vec<Coin>> = rewards
-            .into_iter()
+            .iter()
             .map(|c| Ok(coin(c.amount.parse()?, c.denom.clone())))
             .collect();
 
