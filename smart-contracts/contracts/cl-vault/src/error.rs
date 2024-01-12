@@ -124,6 +124,9 @@ pub enum ContractError {
     #[error("Tick not found in tick cache, tick: {tick}")]
     TickNotFound { tick: i64 },
 
-    #[error("Mismatch in old and new pool tokens")]
-    PoolTokenMismatch {},
+    #[error("Vault is already distributing rewards")]
+    IsDistributing {},
+
+    #[error("Vault is not distributing rewards, claiming is needed first")]
+    IsNotDistributing {},
 }

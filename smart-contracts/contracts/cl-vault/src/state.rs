@@ -46,7 +46,7 @@ pub struct PoolConfig {
 
 impl PoolConfig {
     pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        vec![&self.token0, &self.token1].contains(&&token.into())
+        [&self.token0, &self.token1].contains(&&token.into())
     }
 }
 
@@ -83,6 +83,11 @@ pub struct CurrentDeposit {
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
+pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
+pub const DISTRIBUTION_SNAPSHOT: Deque<(Addr, Uint128)> = Deque::new("distribution_snapshot");
+pub const DISTRIBUTED_REWARDS: Item<CoinList> = Item::new("distributed_rewards");
+pub const CURRENT_TOTAL_SUPPLY: Item<Uint128> = Item::new("current_total_supply");
+
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
@@ -130,15 +135,6 @@ pub struct TickExpIndexData {
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
 pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
 pub const CURRENT_WITHDRAWER_DUST: Item<(Uint128, Uint128)> = Item::new("current_withdrawer_dust");
-
-#[cw_serde]
-pub struct MigrationData {
-    pub new_pool_id: u64,
-    pub lower_tick: i64,
-    pub upper_tick: i64,
-}
-
-pub const MIGRATION_DATA: Item<MigrationData> = Item::new("migration_data");
 
 #[cfg(test)]
 mod tests {
