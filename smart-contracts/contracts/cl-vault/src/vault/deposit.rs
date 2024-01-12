@@ -290,7 +290,7 @@ mod tests {
     use std::marker::PhantomData;
 
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
         to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
