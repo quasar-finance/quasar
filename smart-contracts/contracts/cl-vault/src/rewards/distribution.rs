@@ -3,6 +3,7 @@ use cosmwasm_std::{
 };
 
 use crate::{
+    debug,
     error::ContractResult,
     reply::Replies,
     state::{
