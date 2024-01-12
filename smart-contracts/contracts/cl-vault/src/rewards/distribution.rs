@@ -188,6 +188,7 @@ pub fn execute_distribute_rewards(
     let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
     if is_last_distribution {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
+        CURRENT_TOTAL_SUPPLY.remove(deps.storage);
 
         // Subtract all accumulated all distributed rewards from the current rewards
         CURRENT_REWARDS.update(
