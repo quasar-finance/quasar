@@ -87,7 +87,6 @@ mod tests {
                 claimer,
             )
             .unwrap();
-        println!("collect result {:?}", result);
         // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
         let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
             &result,
@@ -99,13 +98,8 @@ mod tests {
         assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
         let tokens_out_spread_rewards_u128: u128 =
             get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-        println!(
-            "tokens_out_spread_rewards_u128 {}",
-            tokens_out_spread_rewards_u128
-        );
         let expected_rewards_per_user =
             (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64 / ACCOUNTS_NUM;
-        println!("expected_rewards_per_user {}", expected_rewards_per_user);
 
         for _ in 0..(ACCOUNTS_NUM - 1) {
             // Adjust the number of distribute actions as needed
@@ -121,7 +115,6 @@ mod tests {
                     claimer,
                 )
                 .unwrap();
-            println!("distribute result {:?}", result);
 
             // Extract the 'is_last_distribution' attribute from the 'wasm' event
             let is_last_distribution =
@@ -179,7 +172,6 @@ mod tests {
                 claimer,
             )
             .unwrap();
-        println!("distribute result {:?}", result);
 
         // Extract the 'is_last_distribution' attribute from the 'wasm' event
         let is_last_distribution =
