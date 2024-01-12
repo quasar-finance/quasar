@@ -103,7 +103,8 @@ mod tests {
             "tokens_out_spread_rewards_u128 {}",
             tokens_out_spread_rewards_u128
         );
-        let expected_rewards_per_user = tokens_out_spread_rewards_u128 as u64 / ACCOUNTS_NUM;
+        let expected_rewards_per_user =
+            (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64 / ACCOUNTS_NUM;
         println!("expected_rewards_per_user {}", expected_rewards_per_user);
 
         for _ in 0..(ACCOUNTS_NUM - 1) {
@@ -128,7 +129,21 @@ mod tests {
             assert_eq!(is_last_distribution[0].value, "false".to_string());
         }
 
-        // Initialize accounts
+        // Deposit with old accounts to try exploiting amount of rewards in the current calculation
+        for account in &accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
+        // Initialize extra accounts
         let extra_accounts = app
             .init_accounts(
                 &[
@@ -138,6 +153,7 @@ mod tests {
                 ACCOUNTS_NUM,
             )
             .unwrap();
+        // Deposit with those new accounts in order to try exploit eligibility
         for account in &extra_accounts {
             let _ = wasm
                 .execute(
@@ -183,8 +199,10 @@ mod tests {
                 )
                 .unwrap();
 
-            println!("claim result {:?}", result);
-            // TODO: Assert Attribute { key: "amount", value: "2499uosmo" }
+            let coin_received =
+                get_event_attributes_by_ty_and_key(&result, "coin_received", vec!["amount"]);
+            let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value); // taking index 1 in this case as there are more then 1 coin_received tys
+            assert_eq!(coin_received_u128, expected_rewards_per_user as u128);
         }
     }
 

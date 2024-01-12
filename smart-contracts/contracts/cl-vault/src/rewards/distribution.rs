@@ -6,11 +6,11 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT, HAS_FEE_BEEN_CALCULATED,
+        CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT,
         IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
-        VAULT_DENOM, CURRENT_TOTAL_SUPPLY,
+        VAULT_DENOM,
     },
-    ContractError, debug,
+    ContractError,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -43,16 +43,16 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
         DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address, shares))?;
     }
 
-        // Prepare the bank querier and get the total shares
-        let bq = BankQuerier::new(&deps.querier);
-        let vault_denom = VAULT_DENOM.load(deps.storage)?;
-        let total_supply: Uint128 = bq
-            .supply_of(vault_denom)?
-            .amount
-            .unwrap()
-            .amount
-            .parse::<u128>()?
-            .into();
+    // Prepare the bank querier and get the total shares
+    let bq = BankQuerier::new(&deps.querier);
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    let total_supply: Uint128 = bq
+        .supply_of(vault_denom)?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
 
     CURRENT_TOTAL_SUPPLY.save(deps.storage, &total_supply)?;
 
@@ -116,7 +116,6 @@ pub fn handle_collect_spread_rewards_reply(
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(response.collected_spread_rewards)?;
 
-
     // calculate and update the strategist fee
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
@@ -140,14 +139,13 @@ pub fn execute_distribute_rewards(
 
     // Get current rewards to distribute, if there are not clear the state and return
     let rewards = CURRENT_REWARDS.load(deps.storage)?;
-    deps.api.debug(format!("{:?}", rewards).as_str());
     if rewards.is_empty() {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
         return Ok(Response::new()
             .add_attribute("total_rewards_amount", "0")
             .add_attribute("is_last_distribution", "true"));
     }
-    
+
     let total_shares = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
 
     let mut distributed_rewards = DISTRIBUTED_REWARDS
@@ -159,16 +157,10 @@ pub fn execute_distribute_rewards(
     while users_processed < amount_of_users.u128() {
         // Attempt to pop a (user_address, share_amount) tuple from the front of the snapshot Deque
         if let Some((user_address, share_amount)) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
-            debug!(deps, "user_address", user_address);
-            debug!(deps, "share_amount", share_amount);
-
             // Calculate the user's reward based on the share amount directly
             let reward_ratio = Decimal::from_ratio(share_amount, total_shares.u128());
             let user_reward = rewards.mul_ratio(reward_ratio);
             let user_reward_clone = user_reward.clone();
-
-            debug!(deps, "user_reward_clone", user_reward_clone);
-
 
             // Merge the new reward with any existing rewards for the user
             USER_REWARDS.update(
@@ -184,7 +176,6 @@ pub fn execute_distribute_rewards(
 
             // Accumulate the distributed rewards to be subtracted later
             distributed_rewards.merge(user_reward.coins())?;
-            debug!(deps, "distributed_rewards", distributed_rewards);
             users_processed += 1;
         } else {
             // No more addresses in the snapshot Deque to process
@@ -196,7 +187,6 @@ pub fn execute_distribute_rewards(
     let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
     if is_last_distribution {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
-        HAS_FEE_BEEN_CALCULATED.save(deps.storage, &false)?;
 
         // Subtract all accumulated all distributed rewards from the current rewards
         CURRENT_REWARDS.update(
@@ -285,10 +275,8 @@ mod tests {
                 .unwrap()
                 .into()
         );
-        // TODO: query is_distributing and assert it is true
 
-        // TODO: implement amount of users here iterating many times
-        let distribute_resp =
+        let _distribute_resp =
             execute_distribute_rewards(deps.as_mut(), env, Uint128::new(1u128)).unwrap();
 
         // TODO: query is_distributing and assert it is false, and user_rewards empty
