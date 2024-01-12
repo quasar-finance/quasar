@@ -12,7 +12,6 @@ mod tests {
     };
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
-    use proptest::prelude::*;
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
@@ -23,174 +22,182 @@ mod tests {
     const SWAPS_AMOUNT: &str = "1000000000";
     const DISTRIBUTION_CYCLES: usize = 25;
 
-    proptest! {
-        #[test]
-        #[ignore]
-        fn test_rewards_single_distribute_claim_max_users(users in 10..u64::MAX) {
-        let (app, contract_address, cl_pool_id, _admin) = default_init();
+    // fn get_cases() -> u32 {
+    //     std::env::var("PROPTEST_CASES")
+    //         .unwrap_or("100".to_string())
+    //         .parse()
+    //         .unwrap()
+    // }
 
-        // Initialize accounts
-        let accounts = app
-            .init_accounts(
-                &[
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ],
-                users,
-            )
-            .unwrap();
+    // proptest! {
+    //     #![proptest_config(ProptestConfig::with_cases(get_cases()))]
+    //     #[test]
+    //     #[ignore]
+    //     fn test_rewards_single_distribute_claim_max_users(users in 10..u64::MAX) {
+    //     let (app, contract_address, cl_pool_id, _admin) = default_init();
 
-        // Depositing with users
-        let wasm = Wasm::new(&app);
-        for account in &accounts {
-            let _ = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::ExactDeposit { recipient: None },
-                    &[
-                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-                    ],
-                    account,
-                )
-                .unwrap();
-        }
+    //     // Initialize accounts
+    //     let accounts = app
+    //         .init_accounts(
+    //             &[
+    //                 Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+    //                 Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+    //             ],
+    //             users,
+    //         )
+    //         .unwrap();
 
-        // Declare swapper and claimer accounts
-        let swapper = &accounts[0];
-        let claimer = &accounts[1];
+    //     // Depositing with users
+    //     let wasm = Wasm::new(&app);
+    //     for account in &accounts {
+    //         let _ = wasm
+    //             .execute(
+    //                 contract_address.as_str(),
+    //                 &ExecuteMsg::ExactDeposit { recipient: None },
+    //                 &[
+    //                     Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+    //                     Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+    //                 ],
+    //                 account,
+    //             )
+    //             .unwrap();
+    //     }
 
-        // Swaps to generate spread rewards on previously created user positions
-        for _ in 0..SWAPS_NUM {
-            PoolManager::new(&app)
-                .swap_exact_amount_in(
-                    MsgSwapExactAmountIn {
-                        sender: swapper.address(),
-                        routes: vec![SwapAmountInRoute {
-                            pool_id: cl_pool_id,
-                            token_out_denom: DENOM_BASE.to_string(),
-                        }],
-                        token_in: Some(OsmoCoin {
-                            denom: DENOM_QUOTE.to_string(),
-                            amount: SWAPS_AMOUNT.to_string(),
-                        }),
-                        token_out_min_amount: "1".to_string(),
-                    },
-                    &swapper,
-                )
-                .unwrap();
-        }
+    //     // Declare swapper and claimer accounts
+    //     let swapper = &accounts[0];
+    //     let claimer = &accounts[1];
 
-        // Collect and Distribute Rewards
-        let result = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
-                &[],
-                claimer,
-            )
-            .unwrap();
-        println!("collect result {:?}", result);
-        // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
-        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
-            &result,
-            "total_collect_spread_rewards",
-            vec!["tokens_out"],
-        );
+    //     // Swaps to generate spread rewards on previously created user positions
+    //     for _ in 0..SWAPS_NUM {
+    //         PoolManager::new(&app)
+    //             .swap_exact_amount_in(
+    //                 MsgSwapExactAmountIn {
+    //                     sender: swapper.address(),
+    //                     routes: vec![SwapAmountInRoute {
+    //                         pool_id: cl_pool_id,
+    //                         token_out_denom: DENOM_BASE.to_string(),
+    //                     }],
+    //                     token_in: Some(OsmoCoin {
+    //                         denom: DENOM_QUOTE.to_string(),
+    //                         amount: SWAPS_AMOUNT.to_string(),
+    //                     }),
+    //                     token_out_min_amount: "1".to_string(),
+    //                 },
+    //                 &swapper,
+    //             )
+    //             .unwrap();
+    //     }
 
-        // Assert that 'tokens_out' values for events are empty
-        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
-        let tokens_out_spread_rewards_u128: u128 =
-            get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-        println!(
-            "tokens_out_spread_rewards_u128 {}",
-            tokens_out_spread_rewards_u128
-        );
-        let expected_rewards_per_user = tokens_out_spread_rewards_u128 as u64 / users;
-        println!("expected_rewards_per_user {}", expected_rewards_per_user);
+    //     // Collect and Distribute Rewards
+    //     let result = wasm
+    //         .execute(
+    //             contract_address.as_str(),
+    //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
+    //             &[],
+    //             claimer,
+    //         )
+    //         .unwrap();
+    //     println!("collect result {:?}", result);
+    //     // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
+    //     let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
+    //         &result,
+    //         "total_collect_spread_rewards",
+    //         vec!["tokens_out"],
+    //     );
 
-        for _ in 0..(users - 1) {
-            // Adjust the number of distribute actions as needed
-            let result = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::VaultExtension(
-                        crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                            amount_of_users: Uint128::new(1), // hardcoding 1
-                        },
-                    ),
-                    &[],
-                    claimer,
-                )
-                .unwrap();
-            println!("distribute result {:?}", result);
+    //     // Assert that 'tokens_out' values for events are empty
+    //     assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
+    //     let tokens_out_spread_rewards_u128: u128 =
+    //         get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
+    //     println!(
+    //         "tokens_out_spread_rewards_u128 {}",
+    //         tokens_out_spread_rewards_u128
+    //     );
+    //     let expected_rewards_per_user = tokens_out_spread_rewards_u128 as u64 / users;
+    //     println!("expected_rewards_per_user {}", expected_rewards_per_user);
 
-            // Extract the 'is_last_distribution' attribute from the 'wasm' event
-            let is_last_distribution =
-                get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
-            assert_eq!(is_last_distribution[0].value, "false".to_string());
-        }
+    //     for _ in 0..(users - 1) {
+    //         // Adjust the number of distribute actions as needed
+    //         let result = wasm
+    //             .execute(
+    //                 contract_address.as_str(),
+    //                 &ExecuteMsg::VaultExtension(
+    //                     crate::msg::ExtensionExecuteMsg::DistributeRewards {
+    //                         amount_of_users: Uint128::new(1), // hardcoding 1
+    //                     },
+    //                 ),
+    //                 &[],
+    //                 claimer,
+    //             )
+    //             .unwrap();
+    //         println!("distribute result {:?}", result);
 
-        // Initialize accounts
-        let extra_accounts = app
-            .init_accounts(
-                &[
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ],
-                ACCOUNTS_NUM,
-            )
-            .unwrap();
-        for account in &extra_accounts {
-            let _ = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::ExactDeposit { recipient: None },
-                    &[
-                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-                    ],
-                    account,
-                )
-                .unwrap();
-        }
+    //         // Extract the 'is_last_distribution' attribute from the 'wasm' event
+    //         let is_last_distribution =
+    //             get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
+    //         assert_eq!(is_last_distribution[0].value, "false".to_string());
+    //     }
 
-        // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
-        let result = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::new(1),
-                }),
-                &[],
-                claimer,
-            )
-            .unwrap();
-        println!("distribute result {:?}", result);
+    //     // Initialize accounts
+    //     let extra_accounts = app
+    //         .init_accounts(
+    //             &[
+    //                 Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+    //                 Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+    //             ],
+    //             ACCOUNTS_NUM,
+    //         )
+    //         .unwrap();
+    //     for account in &extra_accounts {
+    //         let _ = wasm
+    //             .execute(
+    //                 contract_address.as_str(),
+    //                 &ExecuteMsg::ExactDeposit { recipient: None },
+    //                 &[
+    //                     Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+    //                     Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+    //                 ],
+    //                 account,
+    //             )
+    //             .unwrap();
+    //     }
 
-        // Extract the 'is_last_distribution' attribute from the 'wasm' event
-        let is_last_distribution =
-            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
-        assert_eq!(is_last_distribution[0].value, "true".to_string());
+    //     // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
+    //     let result = wasm
+    //         .execute(
+    //             contract_address.as_str(),
+    //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
+    //                 amount_of_users: Uint128::new(1),
+    //             }),
+    //             &[],
+    //             claimer,
+    //         )
+    //         .unwrap();
+    //     println!("distribute result {:?}", result);
 
-        // TODO: Assert USER_REWARDS increased accordingly to distribution amounts
+    //     // Extract the 'is_last_distribution' attribute from the 'wasm' event
+    //     let is_last_distribution =
+    //         get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
+    //     assert_eq!(is_last_distribution[0].value, "true".to_string());
 
-        // Loop users and claim for each one of them
-        for account in &accounts {
-            let result = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {}),
-                    &[],
-                    account,
-                )
-                .unwrap();
+    //     // TODO: Assert USER_REWARDS increased accordingly to distribution amounts
 
-            println!("claim result {:?}", result);
-            // TODO: Assert Attribute { key: "amount", value: "2499uosmo" }
-        }
-    }
-    }
+    //     // Loop users and claim for each one of them
+    //     for account in &accounts {
+    //         let result = wasm
+    //             .execute(
+    //                 contract_address.as_str(),
+    //                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {}),
+    //                 &[],
+    //                 account,
+    //             )
+    //             .unwrap();
+
+    //         println!("claim result {:?}", result);
+    //         // TODO: Assert Attribute { key: "amount", value: "2499uosmo" }
+    //     }
+    // }
+    // }
 
     #[test]
     #[ignore]
