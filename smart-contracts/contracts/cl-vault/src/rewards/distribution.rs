@@ -3,7 +3,6 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    debug,
     error::ContractResult,
     reply::Replies,
     state::{
@@ -25,7 +24,7 @@ use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap_or(false);
+    let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap();
     if is_distributing {
         return Err(ContractError::IsDistributing {});
     }
@@ -133,7 +132,7 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let is_distributing = IS_DISTRIBUTING.may_load(deps.storage)?.unwrap_or(false);
+    let is_distributing = IS_DISTRIBUTING.may_load(deps.storage)?.unwrap();
     if !is_distributing {
         return Err(ContractError::IsNotDistributing {});
     }
@@ -151,7 +150,7 @@ pub fn execute_distribute_rewards(
 
     let mut distributed_rewards = DISTRIBUTED_REWARDS
         .load(deps.storage)
-        .unwrap_or(CoinList::new());
+        .unwrap();
 
     let mut users_processed: u128 = 0;
 
