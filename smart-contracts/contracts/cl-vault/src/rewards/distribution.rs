@@ -148,9 +148,7 @@ pub fn execute_distribute_rewards(
 
     let total_shares = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
 
-    let mut distributed_rewards = DISTRIBUTED_REWARDS
-        .load(deps.storage)
-        .unwrap();
+    let mut distributed_rewards = DISTRIBUTED_REWARDS.load(deps.storage).unwrap();
 
     let mut users_processed: u128 = 0;
 
