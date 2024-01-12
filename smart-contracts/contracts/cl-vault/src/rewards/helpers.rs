@@ -34,10 +34,10 @@ impl CoinList {
     }
 
     /// merge any values already in Rewards and append any others
-    pub fn update_rewards(&mut self, rewards: Vec<OsmoCoin>) -> ContractResult<()> {
+    pub fn update_rewards(&mut self, rewards: &Vec<OsmoCoin>) -> ContractResult<()> {
         let parsed_rewards: ContractResult<Vec<Coin>> = rewards
             .into_iter()
-            .map(|c| Ok(coin(c.amount.parse()?, c.denom)))
+            .map(|c| Ok(coin(c.amount.parse()?, c.denom.clone())))
             .collect();
 
         // Append and merge to
@@ -139,7 +139,7 @@ mod tests {
     fn sub_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -202,7 +202,7 @@ mod tests {
     fn percentage_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -233,7 +233,7 @@ mod tests {
     fn sub_percentage_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -277,7 +277,7 @@ mod tests {
     fn add_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -315,7 +315,7 @@ mod tests {
     fn update_rewards_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -332,7 +332,7 @@ mod tests {
             .unwrap();
 
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),

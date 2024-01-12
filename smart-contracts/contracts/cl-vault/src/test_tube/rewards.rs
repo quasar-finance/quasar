@@ -348,8 +348,6 @@ mod tests {
             get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
         assert_eq!(is_last_distribution[0].value, "true".to_string());
 
-        // TODO: Assert USER_REWARDS increased accordingly to distribution amounts
-
         // Loop users and claim for each one of them
         for account in &accounts {
             let result = wasm
