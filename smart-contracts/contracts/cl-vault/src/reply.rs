@@ -31,6 +31,10 @@ pub enum Replies {
     WithdrawMerge,
     // create a new singular position in the merge, used internally for merging
     CreatePositionMerge,
+    //withdraw position before migration of pool
+    WithdrawToMigrate,
+    //create position after migration
+    CreateMigratedPosition,
     #[default]
     Unknown,
 }

@@ -123,4 +123,7 @@ pub enum ContractError {
 
     #[error("Tick not found in tick cache, tick: {tick}")]
     TickNotFound { tick: i64 },
+
+    #[error("Mismatch in old and new pool tokens")]
+    PoolTokenMismatch {},
 }
