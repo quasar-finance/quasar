@@ -59,8 +59,8 @@ pub fn handle_instantiate(
     )?;
 
     IS_DISTRIBUTING.save(deps.storage, &false)?;
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
     DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
+    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
 
     METADATA.save(
         deps.storage,
