@@ -139,7 +139,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    /// The ID of the new pool
-    pub pool_id: u64,
-}
+pub struct MigrateMsg {}
