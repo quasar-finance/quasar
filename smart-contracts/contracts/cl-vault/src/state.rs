@@ -46,7 +46,7 @@ pub struct PoolConfig {
 
 impl PoolConfig {
     pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        vec![&self.token0, &self.token1].contains(&&token.into())
+        [&self.token0, &self.token1].contains(&&token.into())
     }
 }
 
