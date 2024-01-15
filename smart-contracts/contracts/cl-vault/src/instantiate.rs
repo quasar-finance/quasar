@@ -64,7 +64,6 @@ pub fn handle_instantiate(
     DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
     STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
     CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
-    // TODO: NEXT_ADDRESS_COLLECT
 
     METADATA.save(
         deps.storage,

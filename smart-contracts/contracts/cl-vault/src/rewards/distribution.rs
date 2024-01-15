@@ -34,7 +34,6 @@ pub fn execute_collect_rewards(
         return Err(ContractError::IsDistributing {});
     }
 
-    // TODO: Here we check if we are already collecting, if yes means we do not allow distribution, but is it relevant here the check? probably just to avoid override same value
     let is_collecting = IS_COLLECTING.load(deps.storage).unwrap();
     if !is_collecting {
         // Is the first iteration
@@ -63,8 +62,6 @@ pub fn execute_collect_rewards(
             .add_attribute("current_total_supply", total_supply.to_string()));
     } else {
         // Is a subsequent iteration
-
-        // Implementing Pagination
         let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
         let start_bound = match next_address_collect {
             Some(addr) => Some(Bound::exclusive(addr)),
@@ -81,9 +78,6 @@ pub fn execute_collect_rewards(
         let mut users_processed: u128 = 0;
         let mut is_last_collection = true;
 
-        deps.api
-            .debug(format!("{:?}", "THIS IS AN EXEC".to_string()).as_str());
-
         let mut last_address_collected: Option<Addr> = None;
         for (address, shares) in shares_in_range {
             // If users processed is already as amount_of_users or higher
@@ -92,9 +86,6 @@ pub fn execute_collect_rewards(
                 is_last_collection = false;
                 break;
             }
-            deps.api
-                .debug(format!("{:?}", address.to_string()).as_str());
-            deps.api.debug(format!("{:?}", shares.to_string()).as_str());
 
             DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
             last_address_collected = Some(address);
@@ -259,7 +250,7 @@ pub fn execute_distribute_rewards(
     let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
     if is_last_distribution {
         IS_DISTRIBUTING.save(deps.storage, &false)?;
-        CURRENT_TOTAL_SUPPLY.remove(deps.storage);
+        CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
 
         // Subtract all accumulated all distributed rewards from the current rewards
         CURRENT_REWARDS.update(

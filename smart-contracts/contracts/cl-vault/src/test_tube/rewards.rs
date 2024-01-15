@@ -106,8 +106,6 @@ mod tests {
 
         // Collect init
         for i in 0..(ACCOUNTS_NUM - 1) {
-            println!("> collect iter {:?}", i);
-
             let result = wasm
                 .execute(
                     contract_address.as_str(),
@@ -232,7 +230,11 @@ mod tests {
             let coin_received =
                 get_event_attributes_by_ty_and_key(&result, "coin_received", vec!["amount"]);
             let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value); // taking index 1 in this case as there are more then 1 coin_received tys
-            assert_approx_eq!(coin_received_u128, expected_rewards_per_user as u128, "0.005");
+            assert_approx_eq!(
+                coin_received_u128,
+                expected_rewards_per_user as u128,
+                "0.005"
+            );
         }
     }
 
@@ -497,6 +499,7 @@ mod tests {
                 claimer,
             )
             .unwrap_err();
+
         // Assert that the response is an error
         assert!(
             matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Vault is already distributing"))
