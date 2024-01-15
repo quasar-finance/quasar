@@ -8,8 +8,8 @@ use crate::{
     reply::Replies,
     state::{
         CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT,
-        IS_COLLECTING, IS_DISTRIBUTING, NEXT_ADDRESS_COLLECT, POSITION, SHARES, STRATEGIST_REWARDS,
-        USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        IS_COLLECTING, IS_DISTRIBUTING, LAST_ADDRESS_COLLECTED, POSITION, SHARES,
+        STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -59,13 +59,13 @@ pub fn execute_collect_rewards(
             ))
             .add_attribute("is_collecting", &true.to_string()) // TODO: check
             .add_attribute("is_distributing", &false.to_string()) // TODO: check
-            .add_attribute("is_last_iteration", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
+            .add_attribute("is_last_collection", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
             .add_attribute("current_total_supply", total_supply.to_string()));
     } else {
         // Is a subsequent iteration
 
         // Implementing Pagination
-        let next_address_collect = NEXT_ADDRESS_COLLECT.may_load(deps.storage)?;
+        let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
         let start_bound = match next_address_collect {
             Some(addr) => Some(Bound::exclusive(addr)),
             None => None,
@@ -79,18 +79,25 @@ pub fn execute_collect_rewards(
 
         let mut current_total_supply = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
         let mut users_processed: u128 = 0;
-        let mut is_last_iteration = true;
+        let mut is_last_collection = true;
 
+        deps.api
+            .debug(format!("{:?}", "THIS IS AN EXEC".to_string()).as_str());
+
+        let mut last_address_collected: Option<Addr> = None;
         for (address, shares) in shares_in_range {
-            // TODO: double check this condition to spot the 1001 iteration (+1 respect expected)
-            if users_processed > amount_of_users.u128() {
+            // If users processed is already as amount_of_users or higher
+            if users_processed >= amount_of_users.u128() {
                 // Save the next address but do not process it
-                NEXT_ADDRESS_COLLECT.save(deps.storage, &address)?;
-                is_last_iteration = false;
+                is_last_collection = false;
                 break;
             }
+            deps.api
+                .debug(format!("{:?}", address.to_string()).as_str());
+            deps.api.debug(format!("{:?}", shares.to_string()).as_str());
 
             DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
+            last_address_collected = Some(address);
 
             users_processed += 1;
             current_total_supply += shares;
@@ -102,18 +109,20 @@ pub fn execute_collect_rewards(
         let mut is_distributing = false;
 
         // Save the address for the next batch processing, or clear if this is the last iteration
-        if is_last_iteration {
-            NEXT_ADDRESS_COLLECT.remove(deps.storage);
+        if is_last_collection {
+            LAST_ADDRESS_COLLECTED.remove(deps.storage);
             is_collecting = false;
             IS_COLLECTING.save(deps.storage, &is_collecting)?;
             is_distributing = true;
             IS_DISTRIBUTING.save(deps.storage, &is_distributing)?;
+        } else {
+            LAST_ADDRESS_COLLECTED.save(deps.storage, &last_address_collected.unwrap())?;
         }
 
         return Ok(Response::new()
             .add_attribute("is_collecting", is_collecting.to_string())
             .add_attribute("is_distributing", is_distributing.to_string())
-            .add_attribute("is_last_iteration", is_last_iteration.to_string()));
+            .add_attribute("is_last_collection", is_last_collection.to_string()));
     }
 }
 

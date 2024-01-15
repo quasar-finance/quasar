@@ -86,7 +86,7 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 /// Collection related states
 pub const IS_COLLECTING: Item<bool> = Item::new("is_collecting");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
-pub const NEXT_ADDRESS_COLLECT: Item<Addr> = Item::new("next_address_collect");
+pub const LAST_ADDRESS_COLLECTED: Item<Addr> = Item::new("last_address_collect");
 /// Distribution related states
 pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
 pub const DISTRIBUTED_REWARDS: Item<CoinList> = Item::new("distributed_rewards");

@@ -14,7 +14,7 @@ use crate::rewards::{
     handle_collect_spread_rewards_reply, CoinList,
 };
 
-use crate::state::{DISTRIBUTED_REWARDS, IS_COLLECTING, IS_DISTRIBUTING, NEXT_ADDRESS_COLLECT};
+use crate::state::{CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, IS_COLLECTING, IS_DISTRIBUTING};
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -29,7 +29,7 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -190,6 +190,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     IS_COLLECTING.save(deps.storage, &false)?;
     IS_DISTRIBUTING.save(deps.storage, &false)?;
     DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
+    CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
     // TODO: NEXT_ADDRESS_COLLECT
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
