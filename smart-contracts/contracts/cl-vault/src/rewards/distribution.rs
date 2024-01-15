@@ -1,14 +1,15 @@
 use cosmwasm_std::{
-    Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
+    Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
 };
+use cw_storage_plus::Bound;
 
 use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
         CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT,
-        IS_DISTRIBUTING, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
-        VAULT_DENOM,
+        IS_COLLECTING, IS_DISTRIBUTING, NEXT_ADDRESS_COLLECT, POSITION, SHARES, STRATEGIST_REWARDS,
+        USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -23,45 +24,98 @@ use osmosis_std::types::{
 use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+pub fn execute_collect_rewards(
+    deps: DepsMut,
+    env: Env,
+    amount_of_users: Uint128,
+) -> Result<Response, ContractError> {
     let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap();
     if is_distributing {
         return Err(ContractError::IsDistributing {});
     }
 
-    IS_DISTRIBUTING.save(deps.storage, &true)?;
-    CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
+    // TODO: Here we check if we are already collecting, if yes means we do not allow distribution, but is it relevant here the check? probably just to avoid override same value
+    let is_collecting = IS_COLLECTING.load(deps.storage).unwrap();
+    if !is_collecting {
+        // Is the first iteration
+        IS_COLLECTING.save(deps.storage, &true)?;
+        CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
-    // Collect all shares
-    let shares: Result<Vec<(Addr, Uint128)>, ContractError> = SHARES
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|res| res.map_err(ContractError::Std))
-        .collect();
+        // Prepare the bank querier and get the total shares
+        let bq = BankQuerier::new(&deps.querier);
+        let vault_denom = VAULT_DENOM.load(deps.storage)?;
+        let total_supply: Uint128 = bq
+            .supply_of(vault_denom)?
+            .amount
+            .unwrap()
+            .amount
+            .parse::<u128>()?
+            .into();
 
-    // Push back each item into the Deque
-    for (address, shares) in shares? {
-        DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address, shares))?;
+        CURRENT_TOTAL_SUPPLY.save(deps.storage, &total_supply)?;
+        deps.api
+            .debug(format!("{:?}", "after current_total_supply:".to_string()).as_str());
+
+        return Ok(Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                get_collect_incentives_msg(deps.as_ref(), env)?,
+                Replies::CollectIncentives as u64,
+            ))
+            .add_attribute("is_collecting", &true.to_string()) // TODO: check
+            .add_attribute("is_distributing", &false.to_string()) // TODO: check
+            .add_attribute("is_last_iteration", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
+            .add_attribute("current_total_supply", total_supply.to_string()));
+    } else {
+        // Is a subsequent iteration
+
+        // Implementing Pagination
+        let next_address_collect = NEXT_ADDRESS_COLLECT.may_load(deps.storage)?;
+        let start_bound = match next_address_collect {
+            Some(addr) => Some(Bound::exclusive(addr)),
+            None => None,
+        };
+
+        // Collect shares in batches
+        let mut users_processed: u128 = 0;
+        let mut is_collecting = true;
+        let mut is_distributing = false;
+        let mut is_last_iteration = true;
+
+        for item in SHARES.range(deps.storage, start_bound, None, Order::Ascending) {
+            let (address, shares) = item.map_err(ContractError::Std)?;
+
+            // TODO: double check this condition to spot the 1001 iteration (+1 respect expected)
+            if users_processed > amount_of_users.u128() {
+                // Save the next address but do not process it
+                NEXT_ADDRESS_COLLECT.save(deps.storage, &address)?;
+                is_last_iteration = false;
+                break;
+            }
+
+            DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
+
+            users_processed += 1;
+        }
+
+        deps.api
+            .debug(format!("after shares range: {:?}", users_processed).as_str());
+
+        // Save the address for the next batch processing, or clear if this is the last iteration
+        if is_last_iteration {
+            NEXT_ADDRESS_COLLECT.remove(deps.storage);
+            is_collecting = false;
+            IS_COLLECTING.save(deps.storage, &is_collecting)?;
+            is_distributing = true;
+            IS_DISTRIBUTING.save(deps.storage, &is_distributing)?;
+        }
+        deps.api
+            .debug(format!("{:?}", "after push_back:".to_string()).as_str());
+
+        return Ok(Response::new()
+            .add_attribute("is_collecting", is_collecting.to_string())
+            .add_attribute("is_distributing", is_distributing.to_string())
+            .add_attribute("is_last_iteration", is_last_iteration.to_string()));
     }
-
-    // Prepare the bank querier and get the total shares
-    let bq = BankQuerier::new(&deps.querier);
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_supply: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
-
-    CURRENT_TOTAL_SUPPLY.save(deps.storage, &total_supply)?;
-
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(
-            get_collect_incentives_msg(deps.as_ref(), env)?,
-            Replies::CollectIncentives as u64,
-        ))
-        .add_attribute("current_total_supply", total_supply.to_string()))
 }
 
 pub fn handle_collect_incentives_reply(
@@ -80,6 +134,8 @@ pub fn handle_collect_incentives_reply(
             collected_incentives: vec![],
             forfeited_incentives: vec![],
         }));
+    deps.api
+        .debug(format!("{:?}", "after data:".to_string()).as_str());
 
     let response: MsgCollectIncentivesResponse = data?;
     CURRENT_REWARDS.update(
@@ -89,6 +145,8 @@ pub fn handle_collect_incentives_reply(
             Ok(rewards)
         },
     )?;
+    deps.api
+        .debug(format!("{:?}", "after current_rewards:".to_string()).as_str());
 
     // collect the spread rewards
     Ok(Response::new()
@@ -121,13 +179,19 @@ pub fn handle_collect_spread_rewards_reply(
     let response: MsgCollectSpreadRewardsResponse = data?;
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(&response.collected_spread_rewards)?;
+    deps.api
+        .debug(format!("{:?}", "after rewards:".to_string()).as_str());
 
     // calculate and update the strategist fee
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+    deps.api
+        .debug(format!("{:?}", "after strategist:".to_string()).as_str());
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
+    deps.api
+        .debug(format!("{:?}", "after current_rewards:".to_string()).as_str());
 
     // TODO add a nice response
     Ok(Response::new().add_attribute(
@@ -141,9 +205,10 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
+    let is_collecting = IS_COLLECTING.may_load(deps.storage)?.unwrap();
     let is_distributing = IS_DISTRIBUTING.may_load(deps.storage)?.unwrap();
-    if !is_distributing {
-        return Err(ContractError::IsNotDistributing {});
+    if is_collecting || !is_distributing {
+        return Err(ContractError::IsNotDistributing {}); // TODO: Update error, create a generic one like RewardsOperationStatus
     }
 
     // Get current rewards to distribute, if there are not clear the state and return
