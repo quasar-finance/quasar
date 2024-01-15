@@ -14,7 +14,7 @@ use crate::rewards::{
     handle_collect_spread_rewards_reply, CoinList,
 };
 
-use crate::state::{DISTRIBUTED_REWARDS, IS_DISTRIBUTING};
+use crate::state::{DISTRIBUTED_REWARDS, IS_COLLECTING, IS_DISTRIBUTING, NEXT_ADDRESS_COLLECT};
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -187,6 +187,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    IS_COLLECTING.save(deps.storage, &false)?;
     IS_DISTRIBUTING.save(deps.storage, &false)?;
     DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
 

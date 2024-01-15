@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
+    Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
 };
 use cw_storage_plus::Bound;
 
@@ -52,10 +52,6 @@ pub fn execute_collect_rewards(
             .parse::<u128>()?
             .into();
 
-        CURRENT_TOTAL_SUPPLY.save(deps.storage, &total_supply)?;
-        deps.api
-            .debug(format!("{:?}", "after current_total_supply:".to_string()).as_str());
-
         return Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
                 get_collect_incentives_msg(deps.as_ref(), env)?,
@@ -75,15 +71,17 @@ pub fn execute_collect_rewards(
             None => None,
         };
 
-        // Collect shares in batches
+        // TODO: Optimize this borrowing workaround
+        let mut shares_in_range: Vec<(Addr, Uint128)> = vec![];
+        for item in SHARES.range(deps.storage, start_bound, None, Order::Ascending) {
+            shares_in_range.push(item?.clone());
+        }
+
+        let mut current_total_supply = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
         let mut users_processed: u128 = 0;
-        let mut is_collecting = true;
-        let mut is_distributing = false;
         let mut is_last_iteration = true;
 
-        for item in SHARES.range(deps.storage, start_bound, None, Order::Ascending) {
-            let (address, shares) = item.map_err(ContractError::Std)?;
-
+        for (address, shares) in shares_in_range {
             // TODO: double check this condition to spot the 1001 iteration (+1 respect expected)
             if users_processed > amount_of_users.u128() {
                 // Save the next address but do not process it
@@ -95,10 +93,13 @@ pub fn execute_collect_rewards(
             DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
 
             users_processed += 1;
+            current_total_supply += shares;
         }
 
-        deps.api
-            .debug(format!("after shares range: {:?}", users_processed).as_str());
+        CURRENT_TOTAL_SUPPLY.save(deps.storage, &current_total_supply)?;
+
+        let mut is_collecting = true;
+        let mut is_distributing = false;
 
         // Save the address for the next batch processing, or clear if this is the last iteration
         if is_last_iteration {
@@ -108,8 +109,6 @@ pub fn execute_collect_rewards(
             is_distributing = true;
             IS_DISTRIBUTING.save(deps.storage, &is_distributing)?;
         }
-        deps.api
-            .debug(format!("{:?}", "after push_back:".to_string()).as_str());
 
         return Ok(Response::new()
             .add_attribute("is_collecting", is_collecting.to_string())
@@ -134,8 +133,6 @@ pub fn handle_collect_incentives_reply(
             collected_incentives: vec![],
             forfeited_incentives: vec![],
         }));
-    deps.api
-        .debug(format!("{:?}", "after data:".to_string()).as_str());
 
     let response: MsgCollectIncentivesResponse = data?;
     CURRENT_REWARDS.update(
@@ -146,7 +143,7 @@ pub fn handle_collect_incentives_reply(
         },
     )?;
     deps.api
-        .debug(format!("{:?}", "after current_rewards:".to_string()).as_str());
+        .debug(format!("{:?}", "after current_rewards0:".to_string()).as_str());
 
     // collect the spread rewards
     Ok(Response::new()
@@ -179,19 +176,15 @@ pub fn handle_collect_spread_rewards_reply(
     let response: MsgCollectSpreadRewardsResponse = data?;
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards(&response.collected_spread_rewards)?;
-    deps.api
-        .debug(format!("{:?}", "after rewards:".to_string()).as_str());
 
     // calculate and update the strategist fee
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
-    deps.api
-        .debug(format!("{:?}", "after strategist:".to_string()).as_str());
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
     deps.api
-        .debug(format!("{:?}", "after current_rewards:".to_string()).as_str());
+        .debug(format!("{:?}", "after current_rewards1:".to_string()).as_str());
 
     // TODO add a nice response
     Ok(Response::new().add_attribute(

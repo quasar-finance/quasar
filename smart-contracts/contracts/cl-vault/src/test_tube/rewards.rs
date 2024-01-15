@@ -79,13 +79,14 @@ mod tests {
                 .unwrap();
         }
 
+        let mut expected_rewards_per_user: u64 = 0;
         // Collect init
         for i in 0..(ACCOUNTS_NUM - 1) {
             let result = wasm
                 .execute(
                     contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
-                        amount_of_users: Uint128::new(1),
+                        amount_of_users: Uint128::one(),
                     }),
                     &[],
                     claimer,
@@ -103,7 +104,7 @@ mod tests {
                 assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
                 let tokens_out_spread_rewards_u128: u128 =
                     get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-                let expected_rewards_per_user =
+                expected_rewards_per_user =
                     (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64 / ACCOUNTS_NUM;
             } else {
                 // Extract the 'is_last_collection' attribute from the 'wasm' event
@@ -283,6 +284,7 @@ mod tests {
                     .unwrap();
             }
 
+            let mut expected_rewards_per_user: u64 = 0;
             // Collect init
             for i in 0..(ACCOUNTS_NUM - 1) {
                 let result = wasm
@@ -309,7 +311,7 @@ mod tests {
                     assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
                     let tokens_out_spread_rewards_u128: u128 =
                         get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-                    let expected_rewards_per_user =
+                    expected_rewards_per_user =
                         (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64 / ACCOUNTS_NUM;
                 } else {
                     // Extract the 'is_last_collection' attribute from the 'wasm' event
