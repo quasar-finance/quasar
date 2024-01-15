@@ -10,13 +10,13 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::must_pay_one_or_two;
+use crate::helpers::{must_pay_one_or_two, get_asset0_value, get_spot_price};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM, INSTANTIATE_CREATE_POSITION_FUNDS,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -78,6 +78,8 @@ pub fn handle_instantiate(
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
     let (initial0, initial1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
+    INSTANTIATE_CREATE_POSITION_FUNDS.save(deps.storage, &(initial0.amount, initial1.amount));
+
     let create_position_msg = create_position(
         deps,
         &env,
@@ -123,14 +125,17 @@ pub fn handle_instantiate_create_position_reply(
             ratio: Uint128::one(),
         },
     )?;
-
-    let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
+    // todo the mint amount here should be calculated from the asset_0 value
     // todo do we want to mint the initial mint to the instantiater, or just not care?
+    let (initial0, initial1) = INSTANTIATE_CREATE_POSITION_FUNDS.load(deps.storage)?;
+    let spot_price = get_spot_price(deps.storage, &deps.querier)?;
+    let asset0_value = get_asset0_value(initial0, initial1, spot_price)?;
+
     let mint_msg = MsgMint {
         sender: env.contract.address.to_string(),
-        amount: Some(coin(liquidity_amount.to_uint_floor().u128(), vault_denom).into()),
+        amount: Some(coin(asset0_value.u128(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
 

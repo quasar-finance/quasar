@@ -17,7 +17,6 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    debug,
     error::ContractResult,
     helpers::{
         allocate_funds_per_position, get_asset0_value, get_one_or_two, get_spot_price,
@@ -31,7 +30,7 @@ use crate::{
         POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM,
     },
     vault::concentrated_liquidity::{create_position, get_positions},
-    ContractError,
+    ContractError, query::query_total_assets,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -237,8 +236,6 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         deposits.push(deposit);
     }
 
-    debug!(deps, "deposits:", deposits);
-
     let deposited_assets = deposits.iter().try_fold(
         (Uint128::zero(), Uint128::zero()),
         |(acc0, acc1), deposit| -> Result<(Uint128, Uint128), ContractError> {
@@ -258,10 +255,6 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
 
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
 
-    debug!(deps, "deposited_assets_in_pos", deposited_assets);
-
-    let user_value = get_asset0_value(deposited_assets.0 - refunded.0, deposited_assets.1 - refunded.1, spot_price.into())?;
-
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
@@ -272,49 +265,19 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         .parse::<u128>()?
         .into();
 
-    let positions = get_positions(deps.storage, &deps.querier)?;
-
-    // TODO add unused assets to vault assets here
-    let pool = POOL_CONFIG.load(deps.storage)?;
-    let unused_funds = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let (unused0, unused1) = get_one_or_two(&unused_funds.coins(), (pool.token0, pool.token1))?;
-
-    let vault_assets = positions.iter().try_fold(
-        (Uint128::zero(), Uint128::zero()),
-        |(acc0, acc1), (_, fp)| -> Result<(Uint128, Uint128), ContractError> {
-            Ok((
-                acc0.checked_add(fp.asset0.as_ref().unwrap().amount.parse()?)?,
-                acc1.checked_add(fp.asset1.as_ref().unwrap().amount.parse()?)?,
-            ))
-        },
-    )?;
-
-    debug!(deps, "spot price", spot_price);
-    debug!(deps, "vault assets:", vault_assets);
-    debug!(deps, "unused in the vault:", (unused0.clone(), unused1.clone()));
-
     let leftover = CURRENT_DEPOSIT_LEFTOVER.load(deps.storage)?;
 
-    // our total liquidity might not be in the correct ratio, it should be converted to the correct ratio
-    // TODO does this include the users liquidity, it looks like it, but it probably should not
-    // let total_vault_value = get_asset0_value(
-    //     vault_assets.0.checked_add(unused0.amount)?,
-    //     vault_assets.1.checked_add(unused1.amount)?,
-    //     spot_price.into(),
-    // )?.checked_sub(get_asset0_value(deposited_assets.0, deposited_assets.1, spot_price.into())?)?.checked_sub(get_asset0_value(leftover.0, leftover.1, spot_price.into())?)?;
+    let vault_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let user_value = get_asset0_value(deposited_assets.0 - refunded.0 + leftover.0, deposited_assets.1 - refunded.1 + leftover.1, spot_price.into())?;
 
+
+    // the total_vault_value is the amount of vault assets minus the amount 
     let total_vault_value = get_asset0_value(
-        vault_assets.0.checked_add(unused0.amount)?,
-        vault_assets.1.checked_add(unused1.amount)?,
+        vault_assets.token0.amount - (deposited_assets.0 + leftover.0),
+        vault_assets.token1.amount - (deposited_assets.1 + leftover.1),
         spot_price.into(),
-    )?.checked_sub(get_asset0_value(deposited_assets.0, deposited_assets.1, spot_price.into())?)?;
-
-    debug!(deps, "positions", positions);
-    debug!(deps, "unused_funds", vec![unused0, unused1]);
-
-    debug!(deps, "total_vault_value", total_vault_value);
-    debug!(deps, "user_value", user_value);
-
+    )?;
+    
     // this depends on the vault being instantiated with some amount of value
     let user_shares: Uint128 = total_vault_shares
         .checked_mul(user_value.into())?
@@ -352,8 +315,6 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         },
     )?;
 
-    let leftover = CURRENT_DEPOSIT_LEFTOVER.load(deps.storage)?;
-
     let refund_bank_msg = refund_bank_msg(
         deps.branch(),
         refunded.0 + leftover.0,
@@ -361,7 +322,6 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
         current_depositor,
     )?;
 
-    debug!(deps, "refund msg", refund_bank_msg);
     let mut response = Response::new()
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
