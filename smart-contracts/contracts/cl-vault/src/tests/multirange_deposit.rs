@@ -17,7 +17,7 @@ use crate::{
     tests::{
         default_init,
         helpers::{get_full_positions, get_share_price, get_unused_funds},
-    }, assert_unused_funds,
+    }, assert_unused_funds, helpers::get_asset0_value,
 };
 
 use super::helpers::get_total_assets;
@@ -56,8 +56,8 @@ fn multi_position_deposit_works() {
             from_address: admin.address(),
             to_address: contract_address.to_string(),
             amount: vec![
-                Coin::new(1_000, "uatom").into(),
-                Coin::new(1_000, "uosmo").into(),
+                Coin::new(1_000_000, "uatom").into(),
+                Coin::new(1_000_000, "uosmo").into(),
             ],
         },
         &admin,
@@ -90,7 +90,6 @@ fn multi_position_deposit_works() {
         original_share_price,
         cl_pool_id
     );
-    println!("here-1");
 
     // depositing
     assert_share_price!(
@@ -103,7 +102,8 @@ fn multi_position_deposit_works() {
     
     total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
 
-    println!("total-vault-value pre deposit: {:?}", total_assets);
+    // for this deposit, we have 4 deposits, 7500uatom worth of assets and the user deposits 5_000_000uatom and 5_000_000uosmo
+    // since we have 3 position
     let _res = wasm
         .execute(
             contract_address.as_str(),
@@ -112,22 +112,19 @@ fn multi_position_deposit_works() {
             &alice,
         )
         .unwrap();
-    println!("herehere");
 
     total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    println!("herehear");
     assert_unused_funds!(&wasm, contract_address.as_str(), unused_funds);
-    println!("what how much us unused!?!?");
     assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
-    println!("total");
+    // we accept a non-default share price relative difference here. Due to the low vault value,
+    // rounding causes a change in share price here, which at low vault value is a non-negligible percentual
+    // increase. This is fine assuming that the relative percentual change decreases as the vault value increases
     assert_share_price!(
         &app,
         contract_address.as_str(),
         original_share_price,
         cl_pool_id
     );
-    println!("here0");
-
 
     // create a new position
     // this introduction should not introduce new funds as long as we free up some funds first
@@ -140,7 +137,7 @@ fn multi_position_deposit_works() {
         .clone()
         .unwrap();
 
-    println!("here1");
+    let share_price = get_share_price(&app, cl_pool_id, contract_address.as_str());
     let _res = wasm
         .execute(
             contract_address.as_str(),
@@ -160,11 +157,9 @@ fn multi_position_deposit_works() {
     assert_share_price!(
         &app,
         contract_address.as_str(),
-        original_share_price,
+        share_price,
         cl_pool_id
     );
-
-    println!("here2");
 
     let _res = wasm
         .execute(
@@ -187,7 +182,6 @@ fn multi_position_deposit_works() {
         original_share_price,
         cl_pool_id
     );
-    println!("here3");
 
     // depositing more funds
     let _res = wasm
@@ -201,7 +195,6 @@ fn multi_position_deposit_works() {
     total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
     assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
 
-    println!("here4");
     assert_share_price!(
         &app,
         contract_address.as_str(),

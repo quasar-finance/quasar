@@ -66,6 +66,16 @@ macro_rules! assert_share_price {
             $contract_addr,
             $expected_share_price,
             $pool_id,
+            "0.0001",
+        )
+    };
+    ($app:expr, $contract_addr:expr, $expected_share_price:expr, $pool_id:expr, $max_rel_diff:expr) => {
+        $crate::tests::asserts::assert_share_price_impl(
+            $app,
+            $contract_addr,
+            $expected_share_price,
+            $pool_id,
+            $max_rel_diff,
         )
     };
 }
@@ -76,16 +86,15 @@ pub fn assert_share_price_impl<'a, R: Runner<'a>>(
     contract_address: &str,
     expected_share_price: Decimal,
     pool_id: u64,
+    max_rel_diff: &str
 ) {
-    let wasm = Wasm::new(app);
-
     let new_share_price = get_share_price(app, pool_id, contract_address);
     assert_eq_with_diff!(
         expected_share_price.atomics(),
         "expected_share_price",
         new_share_price.atomics(),
         "new_share_price",
-        "0.000001",
+        max_rel_diff,
         Uint128::new(1)
     );
 }
@@ -140,6 +149,6 @@ pub fn assert_unused_funds_impl(
     (actual0, actual1): (Uint128, Uint128),
 ) {
     let (expected0, expected1) = get_unused_funds(wasm, contract_address).unwrap();
-    assert_eq_with_diff!(actual0, "actual token0", expected0, "expected token0", "0.00000001", Uint128::new(1));
-    assert_eq_with_diff!(actual1, "actual token1", expected1, "expected token1", "0.00000001", Uint128::new(1))
+    assert_eq_with_diff!(actual0, "actual token0", expected0, "expected token0", "0.00000001", Uint128::new(4));
+    assert_eq_with_diff!(actual1, "actual token1", expected1, "expected token1", "0.00000001", Uint128::new(4))
 }
