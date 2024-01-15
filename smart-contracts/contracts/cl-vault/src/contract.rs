@@ -190,6 +190,6 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     IS_COLLECTING.save(deps.storage, &false)?;
     IS_DISTRIBUTING.save(deps.storage, &false)?;
     DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
-
+    // TODO: NEXT_ADDRESS_COLLECT
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
