@@ -29,87 +29,88 @@ pub fn execute_collect_rewards(
     env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let rewards_status = REWARDS_STATUS.load(deps.storage).unwrap();
-    if rewards_status == RewardsStatus::Distributing {
-        return Err(ContractError::IsDistributing {});
-    }
+    let rewards_status = REWARDS_STATUS.load(deps.storage)?;
 
-    if rewards_status == RewardsStatus::Ready {
-        // Is the first iteration
-        REWARDS_STATUS.save(deps.storage, &RewardsStatus::Collecting)?;
-        CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
+    match rewards_status {
+        RewardsStatus::Distributing => Err(ContractError::IsDistributing {}),
+        RewardsStatus::Ready => {
+            // Is the first iteration
+            REWARDS_STATUS.save(deps.storage, &RewardsStatus::Collecting)?;
+            CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
-        // Prepare the bank querier and get the total shares
-        let bq = BankQuerier::new(&deps.querier);
-        let vault_denom = VAULT_DENOM.load(deps.storage)?;
-        let total_supply: Uint128 = bq
-            .supply_of(vault_denom)?
-            .amount
-            .unwrap()
-            .amount
-            .parse::<u128>()?
-            .into();
+            // Prepare the bank querier and get the total shares
+            let bq = BankQuerier::new(&deps.querier);
+            let vault_denom = VAULT_DENOM.load(deps.storage)?;
+            let total_supply: Uint128 = bq
+                .supply_of(vault_denom)?
+                .amount
+                .unwrap()
+                .amount
+                .parse::<u128>()?
+                .into();
 
-        Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(
-                get_collect_incentives_msg(deps.as_ref(), env)?,
-                Replies::CollectIncentives as u64,
-            ))
-            .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Collecting))
-            .add_attribute("is_last_collection", false.to_string()) // at least 2 tx are needed so we can hardcode to false
-            .add_attribute("current_total_supply", total_supply.to_string()))
-    } else {
-        // Get current rewards to distribute, if there are not clear the state and return
-        let rewards = CURRENT_REWARDS.load(deps.storage)?;
-        if rewards.is_empty() {
-            REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-            return Ok(Response::new()
-                .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
-                .add_attribute("total_rewards_amount", "0")
-                .add_attribute("is_last_collection", "true"));
+            Ok(Response::new()
+                .add_submessage(SubMsg::reply_on_success(
+                    get_collect_incentives_msg(deps.as_ref(), env)?,
+                    Replies::CollectIncentives as u64,
+                ))
+                .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Collecting))
+                .add_attribute("is_last_collection", false.to_string()) // at least 2 tx are needed so we can hardcode to false
+                .add_attribute("current_total_supply", total_supply.to_string()))
         }
-
-        // Is a subsequent iteration
-        let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
-        let start_bound = next_address_collect.map(Bound::exclusive);
-
-        let shares_in_range: Vec<(Addr, Uint128)> = SHARES
-            .range(deps.storage, start_bound, None, Order::Ascending)
-            .take_while(|item| item.is_ok()) // Take only Ok items
-            .map(|item| item.unwrap()) // Unwrap the Ok items, knowing that there are no Err items
-            .collect();
-
-        let mut current_total_supply = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
-        let mut is_last_collection = true;
-        let mut last_address_collected: Option<Addr> = None;
-
-        for (index, (address, shares)) in shares_in_range.into_iter().enumerate() {
-            if index as u128 >= amount_of_users.u128() {
-                // Save the next address but do not process it
-                is_last_collection = false;
-                break;
+        RewardsStatus::Collecting => {
+            // Get current rewards to distribute, if there are not clear the state and return
+            let rewards = CURRENT_REWARDS.load(deps.storage)?;
+            if rewards.is_empty() {
+                REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
+                return Ok(Response::new()
+                    .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
+                    .add_attribute("total_rewards_amount", "0")
+                    .add_attribute("is_last_collection", "true"));
             }
 
-            DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
-            last_address_collected = Some(address);
-            current_total_supply += shares;
+            // Is a subsequent iteration
+            let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
+            let start_bound = next_address_collect.map(Bound::exclusive);
+
+            let shares_in_range: Vec<(Addr, Uint128)> = SHARES
+                .range(deps.storage, start_bound, None, Order::Ascending)
+                .take_while(|item| item.is_ok()) // Take only Ok items
+                .map(|item| item.unwrap()) // Unwrap the Ok items, knowing that there are no Err items
+                .collect();
+
+            let mut current_total_supply = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
+            let mut is_last_collection = true;
+            let mut last_address_collected: Option<Addr> = None;
+
+            for (index, (address, shares)) in shares_in_range.into_iter().enumerate() {
+                if index as u128 >= amount_of_users.u128() {
+                    // Save the next address but do not process it
+                    is_last_collection = false;
+                    break;
+                }
+
+                DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
+                last_address_collected = Some(address);
+                current_total_supply += shares;
+            }
+
+            CURRENT_TOTAL_SUPPLY.save(deps.storage, &current_total_supply)?;
+            let mut new_rewards_status = RewardsStatus::Collecting;
+
+            // Save the address for the next batch processing, or clear if this is the last iteration
+            if is_last_collection {
+                LAST_ADDRESS_COLLECTED.remove(deps.storage);
+                new_rewards_status = RewardsStatus::Distributing;
+                REWARDS_STATUS.save(deps.storage, &new_rewards_status)?;
+            } else {
+                LAST_ADDRESS_COLLECTED.save(deps.storage, &last_address_collected.unwrap())?;
+            }
+
+            Ok(Response::new()
+                .add_attribute("rewards_status", format!("{:?}", new_rewards_status))
+                .add_attribute("is_last_collection", is_last_collection.to_string()))
         }
-
-        CURRENT_TOTAL_SUPPLY.save(deps.storage, &current_total_supply)?;
-        let mut new_rewards_status = RewardsStatus::Collecting;
-
-        // Save the address for the next batch processing, or clear if this is the last iteration
-        if is_last_collection {
-            LAST_ADDRESS_COLLECTED.remove(deps.storage);
-            new_rewards_status = RewardsStatus::Distributing;
-            REWARDS_STATUS.save(deps.storage, &new_rewards_status)?;
-        } else {
-            LAST_ADDRESS_COLLECTED.save(deps.storage, &last_address_collected.unwrap())?;
-        }
-
-        Ok(Response::new()
-            .add_attribute("rewards_status", format!("{:?}", new_rewards_status))
-            .add_attribute("is_last_collection", is_last_collection.to_string()))
     }
 }
 
@@ -189,7 +190,7 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let rewards_status = REWARDS_STATUS.load(deps.storage).unwrap();
+    let mut rewards_status = REWARDS_STATUS.load(deps.storage).unwrap();
     if rewards_status != RewardsStatus::Distributing {
         return Err(ContractError::IsNotDistributing {});
     }
@@ -229,11 +230,10 @@ pub fn execute_distribute_rewards(
     }
 
     // If the Deque is empty, we've finished distributing rewards so we clear the semaphore flag
-    let mut new_rewards_status = RewardsStatus::Distributing;
     let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
     if is_last_distribution {
-        new_rewards_status = RewardsStatus::Ready;
-        REWARDS_STATUS.save(deps.storage, &new_rewards_status)?;
+        rewards_status = RewardsStatus::Ready;
+        REWARDS_STATUS.save(deps.storage, &rewards_status)?;
         CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
 
         // Subtract all accumulated all distributed rewards from the current rewards
@@ -251,7 +251,7 @@ pub fn execute_distribute_rewards(
     }
 
     Ok(Response::new()
-        .add_attribute("rewards_status", format!("{:?}", new_rewards_status))
+        .add_attribute("rewards_status", format!("{:?}", rewards_status))
         .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
         .add_attribute("is_last_distribution", is_last_distribution.to_string()))
 }
