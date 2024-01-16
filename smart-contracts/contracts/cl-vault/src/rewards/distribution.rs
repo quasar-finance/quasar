@@ -62,7 +62,7 @@ pub fn execute_collect_rewards(
             .add_attribute("is_last_collection", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
             .add_attribute("current_total_supply", total_supply.to_string()));
     } else {
-        // Check if current rewards are empty, if it is skip and purge the status
+        // Get current rewards to distribute, if there are not clear the state and return
         let rewards = CURRENT_REWARDS.load(deps.storage)?;
         if rewards.is_empty() {
             REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
@@ -204,16 +204,7 @@ pub fn execute_distribute_rewards(
         return Err(ContractError::IsNotDistributing {});
     }
 
-    // Get current rewards to distribute, if there are not clear the state and return
     let rewards = CURRENT_REWARDS.load(deps.storage)?;
-    // if rewards.is_empty() {
-    //     REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-    //     return Ok(Response::new()
-    //         .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
-    //         .add_attribute("total_rewards_amount", "0")
-    //         .add_attribute("is_last_distribution", "true"));
-    // }
-
     let total_shares = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
     let mut distributed_rewards = DISTRIBUTED_REWARDS.load(deps.storage).unwrap();
     let mut users_processed: u128 = 0;

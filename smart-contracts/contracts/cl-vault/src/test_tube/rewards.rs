@@ -141,10 +141,13 @@ mod tests {
             .unwrap();
 
         // Extract the 'is_last_collection' attribute from the 'wasm' event
-        let is_last_collection =
-            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_collection",  "rewards_status"]);
-            assert_eq!(is_last_collection[0].value, "Distributing".to_string());
-            assert_eq!(is_last_collection[1].value, "true".to_string());
+        let is_last_collection = get_event_attributes_by_ty_and_key(
+            &result,
+            "wasm",
+            vec!["is_last_collection", "rewards_status"],
+        );
+        assert_eq!(is_last_collection[0].value, "Distributing".to_string());
+        assert_eq!(is_last_collection[1].value, "true".to_string());
 
         for _ in 0..(ACCOUNTS_NUM - 1) {
             // Adjust the number of distribute actions as needed
@@ -162,10 +165,13 @@ mod tests {
                 .unwrap();
 
             // Extract the 'is_last_distribution' attribute from the 'wasm' event
-            let is_last_distribution =
-                get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution", "rewards_status"]);
-                assert_eq!(is_last_distribution[0].value, "Distributing".to_string());
-                assert_eq!(is_last_distribution[1].value, "false".to_string());
+            let is_last_distribution = get_event_attributes_by_ty_and_key(
+                &result,
+                "wasm",
+                vec!["is_last_distribution", "rewards_status"],
+            );
+            assert_eq!(is_last_distribution[0].value, "Distributing".to_string());
+            assert_eq!(is_last_distribution[1].value, "false".to_string());
         }
 
         // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
@@ -181,8 +187,11 @@ mod tests {
             .unwrap();
 
         // Extract the 'is_last_distribution' attribute from the 'wasm' event
-        let is_last_distribution =
-            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution", "rewards_status"]);
+        let is_last_distribution = get_event_attributes_by_ty_and_key(
+            &result,
+            "wasm",
+            vec!["is_last_distribution", "rewards_status"],
+        );
         assert_eq!(is_last_distribution[0].value, "Ready".to_string());
         assert_eq!(is_last_distribution[1].value, "true".to_string());
 
