@@ -21,7 +21,7 @@ pub enum ExtensionExecuteMsg {
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
     /// Collect any rewards from Osmosis to the Vault
-    CollectRewards {},
+    CollectRewards { amount_of_users: Uint128 },
     /// Distribute any rewards over all users
     DistributeRewards { amount_of_users: Uint128 },
     /// Claim rewards belonging to a single user

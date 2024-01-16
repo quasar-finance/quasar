@@ -16,8 +16,9 @@ use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, PoolConfig, Position, ADMIN_ADDRESS, DISTRIBUTED_REWARDS, IS_DISTRIBUTING, METADATA,
-    POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+    Metadata, PoolConfig, Position, RewardsStatus, ADMIN_ADDRESS, CURRENT_TOTAL_SUPPLY,
+    DISTRIBUTED_REWARDS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN, REWARDS_STATUS,
+    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -58,9 +59,10 @@ pub fn handle_instantiate(
         },
     )?;
 
-    IS_DISTRIBUTING.save(deps.storage, &false)?;
+    REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
     DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
     STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
+    CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
 
     METADATA.save(
         deps.storage,
