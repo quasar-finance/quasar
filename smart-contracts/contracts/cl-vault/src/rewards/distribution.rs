@@ -8,8 +8,8 @@ use crate::{
     reply::Replies,
     state::{
         RewardsStatus, CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS,
-        DISTRIBUTION_SNAPSHOT, LAST_ADDRESS_COLLECTED, POSITION, REWARDS_STATUS,
-        SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        DISTRIBUTION_SNAPSHOT, LAST_ADDRESS_COLLECTED, POSITION, REWARDS_STATUS, SHARES,
+        STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -62,6 +62,16 @@ pub fn execute_collect_rewards(
             .add_attribute("is_last_collection", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
             .add_attribute("current_total_supply", total_supply.to_string()));
     } else {
+        // Check if current rewards are empty, if it is skip and purge the status
+        let rewards = CURRENT_REWARDS.load(deps.storage)?;
+        if rewards.is_empty() {
+            REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
+            return Ok(Response::new()
+                .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
+                .add_attribute("total_rewards_amount", "0")
+                .add_attribute("is_last_collection", "true"));
+        }
+
         // Is a subsequent iteration
         let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
         let start_bound = match next_address_collect {
@@ -178,7 +188,6 @@ pub fn handle_collect_spread_rewards_reply(
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
-    // TODO add a nice response
     Ok(Response::new().add_attribute(
         "collected_spread_rewards",
         format!("{:?}", response.collected_spread_rewards),
@@ -197,13 +206,13 @@ pub fn execute_distribute_rewards(
 
     // Get current rewards to distribute, if there are not clear the state and return
     let rewards = CURRENT_REWARDS.load(deps.storage)?;
-    if rewards.is_empty() {
-        REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-        return Ok(Response::new()
-            .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
-            .add_attribute("total_rewards_amount", "0")
-            .add_attribute("is_last_distribution", "true"));
-    }
+    // if rewards.is_empty() {
+    //     REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
+    //     return Ok(Response::new()
+    //         .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
+    //         .add_attribute("total_rewards_amount", "0")
+    //         .add_attribute("is_last_distribution", "true"));
+    // }
 
     let total_shares = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
     let mut distributed_rewards = DISTRIBUTED_REWARDS.load(deps.storage).unwrap();

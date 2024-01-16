@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use std::ops::Mul;
+
     use crate::msg::ExecuteMsg;
     use crate::test_tube::helpers::{
         get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
@@ -117,9 +119,13 @@ mod tests {
                 )
                 .unwrap();
             // Extract the 'is_last_collection' attribute from the 'wasm' event
-            let is_last_collection =
-                get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_collection"]);
-            assert_eq!(is_last_collection[0].value, "false".to_string());
+            let is_last_collection = get_event_attributes_by_ty_and_key(
+                &result,
+                "wasm",
+                vec!["is_last_collection", "rewards_status"],
+            );
+            assert_eq!(is_last_collection[0].value, "Collecting".to_string());
+            assert_eq!(is_last_collection[1].value, "false".to_string());
         }
 
         // Collect one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
@@ -136,8 +142,9 @@ mod tests {
 
         // Extract the 'is_last_collection' attribute from the 'wasm' event
         let is_last_collection =
-            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_collection"]);
-        assert_eq!(is_last_collection[0].value, "true".to_string());
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_collection",  "rewards_status"]);
+            assert_eq!(is_last_collection[0].value, "Distributing".to_string());
+            assert_eq!(is_last_collection[1].value, "true".to_string());
 
         for _ in 0..(ACCOUNTS_NUM - 1) {
             // Adjust the number of distribute actions as needed
@@ -156,8 +163,9 @@ mod tests {
 
             // Extract the 'is_last_distribution' attribute from the 'wasm' event
             let is_last_distribution =
-                get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
-            assert_eq!(is_last_distribution[0].value, "false".to_string());
+                get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution", "rewards_status"]);
+                assert_eq!(is_last_distribution[0].value, "Distributing".to_string());
+                assert_eq!(is_last_distribution[1].value, "false".to_string());
         }
 
         // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
@@ -174,8 +182,9 @@ mod tests {
 
         // Extract the 'is_last_distribution' attribute from the 'wasm' event
         let is_last_distribution =
-            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
-        assert_eq!(is_last_distribution[0].value, "true".to_string());
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution", "rewards_status"]);
+        assert_eq!(is_last_distribution[0].value, "Ready".to_string());
+        assert_eq!(is_last_distribution[1].value, "true".to_string());
 
         // Loop users and claim for each one of them
         for account in &accounts {
@@ -420,8 +429,6 @@ mod tests {
         // Declare claimer accounts
         let claimer = &accounts[0];
 
-        // TODO: adapt this with a loop
-
         // Collect and Distribute Rewards (there should be anything)
         let result = wasm
             .execute(
@@ -449,7 +456,7 @@ mod tests {
         assert_eq!(tokens_out_incentives[0].value, "".to_string());
         assert_eq!(tokens_out_spread_rewards[0].value, "".to_string());
 
-        // Try to collect one more time, this should be failing
+        // Try to collect one more time, this should be closing the process and set to Ready as there are not rewards
         let result = wasm
             .execute(
                 contract_address.as_str(),
@@ -459,12 +466,15 @@ mod tests {
                 &[],
                 claimer,
             )
-            .unwrap_err();
+            .unwrap();
 
-        // Assert that the response is an error
-        assert!(
-            matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Vault is already distributing"))
-        );
+        let rewards_status =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["rewards_status"]);
+        assert_eq!(rewards_status[0].value, "Ready".to_string());
+        // Extract the 'is_last_collection' attribute from the 'wasm' event
+        let is_last_collection =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_collection"]);
+        assert_eq!(is_last_collection[0].value, "true".to_string());
 
         // Distribute just one time, as there are no rewards we expect this to clear the state even if 1 user < 10 users
         let result = wasm
@@ -476,24 +486,8 @@ mod tests {
                 &[],
                 claimer,
             )
-            .unwrap();
-
-        // Extract the 'is_last_distribution' attribute from the 'wasm' event
-        let is_last_distribution =
-            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_distribution"]);
-        assert_eq!(is_last_distribution[0].value, "true".to_string());
-
-        // Distribute one more time, we expect to receive an Error here as IS_DISTRIBUTING is false
-        let result = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
-                    amount_of_users: Uint128::one(),
-                }),
-                &[],
-                claimer,
-            )
             .unwrap_err();
+
         // Assert that the response is an error
         assert!(
             matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Vault is not distributing rewards, claiming is needed first: execute wasm contract failed"))
@@ -574,26 +568,7 @@ mod tests {
             "total_collect_spread_rewards",
             vec!["tokens_out"],
         );
-        println!("tokens_out_spread_rewards {:?}", tokens_out_spread_rewards);
 
-        // Assert that 'tokens_out' values for events are empty
-        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
-        let tokens_out_spread_rewards_u128: u128 =
-            get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-        println!(
-            "tokens_out_spread_rewards_u128 {:?}",
-            tokens_out_spread_rewards_u128
-        );
-
-        let rewards_less_performance_fee = (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64;
-        println!(
-            "rewards_less_performance_fee {:?}",
-            rewards_less_performance_fee
-        );
-
-        let expected_rewards_per_user = rewards_less_performance_fee / (ACCOUNTS_NUM + 1); // hardcoding +1 due to test logic, we will deposit once more with a single account doubling its shares amount
-
-        println!("expected_rewards_per_user {:?}", expected_rewards_per_user);
         // Collect init
         for _ in 0..(ACCOUNTS_NUM - 1) {
             let result = wasm
@@ -613,17 +588,19 @@ mod tests {
         }
 
         // Deposit with old accounts to change amount of rewards in the current calculation
-        let _ = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::ExactDeposit { recipient: None },
-                &[
-                    Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-                    Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-                ],
-                &accounts[9],
-            )
-            .unwrap();
+        for account in &accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                    ],
+                    &account,
+                )
+                .unwrap();
+        }
 
         // Collect one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm
@@ -681,6 +658,7 @@ mod tests {
         assert_eq!(is_last_distribution[0].value, "true".to_string());
 
         // Loop users and claim for each one of them
+        let mut rewards_received = vec![];
         for account in &accounts {
             let result = wasm
                 .execute(
@@ -693,15 +671,37 @@ mod tests {
 
             let coin_received =
                 get_event_attributes_by_ty_and_key(&result, "coin_received", vec!["amount"]);
-            println!("coin_received {:?}", coin_received);
             let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value); // taking index 1 in this case as there are more then 1 coin_received tys
-            println!("coin_received_u128 {:?}", coin_received_u128);
-            // assert_approx_eq!(
-            //     coin_received_u128,
-            //     expected_rewards_per_user as u128,
-            //     "0.005"
-            // );
+            rewards_received.push(coin_received_u128);
         }
+
+        // Assert that 'tokens_out' values for events are empty
+        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
+        let tokens_out_spread_rewards_u128: u128 =
+            get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
+        let rewards_less_performance_fee = (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64;
+        let expected_rewards_per_user = rewards_less_performance_fee / (ACCOUNTS_NUM + 1); // hardcoding +1 due to test logic, we will deposit once more with a single account doubling its shares amount
+        let expected_rewards_per_user_double = expected_rewards_per_user.mul(2);
+
+        let double_rewards_value: Vec<u128> = rewards_received
+            .iter()
+            .filter(|&&x| x > expected_rewards_per_user as u128)
+            .cloned()
+            .collect();
+        let single_rewards_count = rewards_received
+            .iter()
+            .filter(|&&x| x == expected_rewards_per_user as u128)
+            .count();
+
+        assert_approx_eq!(
+            double_rewards_value[0],
+            expected_rewards_per_user_double as u128,
+            "0.005"
+        );
+        assert_eq!(
+            single_rewards_count, 9,
+            "There should be exactly one account with double rewards."
+        );
     }
 
     // fn get_cases() -> u32 {
