@@ -2,11 +2,11 @@ use cosmwasm_std::{Decimal, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint12
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::{
-    helpers::{get_one_or_two, get_one_or_two_coins, get_unused_balances},
+    helpers::{get_one_or_two_coins, get_unused_balances},
     math::tick::price_to_tick,
     reply::Replies,
     rewards::CoinList,
-    state::{PoolConfig, Position, CURRENT_RATIO, POOL_CONFIG, POSITIONS},
+    state::{Position, CURRENT_RATIO, POOL_CONFIG, POSITIONS},
     vault::concentrated_liquidity::create_position,
     ContractError,
 };

@@ -1,19 +1,19 @@
-use std::cmp::{min, Ordering};
+use std::cmp::{min};
 use std::str::FromStr;
 
-use crate::debug;
+
 use crate::math::liquidity::{asset0, asset1, liquidity0, liquidity1};
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
-use crate::state::{Position, ADMIN_ADDRESS, POSITIONS, STRATEGIST_REWARDS, USER_REWARDS};
+use crate::state::{Position, ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
 
-use crate::vault::concentrated_liquidity::get_positions;
-use crate::vault::range::move_position::SwapDirection;
+
+
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, Addr, CheckedMultiplyRatioError, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
-    MessageInfo, Order, OverflowError, OverflowOperation, QuerierWrapper, Storage, Uint128,
+    MessageInfo, OverflowError, OverflowOperation, QuerierWrapper, Storage, Uint128,
     Uint256,
 };
 
@@ -72,7 +72,7 @@ pub(crate) fn get_one_or_two_coins(
         return Err(ContractError::IncorrectAmountFunds);
     }
 
-    return Ok(tokens);
+    Ok(tokens)
 }
 
 /// get_spot_price
@@ -332,7 +332,7 @@ pub fn get_max_utilization_for_ratio(
 
 // TODO, allocating funds gives a ratio for each position, we should theb
 pub fn allocate_funds_per_position(
-    deps: DepsMut,
+    _deps: DepsMut,
     positions: Vec<(Position, FullPositionBreakdown)>,
     spot_price: Decimal,
     token0: Uint128,
@@ -367,7 +367,6 @@ pub fn allocate_funds_per_position(
         .fold(Decimal::zero(), |acc, (_, ratio)| acc + ratio);
 
     let psf: Result<Vec<(Position, Uint128, Uint128)>, ContractError> = ratios
-        .into_iter()
         .into_iter()
         .map(|(ps, ratio)| {
             let normalized = ratio / total_ratio;

@@ -140,7 +140,7 @@ pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionsResponse>
             let full_position = fp.position.unwrap();
 
             Ok(FullPosition {
-                position: position,
+                position,
                 full_breakdown: full_position,
             })
         })

@@ -1,15 +1,14 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
-    MessageInfo, Order, Response, StdResult, SubMsg, SubMsgResult, Uint128, Uint256,
+    attr, coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env,
+    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
         concentratedliquidity::v1beta1::{
-            ConcentratedliquidityQuerier, MsgAddToPosition, MsgAddToPositionResponse,
             MsgCreatePositionResponse,
         },
         tokenfactory::v1beta1::MsgMint,
@@ -19,8 +18,7 @@ use osmosis_std::types::{
 use crate::{
     error::ContractResult,
     helpers::{
-        allocate_funds_per_position, get_asset0_value, get_one_or_two, get_spot_price,
-        get_unused_balances, must_pay_one_or_two,
+        allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two,
     },
     msg::{ExecuteMsg, MergePositionMsg},
     query::query_total_assets,
@@ -157,12 +155,12 @@ pub(crate) fn execute_exact_deposit(
 /// handles the reply to adding to a position for the user. The amount of liquidity should be saved here
 /// so we can calculate user liquidity later
 pub fn handle_deposit_create_position_reply(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
     let resp: MsgCreatePositionResponse = data.try_into()?;
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    let _vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // we mint shares according to the liquidity created in the position creation
     // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
@@ -271,14 +269,14 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
     let user_value = get_asset0_value(
         deposited_assets.0 - refunded.0 + leftover.0,
         deposited_assets.1 - refunded.1 + leftover.1,
-        spot_price.into(),
+        spot_price,
     )?;
 
     // the total_vault_value is the amount of vault assets minus the amount
     let total_vault_value = get_asset0_value(
         vault_assets.token0.amount - (deposited_assets.0 + leftover.0),
         vault_assets.token1.amount - (deposited_assets.1 + leftover.1),
-        spot_price.into(),
+        spot_price,
     )?;
 
     // this depends on the vault being instantiated with some amount of value

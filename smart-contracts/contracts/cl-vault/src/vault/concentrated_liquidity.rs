@@ -50,7 +50,7 @@ pub fn create_position(
 }
 
 pub fn add_to_position(
-    deps: DepsMut,
+    _deps: DepsMut,
     env: &Env,
     position_id: u64,
     amount0: Uint128,

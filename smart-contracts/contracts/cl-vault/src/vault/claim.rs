@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, DepsMut, Response};
+use cosmwasm_std::{DepsMut, Response};
 
 use crate::{state::USER_REWARDS, ContractError};
 
