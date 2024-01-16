@@ -50,17 +50,14 @@ pub fn execute_collect_rewards(
             .parse::<u128>()?
             .into();
 
-        return Ok(Response::new()
+        Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
                 get_collect_incentives_msg(deps.as_ref(), env)?,
                 Replies::CollectIncentives as u64,
             ))
-            .add_attribute(
-                "rewards_status",
-                &format!("{:?}", RewardsStatus::Collecting),
-            )
-            .add_attribute("is_last_collection", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
-            .add_attribute("current_total_supply", total_supply.to_string()));
+            .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Collecting))
+            .add_attribute("is_last_collection", false.to_string()) // at least 2 tx are needed so we can hardcode to false
+            .add_attribute("current_total_supply", total_supply.to_string()))
     } else {
         // Get current rewards to distribute, if there are not clear the state and return
         let rewards = CURRENT_REWARDS.load(deps.storage)?;
@@ -74,25 +71,20 @@ pub fn execute_collect_rewards(
 
         // Is a subsequent iteration
         let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
-        let start_bound = match next_address_collect {
-            Some(addr) => Some(Bound::exclusive(addr)),
-            None => None,
-        };
+        let start_bound = next_address_collect.map(Bound::exclusive);
 
-        // TODO: Optimize this borrowing workaround
-        let mut shares_in_range: Vec<(Addr, Uint128)> = vec![];
-        for item in SHARES.range(deps.storage, start_bound, None, Order::Ascending) {
-            shares_in_range.push(item?.clone());
-        }
+        let shares_in_range: Vec<(Addr, Uint128)> = SHARES
+            .range(deps.storage, start_bound, None, Order::Ascending)
+            .take_while(|item| item.is_ok()) // Take only Ok items
+            .map(|item| item.unwrap()) // Unwrap the Ok items, knowing that there are no Err items
+            .collect();
 
         let mut current_total_supply = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
-        let mut users_processed: u128 = 0;
         let mut is_last_collection = true;
-
         let mut last_address_collected: Option<Addr> = None;
-        for (address, shares) in shares_in_range {
-            // If users processed is already as amount_of_users or higher
-            if users_processed >= amount_of_users.u128() {
+
+        for (index, (address, shares)) in shares_in_range.into_iter().enumerate() {
+            if index as u128 >= amount_of_users.u128() {
                 // Save the next address but do not process it
                 is_last_collection = false;
                 break;
@@ -100,8 +92,6 @@ pub fn execute_collect_rewards(
 
             DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
             last_address_collected = Some(address);
-
-            users_processed += 1;
             current_total_supply += shares;
         }
 
@@ -117,9 +107,9 @@ pub fn execute_collect_rewards(
             LAST_ADDRESS_COLLECTED.save(deps.storage, &last_address_collected.unwrap())?;
         }
 
-        return Ok(Response::new()
-            .add_attribute("rewards_status", &format!("{:?}", new_rewards_status))
-            .add_attribute("is_last_collection", is_last_collection.to_string()));
+        Ok(Response::new()
+            .add_attribute("rewards_status", format!("{:?}", new_rewards_status))
+            .add_attribute("is_last_collection", is_last_collection.to_string()))
     }
 }
 
