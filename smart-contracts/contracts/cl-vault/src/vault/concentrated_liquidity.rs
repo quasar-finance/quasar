@@ -49,23 +49,6 @@ pub fn create_position(
     Ok(create_position)
 }
 
-pub fn add_to_position(
-    _deps: DepsMut,
-    env: &Env,
-    position_id: u64,
-    amount0: Uint128,
-    amount1: Uint128,
-) -> Result<MsgAddToPosition, ContractError> {
-    Ok(MsgAddToPosition {
-        position_id,
-        sender: env.contract.address.to_string(),
-        amount0: amount0.to_string(),
-        amount1: amount1.into(),
-        token_min_amount0: Uint128::zero().into(),
-        token_min_amount1: Uint128::zero().into(),
-    })
-}
-
 pub fn withdraw_from_position(
     env: &Env,
     position_id: u64,
