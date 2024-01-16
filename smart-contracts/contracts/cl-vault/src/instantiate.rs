@@ -78,7 +78,7 @@ pub fn handle_instantiate(
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
     let (initial0, initial1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    INSTANTIATE_CREATE_POSITION_FUNDS.save(deps.storage, &(initial0.amount, initial1.amount));
+    INSTANTIATE_CREATE_POSITION_FUNDS.save(deps.storage, &(initial0.amount, initial1.amount))?;
 
     let create_position_msg = create_position(
         deps,

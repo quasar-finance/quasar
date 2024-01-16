@@ -117,6 +117,8 @@ pub fn execute_update_config(
 
 #[cfg(test)]
 mod tests {
+    use crate::state::VaultConfig;
+
     use super::*;
     use cosmwasm_std::{
         coin,

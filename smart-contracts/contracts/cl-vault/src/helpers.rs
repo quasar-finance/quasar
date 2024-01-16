@@ -2,7 +2,7 @@ use std::cmp::{min};
 use std::str::FromStr;
 
 
-use crate::math::liquidity::{asset0, asset1, liquidity0, liquidity1};
+use crate::math::liquidity::{asset0, asset1};
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{Position, ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
@@ -34,26 +34,26 @@ pub(crate) fn must_pay_one_or_two(
 }
 
 pub(crate) fn get_one_or_two(
-    tokens: &Vec<Coin>,
+    tokens: &[Coin],
     denoms: (String, String),
 ) -> ContractResult<(Coin, Coin)> {
     let token0 = tokens
-        .clone()
-        .into_iter()
+        .iter()
         .find(|coin| coin.denom == denoms.0)
+        .cloned()
         .unwrap_or(coin(0, denoms.0));
 
     let token1 = tokens
-        .clone()
-        .into_iter()
+        .iter()
         .find(|coin| coin.denom == denoms.1)
+        .cloned()
         .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
 }
 
 pub(crate) fn get_one_or_two_coins(
-    tokens: &Vec<Coin>,
+    tokens: &[Coin],
     denoms: (String, String),
 ) -> ContractResult<Vec<Coin>> {
     let (token0, token1) = get_one_or_two(tokens, denoms)?;
@@ -435,49 +435,6 @@ pub fn get_asset0_value(
         .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
 
     Ok(total)
-}
-
-/// given a position, a spot price, calculate the max amount of liquidity that can be used by that position
-fn get_liquidity_for_position(
-    position: FullPositionBreakdown,
-    spot_price: Decimal256,
-    asset0: Uint128,
-    asset1: Uint128,
-) -> Result<Decimal256, ContractError> {
-    let p = position.position.unwrap();
-    let lower_price = tick_to_price(p.lower_tick)?;
-    let upper_price = tick_to_price(p.upper_tick)?;
-
-    // decide if our position is onesided,
-    // if so return liquidity of that side
-    // else return the min liquidity of liquidity0 and liquidity1
-    //
-    if spot_price < lower_price {
-        liquidity1(
-            Decimal256::from_ratio(asset1, 1_u128),
-            lower_price.sqrt(),
-            spot_price.sqrt(),
-        )
-    } else if upper_price < spot_price {
-        liquidity0(
-            Decimal256::from_ratio(asset0, 1_u128),
-            spot_price.sqrt(),
-            upper_price.sqrt(),
-        )
-    } else {
-        // liq0 ranges from spot price to upper price
-        let liq0 = liquidity0(
-            Decimal256::from_ratio(asset0, 1_u128),
-            spot_price.sqrt(),
-            upper_price.sqrt(),
-        )?;
-        let liq1 = liquidity1(
-            Decimal256::from_ratio(asset1, 1_u128),
-            lower_price.sqrt(),
-            spot_price.sqrt(),
-        )?;
-        Ok(min(liq0, liq1))
-    }
 }
 
 #[cw_serde]
