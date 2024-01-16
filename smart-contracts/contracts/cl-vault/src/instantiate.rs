@@ -10,13 +10,13 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::{must_pay_one_or_two, get_asset0_value, get_spot_price};
+use crate::helpers::{get_asset0_value, get_spot_price, must_pay_one_or_two};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM, INSTANTIATE_CREATE_POSITION_FUNDS,
+    Metadata, PoolConfig, Position, ADMIN_ADDRESS, INSTANTIATE_CREATE_POSITION_FUNDS, METADATA,
+    POOL_CONFIG, POSITIONS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;

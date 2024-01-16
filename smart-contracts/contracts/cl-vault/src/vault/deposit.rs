@@ -23,14 +23,15 @@ use crate::{
         get_unused_balances, must_pay_one_or_two,
     },
     msg::{ExecuteMsg, MergePositionMsg},
+    query::query_total_assets,
     reply::Replies,
     rewards::CoinList,
     state::{
-        CurrentDeposit, CURRENT_DEPOSIT, CURRENT_DEPOSITOR, CURRENT_DEPOSIT_LEFTOVER,
-        POOL_CONFIG, POSITIONS, SHARES, VAULT_DENOM,
+        CurrentDeposit, CURRENT_DEPOSIT, CURRENT_DEPOSITOR, CURRENT_DEPOSIT_LEFTOVER, POOL_CONFIG,
+        POSITIONS, SHARES, VAULT_DENOM,
     },
     vault::concentrated_liquidity::{create_position, get_positions},
-    ContractError, query::query_total_assets,
+    ContractError,
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -63,7 +64,6 @@ pub(crate) fn execute_exact_deposit(
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
     let spot_price = get_spot_price(deps.storage, &deps.querier)?;
-
 
     let psf = allocate_funds_per_position(
         deps.branch(),
@@ -268,16 +268,19 @@ pub fn execute_mint_callback(mut deps: DepsMut, env: Env) -> Result<Response, Co
     let leftover = CURRENT_DEPOSIT_LEFTOVER.load(deps.storage)?;
 
     let vault_assets = query_total_assets(deps.as_ref(), env.clone())?;
-    let user_value = get_asset0_value(deposited_assets.0 - refunded.0 + leftover.0, deposited_assets.1 - refunded.1 + leftover.1, spot_price.into())?;
+    let user_value = get_asset0_value(
+        deposited_assets.0 - refunded.0 + leftover.0,
+        deposited_assets.1 - refunded.1 + leftover.1,
+        spot_price.into(),
+    )?;
 
-
-    // the total_vault_value is the amount of vault assets minus the amount 
+    // the total_vault_value is the amount of vault assets minus the amount
     let total_vault_value = get_asset0_value(
         vault_assets.token0.amount - (deposited_assets.0 + leftover.0),
         vault_assets.token1.amount - (deposited_assets.1 + leftover.1),
         spot_price.into(),
     )?;
-    
+
     // this depends on the vault being instantiated with some amount of value
     let user_shares: Uint128 = total_vault_shares
         .checked_mul(user_value.into())?

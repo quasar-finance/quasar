@@ -39,7 +39,8 @@ pub fn assert_eq_with_diff_impl<U: Into<Uint128>>(
 
     let largest = std::cmp::max(left, right);
     // we need to handle the case where left or right are 0
-    let rel_diff = Decimal::checked_from_ratio(left.abs_diff(right), largest).unwrap_or(max_rel_diff);
+    let rel_diff =
+        Decimal::checked_from_ratio(left.abs_diff(right), largest).unwrap_or(max_rel_diff);
     let abs_diff = if left > right {
         left - right
     } else {
@@ -86,7 +87,7 @@ pub fn assert_share_price_impl<'a, R: Runner<'a>>(
     contract_address: &str,
     expected_share_price: Decimal,
     pool_id: u64,
-    max_rel_diff: &str
+    max_rel_diff: &str,
 ) {
     let new_share_price = get_share_price(app, pool_id, contract_address);
     assert_eq_with_diff!(
@@ -149,6 +150,20 @@ pub fn assert_unused_funds_impl(
     (actual0, actual1): (Uint128, Uint128),
 ) {
     let (expected0, expected1) = get_unused_funds(wasm, contract_address).unwrap();
-    assert_eq_with_diff!(actual0, "actual token0", expected0, "expected token0", "0.00000001", Uint128::new(4));
-    assert_eq_with_diff!(actual1, "actual token1", expected1, "expected token1", "0.00000001", Uint128::new(4))
+    assert_eq_with_diff!(
+        actual0,
+        "actual token0",
+        expected0,
+        "expected token0",
+        "0.00000001",
+        Uint128::new(4)
+    );
+    assert_eq_with_diff!(
+        actual1,
+        "actual token1",
+        expected1,
+        "expected token1",
+        "0.00000001",
+        Uint128::new(4)
+    )
 }

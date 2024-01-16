@@ -11,13 +11,14 @@ use osmosis_std::types::{
 use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
 use crate::{
-    assert_share_price, assert_total_assets,
+    assert_share_price, assert_total_assets, assert_unused_funds,
+    helpers::get_asset0_value,
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, UserBalanceResponse},
     tests::{
         default_init,
         helpers::{get_full_positions, get_share_price, get_unused_funds},
-    }, assert_unused_funds, helpers::get_asset0_value,
+    },
 };
 
 use super::helpers::get_total_assets;
@@ -41,13 +42,6 @@ fn multi_position_deposit_works() {
     let wasm = Wasm::new(&app);
 
     let bank = Bank::new(&app);
-    // our initial balance, 89874uosmo
-    let balances = bank
-        .query_all_balances(&QueryAllBalancesRequest {
-            address: contract_address.to_string(),
-            pagination: None,
-        })
-        .unwrap();
 
     // make sure we have some fee uosmo and uatom to create the new position
     // here we introduce new funds into the test, after this point, we'd expect the share price to no longer change
@@ -99,7 +93,7 @@ fn multi_position_deposit_works() {
         cl_pool_id
     );
     let unused_funds = get_unused_funds(&wasm, contract_address.as_str()).unwrap();
-    
+
     total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
 
     // for this deposit, we have 4 deposits, 7500uatom worth of assets and the user deposits 5_000_000uatom and 5_000_000uosmo
@@ -154,12 +148,7 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
 
-    assert_share_price!(
-        &app,
-        contract_address.as_str(),
-        share_price,
-        cl_pool_id
-    );
+    assert_share_price!(&app, contract_address.as_str(), share_price, cl_pool_id);
 
     let _res = wasm
         .execute(
@@ -200,4 +189,5 @@ fn multi_position_deposit_works() {
         contract_address.as_str(),
         original_share_price,
         cl_pool_id
-    );}
+    );
+}

@@ -49,7 +49,7 @@ where
         )
         .map_err(|e| e.to_string())?;
 
-        println!("about to iterate");
+    println!("about to iterate");
 
     let position_funds = full_positions.positions.iter().fold(
         (Uint128::zero(), Uint128::zero()),

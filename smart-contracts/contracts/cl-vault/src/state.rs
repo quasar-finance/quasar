@@ -99,7 +99,8 @@ pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_rema
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 
-pub const INSTANTIATE_CREATE_POSITION_FUNDS: Item<(Uint128, Uint128)> = Item::new("instantiate_create_position_funds");
+pub const INSTANTIATE_CREATE_POSITION_FUNDS: Item<(Uint128, Uint128)> =
+    Item::new("instantiate_create_position_funds");
 
 pub const CURRENT_RATIO: Item<Uint128> = Item::new("current_ratio");
 
