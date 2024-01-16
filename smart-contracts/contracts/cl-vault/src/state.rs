@@ -82,9 +82,16 @@ pub struct CurrentDeposit {
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
+#[cw_serde]
+pub enum RewardsStatus {
+    Ready,
+    Collecting,
+    Distributing,
+}
+
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 /// Collection related states
-pub const IS_COLLECTING: Item<bool> = Item::new("is_collecting");
+pub const REWARDS_STATUS: Item<RewardsStatus> = Item::new("rewards_status");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 pub const LAST_ADDRESS_COLLECTED: Item<Addr> = Item::new("last_address_collect");
 /// Distribution related states

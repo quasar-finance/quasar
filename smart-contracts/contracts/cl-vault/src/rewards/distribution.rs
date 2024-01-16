@@ -7,9 +7,9 @@ use crate::{
     error::ContractResult,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, DISTRIBUTION_SNAPSHOT,
-        IS_COLLECTING, IS_DISTRIBUTING, LAST_ADDRESS_COLLECTED, POSITION, SHARES,
-        STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        RewardsStatus, CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS,
+        DISTRIBUTION_SNAPSHOT, LAST_ADDRESS_COLLECTED, POSITION, REWARDS_STATUS,
+        SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
     },
     ContractError,
 };
@@ -29,15 +29,14 @@ pub fn execute_collect_rewards(
     env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let is_distributing = IS_DISTRIBUTING.load(deps.storage).unwrap();
-    if is_distributing {
+    let rewards_status = REWARDS_STATUS.load(deps.storage).unwrap();
+    if rewards_status == RewardsStatus::Distributing {
         return Err(ContractError::IsDistributing {});
     }
 
-    let is_collecting = IS_COLLECTING.load(deps.storage).unwrap();
-    if !is_collecting {
+    if rewards_status == RewardsStatus::Ready {
         // Is the first iteration
-        IS_COLLECTING.save(deps.storage, &true)?;
+        REWARDS_STATUS.save(deps.storage, &RewardsStatus::Collecting)?;
         CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
         // Prepare the bank querier and get the total shares
@@ -56,8 +55,10 @@ pub fn execute_collect_rewards(
                 get_collect_incentives_msg(deps.as_ref(), env)?,
                 Replies::CollectIncentives as u64,
             ))
-            .add_attribute("is_collecting", &true.to_string()) // TODO: check
-            .add_attribute("is_distributing", &false.to_string()) // TODO: check
+            .add_attribute(
+                "rewards_status",
+                &format!("{:?}", RewardsStatus::Collecting),
+            )
             .add_attribute("is_last_collection", &false.to_string()) // at least 2 tx are needed so we can hardcode to false
             .add_attribute("current_total_supply", total_supply.to_string()));
     } else {
@@ -95,24 +96,19 @@ pub fn execute_collect_rewards(
         }
 
         CURRENT_TOTAL_SUPPLY.save(deps.storage, &current_total_supply)?;
-
-        let mut is_collecting = true;
-        let mut is_distributing = false;
+        let mut new_rewards_status = RewardsStatus::Collecting;
 
         // Save the address for the next batch processing, or clear if this is the last iteration
         if is_last_collection {
             LAST_ADDRESS_COLLECTED.remove(deps.storage);
-            is_collecting = false;
-            IS_COLLECTING.save(deps.storage, &is_collecting)?;
-            is_distributing = true;
-            IS_DISTRIBUTING.save(deps.storage, &is_distributing)?;
+            new_rewards_status = RewardsStatus::Distributing;
+            REWARDS_STATUS.save(deps.storage, &new_rewards_status)?;
         } else {
             LAST_ADDRESS_COLLECTED.save(deps.storage, &last_address_collected.unwrap())?;
         }
 
         return Ok(Response::new()
-            .add_attribute("is_collecting", is_collecting.to_string())
-            .add_attribute("is_distributing", is_distributing.to_string())
+            .add_attribute("rewards_status", &format!("{:?}", new_rewards_status))
             .add_attribute("is_last_collection", is_last_collection.to_string()));
     }
 }
@@ -142,8 +138,6 @@ pub fn handle_collect_incentives_reply(
             Ok(rewards)
         },
     )?;
-    deps.api
-        .debug(format!("{:?}", "after current_rewards0:".to_string()).as_str());
 
     // collect the spread rewards
     Ok(Response::new()
@@ -183,8 +177,6 @@ pub fn handle_collect_spread_rewards_reply(
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
-    deps.api
-        .debug(format!("{:?}", "after current_rewards1:".to_string()).as_str());
 
     // TODO add a nice response
     Ok(Response::new().add_attribute(
@@ -198,17 +190,17 @@ pub fn execute_distribute_rewards(
     _env: Env,
     amount_of_users: Uint128,
 ) -> Result<Response, ContractError> {
-    let is_collecting = IS_COLLECTING.may_load(deps.storage)?.unwrap();
-    let is_distributing = IS_DISTRIBUTING.may_load(deps.storage)?.unwrap();
-    if is_collecting || !is_distributing {
-        return Err(ContractError::IsNotDistributing {}); // TODO: Update error, create a generic one like RewardsOperationStatus
+    let rewards_status = REWARDS_STATUS.load(deps.storage).unwrap();
+    if rewards_status != RewardsStatus::Distributing {
+        return Err(ContractError::IsNotDistributing {});
     }
 
     // Get current rewards to distribute, if there are not clear the state and return
     let rewards = CURRENT_REWARDS.load(deps.storage)?;
     if rewards.is_empty() {
-        IS_DISTRIBUTING.save(deps.storage, &false)?;
+        REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
         return Ok(Response::new()
+            .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
             .add_attribute("total_rewards_amount", "0")
             .add_attribute("is_last_distribution", "true"));
     }
@@ -247,9 +239,11 @@ pub fn execute_distribute_rewards(
     }
 
     // If the Deque is empty, we've finished distributing rewards so we clear the semaphore flag
+    let mut new_rewards_status = RewardsStatus::Distributing;
     let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
     if is_last_distribution {
-        IS_DISTRIBUTING.save(deps.storage, &false)?;
+        new_rewards_status = RewardsStatus::Ready;
+        REWARDS_STATUS.save(deps.storage, &new_rewards_status)?;
         CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
 
         // Subtract all accumulated all distributed rewards from the current rewards
@@ -267,6 +261,7 @@ pub fn execute_distribute_rewards(
     }
 
     Ok(Response::new()
+        .add_attribute("rewards_status", format!("{:?}", new_rewards_status))
         .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
         .add_attribute("is_last_distribution", is_last_distribution.to_string()))
 }
