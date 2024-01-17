@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -20,8 +20,10 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// Collect any rewards from Osmosis to the Vault
+    CollectRewards { amount_of_users: Uint128 },
     /// Distribute any rewards over all users
-    DistributeRewards {},
+    DistributeRewards { amount_of_users: Uint128 },
     /// Claim rewards belonging to a single user
     ClaimRewards {},
     /// Build tick exponent cache
@@ -137,7 +139,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    /// The ID of the new pool
-    pub pool_id: u64,
-}
+pub struct MigrateMsg {}
