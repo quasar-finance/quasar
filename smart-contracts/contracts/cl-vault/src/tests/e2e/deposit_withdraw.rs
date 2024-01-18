@@ -25,7 +25,7 @@ use crate::{
     },
 };
 
-use super::helpers::get_total_assets;
+use crate::tests::helpers::get_total_assets;
 
 #[test]
 fn deposit_withdraw_single_user_works() {

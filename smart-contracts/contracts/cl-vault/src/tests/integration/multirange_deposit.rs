@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-use super::helpers::get_total_assets;
+use crate::tests::helpers::get_total_assets;
 
 #[test]
 fn multi_position_deposit_works() {

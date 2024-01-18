@@ -1,11 +1,9 @@
 mod admin;
-mod deposit_withdraw;
+mod e2e;
 mod initialize;
-mod proptest;
 // mod range;
 mod asserts;
 mod helpers;
-mod multirange_deposit;
-mod rewards;
+mod integration;
 
 pub(crate) use crate::tests::initialize::default_init;
