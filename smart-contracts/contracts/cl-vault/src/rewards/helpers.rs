@@ -129,6 +129,12 @@ impl CoinList {
     }
 }
 
+impl From<Coin> for CoinList {
+    fn from(value: Coin) -> Self {
+        CoinList(vec![value])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::Uint128;

@@ -19,7 +19,8 @@ use crate::{
     tests::{
         default_init,
         helpers::{
-            get_full_positions, get_share_price, get_share_value, get_unused_funds, get_user_shares,
+            get_event_attributes_by_ty_and_key, get_full_positions, get_share_price,
+            get_share_value, get_unused_funds, get_user_shares,
         },
     },
 };
@@ -27,7 +28,7 @@ use crate::{
 use super::helpers::get_total_assets;
 
 #[test]
-fn multi_position_deposit_works() {
+fn deposit_withdraw_single_user_works() {
     let (app, contract_address, cl_pool_id, admin) = default_init();
     let init_balance = CoinList::from_coins(vec![
         Coin::new(1_000_000_000_000, "uatom"),
@@ -36,6 +37,7 @@ fn multi_position_deposit_works() {
 
     let alice = app.init_account(&init_balance.coins()).unwrap();
     let bob = app.init_account(&init_balance.coins()).unwrap();
+    let mut tx_fees = CoinList::new();
 
     let wasm = Wasm::new(&app);
 
@@ -76,6 +78,7 @@ fn multi_position_deposit_works() {
             &admin,
         )
         .unwrap();
+
     assert_share_price!(
         &app,
         contract_address.as_str(),
@@ -96,7 +99,7 @@ fn multi_position_deposit_works() {
 
     // for this deposit, we have 4 deposits, 7500uatom worth of assets and the user deposits 5_000_000uatom and 5_000_000uosmo
     // since we have 3 position
-    let _res = wasm
+    let res = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None },
@@ -105,6 +108,11 @@ fn multi_position_deposit_works() {
         )
         .unwrap();
     println!("result :{:?}", _res);
+    let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
+        .value
+        .parse()
+        .unwrap();
+    tx_fees = tx_fees.add(tx_fee.into()).unwrap();
 
     total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
     assert_unused_funds!(&wasm, contract_address.as_str(), unused_funds);
@@ -172,7 +180,7 @@ fn multi_position_deposit_works() {
     );
 
     // depositing more funds
-    let _res = wasm
+    let res = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None },
@@ -182,6 +190,12 @@ fn multi_position_deposit_works() {
         .unwrap();
     total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
     assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
+
+    let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
+        .value
+        .parse()
+        .unwrap();
+    tx_fees = tx_fees.add(tx_fee.into()).unwrap();
 
     assert_share_price!(
         &app,
@@ -201,19 +215,158 @@ fn multi_position_deposit_works() {
         .unwrap()
         .balances;
 
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+
+    // TODO we deposit in total 5_005_000 uatom and 5_005_000uosmo in total, our uatom value is seen as 8_011_259, so why is the atom value seen as too high
+    // the total assets at this point in time: total_assets: (Coin { 5969319 "uatom" }, Coin { 1899241 "uosmo" })
+    println!("total_assets: {:?}", total_assets);
     println!("share_value: {:?}", share_value);
     println!("current_balance: {:?}", current_balance);
+    println!("fees: {:?}", tx_fees);
 
     // TODO add all paid tx fees here
     let total_value = CoinList::from_coins(share_value)
         .add(CoinList::from_coins(
             osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
         ))
+        .unwrap()
+        .add(tx_fees.clone().into())
         .unwrap();
 
     //
 
-    assert_eq!(init_balance, total_value);
+    let spot_price: Decimal = PoolManager::new(&app)
+        .query_spot_price(&SpotPriceRequest {
+            pool_id: cl_pool_id,
+            base_asset_denom: "uatom".into(),
+            quote_asset_denom: "uosmo".into(),
+        })
+        .unwrap()
+        .spot_price
+        .parse()
+        .unwrap();
 
-    // withdrawing any amount of shares
+    assert_approx_eq!(
+        get_asset0_value(
+            init_balance.find_coin("uatom".into()).amount,
+            init_balance.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        get_asset0_value(
+            total_value.find_coin("uatom".into()).amount,
+            total_value.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        "0.00000001",
+    );
+
+    // withdrawing any amount of shares, we should still have the same total value
+    let withdraw_shares = user_shares / Uint128::new(3);
+    let res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::Redeem {
+                recipient: None,
+                amount: withdraw_shares,
+            },
+            &[],
+            &alice,
+        )
+        .unwrap();
+
+    let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
+        .value
+        .parse()
+        .unwrap();
+    tx_fees = tx_fees.add(tx_fee.into()).unwrap();
+
+    let user_shares = get_user_shares(&wasm, contract_address.as_str(), alice.address()).unwrap();
+    let share_value = get_share_value(&wasm, contract_address.as_str(), user_shares).unwrap();
+    let current_balance = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: alice.address(),
+            pagination: None,
+        })
+        .unwrap()
+        .balances;
+
+    let total_value = CoinList::from_coins(share_value)
+        .add(CoinList::from_coins(
+            osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
+        ))
+        .unwrap()
+        .add(tx_fees.clone())
+        .unwrap();
+
+    assert_approx_eq!(
+        get_asset0_value(
+            init_balance.find_coin("uatom".into()).amount,
+            init_balance.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        get_asset0_value(
+            total_value.find_coin("uatom".into()).amount,
+            total_value.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        "0.00000001",
+    );
+
+    // withdraw the rest of the shares
+    let withdraw_shares = user_shares;
+    let res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::Redeem {
+                recipient: None,
+                amount: withdraw_shares,
+            },
+            &[],
+            &alice,
+        )
+        .unwrap();
+
+    let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
+        .value
+        .parse()
+        .unwrap();
+    tx_fees = tx_fees.add(tx_fee.into()).unwrap();
+
+    let user_shares = get_user_shares(&wasm, contract_address.as_str(), alice.address()).unwrap();
+    let share_value = get_share_value(&wasm, contract_address.as_str(), user_shares).unwrap();
+    let current_balance = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: alice.address(),
+            pagination: None,
+        })
+        .unwrap()
+        .balances;
+
+    let total_value = CoinList::from_coins(share_value)
+        .add(CoinList::from_coins(
+            osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
+        ))
+        .unwrap()
+        .add(tx_fees)
+        .unwrap();
+
+    assert_approx_eq!(
+        get_asset0_value(
+            init_balance.find_coin("uatom".into()).amount,
+            init_balance.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        get_asset0_value(
+            total_value.find_coin("uatom".into()).amount,
+            total_value.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        "0.00000001",
+    );
 }

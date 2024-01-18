@@ -1,8 +1,10 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Coin, Decimal, Fraction, Uint128};
+use cosmwasm_std::{Attribute, Coin, Decimal, Fraction, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
-use osmosis_test_tube::{Module, PoolManager, Runner, Wasm};
+use osmosis_test_tube::{ExecuteResponse, Module, PoolManager, Runner, Wasm};
+
+use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 
 use crate::{
     msg::{ClQueryMsg, ExtensionQueryMsg, QueryMsg},
@@ -11,6 +13,20 @@ use crate::{
         UserBalanceResponse,
     },
 };
+
+pub fn get_event_attributes_by_ty_and_key(
+    response: &ExecuteResponse<MsgExecuteContractResponse>,
+    ty: &str,
+    keys: Vec<&str>,
+) -> Vec<Attribute> {
+    response
+        .events
+        .iter()
+        .filter(|event| event.ty == ty)
+        .flat_map(|event| event.attributes.clone())
+        .filter(|attribute| keys.contains(&attribute.key.as_str()))
+        .collect()
+}
 
 pub fn get_share_price<'a, R>(app: &'a R, cl_pool_id: u64, contract_address: &str) -> Decimal
 where

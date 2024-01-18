@@ -164,14 +164,18 @@ pub fn handle_withdraw_user_reply(
 ) -> Result<Response, ContractError> {
     // parse the reply and instantiate the funds we want to send
     let response: MsgWithdrawPositionResponse = data.try_into()?;
+    debug!(deps, "loading current withdrawer");
     let user = CURRENT_WITHDRAWER.load(deps.storage)?;
+    debug!(deps, "loaded current withdrawer");
+
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    let (user_dust0, user_dust1) = CURRENT_WITHDRAWER_DUST.load(deps.storage)?;
+    let (user_dust0, user_dust1) = CURRENT_WITHDRAWER_DUST
+        .may_load(deps.storage)?
+        .unwrap_or((Uint128::zero(), Uint128::zero()));
     let amount0 = Uint128::new(response.amount0.parse()?).checked_add(user_dust0)?;
     let amount1 = Uint128::new(response.amount1.parse()?).checked_add(user_dust1)?;
 
-    CURRENT_WITHDRAWER.remove(deps.storage);
     CURRENT_WITHDRAWER_DUST.remove(deps.storage);
 
     let coin0 = coin(amount0.u128(), pool_config.token0);

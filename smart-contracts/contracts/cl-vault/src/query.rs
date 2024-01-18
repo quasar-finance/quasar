@@ -166,20 +166,25 @@ pub fn query_convert_to_assets(
         return Ok(vec![
             coin(0, vault_assets.token0.denom),
             coin(0, vault_assets.token1.denom),
-        ]); 
+        ]);
     }
 
+    debug!(deps, "user_shares", user_shares);
+    debug!(deps, "vault_assets", vault_assets);
+
     let vault_shares = query_total_vault_token_supply(deps)?.total;
+    debug!(deps, "vault_shares", vault_shares);
+
     let user_token0 = vault_assets
         .token0
         .amount
-        .checked_mul(vault_shares)?
-        .checked_div(user_shares)?;
+        .checked_mul(user_shares)?
+        .checked_div(vault_shares)?;
     let user_token1 = vault_assets
         .token1
         .amount
-        .checked_mul(vault_shares)?
-        .checked_div(user_shares)?;
+        .checked_mul(user_shares)?
+        .checked_div(vault_shares)?;
     Ok(vec![
         coin(user_token0.u128(), vault_assets.token0.denom),
         coin(user_token1.u128(), vault_assets.token1.denom),
