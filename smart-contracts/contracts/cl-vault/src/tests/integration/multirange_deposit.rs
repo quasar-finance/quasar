@@ -14,7 +14,7 @@ use crate::{
     assert_share_price, assert_total_assets, assert_unused_funds,
     helpers::get_asset0_value,
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-    query::{PositionResponse, UserBalanceResponse},
+    query::{PositionsResponse, UserBalanceResponse},
     tests::{
         default_init,
         helpers::{get_full_positions, get_share_price, get_unused_funds},

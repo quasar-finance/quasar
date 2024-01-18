@@ -17,7 +17,7 @@ use crate::{
     helpers::sort_tokens,
     math::tick::tick_to_price,
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-    query::{PositionResponse, TotalVaultTokenSupplyResponse},
+    query::{PositionsResponse, TotalVaultTokenSupplyResponse},
     query::{TotalAssetsResponse, UserBalanceResponse},
     tests::initialize::init_test_contract,
 };

@@ -4,7 +4,7 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     error::ContractResult,
-    query::{FullPositionsResponse, PoolResponse, PositionResponse, RangeAdminResponse},
+    query::{FullPositionsResponse, PoolResponse, PositionsResponse, RangeAdminResponse},
     state::VaultConfig,
 };
 
@@ -151,7 +151,7 @@ pub enum ClQueryMsg {
     /// Get the underlying pool of the vault
     #[returns(PoolResponse)]
     Pool {},
-    #[returns(PositionResponse)]
+    #[returns(PositionsResponse)]
     Positions {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},

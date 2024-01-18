@@ -38,7 +38,7 @@ pub struct PoolResponse {
 }
 
 #[cw_serde]
-pub struct PositionResponse {
+pub struct PositionsResponse {
     pub positions: Vec<Position>,
 }
 
@@ -115,12 +115,12 @@ pub fn query_pool(deps: Deps) -> ContractResult<PoolResponse> {
     Ok(PoolResponse { pool_config })
 }
 
-pub fn query_positions(deps: Deps) -> ContractResult<PositionResponse> {
+pub fn query_positions(deps: Deps) -> ContractResult<PositionsResponse> {
     debug!(deps, "positions", "");
     let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
-    Ok(PositionResponse {
+    Ok(PositionsResponse {
         positions: positions?.into_iter().map(|(_, p)| p).collect(),
     })
 }

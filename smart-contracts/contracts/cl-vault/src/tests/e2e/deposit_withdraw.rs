@@ -14,7 +14,7 @@ use crate::{
     assert_share_price, assert_total_assets, assert_unused_funds,
     helpers::get_asset0_value,
     msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-    query::{PositionResponse, UserBalanceResponse},
+    query::{PositionsResponse, UserBalanceResponse},
     rewards::CoinList,
     tests::{
         default_init,
