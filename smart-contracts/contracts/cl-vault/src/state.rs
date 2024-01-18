@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
+use osmosis_std::types::cosmos::base::v1beta1::Coin;
 
 use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
@@ -19,6 +20,8 @@ pub const METADATA: Item<Metadata> = Item::new("metadata");
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
+pub const AUTO_COMPOUND_ADMIN: Item<Addr> = Item::new("auto_compound_admin");
+pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 /// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
@@ -86,6 +89,10 @@ pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+
+/// AUTOCOMPOUND 
+pub const CURRENT_TOKEN_IN: Item<CoinList> = Item::new("current_token_in");
+pub const CURRENT_TOKEN_OUT_DENOM: Item<String> = Item::new("current_token_out_denom");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");

@@ -2,7 +2,7 @@ use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
 use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
+use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, AUTO_COMPOUND_ADMIN};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -24,6 +24,9 @@ pub(crate) fn execute_admin(
         }
         AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
             execute_claim_strategist_rewards(deps, info)
+        }
+        AdminExtensionExecuteMsg::UpdateAutoCompoundAdmin {address} => {
+            execute_update_auto_compound_admin(deps, info, address)
         }
     }
 }
@@ -126,6 +129,29 @@ pub fn execute_build_tick_exp_cache(
     build_tick_exp_cache(deps.storage)?;
 
     Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
+}
+
+/// Updates the admin of the contract.
+///
+/// This function first checks if the message sender is nonpayable. If the sender sent funds, a `ContractError::NonPayable` error is returned.
+/// Then, it checks if the message sender is the current admin. If not, a `ContractError::Unauthorized` error is returned.
+/// If both checks pass, it saves the new admin address in the state.
+pub fn execute_update_auto_compound_admin(
+    deps: DepsMut,
+    info: MessageInfo,
+    address: String,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    let previous_admin = AUTO_COMPOUND_ADMIN.load(deps.storage)?;
+    let new_admin = deps.api.addr_validate(&address)?;
+    AUTO_COMPOUND_ADMIN.save(deps.storage, &new_admin)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_update_admin")
+        .add_attribute("previous_admin", previous_admin)
+        .add_attribute("new_admin", &new_admin))
 }
 
 #[cfg(test)]

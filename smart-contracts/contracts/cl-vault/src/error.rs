@@ -126,4 +126,13 @@ pub enum ContractError {
 
     #[error("Mismatch in old and new pool tokens")]
     PoolTokenMismatch {},
+
+    #[error("Cannot force a recommended route if recommended route is passed in as None")]
+    TryForceRouteWithoutRecommendedSwapRoute {},
+
+    #[error("Invalid Dex Router Address")]
+    InvalidDexRouterAddress {},
+
+    #[error("Auto compound list is empty")]
+    EmptyCompoundAssetList {},
 }

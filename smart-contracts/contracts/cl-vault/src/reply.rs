@@ -35,6 +35,8 @@ pub enum Replies {
     WithdrawToMigrate,
     //create position after migration
     CreateMigratedPosition,
+    // auto compound reply
+    AutoCompound,
     #[default]
     Unknown,
 }

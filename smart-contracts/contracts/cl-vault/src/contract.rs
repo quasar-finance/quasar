@@ -9,10 +9,7 @@ use crate::query::{
     query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::{
-    execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply,
-};
+use crate::rewards::{execute_auto_compound, execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply, handle_auto_compound_reply};
 use std::str::FromStr;
 
 use crate::helpers::get_unused_balances;
@@ -101,10 +98,10 @@ pub fn execute(
                     twap_window_seconds,
                 ),
                 crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
-                    execute_distribute_rewards(deps, env)
+                    execute_collect_rewards(deps, env)
                 }
-                crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
-                    execute_claim_user_rewards(deps, info.sender.as_str())
+                crate::msg::ExtensionExecuteMsg::AutoCompoundRewards { force_swap_route, swap_routes } => {
+                    execute_auto_compound(deps, env, force_swap_route, swap_routes)
                 }
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
@@ -194,6 +191,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CreateMigratedPosition => {
             handle_create_migrated_position_reply(deps, env, msg.result)
         }
+        Replies::AutoCompound => handle_auto_compound_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }

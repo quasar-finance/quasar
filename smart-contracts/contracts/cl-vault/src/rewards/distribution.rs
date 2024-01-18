@@ -1,30 +1,32 @@
-use cosmwasm_std::{
-    Addr, Attribute, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult,
-    Uint128,
+use apollo_cw_asset::AssetInfo;
+use cosmwasm_std::{Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult, to_json_binary, Uint128, WasmMsg};
+use cw_dex_router::{
+    msg::{BestPathForPairResponse, ExecuteMsg, QueryMsg},
+    operations::SwapOperationsListUnchecked,
+};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
+    MsgCollectSpreadRewardsResponse,
 };
 
+use osmosis_std::types::osmosis::gamm::v1beta1::MsgSwapExactAmountInResponse;
+
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+
 use crate::{
-    error::ContractResult,
+    ContractError,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, POSITION, SHARES, STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG,
-        VAULT_DENOM,
-    },
-    ContractError,
-};
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier,
-    osmosis::concentratedliquidity::v1beta1::{
-        MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
-        MsgCollectSpreadRewardsResponse,
+        CURRENT_REWARDS, POSITION, STRATEGIST_REWARDS, VAULT_CONFIG, CURRENT_TOKEN_OUT_DENOM, CURRENT_TOKEN_IN,
     },
 };
+use crate::msg::AutoCompoundAsset;
+use crate::state::DEX_ROUTER;
 
 use super::helpers::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
+pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let msg = collect_incentives(deps.as_ref(), env)?;
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
@@ -51,10 +53,18 @@ pub fn handle_collect_incentives_reply(
         }));
 
     let response: MsgCollectIncentivesResponse = data?;
+    let mut response_coin_list = CoinList::coin_list_from_coin(response.collected_incentives);
+
+    // calculate the strategist fee and remove the share at source
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+
+
     CURRENT_REWARDS.update(
         deps.storage,
         |mut rewards| -> Result<CoinList, ContractError> {
-            rewards.update_rewards(response.collected_incentives)?;
+            rewards.update_rewards_coin_list(response_coin_list)?;
             Ok(rewards)
         },
     )?;
@@ -84,73 +94,174 @@ pub fn handle_collect_spread_rewards_reply(
         }));
 
     let response: MsgCollectSpreadRewardsResponse = data?;
-    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
-    rewards.update_rewards(response.collected_spread_rewards)?;
+    let mut response_coin_list = CoinList::coin_list_from_coin(response.collected_spread_rewards);
 
-    // update the rewards map against all user's locked up vault shares
-    distribute_rewards(deps, rewards)?;
+    // calculate the strategist fee and remove the share at source
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+
+    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
+    rewards.update_rewards_coin_list(response_coin_list)?;
+    
+
+    CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
     // TODO add a nice response
     Ok(Response::new())
 }
 
-fn distribute_rewards(
-    mut deps: DepsMut,
-    mut rewards: CoinList,
-) -> Result<Vec<Attribute>, ContractError> {
-    if rewards.is_empty() {
-        return Ok(vec![Attribute::new("total_rewards_amount", "0")]);
+pub fn execute_auto_compound(
+    deps: DepsMut,
+    env: Env,
+    force_swap_route: bool,
+    swap_routes: Vec<AutoCompoundAsset>,
+) -> Result<Response, ContractError> {
+    // auto compound admin
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+    if swap_routes.is_empty() {
+        return Err(ContractError::EmptyCompoundAssetList {})
     }
 
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let current_swap_route = &swap_routes[0];
 
-    // calculate the strategist fee
-    let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+    let swap_msg: Result<CosmosMsg, _> = match dex_router {
+        Some(dex_router_address) => {
+            let offer_asset = AssetInfo::Native(current_swap_route.token_in_denom.to_string());
+            let ask_asset = AssetInfo::Native(current_swap_route.token_out_denom.to_string());
 
-    let bq = BankQuerier::new(&deps.querier);
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+            let recommended_out: Uint128 = match current_swap_route.recommended_swap_route.clone() {
+                Some(operations) => deps.querier.query_wasm_smart(
+                    dex_router_address.to_string(),
+                    &QueryMsg::SimulateSwapOperations {
+                        offer_amount: current_swap_route.token_in_amount,
+                        operations,
+                    },
+                )?,
+                None => 0u128.into(),
+            };
+            let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
+                dex_router_address.to_string(),
+                &QueryMsg::BestPathForPair {
+                    offer_asset: offer_asset.into(),
+                    ask_asset: ask_asset.into(),
+                    exclude_paths: None,
+                    offer_amount: current_swap_route.token_in_amount,
+                },
+            )?;
+            let best_outcome = best_path.as_ref().map_or(Uint128::zero(), |path| path.return_amount);
 
-    let total_shares: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
+            // Determine the route to use
+            let route = if force_swap_route {
+                current_swap_route.clone().recommended_swap_route.ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
+            } else if best_outcome >= recommended_out {
+                best_path.expect("Expected a best path").operations.into()
+            } else {
+                current_swap_route.clone().recommended_swap_route.expect("Expected a recommended route")
+            };
+
+            // Execute swap operations once with the determined route
+            execute_swap_operations(
+                dex_router_address,
+                route,
+                Uint128::zero(),
+                &current_swap_route.token_in_denom,
+                current_swap_route.token_in_amount,
+            )
+        }
+        None => {
+            return Err(ContractError::InvalidDexRouterAddress {});
+        }
+    };
+    
+
+
+    // Removes the already simulated route from the swap_routes variable for next iteration
+    let mut new_swap_routes = swap_routes;
+    new_swap_routes.remove(0);
+
+    let mut response = Response::new().add_submessage(SubMsg::reply_on_success(swap_msg?, Replies::AutoCompound as u64));
+    if !new_swap_routes.is_empty() {
+        let next_autocompound: CosmosMsg = WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards{
+                force_swap_route: true,
+                swap_routes: new_swap_routes,
+            })?,
+            funds: vec![],
+        }
+            .into();
+
+        response.add_message(next_autocompound);
+    }
+
+    let token_in: Vec<osmosis_std::types::cosmos::base::v1beta1::Coin> = vec![osmosis_std::types::cosmos::base::v1beta1::Coin{
+        denom: current_swap_route.clone().token_in_denom,
+        amount: current_swap_route.token_in_amount.to_string(),
+    }];
+    CURRENT_TOKEN_IN.save(deps.storage, &CoinList::coin_list_from_coin(token_in))?;
+    CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
+    
+
+    Ok(response.add_event(Event::new("auto_compound_swap"))
+    .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
+    .add_attribute("token_out_denom", current_swap_route.clone().token_out_denom)
+    .add_attribute("token_in_amount", current_swap_route.token_in_amount))
+}
+
+pub fn handle_auto_compound_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let data: MsgSwapExactAmountInResponse = data.try_into()?;
+
+    let amount_out = Uint128::new(data.token_out_amount.parse()?);
+
+    // load current rewards 
+    let mut current_rewards = CURRENT_REWARDS.load(deps.storage)?;
+    let current_token_in = CURRENT_TOKEN_IN.load(deps.storage)?;
+    let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
+    
+
+    let token_out: Vec<OsmoCoin> = vec![OsmoCoin{
+        denom: current_token_out_denom,
+        amount: amount_out.to_string(),
+    }];
+    current_rewards.sub(&current_token_in);
+    current_rewards.add(CoinList::coin_list_from_coin(token_out));
+    
+    CURRENT_REWARDS.save(deps.storage, &current_rewards)?;
+
+    // TODO nice response with attributes
+    Ok(Response::new())
+}
+
+fn execute_swap_operations(
+    dex_router_address: Addr,
+    operations: SwapOperationsListUnchecked,
+    token_out_min_amount: Uint128,
+    token_in_denom: &String,
+    token_in_amount: Uint128,
+) -> Result<CosmosMsg, ContractError> {
+    let swap_msg: CosmosMsg = WasmMsg::Execute {
+        contract_addr: dex_router_address.to_string(),
+        msg: to_json_binary(&ExecuteMsg::ExecuteSwapOperations {
+            operations: operations,
+            minimum_receive: Some(token_out_min_amount),
+            to: None,
+            offer_amount: None,
+        })?,
+        funds: vec![Coin {
+            denom: token_in_denom.to_string(),
+            amount: token_in_amount,
+        }],
+    }
         .into();
 
-    // for each user with locked tokens, we distribute some part of the rewards to them
-    // get all users and their current pre-distribution rewards
-    let user_rewards: Result<Vec<(Addr, CoinList)>, ContractError> = SHARES
-        .range(deps.branch().storage, None, None, Order::Ascending)
-        .map(|v| -> Result<(Addr, CoinList), ContractError> {
-            let (address, user_shares) = v?;
-            // calculate the amount of each asset the user should get in rewards
-            // we need to always round down here, so we never expect more rewards than we have
-            let user_rewards = rewards.mul_ratio(Decimal::from_ratio(user_shares, total_shares));
-            Ok((address, user_rewards))
-        })
-        .collect();
-
-    // add or create a new entry for the user to get rewards
-    user_rewards?
-        .into_iter()
-        .try_for_each(|(addr, reward)| -> ContractResult<()> {
-            USER_REWARDS.update(deps.storage, addr, |old| -> ContractResult<CoinList> {
-                if let Some(old_user_rewards) = old {
-                    Ok(reward.add(old_user_rewards)?)
-                } else {
-                    Ok(reward)
-                }
-            })?;
-            Ok(())
-        })?;
-
-    Ok(vec![Attribute::new(
-        "total_rewards_amount",
-        format!("{:?}", rewards.coins()),
-    )])
+    Ok(swap_msg)
 }
+
 
 fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
@@ -174,11 +285,11 @@ mod tests {
         coin,
         testing::{mock_dependencies, mock_env},
     };
-
-    use crate::{state::Position, test_helpers::QuasarQuerier};
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         FullPositionBreakdown, Position as OsmoPosition,
     };
+
+    use crate::{state::Position, test_helpers::QuasarQuerier};
 
     use super::*;
 
@@ -209,7 +320,7 @@ mod tests {
         let position = Position { position_id };
         POSITION.save(deps.as_mut().storage, &position).unwrap();
 
-        let resp = execute_distribute_rewards(deps.as_mut(), env.clone()).unwrap();
+        let resp = execute_collect_rewards(deps.as_mut(), env.clone()).unwrap();
         assert_eq!(
             resp.messages[0].msg,
             collect_incentives(deps.as_ref(), env).unwrap().into()
