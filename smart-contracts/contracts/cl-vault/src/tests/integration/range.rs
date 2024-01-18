@@ -14,15 +14,15 @@ use osmosis_std::types::{
 use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
 
 use crate::{
-    msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
-    query::PositionResponse,
-    test_tube::initialize::initialize::init_test_contract,
+    msg::{ExecuteMsg, ModifyRange, QueryMsg},
+    query::PositionsResponse,
+    tests::initialize::init_test_contract,
 };
 
 use prost::Message;
 
-// #[test]
-// #[ignore]
+#[test]
+#[ignore]
 fn move_range_works() {
     let (app, contract, cl_pool_id, admin) = init_test_contract(
         "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -84,11 +84,11 @@ fn move_range_works() {
     let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
     let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-    let _before_position: PositionResponse = wasm
+    let before_position: PositionsResponse = wasm
         .query(
             contract.as_str(),
             &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
-                crate::msg::ClQueryMsg::Position {},
+                crate::msg::ClQueryMsg::Positions {},
             )),
         )
         .unwrap();
@@ -97,9 +97,10 @@ fn move_range_works() {
         .execute(
             contract.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
-                    lower_price: Decimal::from_str("400").unwrap(),
-                    upper_price: Decimal::from_str("1466").unwrap(),
+                ModifyRange::MovePosition {
+                    old_position_id: before_position.positions[0].position_id,
+                    new_lower_price: Decimal::from_str("400").unwrap(),
+                    new_upper_price: Decimal::from_str("1466").unwrap(),
                     max_slippage: Decimal::permille(5),
                 },
             )),
@@ -108,11 +109,11 @@ fn move_range_works() {
         )
         .unwrap();
 
-    let _after_position: PositionResponse = wasm
+    let _after_position: PositionsResponse = wasm
         .query(
             contract.as_str(),
             &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
-                crate::msg::ClQueryMsg::Position {},
+                crate::msg::ClQueryMsg::Positions {},
             )),
         )
         .unwrap();
@@ -181,13 +182,23 @@ fn move_range_same_single_side_works() {
     let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
     let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
+    let before_position: PositionsResponse = wasm
+        .query(
+            contract.as_str(),
+            &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                crate::msg::ClQueryMsg::Positions {},
+            )),
+        )
+        .unwrap();
+
     let _result = wasm
         .execute(
             contract.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
-                    lower_price: Decimal::from_str("20.71").unwrap(),
-                    upper_price: Decimal::from_str("45").unwrap(),
+                ModifyRange::MovePosition {
+                    old_position_id: before_position.positions[0].position_id,
+                    new_lower_price: Decimal::from_str("20.71").unwrap(),
+                    new_upper_price: Decimal::from_str("45").unwrap(),
                     max_slippage: Decimal::permille(5),
                 },
             )),
