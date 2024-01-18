@@ -890,7 +890,7 @@ dependencies = [
 [[package]]
 name = "cw-vault-multi-standard"
 version = "0.3.0"
-source = "git+https://github.com/quasar-finance/cw-vault-standard#5d66e887a3abf107e58f3cdab7ac0c683fc0deec"
+source = "git+https://github.com/quasar-finance/cw-vault-standard?branch=feat/change-convert-assets-return-type#5d66e887a3abf107e58f3cdab7ac0c683fc0deec"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",

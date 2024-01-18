@@ -1,20 +1,16 @@
-use std::cmp::{min};
+use std::cmp::min;
 use std::str::FromStr;
-
 
 use crate::math::liquidity::{asset0, asset1};
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{Position, ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
 
-
-
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, Addr, CheckedMultiplyRatioError, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
-    MessageInfo, OverflowError, OverflowOperation, QuerierWrapper, Storage, Uint128,
-    Uint256,
+    MessageInfo, OverflowError, OverflowOperation, QuerierWrapper, Storage, Uint128, Uint256,
 };
 
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::FullPositionBreakdown;

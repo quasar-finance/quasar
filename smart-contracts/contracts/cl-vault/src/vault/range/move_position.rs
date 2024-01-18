@@ -14,6 +14,7 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
+    debug,
     helpers::get_spot_price,
     helpers::get_unused_balances,
     math::tick::price_to_tick,
@@ -78,7 +79,9 @@ pub fn move_position_ticks(
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
+    debug!(deps, "getting position");
     let position_breakdown = get_position(&deps.querier, old_position_id)?;
+    debug!(deps, "got position");
     let position = position_breakdown.position.unwrap();
 
     // fetch the position's ratio

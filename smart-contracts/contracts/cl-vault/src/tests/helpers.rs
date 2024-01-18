@@ -8,6 +8,7 @@ use crate::{
     msg::{ClQueryMsg, ExtensionQueryMsg, QueryMsg},
     query::{
         FullPosition, FullPositionsResponse, TotalAssetsResponse, TotalVaultTokenSupplyResponse,
+        UserBalanceResponse,
     },
 };
 
@@ -30,6 +31,39 @@ where
     let share_price: Decimal =
         get_share_price_in_asset0(&wasm, spot_price, contract_address).unwrap();
     share_price
+}
+
+pub fn get_user_shares<'a, R>(
+    wasm: &Wasm<'a, R>,
+    contract: &str,
+    user: String,
+) -> Result<Uint128, String>
+where
+    R: Runner<'a>,
+{
+    let user_balance: UserBalanceResponse = wasm
+        .query(
+            contract,
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                crate::msg::UserBalanceQueryMsg::UserSharesBalance { user },
+            )),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(user_balance.balance)
+}
+
+pub fn get_share_value<'a, R>(
+    wasm: &Wasm<'a, R>,
+    contract: &str,
+    amount: Uint128,
+) -> Result<Vec<Coin>, String>
+where
+    R: Runner<'a>,
+{
+    let balance: Vec<Coin> = wasm
+        .query(contract, &QueryMsg::ConvertToAssets { amount })
+        .map_err(|e| e.to_string())?;
+    Ok(balance)
 }
 
 pub fn get_unused_funds<'a, R>(

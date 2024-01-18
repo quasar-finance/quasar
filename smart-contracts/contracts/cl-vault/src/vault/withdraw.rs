@@ -11,6 +11,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
+    debug,
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
@@ -23,7 +24,7 @@ use super::concentrated_liquidity::get_positions;
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
 pub fn execute_withdraw(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     recipient: Option<String>,
@@ -52,6 +53,8 @@ pub fn execute_withdraw(
         .unwrap()
         .amount
         .parse()?;
+
+    debug!(deps, "withdraw1", "");
 
     // get the dust amounts belonging to the user
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -90,10 +93,14 @@ pub fn execute_withdraw(
     }
     .into();
 
+    debug!(deps, "withdraw2", "");
+
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?; // TODOSN: Rename this function name to something more explicative
+    let withdraw_msg = withdraw(deps.branch(), &env, shares_to_withdraw_u128)?; // TODOSN: Rename this function name to something more explicative
+
+    debug!(deps, "withdraw3", "");
 
     Ok(Response::new()
         .add_attribute("method", "withdraw")
@@ -124,8 +131,13 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    let positions = get_positions(deps.storage, &deps.querier)?;
-    let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions
+    debug!(deps, "withdraw4");
+
+    let positions = get_positions(deps.storage, &deps.querier);
+
+    debug!(deps, "positions-witdraw", positions);
+
+    let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions?
         .into_iter()
         .map(|(p, fp)| {
             let existing_liquidity: Decimal256 = fp
@@ -142,6 +154,7 @@ fn withdraw(
         })
         .collect();
 
+    debug!(deps, "withdraw", withdraws);
     withdraws
 }
 

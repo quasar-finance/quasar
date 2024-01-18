@@ -1,25 +1,21 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env,
-    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    attr, coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
-        concentratedliquidity::v1beta1::{
-            MsgCreatePositionResponse,
-        },
-        tokenfactory::v1beta1::MsgMint,
+        concentratedliquidity::v1beta1::MsgCreatePositionResponse, tokenfactory::v1beta1::MsgMint,
     },
 };
 
 use crate::{
+    debug,
     error::ContractResult,
-    helpers::{
-        allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two,
-    },
+    helpers::{allocate_funds_per_position, get_asset0_value, get_spot_price, must_pay_one_or_two},
     msg::{ExecuteMsg, MergePositionMsg},
     query::query_total_assets,
     reply::Replies,
@@ -56,7 +52,10 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     CURRENT_DEPOSITOR.save(deps.storage, &recipient)?;
 
+    debug!(deps, "depositing 1");
     let positions = get_positions(deps.storage, &deps.querier)?;
+
+    debug!(deps, "depositing 2");
 
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;

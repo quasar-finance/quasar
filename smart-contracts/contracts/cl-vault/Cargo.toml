@@ -49,7 +49,7 @@ cw-dex = "0.1.1"
 cw-dex-router = {version = "0.1.0", features = ["library"]}
 cw-storage-plus = "1.0.1"
 cw-utils = "0.16.0"
-cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"], branch = "feat/change-convert-assets-return-type"}
 cw-vault-token = "0.1.0"
 cw2 = "1.0.1"
 cw20 = "1.0.1"

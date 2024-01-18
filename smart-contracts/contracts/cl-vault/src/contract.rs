@@ -4,8 +4,9 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_full_positions, query_info, query_metadata, query_pool, query_positions,
-    query_total_assets, query_total_vault_token_supply, query_user_balance, query_user_rewards,
+    query_convert_to_assets, query_full_positions, query_info, query_metadata, query_pool,
+    query_positions, query_total_assets, query_total_vault_token_supply, query_user_balance,
+    query_user_rewards,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -119,7 +120,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: _ } => todo!(),
+        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount } => {
+            Ok(to_binary(&query_convert_to_assets(deps, env, amount)?)?)
+        }
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
             crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {

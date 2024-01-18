@@ -2,8 +2,8 @@ use cosmwasm_std::{
     Coin, Decimal256, DepsMut, Env, Order, QuerierWrapper, StdError, Storage, Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition,
-    MsgWithdrawPosition, Pool,
+    ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
+    Pool,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;

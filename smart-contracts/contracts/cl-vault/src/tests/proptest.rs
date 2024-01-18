@@ -7,26 +7,26 @@ use osmosis_std::types::{
     osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
 };
 use osmosis_test_tube::{
-    Account, Bank, ConcentratedLiquidity, ExecuteResponse, Module, OsmosisTestApp,
-    SigningAccount, Wasm,
+    Account, Bank, ConcentratedLiquidity, ExecuteResponse, Module, OsmosisTestApp, SigningAccount,
+    Wasm,
 };
 use proptest::prelude::*;
 
+use crate::query::{FullPosition, FullPositionsResponse};
 use crate::{
     helpers::sort_tokens,
     math::tick::tick_to_price,
-    msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
+    msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
     query::{PositionResponse, TotalVaultTokenSupplyResponse},
     query::{TotalAssetsResponse, UserBalanceResponse},
-    test_tube::initialize::initialize::init_test_contract,
+    tests::initialize::init_test_contract,
 };
 
 const ITERATIONS_NUMBER: usize = 1000;
 const ACCOUNTS_NUMBER: u64 = 10;
 const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
 const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
-const DENOM_QUOTE: &str =
-    "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+const DENOM_QUOTE: &str = "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
 
 #[derive(Clone, Copy, Debug)]
 enum Action {
@@ -60,6 +60,7 @@ fn deposit(
     let amount1 = (balance1_f64 * (percentage / 100.0)).round() as u128;
 
     // Get current pool position to know token0 and token1 amounts
+    println!("getting total assets");
     let pos_assets: TotalAssetsResponse = get_vault_position_assets(wasm, contract_address);
 
     // Calculate the ratio between pos_asset0 and pos_asset1
@@ -96,6 +97,7 @@ fn deposit(
     // let user_shares_balance_before: UserBalanceResponse =
     //     get_user_shares_balance(wasm, contract_address, account);
 
+    println!("creating deposit");
     // Execute deposit
     let create_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
         .execute(
@@ -256,18 +258,18 @@ fn swap(
     // TODO: Implement swap strategy
 }
 
-fn update_range(
+fn move_range(
     wasm: &Wasm<OsmosisTestApp>,
-    cl: &ConcentratedLiquidity<OsmosisTestApp>,
     contract_address: &Addr,
     percentage: f64,
     admin_account: &SigningAccount,
 ) {
-    let (current_lower_tick, current_upper_tick) =
-        get_position_ticks(wasm, cl, contract_address);
+    let old_position =
+        get_position_by_index(wasm, contract_address, (percentage * 1000.0) as usize);
+    let position_details = old_position.full_breakdown.position.unwrap();
     let (current_lower_price, current_upper_price) = (
-        tick_to_price(current_lower_tick).unwrap(),
-        tick_to_price(current_upper_tick).unwrap(),
+        tick_to_price(position_details.lower_tick).unwrap(),
+        tick_to_price(position_details.upper_tick).unwrap(),
     );
     let clp_u128: Uint128 = current_lower_price.atomics().try_into().unwrap();
     let cup_u128: Uint128 = current_upper_price.atomics().try_into().unwrap();
@@ -289,11 +291,12 @@ fn update_range(
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
-                    lower_price: Decimal::new(Uint128::new(new_lower_price)),
-                    upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                    max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
-                },
+                crate::msg::ModifyRange::MovePosition {
+                    old_position_id: old_position.position.position_id,
+                    new_lower_price: Decimal::new(Uint128::new(new_lower_price)),
+                    new_upper_price: Decimal::new(Uint128::new(new_upper_price)),
+                    max_slippage: Decimal::bps(5),
+                }, // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
             )),
             &[],
             admin_account,
@@ -350,35 +353,27 @@ fn get_user_shares_balance(
     .unwrap()
 }
 
-fn get_position_ticks(
+fn get_position_by_index(
     wasm: &Wasm<OsmosisTestApp>,
-    cl: &ConcentratedLiquidity<OsmosisTestApp>,
     contract_address: &Addr,
-) -> (i64, i64) {
+    index_factor: usize,
+) -> FullPosition {
     // query_position will return a Vec of position_ids
-    let position_response: PositionResponse = wasm
+    let position_response: FullPositionsResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                crate::msg::ClQueryMsg::Position {},
+                crate::msg::ClQueryMsg::FullPositions {},
             )),
         )
         .unwrap();
-
-    // TODO Use those to take the latest one? or what?
-    let position = cl
-        .query_position_by_id(&PositionByIdRequest {
-            position_id: position_response.position_ids[0],
-        })
+    let position_index = index_factor % position_response.positions.len();
+    let position = position_response
+        .positions
+        .get(position_index)
         .unwrap()
-        .position
-        .unwrap()
-        .position;
-
-    match position {
-        Some(position) => (position.lower_tick, position.upper_tick),
-        None => panic!("Position not found"),
-    }
+        .clone();
+    position
 }
 
 // HELPERS
@@ -537,19 +532,23 @@ proptest! {
         for i in 0..ITERATIONS_NUMBER {
             match actions[i] {
                 Action::Deposit => {
+                    println!("deposit");
                     deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
                     //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                 },
                 Action::Withdraw => {
+                    println!("withdraw");
                     withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
                     //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                 },
                 Action::Swap => {
+                    println!("swap");
                     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
                     //assert_swap(); // todo!()
                 },
                 Action::UpdateRange => {
-                    update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
+                    println!("update");
+                    move_range(&wasm, &contract_address, percentages[i], &admin_account);
                     //assert_update_range(); // todo!()
                 },
             }
