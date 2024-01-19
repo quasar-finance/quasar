@@ -8,7 +8,7 @@ use osmosis_std::types::{
         concentratedliquidity::v1beta1::PositionByIdRequest, poolmanager::v1beta1::SpotPriceRequest,
     },
 };
-use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm, SigningAccount};
+use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm, SigningAccount, Runner};
 
 use crate::{
     assert_share_price, assert_total_assets, assert_unused_funds,
@@ -461,6 +461,37 @@ fn deposit_withdraw_multiple_users_works() {
         cl_pool_id
     );
 
+    let unused_funds = get_unused_funds(&wasm, contract_address.as_str()).unwrap();
+    let res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::ExactDeposit { recipient: None },
+            &[Coin::new(5_000_000, "uatom"), Coin::new(5_000_000, "uosmo")],
+            bob.acc(),
+        )
+        .unwrap();
+    let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
+        .value
+        .parse()
+        .unwrap();
+    bob.add_fees(vec![tx_fee]);
+
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+    assert_unused_funds!(&wasm, contract_address.as_str(), unused_funds);
+    assert_total_assets!(&wasm, contract_address.as_str(), &total_assets);
+    // we accept a non-default share price relative difference here. Due to the low vault value,
+    // rounding causes a change in share price here, which at low vault value is a non-negligible percentual
+    // increase. This is fine assuming that the relative percentual change decreases as the vault value increases
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+
+
+
+
     // create a new position
     // this introduction should not introduce new funds as long as we free up some funds first
     let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
@@ -696,6 +727,37 @@ fn deposit_withdraw_multiple_users_works() {
     );
 }
 
+// TODO incorporate this in the above tests
+fn deposit_and_assert<'a, R: Runner<'a>>(app: &'a R, contract_address: &str, cl_pool_id: u64, original_share_price: Decimal, user: &mut User) {
+    let wasm = Wasm::new(app);
+    let unused_funds = get_unused_funds(&wasm, contract_address).unwrap();
+    let res = wasm
+        .execute(
+            contract_address,
+            &ExecuteMsg::ExactDeposit { recipient: None },
+            &[Coin::new(5_000_000, "uatom"), Coin::new(5_000_000, "uosmo")],
+            user.acc(),
+        )
+        .unwrap();
+    let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
+        .value
+        .parse()
+        .unwrap();
+    user.add_fees(vec![tx_fee]);
+
+    let total_assets = get_total_assets(&wasm, contract_address).unwrap();
+    assert_unused_funds!(&wasm, contract_address, unused_funds);
+    assert_total_assets!(&wasm, contract_address, &total_assets);
+    // we accept a non-default share price relative difference here. Due to the low vault value,
+    // rounding causes a change in share price here, which at low vault value is a non-negligible percentual
+    // increase. This is fine assuming that the relative percentual change decreases as the vault value increases
+    assert_share_price!(
+        app,
+        contract_address,
+        original_share_price,
+        cl_pool_id
+    );
+}
 
 struct User<'a> {
     account: &'a SigningAccount,
