@@ -90,7 +90,7 @@ pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
-/// AUTOCOMPOUND 
+/// AUTOCOMPOUND
 pub const CURRENT_TOKEN_IN: Item<CoinList> = Item::new("current_token_in");
 pub const CURRENT_TOKEN_OUT_DENOM: Item<String> = Item::new("current_token_out_denom");
 

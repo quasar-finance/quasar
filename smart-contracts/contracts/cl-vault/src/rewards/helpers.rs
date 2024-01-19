@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, Coin, BankMsg, CosmosMsg, Decimal, Fraction};
+use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
 
 use crate::{error::ContractResult, helpers::sort_tokens};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -12,7 +12,7 @@ impl CoinList {
         CoinList::default()
     }
 
-    pub fn coin_list_from_coin(coins : Vec<OsmoCoin>) -> CoinList{
+    pub fn coin_list_from_coin(coins: Vec<OsmoCoin>) -> CoinList {
         let mut tempCoin = vec![];
         for coin in coins {
             let amount = coin.amount.parse::<u128>().unwrap();
@@ -55,7 +55,8 @@ impl CoinList {
     }
 
     pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
-        let parsed_rewards: ContractResult<Vec<Coin>> = rewards.coins()
+        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+            .coins()
             .into_iter()
             .map(|c| Ok(coin(c.amount.u128(), c.denom)))
             .collect();

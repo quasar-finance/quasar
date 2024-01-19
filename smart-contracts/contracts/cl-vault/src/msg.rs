@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal, Uint128};
-use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{
@@ -61,10 +61,10 @@ pub enum AdminExtensionExecuteMsg {
     },
     ClaimStrategistRewards {},
     /// Update the auto compound admin
-    UpdateAutoCompoundAdmin{
+    UpdateAutoCompoundAdmin {
         /// The new admin address.
         address: String,
-    }
+    },
 }
 
 #[cw_serde]

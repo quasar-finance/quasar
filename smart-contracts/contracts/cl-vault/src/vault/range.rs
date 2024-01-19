@@ -13,6 +13,8 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
+use crate::rewards::CoinList;
+use crate::state::CURRENT_REWARDS;
 use crate::{
     helpers::get_twap_price,
     helpers::get_unused_balances,
@@ -36,8 +38,6 @@ use crate::{
     },
     state::CURRENT_BALANCE,
 };
-use crate::rewards::CoinList;
-use crate::state::CURRENT_REWARDS;
 
 use super::concentrated_liquidity::get_cl_pool_info;
 

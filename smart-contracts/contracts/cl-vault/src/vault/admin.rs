@@ -2,7 +2,9 @@ use crate::error::ContractResult;
 use crate::helpers::{assert_admin, sort_tokens};
 use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG, AUTO_COMPOUND_ADMIN};
+use crate::state::{
+    VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
+};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -25,7 +27,7 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
             execute_claim_strategist_rewards(deps, info)
         }
-        AdminExtensionExecuteMsg::UpdateAutoCompoundAdmin {address} => {
+        AdminExtensionExecuteMsg::UpdateAutoCompoundAdmin { address } => {
             execute_update_auto_compound_admin(deps, info, address)
         }
     }

@@ -1,5 +1,8 @@
 use apollo_cw_asset::AssetInfo;
-use cosmwasm_std::{Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult, to_json_binary, Uint128, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, Response, StdError, SubMsg,
+    SubMsgResult, Uint128, WasmMsg,
+};
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg, QueryMsg},
     operations::SwapOperationsListUnchecked,
@@ -13,15 +16,16 @@ use osmosis_std::types::osmosis::gamm::v1beta1::MsgSwapExactAmountInResponse;
 
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
-use crate::{
-    ContractError,
-    reply::Replies,
-    state::{
-        CURRENT_REWARDS, POSITION, STRATEGIST_REWARDS, VAULT_CONFIG, CURRENT_TOKEN_OUT_DENOM, CURRENT_TOKEN_IN,
-    },
-};
 use crate::msg::AutoCompoundAsset;
 use crate::state::DEX_ROUTER;
+use crate::{
+    reply::Replies,
+    state::{
+        CURRENT_REWARDS, CURRENT_TOKEN_IN, CURRENT_TOKEN_OUT_DENOM, POSITION, STRATEGIST_REWARDS,
+        VAULT_CONFIG,
+    },
+    ContractError,
+};
 
 use super::helpers::CoinList;
 
@@ -59,7 +63,6 @@ pub fn handle_collect_incentives_reply(
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
-
 
     CURRENT_REWARDS.update(
         deps.storage,
@@ -103,7 +106,6 @@ pub fn handle_collect_spread_rewards_reply(
 
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
     rewards.update_rewards_coin_list(response_coin_list)?;
-    
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
@@ -120,7 +122,7 @@ pub fn execute_auto_compound(
     // auto compound admin
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
     if swap_routes.is_empty() {
-        return Err(ContractError::EmptyCompoundAssetList {})
+        return Err(ContractError::EmptyCompoundAssetList {});
     }
 
     let current_swap_route = &swap_routes[0];
@@ -149,15 +151,23 @@ pub fn execute_auto_compound(
                     offer_amount: current_swap_route.token_in_amount,
                 },
             )?;
-            let best_outcome = best_path.as_ref().map_or(Uint128::zero(), |path| path.return_amount);
+            let best_outcome = best_path
+                .as_ref()
+                .map_or(Uint128::zero(), |path| path.return_amount);
 
             // Determine the route to use
             let route = if force_swap_route {
-                current_swap_route.clone().recommended_swap_route.ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
+                current_swap_route
+                    .clone()
+                    .recommended_swap_route
+                    .ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
             } else if best_outcome >= recommended_out {
                 best_path.expect("Expected a best path").operations.into()
             } else {
-                current_swap_route.clone().recommended_swap_route.expect("Expected a recommended route")
+                current_swap_route
+                    .clone()
+                    .recommended_swap_route
+                    .expect("Expected a recommended route")
             };
 
             // Execute swap operations once with the determined route
@@ -173,40 +183,45 @@ pub fn execute_auto_compound(
             return Err(ContractError::InvalidDexRouterAddress {});
         }
     };
-    
-
 
     // Removes the already simulated route from the swap_routes variable for next iteration
     let mut new_swap_routes = swap_routes;
     new_swap_routes.remove(0);
 
-    let mut response = Response::new().add_submessage(SubMsg::reply_on_success(swap_msg?, Replies::AutoCompound as u64));
+    let mut response = Response::new().add_submessage(SubMsg::reply_on_success(
+        swap_msg?,
+        Replies::AutoCompound as u64,
+    ));
     if !new_swap_routes.is_empty() {
         let next_autocompound: CosmosMsg = WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards{
+            msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
                 force_swap_route: true,
                 swap_routes: new_swap_routes,
             })?,
             funds: vec![],
         }
-            .into();
+        .into();
 
         response.add_message(next_autocompound);
     }
 
-    let token_in: Vec<osmosis_std::types::cosmos::base::v1beta1::Coin> = vec![osmosis_std::types::cosmos::base::v1beta1::Coin{
-        denom: current_swap_route.clone().token_in_denom,
-        amount: current_swap_route.token_in_amount.to_string(),
-    }];
+    let token_in: Vec<osmosis_std::types::cosmos::base::v1beta1::Coin> =
+        vec![osmosis_std::types::cosmos::base::v1beta1::Coin {
+            denom: current_swap_route.clone().token_in_denom,
+            amount: current_swap_route.token_in_amount.to_string(),
+        }];
     CURRENT_TOKEN_IN.save(deps.storage, &CoinList::coin_list_from_coin(token_in))?;
     CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
-    
 
-    Ok(response.add_event(Event::new("auto_compound_swap"))
-    .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
-    .add_attribute("token_out_denom", current_swap_route.clone().token_out_denom)
-    .add_attribute("token_in_amount", current_swap_route.token_in_amount))
+    Ok(response
+        .add_event(Event::new("auto_compound_swap"))
+        .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
+        .add_attribute(
+            "token_out_denom",
+            current_swap_route.clone().token_out_denom,
+        )
+        .add_attribute("token_in_amount", current_swap_route.token_in_amount))
 }
 
 pub fn handle_auto_compound_reply(
@@ -218,19 +233,18 @@ pub fn handle_auto_compound_reply(
 
     let amount_out = Uint128::new(data.token_out_amount.parse()?);
 
-    // load current rewards 
+    // load current rewards
     let mut current_rewards = CURRENT_REWARDS.load(deps.storage)?;
     let current_token_in = CURRENT_TOKEN_IN.load(deps.storage)?;
     let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
-    
 
-    let token_out: Vec<OsmoCoin> = vec![OsmoCoin{
+    let token_out: Vec<OsmoCoin> = vec![OsmoCoin {
         denom: current_token_out_denom,
         amount: amount_out.to_string(),
     }];
     current_rewards.sub(&current_token_in);
     current_rewards.add(CoinList::coin_list_from_coin(token_out));
-    
+
     CURRENT_REWARDS.save(deps.storage, &current_rewards)?;
 
     // TODO nice response with attributes
@@ -257,11 +271,10 @@ fn execute_swap_operations(
             amount: token_in_amount,
         }],
     }
-        .into();
+    .into();
 
     Ok(swap_msg)
 }
-
 
 fn collect_incentives(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
