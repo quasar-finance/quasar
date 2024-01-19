@@ -163,6 +163,8 @@ pub mod initialize {
                     initial_upper_tick: upper_tick,
                     thesis: "Provide big swap efficiency".to_string(),
                     name: "Contract".to_string(),
+                    auto_compound_admin: todo!(),
+                    dex_router: todo!(),
                 },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),

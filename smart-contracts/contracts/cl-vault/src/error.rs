@@ -124,9 +124,15 @@ pub enum ContractError {
     #[error("Tick not found in tick cache, tick: {tick}")]
     TickNotFound { tick: i64 },
 
-    #[error("Vault is already distributing rewards")]
-    IsDistributing {},
+    #[error("Mismatch in old and new pool tokens")]
+    PoolTokenMismatch {},
 
-    #[error("Vault is not distributing rewards, claiming is needed first")]
-    IsNotDistributing {},
+    #[error("Cannot force a recommended route if recommended route is passed in as None")]
+    TryForceRouteWithoutRecommendedSwapRoute {},
+
+    #[error("Invalid Dex Router Address")]
+    InvalidDexRouterAddress {},
+
+    #[error("Auto compound list is empty")]
+    EmptyCompoundAssetList {},
 }

@@ -535,7 +535,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 

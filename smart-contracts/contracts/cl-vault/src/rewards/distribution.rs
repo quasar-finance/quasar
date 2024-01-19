@@ -1,117 +1,33 @@
-use cosmwasm_std::{
-    Addr, Decimal, Deps, DepsMut, Env, Order, Response, StdError, SubMsg, SubMsgResult, Uint128,
-};
-use cw_storage_plus::Bound;
+use apollo_cw_asset::AssetInfo;
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult, Uint128};
+use cw_dex_router::msg::{BestPathForPairResponse, QueryMsg};
 
+use super::helpers::CoinList;
 use crate::{
-    error::ContractResult,
+    msg::AutoCompoundAsset,
     reply::Replies,
     state::{
-        RewardsStatus, CURRENT_REWARDS, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS,
-        DISTRIBUTION_SNAPSHOT, LAST_ADDRESS_COLLECTED, POSITION, REWARDS_STATUS, SHARES,
-        STRATEGIST_REWARDS, USER_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+        CURRENT_REWARDS, CURRENT_TOKEN_IN, CURRENT_TOKEN_OUT_DENOM, DEX_ROUTER, POSITION,
+        STRATEGIST_REWARDS, VAULT_CONFIG,
     },
     ContractError,
 };
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier,
-    osmosis::concentratedliquidity::v1beta1::{
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{
         MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
         MsgCollectSpreadRewardsResponse,
     },
+    poolmanager::v1beta1::MsgSwapExactAmountInResponse,
 };
 
-use super::helpers::CoinList;
-
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
-pub fn execute_collect_rewards(
-    deps: DepsMut,
-    env: Env,
-    amount_of_users: Uint128,
-) -> Result<Response, ContractError> {
-    let rewards_status = REWARDS_STATUS.load(deps.storage)?;
+pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+    let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
 
-    match rewards_status {
-        RewardsStatus::Distributing => Err(ContractError::IsDistributing {}),
-        RewardsStatus::Ready => {
-            // Is the first iteration
-            REWARDS_STATUS.save(deps.storage, &RewardsStatus::Collecting)?;
-            CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
-
-            // Prepare the bank querier and get the total shares
-            let bq = BankQuerier::new(&deps.querier);
-            let vault_denom = VAULT_DENOM.load(deps.storage)?;
-            let total_supply: Uint128 = bq
-                .supply_of(vault_denom)?
-                .amount
-                .unwrap()
-                .amount
-                .parse::<u128>()?
-                .into();
-
-            Ok(Response::new()
-                .add_submessage(SubMsg::reply_on_success(
-                    get_collect_incentives_msg(deps.as_ref(), env)?,
-                    Replies::CollectIncentives as u64,
-                ))
-                .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Collecting))
-                .add_attribute("is_last_collection", false.to_string()) // at least 2 tx are needed so we can hardcode to false
-                .add_attribute("current_total_supply", total_supply.to_string()))
-        }
-        RewardsStatus::Collecting => {
-            // Get current rewards to distribute, if there are not clear the state and return
-            let rewards = CURRENT_REWARDS.load(deps.storage)?;
-            if rewards.is_empty() {
-                REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-                return Ok(Response::new()
-                    .add_attribute("rewards_status", format!("{:?}", RewardsStatus::Ready))
-                    .add_attribute("total_rewards_amount", "0")
-                    .add_attribute("is_last_collection", "true"));
-            }
-
-            // Is a subsequent iteration
-            let next_address_collect = LAST_ADDRESS_COLLECTED.may_load(deps.storage)?;
-            let start_bound = next_address_collect.map(Bound::exclusive);
-
-            let shares_in_range: Vec<(Addr, Uint128)> = SHARES
-                .range(deps.storage, start_bound, None, Order::Ascending)
-                .take_while(|item| item.is_ok()) // Take only Ok items
-                .map(|item| item.unwrap()) // Unwrap the Ok items, knowing that there are no Err items
-                .collect();
-
-            let mut current_total_supply = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
-            let mut is_last_collection = true;
-            let mut last_address_collected: Option<Addr> = None;
-
-            for (index, (address, shares)) in shares_in_range.into_iter().enumerate() {
-                if index as u128 >= amount_of_users.u128() {
-                    // Save the next address but do not process it
-                    is_last_collection = false;
-                    break;
-                }
-
-                DISTRIBUTION_SNAPSHOT.push_back(deps.storage, &(address.clone(), shares))?;
-                last_address_collected = Some(address);
-                current_total_supply += shares;
-            }
-
-            CURRENT_TOTAL_SUPPLY.save(deps.storage, &current_total_supply)?;
-            let mut new_rewards_status = RewardsStatus::Collecting;
-
-            // Save the address for the next batch processing, or clear if this is the last iteration
-            if is_last_collection {
-                LAST_ADDRESS_COLLECTED.remove(deps.storage);
-                new_rewards_status = RewardsStatus::Distributing;
-                REWARDS_STATUS.save(deps.storage, &new_rewards_status)?;
-            } else {
-                LAST_ADDRESS_COLLECTED.save(deps.storage, &last_address_collected.unwrap())?;
-            }
-
-            Ok(Response::new()
-                .add_attribute("rewards_status", format!("{:?}", new_rewards_status))
-                .add_attribute("is_last_collection", is_last_collection.to_string()))
-        }
-    }
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+        msg,
+        Replies::CollectIncentives as u64,
+    )))
 }
 
 pub fn handle_collect_incentives_reply(
@@ -132,24 +48,27 @@ pub fn handle_collect_incentives_reply(
         }));
 
     let response: MsgCollectIncentivesResponse = data?;
+    let mut response_coin_list = CoinList::coin_list_from_coin(response.collected_incentives);
+
+    // calculate the strategist fee and remove the share at source
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+
     CURRENT_REWARDS.update(
         deps.storage,
         |mut rewards| -> Result<CoinList, ContractError> {
-            rewards.update_rewards(&response.collected_incentives)?;
+            rewards.update_rewards_coin_list(response_coin_list)?;
             Ok(rewards)
         },
     )?;
 
     // collect the spread rewards
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(
-            get_collect_spread_rewards_msg(deps.as_ref(), env)?,
-            Replies::CollectSpreadRewards as u64,
-        ))
-        .add_attribute(
-            "collected_incentives",
-            format!("{:?}", response.collected_incentives),
-        ))
+    let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+        msg,
+        Replies::CollectSpreadRewards as u64,
+    )))
 }
 
 pub fn handle_collect_spread_rewards_reply(
@@ -169,91 +88,183 @@ pub fn handle_collect_spread_rewards_reply(
         }));
 
     let response: MsgCollectSpreadRewardsResponse = data?;
-    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
-    rewards.update_rewards(&response.collected_spread_rewards)?;
+    let mut response_coin_list = CoinList::coin_list_from_coin(response.collected_spread_rewards);
 
-    // calculate and update the strategist fee
+    // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
-    let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
+    let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+
+    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
+    rewards.update_rewards_coin_list(response_coin_list)?;
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
-    Ok(Response::new().add_attribute(
-        "collected_spread_rewards",
-        format!("{:?}", response.collected_spread_rewards),
-    ))
+    // TODO add a nice response
+    Ok(Response::new())
 }
 
-pub fn execute_distribute_rewards(
+pub fn execute_auto_compound(
     deps: DepsMut,
-    _env: Env,
-    amount_of_users: Uint128,
+    env: Env,
+    force_swap_route: bool,
+    swap_routes: Vec<AutoCompoundAsset>,
 ) -> Result<Response, ContractError> {
-    let mut rewards_status = REWARDS_STATUS.load(deps.storage).unwrap();
-    if rewards_status != RewardsStatus::Distributing {
-        return Err(ContractError::IsNotDistributing {});
+    // auto compound admin
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+    if swap_routes.is_empty() {
+        return Err(ContractError::EmptyCompoundAssetList {});
     }
 
-    let rewards = CURRENT_REWARDS.load(deps.storage)?;
-    let total_shares = CURRENT_TOTAL_SUPPLY.load(deps.storage)?;
-    let mut distributed_rewards = DISTRIBUTED_REWARDS.load(deps.storage).unwrap();
-    let mut users_processed: u128 = 0;
+    let current_swap_route = &swap_routes[0];
 
-    while users_processed < amount_of_users.u128() {
-        // Attempt to pop a (user_address, share_amount) tuple from the front of the snapshot Deque
-        if let Some((user_address, share_amount)) = DISTRIBUTION_SNAPSHOT.pop_front(deps.storage)? {
-            // Calculate the user's reward based on the share amount directly
-            let reward_ratio = Decimal::from_ratio(share_amount, total_shares.u128());
-            let user_reward = rewards.mul_ratio(reward_ratio);
-            let user_reward_clone = user_reward.clone();
+    let swap_msg: Result<CosmosMsg, _> = match dex_router {
+        Some(dex_router_address) => {
+            let offer_asset = AssetInfo::Native(current_swap_route.token_in_denom.to_string());
+            let ask_asset = AssetInfo::Native(current_swap_route.token_out_denom.to_string());
 
-            // Merge the new reward with any existing rewards for the user
-            USER_REWARDS.update(
-                deps.storage,
-                user_address,
-                |old| -> ContractResult<CoinList> {
-                    Ok(match old {
-                        Some(old_rewards) => user_reward_clone.add(old_rewards)?,
-                        None => user_reward_clone,
-                    })
+            let recommended_out: Uint128 = match current_swap_route.recommended_swap_route.clone() {
+                Some(operations) => deps.querier.query_wasm_smart(
+                    dex_router_address.to_string(),
+                    &QueryMsg::SimulateSwapOperations {
+                        offer_amount: current_swap_route.token_in_amount,
+                        operations,
+                    },
+                )?,
+                None => 0u128.into(),
+            };
+            let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
+                dex_router_address.to_string(),
+                &QueryMsg::BestPathForPair {
+                    offer_asset: offer_asset.into(),
+                    ask_asset: ask_asset.into(),
+                    exclude_paths: None,
+                    offer_amount: current_swap_route.token_in_amount,
                 },
             )?;
+            let best_outcome = best_path
+                .as_ref()
+                .map_or(Uint128::zero(), |path| path.return_amount);
 
-            // Accumulate the distributed rewards to be subtracted later
-            distributed_rewards.merge(user_reward.coins())?;
-            users_processed += 1;
-        } else {
-            // No more addresses in the snapshot Deque to process
-            break;
+            // Determine the route to use
+            let route = if force_swap_route {
+                current_swap_route
+                    .clone()
+                    .recommended_swap_route
+                    .ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
+            } else if best_outcome >= recommended_out {
+                best_path.expect("Expected a best path").operations.into()
+            } else {
+                current_swap_route
+                    .clone()
+                    .recommended_swap_route
+                    .expect("Expected a recommended route")
+            };
+
+            // Execute swap operations once with the determined route
+            execute_swap_operations(
+                dex_router_address,
+                route,
+                Uint128::zero(),
+                &current_swap_route.token_in_denom,
+                current_swap_route.token_in_amount,
+            )
         }
+        None => {
+            return Err(ContractError::InvalidDexRouterAddress {});
+        }
+    };
+
+    // Removes the already simulated route from the swap_routes variable for next iteration
+    let mut new_swap_routes = swap_routes;
+    new_swap_routes.remove(0);
+
+    let mut response = Response::new().add_submessage(SubMsg::reply_on_success(
+        swap_msg?,
+        Replies::AutoCompound as u64,
+    ));
+    if !new_swap_routes.is_empty() {
+        let next_autocompound: CosmosMsg = WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+                force_swap_route: true,
+                swap_routes: new_swap_routes,
+            })?,
+            funds: vec![],
+        }
+        .into();
+
+        response.add_message(next_autocompound);
     }
 
-    // If the Deque is empty, we've finished distributing rewards so we clear the semaphore flag
-    let is_last_distribution = DISTRIBUTION_SNAPSHOT.is_empty(deps.storage)?;
-    if is_last_distribution {
-        rewards_status = RewardsStatus::Ready;
-        REWARDS_STATUS.save(deps.storage, &rewards_status)?;
-        CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
+    let token_in: Vec<osmosis_std::types::cosmos::base::v1beta1::Coin> =
+        vec![osmosis_std::types::cosmos::base::v1beta1::Coin {
+            denom: current_swap_route.clone().token_in_denom,
+            amount: current_swap_route.token_in_amount.to_string(),
+        }];
+    CURRENT_TOKEN_IN.save(deps.storage, &CoinList::coin_list_from_coin(token_in))?;
+    CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
 
-        // Subtract all accumulated all distributed rewards from the current rewards
-        CURRENT_REWARDS.update(
-            deps.storage,
-            |mut old_rewards| -> ContractResult<CoinList> {
-                old_rewards.sub(&distributed_rewards)?;
-                Ok(old_rewards)
-            },
-        )?;
-        // Clear distributed rewards state
-        DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
-    } else {
-        DISTRIBUTED_REWARDS.save(deps.storage, &distributed_rewards)?;
+    Ok(response
+        .add_event(Event::new("auto_compound_swap"))
+        .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
+        .add_attribute(
+            "token_out_denom",
+            current_swap_route.clone().token_out_denom,
+        )
+        .add_attribute("token_in_amount", current_swap_route.token_in_amount))
+}
+
+pub fn handle_auto_compound_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let data: MsgSwapExactAmountInResponse = data.try_into()?;
+
+    let amount_out = Uint128::new(data.token_out_amount.parse()?);
+
+    // load current rewards
+    let mut current_rewards = CURRENT_REWARDS.load(deps.storage)?;
+    let current_token_in = CURRENT_TOKEN_IN.load(deps.storage)?;
+    let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
+
+    let token_out: Vec<OsmoCoin> = vec![OsmoCoin {
+        denom: current_token_out_denom,
+        amount: amount_out.to_string(),
+    }];
+    current_rewards.sub(&current_token_in);
+    current_rewards.add(CoinList::coin_list_from_coin(token_out));
+
+    CURRENT_REWARDS.save(deps.storage, &current_rewards)?;
+
+    // TODO nice response with attributes
+    Ok(Response::new())
+}
+
+fn execute_swap_operations(
+    dex_router_address: Addr,
+    operations: SwapOperationsListUnchecked,
+    token_out_min_amount: Uint128,
+    token_in_denom: &String,
+    token_in_amount: Uint128,
+) -> Result<CosmosMsg, ContractError> {
+    let swap_msg: CosmosMsg = WasmMsg::Execute {
+        contract_addr: dex_router_address.to_string(),
+        msg: to_json_binary(&ExecuteMsg::ExecuteSwapOperations {
+            operations: operations,
+            minimum_receive: Some(token_out_min_amount),
+            to: None,
+            offer_amount: None,
+        })?,
+        funds: vec![Coin {
+            denom: token_in_denom.to_string(),
+            amount: token_in_amount,
+        }],
     }
+    .into();
 
-    Ok(Response::new()
-        .add_attribute("rewards_status", format!("{:?}", rewards_status))
-        .add_attribute("total_rewards_amount", format!("{:?}", rewards.coins()))
-        .add_attribute("is_last_distribution", is_last_distribution.to_string()))
+    Ok(swap_msg)
 }
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {

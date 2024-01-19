@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal, Uint128};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -20,14 +21,23 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
-    /// Collect any rewards from Osmosis to the Vault
-    CollectRewards { amount_of_users: Uint128 },
     /// Distribute any rewards over all users
-    DistributeRewards { amount_of_users: Uint128 },
+    DistributeRewards {},
     /// Claim rewards belonging to a single user
-    ClaimRewards {},
+    AutoCompoundRewards {
+        force_swap_route: bool,
+        swap_routes: Vec<AutoCompoundAsset>,
+    },
     /// Build tick exponent cache
     BuildTickCache {},
+}
+
+#[cw_serde]
+pub struct AutoCompoundAsset {
+    pub token_in_denom: String,
+    pub token_out_denom: String,
+    pub token_in_amount: Uint128,
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -50,6 +60,11 @@ pub enum AdminExtensionExecuteMsg {
         updates: VaultConfig,
     },
     ClaimStrategistRewards {},
+    /// Update the auto compound admin
+    UpdateAutoCompoundAdmin {
+        /// The new admin address.
+        address: String,
+    },
 }
 
 #[cw_serde]
@@ -90,8 +105,6 @@ pub enum UserBalanceQueryMsg {
     UserSharesBalance { user: String },
     #[returns(AssetsBalanceResponse)]
     UserAssetsBalance { user: String },
-    #[returns(UserRewardsResponse)]
-    UserRewards { user: String },
 }
 
 /// Extension query messages for related concentrated liquidity
@@ -125,6 +138,10 @@ pub struct InstantiateMsg {
     pub admin: String,
     /// Address that is allowed to update range.
     pub range_admin: String,
+    /// Address that is allowed to auto compound
+    pub auto_compound_admin: String,
+    /// Address foe the dex router
+    pub dex_router: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
     /// Configurable parameters for the contract.

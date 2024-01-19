@@ -13,6 +13,8 @@ use osmosis_std::types::osmosis::{
     gamm::v1beta1::MsgSwapExactAmountInResponse,
 };
 
+use crate::rewards::CoinList;
+use crate::state::CURRENT_REWARDS;
 use crate::{
     helpers::get_twap_price,
     helpers::get_unused_balances,
@@ -546,6 +548,9 @@ pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Respon
             position_id: merge_response.new_position_id,
         },
     )?;
+
+    // save the current rewards as empty list once all the rewards are auto compounded
+    CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
 
     Ok(Response::new()
         .add_attribute("action", "swap_deposit_merge")

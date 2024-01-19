@@ -5,10 +5,7 @@ use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use crate::{
     error::ContractResult,
-    state::{
-        PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, USER_REWARDS,
-        VAULT_DENOM,
-    },
+    state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
@@ -167,13 +164,6 @@ pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserShares
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?
         .unwrap_or(Uint128::zero());
     Ok(UserSharesBalanceResponse { balance })
-}
-
-pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserRewardsResponse> {
-    let rewards = USER_REWARDS
-        .load(deps.storage, deps.api.addr_validate(&user)?)?
-        .coins();
-    Ok(UserRewardsResponse { rewards })
 }
 
 /// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users

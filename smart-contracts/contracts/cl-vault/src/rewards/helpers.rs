@@ -45,6 +45,19 @@ impl CoinList {
         Ok(())
     }
 
+    // TODO: Cant we get Coins from a coinlist and use above function?
+    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
+        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+            .coins()
+            .into_iter()
+            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
+            .collect();
+
+        // Append and merge to
+        self.merge(parsed_rewards?)?;
+        Ok(())
+    }
+
     /// add rewards to self and mutate self
     pub fn add(mut self, rewards: CoinList) -> ContractResult<Self> {
         self.merge(rewards.coins())?;
@@ -115,6 +128,16 @@ impl CoinList {
 
     pub fn from_coins(coins: Vec<Coin>) -> Self {
         CoinList(coins)
+    }
+
+    // TODO: Cant we use above function?
+    pub fn coin_list_from_coin(coins: Vec<OsmoCoin>) -> CoinList {
+        let mut tempCoin = vec![];
+        for coin in coins {
+            let amount = coin.amount.parse::<u128>().unwrap();
+            tempCoin.push(Coin::new(amount, coin.denom))
+        }
+        CoinList(tempCoin)
     }
 
     pub fn find_coin(&self, denom: String) -> Coin {
