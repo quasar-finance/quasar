@@ -32,12 +32,6 @@ fn multi_position_deposit_works() {
             Coin::new(1_000_000_000_000, "uosmo"),
         ])
         .unwrap();
-    let bob = app
-        .init_account(&[
-            Coin::new(1_000_000_000_000, "uatom"),
-            Coin::new(1_000_000_000_000, "uosmo"),
-        ])
-        .unwrap();
 
     let wasm = Wasm::new(&app);
 
