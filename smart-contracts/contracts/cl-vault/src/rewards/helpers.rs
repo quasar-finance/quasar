@@ -51,7 +51,7 @@ impl CoinList {
         Ok(self)
     }
 
-    fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
+    pub fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
         for c in coins {
             let same = self.0.iter_mut().find(|c2| c.denom == c2.denom);
             if let Some(c2) = same {
@@ -132,6 +132,12 @@ impl CoinList {
 impl From<Coin> for CoinList {
     fn from(value: Coin) -> Self {
         CoinList(vec![value])
+    }
+}
+
+impl From<Vec<Coin>> for CoinList {
+    fn from(value: Vec<Coin>) -> Self {
+        Self::from_coins(value)
     }
 }
 
