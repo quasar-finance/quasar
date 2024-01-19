@@ -6,7 +6,7 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+        UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::VaultConfig,
 };

@@ -49,11 +49,6 @@ pub struct UserSharesBalanceResponse {
 }
 
 #[cw_serde]
-pub struct UserRewardsResponse {
-    pub rewards: Vec<Coin>,
-}
-
-#[cw_serde]
 pub struct TotalAssetsResponse {
     pub token0: Coin,
     pub token1: Coin,
