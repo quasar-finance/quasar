@@ -11,7 +11,6 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    debug,
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
@@ -54,8 +53,6 @@ pub fn execute_withdraw(
         .amount
         .parse()?;
 
-    debug!(deps, "withdraw1", "");
-
     // get the dust amounts belonging to the user
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
@@ -93,14 +90,10 @@ pub fn execute_withdraw(
     }
     .into();
 
-    debug!(deps, "withdraw2", "");
-
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
     let withdraw_msg = withdraw(deps.branch(), &env, shares_to_withdraw_u128)?; // TODOSN: Rename this function name to something more explicative
-
-    debug!(deps, "withdraw3", "");
 
     Ok(Response::new()
         .add_attribute("method", "withdraw")
@@ -131,11 +124,7 @@ fn withdraw(
         .parse::<u128>()?
         .into();
 
-    debug!(deps, "withdraw4");
-
     let positions = get_positions(deps.storage, &deps.querier);
-
-    debug!(deps, "positions-witdraw", positions);
 
     let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions?
         .into_iter()
@@ -154,8 +143,7 @@ fn withdraw(
         })
         .collect();
 
-    debug!(deps, "withdraw", withdraws);
-    withdraws
+        withdraws
 }
 
 pub fn handle_withdraw_user_reply(
@@ -164,9 +152,7 @@ pub fn handle_withdraw_user_reply(
 ) -> Result<Response, ContractError> {
     // parse the reply and instantiate the funds we want to send
     let response: MsgWithdrawPositionResponse = data.try_into()?;
-    debug!(deps, "loading current withdrawer");
     let user = CURRENT_WITHDRAWER.load(deps.storage)?;
-    debug!(deps, "loaded current withdrawer");
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 

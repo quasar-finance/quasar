@@ -1,7 +1,7 @@
 use crate::helpers::{get_one_or_two, get_unused_balances};
 use crate::state::{Position, POSITIONS};
 use crate::vault::concentrated_liquidity::get_positions;
-use crate::{debug, ContractError};
+use crate::ContractError;
 use crate::{
     error::ContractResult,
     state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, USER_REWARDS, VAULT_DENOM},
@@ -116,7 +116,6 @@ pub fn query_pool(deps: Deps) -> ContractResult<PoolResponse> {
 }
 
 pub fn query_positions(deps: Deps) -> ContractResult<PositionsResponse> {
-    debug!(deps, "positions", "");
     let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
@@ -130,11 +129,9 @@ pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionsResponse>
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
 
-    debug!(deps, "here1", "");
     let positions = ps?;
     let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
 
-    debug!(deps, "here2", "");
     let full_positions: Result<Vec<FullPosition>, ContractError> = positions
         .into_iter()
         .map(|(id, position)| {
@@ -149,7 +146,6 @@ pub fn query_full_positions(deps: Deps) -> ContractResult<FullPositionsResponse>
         })
         .collect();
 
-    debug!(deps, "here3", full_positions);
     Ok(FullPositionsResponse {
         positions: full_positions?,
     })
@@ -169,11 +165,7 @@ pub fn query_convert_to_assets(
         ]);
     }
 
-    debug!(deps, "user_shares", user_shares);
-    debug!(deps, "vault_assets", vault_assets);
-
     let vault_shares = query_total_vault_token_supply(deps)?.total;
-    debug!(deps, "vault_shares", vault_shares);
 
     let user_token0 = vault_assets
         .token0
@@ -206,7 +198,6 @@ pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserReward
 }
 
 pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
-    debug!(deps, "total_assets", "");
     let positions = get_positions(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
     let unused_balance = get_unused_balances(deps.storage, &deps.querier, &env)?;
@@ -247,7 +238,6 @@ pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsRes
 }
 
 pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTokenSupplyResponse> {
-    debug!(deps, "total_vts", "");
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total = bq
