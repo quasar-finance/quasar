@@ -1,13 +1,3 @@
-use apollo_cw_asset::AssetInfo;
-use cosmwasm_std::{
-    to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult,
-    Uint128, WasmMsg,
-};
-use cw_dex_router::{
-    msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
-    operations::SwapOperationsListUnchecked,
-};
-
 use super::helpers::CoinList;
 use crate::{
     msg::AutoCompoundAsset,
@@ -18,7 +8,15 @@ use crate::{
     },
     ContractError,
 };
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+use apollo_cw_asset::AssetInfo;
+use cosmwasm_std::{
+    to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
+    WasmMsg,
+};
+use cw_dex_router::{
+    msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
+    operations::SwapOperationsListUnchecked,
+};
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
         MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
@@ -47,18 +45,10 @@ pub fn handle_collect_incentives_reply(
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
     // If we do not have data here, we treat this as an empty MsgCollectIncentivesResponse, this seems to be a bug somewhere between cosmwasm and osmosis
-    let data: Result<MsgCollectIncentivesResponse, ContractError> = data
-        .into_result()
-        .map_err(StdError::generic_err)?
-        .data
-        .map(|b| Ok(b.try_into()?))
-        .unwrap_or(Ok(MsgCollectIncentivesResponse {
-            collected_incentives: vec![],
-            forfeited_incentives: vec![],
-        }));
+    let data: MsgCollectIncentivesResponse = data.try_into()?;
 
-    let response: MsgCollectIncentivesResponse = data?;
-    let mut response_coin_list = CoinList::coin_list_from_coin(response.collected_incentives);
+    let mut response_coin_list = CoinList::new();
+    response_coin_list.merge(data.collected_incentives); // TODO: fix type of Coin
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -91,17 +81,10 @@ pub fn handle_collect_spread_rewards_reply(
 ) -> Result<Response, ContractError> {
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
-    let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data
-        .into_result()
-        .map_err(StdError::generic_err)?
-        .data
-        .map(|b| Ok(b.try_into()?))
-        .unwrap_or(Ok(MsgCollectSpreadRewardsResponse {
-            collected_spread_rewards: vec![],
-        }));
+    let data: MsgCollectSpreadRewardsResponse = data.try_into()?;
 
-    let response: MsgCollectSpreadRewardsResponse = data?;
-    let mut response_coin_list = CoinList::coin_list_from_coin(response.collected_spread_rewards);
+    let mut response_coin_list = CoinList::new();
+    response_coin_list.merge(data.collected_spread_rewards); // TODO: fix type of Coin
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -243,6 +226,7 @@ pub fn handle_auto_compound_reply(
     let current_token_in = CURRENT_TOKEN_IN.load(deps.storage)?;
     let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
 
+    // TODO: This clones should be removed by editing the helpers::CoinList add mehtod which is taking ownership
     current_rewards.clone().sub(&current_token_in);
     current_rewards.clone().add(CoinList::from_coins(vec![Coin {
         denom: current_token_out_denom,
