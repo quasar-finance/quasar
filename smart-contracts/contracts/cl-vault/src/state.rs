@@ -1,11 +1,9 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
-use cw_storage_plus::{Deque, Item, Map};
-use osmosis_std::types::cosmos::base::v1beta1::Coin;
-
 use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cw_storage_plus::{Deque, Item, Map};
 
 /// metadata useful for display purposes
 #[cw_serde]

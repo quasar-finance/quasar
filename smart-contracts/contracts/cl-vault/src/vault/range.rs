@@ -1,18 +1,4 @@
-use cosmwasm_schema::cw_serde;
-use std::str::FromStr;
-
-use cosmwasm_std::{
-    to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
-};
-
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{
-        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
-    },
-    gamm::v1beta1::MsgSwapExactAmountInResponse,
-};
-
+use super::concentrated_liquidity::get_cl_pool_info;
 use crate::rewards::CoinList;
 use crate::state::CURRENT_REWARDS;
 use crate::{
@@ -38,8 +24,18 @@ use crate::{
     },
     state::CURRENT_BALANCE,
 };
-
-use super::concentrated_liquidity::get_cl_pool_info;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{
+    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
+};
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{
+        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
+    },
+    gamm::v1beta1::MsgSwapExactAmountInResponse,
+};
+use std::str::FromStr;
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -519,7 +515,7 @@ pub fn handle_iteration_create_position_reply(
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&merge_msg)?,
+            msg: to_json_binary(&merge_msg)?,
             funds: vec![],
         },
         Replies::Merge.into(),

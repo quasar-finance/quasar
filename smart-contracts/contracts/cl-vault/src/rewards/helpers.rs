@@ -67,18 +67,6 @@ impl CoinList {
         Ok(())
     }
 
-    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
-        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
-            .coins()
-            .into_iter()
-            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
-            .collect();
-
-        // Append and merge to
-        self.merge(parsed_rewards?)?;
-        Ok(())
-    }
-
     /// add rewards to self and mutate self
     pub fn add(mut self, rewards: CoinList) -> ContractResult<Self> {
         self.merge(rewards.coins())?;
