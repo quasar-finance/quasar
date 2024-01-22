@@ -1,8 +1,8 @@
+use crate::{error::ContractResult, helpers::sort_tokens};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
-
-use crate::{error::ContractResult, helpers::sort_tokens};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+
 #[cw_serde]
 #[derive(Default)]
 pub struct CoinList(Vec<Coin>);
@@ -43,10 +43,23 @@ impl CoinList {
     }
 
     /// merge any values already in Rewards and append any others
-    pub fn update_rewards(&mut self, rewards: Vec<OsmoCoin>) -> ContractResult<()> {
+    pub fn update_rewards(&mut self, rewards: &[OsmoCoin]) -> ContractResult<()> {
         let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+            .iter()
+            .map(|c| Ok(coin(c.amount.parse()?, c.denom.clone())))
+            .collect();
+
+        // Append and merge to
+        self.merge(parsed_rewards?)?;
+        Ok(())
+    }
+
+    // TODO: Cant we get Coins from a coinlist and use above function?
+    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
+        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+            .coins()
             .into_iter()
-            .map(|c| Ok(coin(c.amount.parse()?, c.denom)))
+            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
             .collect();
 
         // Append and merge to
@@ -72,7 +85,7 @@ impl CoinList {
         Ok(self)
     }
 
-    fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
+    pub fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
         for c in coins {
             let same = self.0.iter_mut().find(|c2| c.denom == c2.denom);
             if let Some(c2) = same {
@@ -138,6 +151,16 @@ impl CoinList {
         CoinList(coins)
     }
 
+    // TODO: Cant we use above function?
+    // pub fn coin_list_from_coin(coins: Vec<OsmoCoin>) -> CoinList {
+    //     let mut tempCoin = vec![];
+    //     for coin in coins {
+    //         let amount = coin.amount.parse::<u128>().unwrap();
+    //         tempCoin.push(Coin::new(amount, coin.denom))
+    //     }
+    //     CoinList(tempCoin)
+    // }
+
     pub fn find_coin(&self, denom: String) -> Coin {
         self.0
             .clone()
@@ -160,7 +183,7 @@ mod tests {
     fn sub_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -223,7 +246,7 @@ mod tests {
     fn percentage_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -254,7 +277,7 @@ mod tests {
     fn sub_percentage_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -298,7 +321,7 @@ mod tests {
     fn add_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -336,7 +359,7 @@ mod tests {
     fn update_rewards_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -353,7 +376,7 @@ mod tests {
             .unwrap();
 
         rewards
-            .update_rewards(vec![
+            .update_rewards(&vec![
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),

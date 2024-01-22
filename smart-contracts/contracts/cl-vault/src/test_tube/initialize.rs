@@ -45,7 +45,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
@@ -106,7 +106,6 @@ pub mod initialize {
                 }],
             },
             admin.address(),
-            false,
             &admin,
         )
         .unwrap();
@@ -164,6 +163,8 @@ pub mod initialize {
                     initial_upper_tick: upper_tick,
                     thesis: "Provide big swap efficiency".to_string(),
                     name: "Contract".to_string(),
+                    auto_compound_admin: todo!(),
+                    dex_router: todo!(),
                 },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),

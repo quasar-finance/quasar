@@ -49,7 +49,7 @@ pub struct PoolConfig {
 
 impl PoolConfig {
     pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        vec![&self.token0, &self.token1].contains(&&token.into())
+        [&self.token0, &self.token1].contains(&&token.into())
     }
 }
 
@@ -85,9 +85,15 @@ pub struct CurrentDeposit {
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
+#[cw_serde]
+pub enum RewardsStatus {
+    Ready,
+    Collecting,
+    Distributing,
+}
+
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
-pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// AUTOCOMPOUND
@@ -95,7 +101,6 @@ pub const CURRENT_TOKEN_IN: Item<CoinList> = Item::new("current_token_in");
 pub const CURRENT_TOKEN_OUT_DENOM: Item<String> = Item::new("current_token_out_denom");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
-pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 

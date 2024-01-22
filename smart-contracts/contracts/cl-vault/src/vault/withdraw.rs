@@ -100,7 +100,7 @@ pub fn execute_withdraw(
     let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?;
 
     Ok(Response::new()
-        .add_attribute("method", "withdraw")
+        .add_attribute("method", "execute")
         .add_attribute("action", "withdraw")
         .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
         .add_attribute("share_amount", shares_to_withdraw)
@@ -169,8 +169,8 @@ pub fn handle_withdraw_user_reply(
     };
     Ok(Response::new()
         .add_message(msg)
-        .add_attribute("method", "withdraw_position_reply")
-        .add_attribute("action", "withdraw")
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_withdraw_user")
         .add_attributes(withdraw_attrs))
 }
 

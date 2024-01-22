@@ -6,7 +6,7 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+        UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::VaultConfig,
 };
@@ -105,8 +105,6 @@ pub enum UserBalanceQueryMsg {
     UserSharesBalance { user: String },
     #[returns(AssetsBalanceResponse)]
     UserAssetsBalance { user: String },
-    #[returns(UserRewardsResponse)]
-    UserRewards { user: String },
 }
 
 /// Extension query messages for related concentrated liquidity
@@ -158,7 +156,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    /// The ID of the new pool
-    pub pool_id: u64,
-}
+pub struct MigrateMsg {}
