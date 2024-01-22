@@ -180,6 +180,8 @@ pub fn execute_auto_compound_swap(
         swap_msg?,
         Replies::AutoCompound as u64,
     ));
+
+    let response1 = response.clone();
     if !swap_routes.is_empty() {
         let next_autocompound_msg: CosmosMsg = WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
@@ -191,7 +193,7 @@ pub fn execute_auto_compound_swap(
         }
         .into();
 
-        response.clone().add_message(next_autocompound_msg);
+        response1.add_message(next_autocompound_msg);
     }
 
     CURRENT_TOKEN_IN.save(
@@ -203,7 +205,8 @@ pub fn execute_auto_compound_swap(
     )?;
     CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
 
-    Ok(response
+    let final_response = response1.clone();
+    Ok(final_response
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_compund_swap")
         .add_attribute("token_in_denom", current_swap_route.token_in_denom)
