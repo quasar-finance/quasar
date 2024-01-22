@@ -48,7 +48,7 @@ pub fn handle_collect_incentives_reply(
     let data: MsgCollectIncentivesResponse = data.try_into()?;
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge_osmocoins(data.collected_incentives)?;
+    response_coin_list.merge(CoinList::coin_list_from_coin(data.collected_incentives).coins())?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -84,7 +84,7 @@ pub fn handle_collect_spread_rewards_reply(
     let data: MsgCollectSpreadRewardsResponse = data.try_into()?;
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge_osmocoins(data.collected_spread_rewards)?;
+    response_coin_list.merge(CoinList::coin_list_from_coin(data.collected_spread_rewards).coins())?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;

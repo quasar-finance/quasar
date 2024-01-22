@@ -85,27 +85,6 @@ impl CoinList {
         Ok(())
     }
 
-    // TODO: check if this can be avoided
-    pub fn merge_osmocoins(&mut self, coins: Vec<OsmoCoin>) -> ContractResult<()> {
-        for osmo_coin in coins {
-            // Parse the amount from string to u128
-            let amount = osmo_coin.amount.parse::<u128>()?;
-
-            // Find if a Coin with the same denom exists in self
-            match self.0.iter_mut().find(|c| osmo_coin.denom == c.denom) {
-                Some(cosm_coin) => {
-                    // If found, safely add the amounts
-                    cosm_coin.amount = cosm_coin.amount.checked_add(amount.into())?;
-                }
-                None => {
-                    // If not found, create a new cosmwasm_std::Coin and push it to the vector
-                    self.0.push(coin(amount, osmo_coin.denom));
-                }
-            }
-        }
-        Ok(())
-    }
-
     /// substract a percentage from self, mutate self and return the subtracted rewards
     pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<CoinList> {
         let to_sub = self.mul_ratio(ratio);
