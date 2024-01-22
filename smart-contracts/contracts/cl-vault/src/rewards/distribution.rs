@@ -48,7 +48,7 @@ pub fn handle_collect_incentives_reply(
     let data: MsgCollectIncentivesResponse = data.try_into()?;
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge(data.collected_incentives); // TODO: fix type of Coin
+    response_coin_list.merge_osmocoins(data.collected_incentives);
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -84,7 +84,7 @@ pub fn handle_collect_spread_rewards_reply(
     let data: MsgCollectSpreadRewardsResponse = data.try_into()?;
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge(data.collected_spread_rewards); // TODO: fix type of Coin
+    response_coin_list.merge_osmocoins(data.collected_spread_rewards);
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -191,7 +191,7 @@ pub fn execute_auto_compound_swap(
         }
         .into();
 
-        response.add_message(next_autocompound_msg);
+        response.clone().add_message(next_autocompound_msg);
     }
 
     CURRENT_TOKEN_IN.save(
