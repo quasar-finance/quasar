@@ -181,7 +181,7 @@ pub fn execute_auto_compound_swap(
         Replies::AutoCompound as u64,
     ));
 
-    let response1 = response.clone();
+    let new_response = response.clone();
     if !swap_routes.is_empty() {
         let next_autocompound_msg: CosmosMsg = WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
@@ -193,19 +193,19 @@ pub fn execute_auto_compound_swap(
         }
         .into();
 
-        response1.add_message(next_autocompound_msg);
+        new_response.add_message(next_autocompound_msg);
     }
 
     CURRENT_TOKEN_IN.save(
         deps.storage,
         &CoinList::from_coins(vec![Coin {
-            denom: current_swap_route.token_in_denom.clone(),
-            amount: current_swap_route.token_in_amount,
+            denom: current_swap_route.clone().token_in_denom,
+            amount: current_swap_route.clone().token_in_amount,
         }]),
     )?;
     CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
 
-    let final_response = response1.clone();
+    let final_response = response.clone();
     Ok(final_response
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_compund_swap")
