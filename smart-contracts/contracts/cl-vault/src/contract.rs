@@ -177,7 +177,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
-        Replies::AutoCompound => handle_auto_compound_reply(deps, env, msg.result),
+        Replies::AutoCompound => handle_auto_compound_reply(deps, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }
