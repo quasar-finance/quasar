@@ -22,7 +22,7 @@ pub enum ExtensionExecuteMsg {
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
     /// Distribute any rewards over all users
-    DistributeRewards {},
+    CollectRewards {},
     /// Claim rewards belonging to a single user
     AutoCompoundRewards {
         force_swap_route: bool,

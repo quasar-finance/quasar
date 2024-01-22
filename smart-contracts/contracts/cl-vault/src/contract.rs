@@ -89,7 +89,7 @@ pub fn execute(
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
                 ),
-                crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
+                crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
                 crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
