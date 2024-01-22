@@ -17,7 +17,8 @@ use crate::rewards::{
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
-    execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
+    execute_merge_position, handle_merge_create_position_reply,
+    handle_merge_withdraw_position_reply,
 };
 use crate::vault::range::{
     execute_update_range, get_range_admin, handle_initial_create_position_reply,
@@ -27,7 +28,7 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -69,7 +70,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
+                crate::msg::ExtensionExecuteMsg::Merge(msg) => {
+                    execute_merge_position(deps, env, info, msg)
+                }
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
@@ -172,7 +175,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::Merge => handle_merge_response(deps, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
-        Replies::WithdrawMerge => handle_merge_withdraw_reply(deps, env, msg.result),
+        Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::AutoCompound => handle_auto_compound_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),

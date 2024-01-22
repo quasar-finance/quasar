@@ -25,7 +25,7 @@ pub struct MergeResponse {
     pub new_position_id: u64,
 }
 
-pub fn execute_merge(
+pub fn execute_merge_position(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -87,8 +87,8 @@ pub fn execute_merge(
             current.msg,
             Replies::WithdrawMerge as u64,
         ))
-        .add_attribute("method", "merge")
-        .add_attribute("action", "merge"))
+        .add_attribute("method", "execute")
+        .add_attribute("action", "merge_position"))
 }
 
 #[cw_serde]
@@ -103,7 +103,7 @@ pub struct WithdrawResponse {
     pub amount1: Uint128,
 }
 
-pub fn handle_merge_withdraw_reply(
+pub fn handle_merge_withdraw_position_reply(
     deps: DepsMut,
     env: Env,
     msg: SubMsgResult,
@@ -177,9 +177,9 @@ pub fn handle_merge_withdraw_reply(
         let msg: CosmosMsg = next.msg.into();
 
         Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64))
-            .add_attribute("method", "withdraw-position-reply")
-            .add_attribute("action", "merge"))
+            .add_attribute("method", "reply")
+            .add_attribute("action", "handle_merge_withdraw_position")
+            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64)))
     }
 }
 
@@ -197,8 +197,8 @@ pub fn handle_merge_create_position_reply(
             })?
             .0,
         )
-        .add_attribute("method", "create-position-reply")
-        .add_attribute("action", "merge"))
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_merge_create_position"))
 }
 
 impl TryFrom<SubMsgResult> for MergeResponse {
