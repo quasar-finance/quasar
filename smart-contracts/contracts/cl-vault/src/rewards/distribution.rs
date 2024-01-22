@@ -236,24 +236,25 @@ pub fn handle_auto_compound_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let data: MsgSwapExactAmountInResponse = data.try_into()?;
-
-    let amount_out = Uint128::new(data.token_out_amount.parse()?);
+    let token_out_amount = Uint128::new(data.token_out_amount.parse()?);
 
     // load current rewards
-    let mut current_rewards = CURRENT_REWARDS.load(deps.storage)?;
+    let current_rewards = CURRENT_REWARDS.load(deps.storage)?;
     let current_token_in = CURRENT_TOKEN_IN.load(deps.storage)?;
     let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
 
-    current_rewards.sub(&current_token_in);
-    current_rewards.add(CoinList::from_coins(vec![Coin {
+    current_rewards.clone().sub(&current_token_in);
+    current_rewards.clone().add(CoinList::from_coins(vec![Coin {
         denom: current_token_out_denom,
-        amount: amount_out,
+        amount: token_out_amount,
     }]));
 
     CURRENT_REWARDS.save(deps.storage, &current_rewards)?;
 
     // TODO nice response with attributes
-    Ok(Response::new())
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_auto_compound"))
 }
 
 fn execute_swap_operations(
