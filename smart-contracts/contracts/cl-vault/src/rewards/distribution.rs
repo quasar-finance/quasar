@@ -10,8 +10,8 @@ use crate::{
 };
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
-    WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, SubMsg, SubMsgResult,
+    Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
@@ -183,7 +183,7 @@ pub fn execute_auto_compound_swap(
     if !swap_routes.is_empty() {
         let next_autocompound_msg: CosmosMsg = WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+            msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
                 force_swap_route: true,
                 swap_routes,
             })?,
@@ -250,8 +250,8 @@ fn execute_swap_operations(
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_binary(&ApolloExecuteMsg::ExecuteSwapOperations {
-            operations: operations,
+        msg: to_json_binary(&ApolloExecuteMsg::ExecuteSwapOperations {
+            operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,
             offer_amount: None,
