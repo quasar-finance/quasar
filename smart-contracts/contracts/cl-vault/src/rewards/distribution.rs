@@ -1,6 +1,12 @@
 use apollo_cw_asset::AssetInfo;
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult, Uint128};
-use cw_dex_router::msg::{BestPathForPairResponse, QueryMsg};
+use cosmwasm_std::{
+    to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult,
+    Uint128, WasmMsg,
+};
+use cw_dex_router::{
+    msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
+    operations::SwapOperationsListUnchecked,
+};
 
 use super::helpers::CoinList;
 use crate::{
@@ -12,22 +18,28 @@ use crate::{
     },
     ContractError,
 };
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{
-        MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
-        MsgCollectSpreadRewardsResponse,
+use osmosis_std::types::{
+    cosmos::base::v1beta1::Coin as OsmoCoin,
+    osmosis::{
+        concentratedliquidity::v1beta1::{
+            MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
+            MsgCollectSpreadRewardsResponse,
+        },
+        poolmanager::v1beta1::MsgSwapExactAmountInResponse,
     },
-    poolmanager::v1beta1::MsgSwapExactAmountInResponse,
 };
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
 
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
-        Replies::CollectIncentives as u64,
-    )))
+    Ok(Response::new()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "collect_rewards")
+        .add_submessage(SubMsg::reply_on_success(
+            msg,
+            Replies::CollectIncentives as u64,
+        )))
 }
 
 pub fn handle_collect_incentives_reply(
@@ -65,10 +77,13 @@ pub fn handle_collect_incentives_reply(
 
     // collect the spread rewards
     let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-        msg,
-        Replies::CollectSpreadRewards as u64,
-    )))
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_collect_incentives")
+        .add_submessage(SubMsg::reply_on_success(
+            msg,
+            Replies::CollectSpreadRewards as u64,
+        )))
 }
 
 pub fn handle_collect_spread_rewards_reply(
@@ -101,10 +116,12 @@ pub fn handle_collect_spread_rewards_reply(
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
     // TODO add a nice response
-    Ok(Response::new())
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_collect_spread_rewards"))
 }
 
-pub fn execute_auto_compound(
+pub fn execute_auto_compound_swap(
     deps: DepsMut,
     env: Env,
     force_swap_route: bool,
@@ -126,7 +143,7 @@ pub fn execute_auto_compound(
             let recommended_out: Uint128 = match current_swap_route.recommended_swap_route.clone() {
                 Some(operations) => deps.querier.query_wasm_smart(
                     dex_router_address.to_string(),
-                    &QueryMsg::SimulateSwapOperations {
+                    &ApolloQueryMsg::SimulateSwapOperations {
                         offer_amount: current_swap_route.token_in_amount,
                         operations,
                     },
@@ -135,7 +152,7 @@ pub fn execute_auto_compound(
             };
             let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
                 dex_router_address.to_string(),
-                &QueryMsg::BestPathForPair {
+                &ApolloQueryMsg::BestPathForPair {
                     offer_asset: offer_asset.into(),
                     ask_asset: ask_asset.into(),
                     exclude_paths: None,
@@ -186,7 +203,7 @@ pub fn execute_auto_compound(
     if !new_swap_routes.is_empty() {
         let next_autocompound: CosmosMsg = WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+            msg: to_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
                 force_swap_route: true,
                 swap_routes: new_swap_routes,
             })?,
@@ -206,7 +223,8 @@ pub fn execute_auto_compound(
     CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
 
     Ok(response
-        .add_event(Event::new("auto_compound_swap"))
+        .add_attribute("method", "execute")
+        .add_attribute("action", "auto_compund_swap")
         .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
         .add_attribute(
             "token_out_denom",
@@ -251,7 +269,7 @@ fn execute_swap_operations(
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_json_binary(&ExecuteMsg::ExecuteSwapOperations {
+        msg: to_binary(&ApolloExecuteMsg::ExecuteSwapOperations {
             operations: operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,

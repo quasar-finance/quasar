@@ -10,7 +10,7 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_auto_compound, execute_collect_rewards, handle_auto_compound_reply,
+    execute_auto_compound_swap, execute_collect_rewards, handle_auto_compound_reply,
     handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
@@ -92,7 +92,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
                     force_swap_route,
                     swap_routes,
-                } => execute_auto_compound(deps, env, force_swap_route, swap_routes),
+                } => execute_auto_compound_swap(deps, env, force_swap_route, swap_routes),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
                 }
