@@ -43,7 +43,7 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 apollo-cw-asset = "0.1.0"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", features = ["library", "osmosis"]}
 cosmwasm-schema = "1.1.3"
-cosmwasm-std = "1.1.3"
+cosmwasm-std = "1.5.0"
 cw-storage-plus = "1.0.1"
 cw-utils = "1.0.2"
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}

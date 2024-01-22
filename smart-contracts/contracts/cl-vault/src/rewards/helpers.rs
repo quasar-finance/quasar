@@ -12,6 +12,15 @@ impl CoinList {
         CoinList::default()
     }
 
+    pub fn coin_list_from_coin(coins: Vec<OsmoCoin>) -> CoinList {
+        let mut tempCoin = vec![];
+        for coin in coins {
+            let amount = coin.amount.parse::<u128>().unwrap();
+            tempCoin.push(Coin::new(amount, coin.denom))
+        }
+        CoinList(tempCoin)
+    }
+
     /// calculates the ratio of the current rewards
     pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
         CoinList(
@@ -46,6 +55,18 @@ impl CoinList {
     }
 
     // TODO: Cant we get Coins from a coinlist and use above function?
+    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
+        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+            .coins()
+            .into_iter()
+            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
+            .collect();
+
+        // Append and merge to
+        self.merge(parsed_rewards?)?;
+        Ok(())
+    }
+
     pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
         let parsed_rewards: ContractResult<Vec<Coin>> = rewards
             .coins()
