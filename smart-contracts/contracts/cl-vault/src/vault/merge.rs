@@ -213,7 +213,7 @@ impl TryFrom<SubMsgResult> for MergeResponse {
                 kind: "MergeResponse".to_string(),
             })?;
         let response = parse_execute_response_data(&data.0).unwrap();
-        from_json(&response.data.unwrap())
+        from_json(response.data.unwrap())
     }
 }
 

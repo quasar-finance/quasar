@@ -48,7 +48,7 @@ pub fn handle_collect_incentives_reply(
     let data: MsgCollectIncentivesResponse = data.try_into()?;
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge_osmocoins(data.collected_incentives);
+    response_coin_list.merge_osmocoins(data.collected_incentives)?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -84,7 +84,7 @@ pub fn handle_collect_spread_rewards_reply(
     let data: MsgCollectSpreadRewardsResponse = data.try_into()?;
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge_osmocoins(data.collected_spread_rewards);
+    response_coin_list.merge_osmocoins(data.collected_spread_rewards)?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -114,7 +114,7 @@ pub fn execute_auto_compound_swap(
         return Err(ContractError::EmptyCompoundAssetList {});
     }
 
-    let current_swap_route = &swap_routes[0];
+    let current_swap_route = swap_routes[0].clone();
 
     let swap_msg: Result<CosmosMsg, _> = match dex_router {
         Some(dex_router_address) => {
@@ -176,7 +176,7 @@ pub fn execute_auto_compound_swap(
     // Removes the already simulated route from the swap_routes variable for next iteration
     swap_routes.remove(0);
 
-    let mut response = Response::new().add_submessage(SubMsg::reply_on_success(
+    let response = Response::new().add_submessage(SubMsg::reply_on_success(
         swap_msg?,
         Replies::AutoCompound as u64,
     ));
@@ -197,7 +197,7 @@ pub fn execute_auto_compound_swap(
     CURRENT_TOKEN_IN.save(
         deps.storage,
         &CoinList::from_coins(vec![Coin {
-            denom: current_swap_route.token_in_denom,
+            denom: current_swap_route.token_in_denom.clone(),
             amount: current_swap_route.token_in_amount,
         }]),
     )?;
@@ -206,11 +206,8 @@ pub fn execute_auto_compound_swap(
     Ok(response
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_compund_swap")
-        .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
-        .add_attribute(
-            "token_out_denom",
-            current_swap_route.clone().token_out_denom,
-        )
+        .add_attribute("token_in_denom", current_swap_route.token_in_denom)
+        .add_attribute("token_out_denom", current_swap_route.token_out_denom)
         .add_attribute("token_in_amount", current_swap_route.token_in_amount))
 }
 
@@ -227,11 +224,13 @@ pub fn handle_auto_compound_reply(
     let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
 
     // TODO: This clones should be removed by editing the helpers::CoinList add mehtod which is taking ownership
-    current_rewards.clone().sub(&current_token_in);
-    current_rewards.clone().add(CoinList::from_coins(vec![Coin {
-        denom: current_token_out_denom,
-        amount: token_out_amount,
-    }]));
+    current_rewards.clone().sub(&current_token_in)?;
+    current_rewards
+        .clone()
+        .add(CoinList::from_coins(vec![Coin {
+            denom: current_token_out_denom,
+            amount: token_out_amount,
+        }]))?;
 
     CURRENT_REWARDS.save(deps.storage, &current_rewards)?;
 
