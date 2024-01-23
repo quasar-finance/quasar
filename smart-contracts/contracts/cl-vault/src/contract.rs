@@ -10,7 +10,7 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_auto_compound_swap, execute_collect_rewards, handle_auto_compound_reply,
+    execute_auto_compound_swap, execute_collect_rewards,
     handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
@@ -179,7 +179,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
-        Replies::AutoCompound => handle_auto_compound_reply(deps, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }

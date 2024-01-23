@@ -30,6 +30,9 @@ pub struct VaultConfig {
     pub treasury: Addr,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
+    // TODO
+    // /// auto compound swap size
+    // pub auto_compound_swap_size: Uint128,
 }
 
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
@@ -91,7 +94,6 @@ pub enum RewardsStatus {
 }
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// AUTOCOMPOUND

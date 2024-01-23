@@ -410,7 +410,7 @@ dependencies = [
  "cw-vault-multi-standard",
  "cw2 1.1.2",
  "num_enum 0.7.2",
- "osmosis-std 0.22.0",
+ "osmosis-std 0.21.0",
  "osmosis-test-tube",
  "proptest",
  "prost 0.12.3",
@@ -1925,22 +1925,6 @@ name = "osmosis-std"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e87adf61f03306474ce79ab322d52dfff6b0bcf3aed1e12d8864ac0400dec1bf"
-dependencies = [
- "chrono",
- "cosmwasm-std",
- "osmosis-std-derive 0.20.1",
- "prost 0.12.3",
- "prost-types 0.12.3",
- "schemars",
- "serde",
- "serde-cw-value",
-]
-
-[[package]]
-name = "osmosis-std"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8641c376f01f5af329dc2a34e4f5527eaeb0bde18cda8d86fed958d04c86159c"
 dependencies = [
  "chrono",
  "cosmwasm-std",

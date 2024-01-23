@@ -3,7 +3,7 @@ use crate::{
     msg::AutoCompoundAsset,
     reply::Replies,
     state::{
-        CURRENT_REWARDS, CURRENT_TOKEN_IN, CURRENT_TOKEN_OUT_DENOM, DEX_ROUTER, POSITION,
+        CURRENT_TOKEN_IN, CURRENT_TOKEN_OUT_DENOM, DEX_ROUTER, POSITION,
         STRATEGIST_REWARDS, VAULT_CONFIG,
     },
     ContractError,
@@ -28,6 +28,7 @@ use osmosis_std::types::osmosis::{
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
+    deps.api.debug(&*msg.sender.to_string());
 
     Ok(Response::new()
         .add_attribute("method", "execute")
@@ -46,6 +47,7 @@ pub fn handle_collect_incentives_reply(
     // save the response from the collect incentives
     // If we do not have data here, we treat this as an empty MsgCollectIncentivesResponse, this seems to be a bug somewhere between cosmwasm and osmosis
     let data: MsgCollectIncentivesResponse = data.try_into()?;
+    deps.api.debug("Into collect incentives reply");
 
     let mut response_coin_list = CoinList::new();
     response_coin_list.merge(CoinList::coin_list_from_coin(data.collected_incentives).coins())?;
@@ -54,14 +56,6 @@ pub fn handle_collect_incentives_reply(
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
-
-    CURRENT_REWARDS.update(
-        deps.storage,
-        |mut rewards| -> Result<CoinList, ContractError> {
-            rewards.update_rewards_coin_list(response_coin_list)?;
-            Ok(rewards)
-        },
-    )?;
 
     // collect the spread rewards
     let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
@@ -82,6 +76,7 @@ pub fn handle_collect_spread_rewards_reply(
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
     let data: MsgCollectSpreadRewardsResponse = data.try_into()?;
+    deps.api.debug("Into collect spread rewards reply");
 
     let mut response_coin_list = CoinList::new();
     response_coin_list.merge(CoinList::coin_list_from_coin(data.collected_spread_rewards).coins())?;
@@ -90,11 +85,6 @@ pub fn handle_collect_spread_rewards_reply(
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
     STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
-
-    let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
-    rewards.update_rewards_coin_list(response_coin_list)?;
-
-    CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
     // TODO add a nice response
     Ok(Response::new()
@@ -114,12 +104,21 @@ pub fn execute_auto_compound_swap(
         return Err(ContractError::EmptyCompoundAssetList {});
     }
 
+    // sanity check on the amount of tokens
     let current_swap_route = swap_routes[0].clone();
+    let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
+    let balance_in_contract = deps.querier.query_balance(env.clone().contract.address, current_swap_route.clone().token_in_denom)?;
+    if balance_in_contract.amount.sub(strategist_rewards.find_coin(current_swap_route.clone().token_in_denom).amount) <= Uint128::zero() {
+        return Err(ContractError::InsufficientFundsForSwap {
+            balance: balance_in_contract.amount,
+            needed: strategist_rewards.find_coin(current_swap_route.clone().token_in_denom).amount,
+        })
+    }
 
     let swap_msg: Result<CosmosMsg, _> = match dex_router {
         Some(dex_router_address) => {
-            let offer_asset = AssetInfo::Native(current_swap_route.token_in_denom.to_string());
-            let ask_asset = AssetInfo::Native(current_swap_route.token_out_denom.to_string());
+            let offer_asset = AssetInfo::Native(current_swap_route.clone().token_in_denom.to_string());
+            let ask_asset = AssetInfo::Native(current_swap_route.clone().token_out_denom.to_string());
 
             let recommended_out: Uint128 = match current_swap_route.recommended_swap_route.clone() {
                 Some(operations) => deps.querier.query_wasm_smart(
@@ -164,8 +163,8 @@ pub fn execute_auto_compound_swap(
                 dex_router_address,
                 route,
                 Uint128::zero(),
-                &current_swap_route.token_in_denom,
-                current_swap_route.token_in_amount,
+                &current_swap_route.clone().token_in_denom,
+                current_swap_route.clone().token_in_amount,
             )
         }
         None => {
@@ -176,15 +175,13 @@ pub fn execute_auto_compound_swap(
     // Removes the already simulated route from the swap_routes variable for next iteration
     swap_routes.remove(0);
 
-    let response = Response::new().add_submessage(SubMsg::reply_on_success(
-        swap_msg?,
-        Replies::AutoCompound as u64,
-    ));
+    let response = Response::new().add_submessage(SubMsg::new(
+        swap_msg?));
 
     let new_response = response.clone();
     if !swap_routes.is_empty() {
         let next_autocompound_msg: CosmosMsg = WasmMsg::Execute {
-            contract_addr: env.contract.address.to_string(),
+            contract_addr: env.clone().contract.address.to_string(),
             msg: to_json_binary(&crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
                 force_swap_route: true,
                 swap_routes,
@@ -209,38 +206,9 @@ pub fn execute_auto_compound_swap(
     Ok(final_response
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_compund_swap")
-        .add_attribute("token_in_denom", current_swap_route.token_in_denom)
-        .add_attribute("token_out_denom", current_swap_route.token_out_denom)
-        .add_attribute("token_in_amount", current_swap_route.token_in_amount))
-}
-
-pub fn handle_auto_compound_reply(
-    deps: DepsMut,
-    data: SubMsgResult,
-) -> Result<Response, ContractError> {
-    let data: MsgSwapExactAmountInResponse = data.try_into()?;
-    let token_out_amount = Uint128::new(data.token_out_amount.parse()?);
-
-    // load current rewards
-    let current_rewards = CURRENT_REWARDS.load(deps.storage)?;
-    let current_token_in = CURRENT_TOKEN_IN.load(deps.storage)?;
-    let current_token_out_denom = CURRENT_TOKEN_OUT_DENOM.load(deps.storage)?;
-
-    // TODO: This clones should be removed by editing the helpers::CoinList add mehtod which is taking ownership
-    current_rewards.clone().sub(&current_token_in)?;
-    current_rewards
-        .clone()
-        .add(CoinList::from_coins(vec![Coin {
-            denom: current_token_out_denom,
-            amount: token_out_amount,
-        }]))?;
-
-    CURRENT_REWARDS.save(deps.storage, &current_rewards)?;
-
-    // TODO nice response with attributes
-    Ok(Response::new()
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_auto_compound"))
+        .add_attribute("token_in_denom", current_swap_route.clone().token_in_denom)
+        .add_attribute("token_out_denom", current_swap_route.clone().token_out_denom)
+        .add_attribute("token_in_amount", current_swap_route.clone().token_in_amount))
 }
 
 fn execute_swap_operations(
@@ -270,6 +238,7 @@ fn execute_swap_operations(
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
+    deps.api.debug(position.position_id.to_string().as_str());
     Ok(MsgCollectIncentives {
         position_ids: vec![position.position_id],
         sender: env.contract.address.into(),
