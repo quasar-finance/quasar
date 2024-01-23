@@ -49,11 +49,12 @@ cw-utils = "1.0.2"
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 cw2 = "1.0.1"
 num_enum = "0.7.0"
-osmosis-std = "0.21.0"
+osmosis-std = "0.22.0"
 prost = {version = "0.12.3", default-features = false}
 serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
-osmosis-test-tube = "21.0.0"
+osmosis-test-tube = { git="https://github.com/magiodev/test-tube/", branch="fix/v22_go_mod_tidy"}
+cw-dex = "0.4.1"
 proptest = "1.2.0"
