@@ -12,7 +12,7 @@ use crate::{
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
     to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, SubMsg, SubMsgResult,
-    Uint128, WasmMsg,
+    Uint128, WasmMsg, StdError
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
@@ -47,11 +47,22 @@ pub fn handle_collect_incentives_reply(
 ) -> Result<Response, ContractError> {
     // save the response from the collect incentives
     // If we do not have data here, we treat this as an empty MsgCollectIncentivesResponse, this seems to be a bug somewhere between cosmwasm and osmosis
-    let data: MsgCollectIncentivesResponse = data.try_into()?;
+    let data: Result<MsgCollectIncentivesResponse, ContractError> = data
+        .into_result()
+        .map_err(StdError::generic_err)?
+        .data
+        .map(|b| Ok(b.try_into()?))
+        .unwrap_or(Ok(MsgCollectIncentivesResponse {
+            collected_incentives: vec![],
+            forfeited_incentives: vec![],
+        }));
+
+    let response: MsgCollectIncentivesResponse = data?;
+
     deps.api.debug("Into collect incentives reply");
 
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge(CoinList::coin_list_from_coin(data.collected_incentives).coins())?;
+    response_coin_list.merge(CoinList::coin_list_from_coin(response.collected_incentives).coins())?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -76,11 +87,20 @@ pub fn handle_collect_spread_rewards_reply(
 ) -> Result<Response, ContractError> {
     // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
     // we don't need to save the rewards here again, just pass it to update rewards
-    let data: MsgCollectSpreadRewardsResponse = data.try_into()?;
+    let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data
+        .into_result()
+        .map_err(StdError::generic_err)?
+        .data
+        .map(|b| Ok(b.try_into()?))
+        .unwrap_or(Ok(MsgCollectSpreadRewardsResponse {
+            collected_spread_rewards: vec![],
+        }));
+
     deps.api.debug("Into collect spread rewards reply");
 
+    let response: MsgCollectSpreadRewardsResponse = data?;
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge(CoinList::coin_list_from_coin(data.collected_spread_rewards).coins())?;
+    response_coin_list.merge(CoinList::coin_list_from_coin(response.collected_spread_rewards).coins())?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
