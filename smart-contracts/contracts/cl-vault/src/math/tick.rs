@@ -451,7 +451,7 @@ mod tests {
         build_tick_exp_cache(deps.as_mut().storage).unwrap();
 
         // example1
-        let mut price = Decimal256::from_str("0.061").unwrap();
+        let mut price = Decimal256::from_str("30352").unwrap();
         let mut expected_tick_index = 38035200;
         let mut tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, expected_tick_index);

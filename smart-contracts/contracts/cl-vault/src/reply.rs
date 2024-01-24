@@ -31,8 +31,6 @@ pub enum Replies {
     WithdrawMerge,
     // create a new singular position in the merge, used internally for merging
     CreatePositionMerge,
-    // auto compound reply
-    AutoCompound,
     #[default]
     Unknown,
 }

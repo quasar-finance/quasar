@@ -249,20 +249,20 @@ mod tests {
     //         )
     //         .unwrap();
 
-    //     USER_REWARDS
-    //         .save(
-    //             deps.as_mut().storage,
-    //             Addr::unchecked("alice"),
-    //             &CoinList::from_coins(vec![coin(100, "token0"), coin(175, "token1")]),
-    //         )
-    //         .unwrap();
-    //     USER_REWARDS
-    //         .save(
-    //             deps.as_mut().storage,
-    //             Addr::unchecked("bob"),
-    //             &CoinList::from_coins(vec![coin(50, "token0"), coin(125, "token1")]),
-    //         )
-    //         .unwrap();
+    // USER_REWARDS
+    //     .save(
+    //         deps.as_mut().storage,
+    //         Addr::unchecked("alice"),
+    //         &CoinList::from_coins(vec![coin(100, "token0"), coin(175, "token1")]),
+    //     )
+    //     .unwrap();
+    // USER_REWARDS
+    //     .save(
+    //         deps.as_mut().storage,
+    //         Addr::unchecked("bob"),
+    //         &CoinList::from_coins(vec![coin(50, "token0"), coin(125, "token1")]),
+    //     )
+    //     .unwrap();
 
     //     let _res =
     //         execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
@@ -302,20 +302,20 @@ mod tests {
     //         )
     //         .unwrap();
 
-    //     USER_REWARDS
-    //         .save(
-    //             deps.as_mut().storage,
-    //             Addr::unchecked("alice"),
-    //             &CoinList::from_coins(vec![coin(200, "token0"), coin(300, "token1")]),
-    //         )
-    //         .unwrap();
-    //     USER_REWARDS
-    //         .save(
-    //             deps.as_mut().storage,
-    //             Addr::unchecked("bob"),
-    //             &CoinList::from_coins(vec![coin(400, "token0"), coin(100, "token1")]),
-    //         )
-    //         .unwrap();
+    // USER_REWARDS
+    //     .save(
+    //         deps.as_mut().storage,
+    //         Addr::unchecked("alice"),
+    //         &CoinList::from_coins(vec![coin(200, "token0"), coin(300, "token1")]),
+    //     )
+    //     .unwrap();
+    // USER_REWARDS
+    //     .save(
+    //         deps.as_mut().storage,
+    //         Addr::unchecked("bob"),
+    //         &CoinList::from_coins(vec![coin(400, "token0"), coin(100, "token1")]),
+    //     )
+    //     .unwrap();
 
     //     let _res =
     //         execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
