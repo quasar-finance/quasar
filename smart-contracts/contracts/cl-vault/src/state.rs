@@ -96,10 +96,6 @@ pub enum RewardsStatus {
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
-/// AUTOCOMPOUND
-pub const CURRENT_TOKEN_IN: Item<CoinList> = Item::new("current_token_in");
-pub const CURRENT_TOKEN_OUT_DENOM: Item<String> = Item::new("current_token_out_denom");
-
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");

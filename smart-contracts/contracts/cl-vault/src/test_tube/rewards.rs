@@ -3,20 +3,29 @@
 #[cfg(test)]
 mod tests {
     use std::ops::Mul;
+    use std::str::FromStr;
 
-    use crate::msg::ExecuteMsg;
-    use crate::test_tube::helpers::{
-        get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
-    };
-    use crate::test_tube::initialize::initialize::{default_init, dex_cl_init};
-    use cosmwasm_std::{assert_approx_eq, Coin};
-    use osmosis_std::types::cosmos::bank::v1beta1::{QueryAllBalancesRequest, MsgSend};
+    use apollo_cw_asset::AssetInfoBase;
+    use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
+    use cosmwasm_std::Decimal;
+    use cw_dex::osmosis::OsmosisPool;
+    use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
+    use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
+    use osmosis_std::types::cosmos::bank::v1beta1::{MsgSend, QueryAllBalancesRequest, QueryBalanceRequest};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
+    use osmosis_test_tube::{Account, Bank, Module, PoolManager, Runner, Wasm};
     use osmosis_test_tube::RunnerError::ExecuteError;
-    use osmosis_test_tube::{Account, Module, PoolManager, Runner, Wasm, Bank};
+
+    use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
+    use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
+    use crate::query::UserSharesBalanceResponse;
+    use crate::test_tube::helpers::{
+        get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
+    };
+    use crate::test_tube::initialize::initialize::{default_init, dex_cl_init};
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
@@ -32,11 +41,6 @@ mod tests {
     fn test_auto_compound_rewards() {
         let (app, contract_address, dex_router_addr, cl_pool_id, lp_pool1, lp_pool2, admin) = dex_cl_init();
         let bm = Bank::new(&app);
-
-        println!("{:?}", dex_router_addr);
-        println!("{:?}", cl_pool_id);
-        println!("{:?}", lp_pool1);
-        println!("{:?}", lp_pool2);
 
         // Initialize accounts
         let accounts = app
@@ -65,9 +69,8 @@ mod tests {
                 .unwrap();
         }
 
-        // Declare swapper and claimer accounts
+        // Declare swapper accounts
         let swapper = &accounts[0];
-        let claimer = &accounts[1];
 
         // Swaps to generate spread rewards on previously created user positions
         for _ in 0..SWAPS_NUM {
@@ -90,9 +93,6 @@ mod tests {
                 .unwrap();
         }
 
-        let balances_before = bm.query_all_balances(&QueryAllBalancesRequest{ address: contract_address.to_string(), pagination: None }).unwrap();
-        println!("Before {:?}", balances_before.balances);
-
         let result = wasm
             .execute(
                 contract_address.as_str(),
@@ -101,27 +101,102 @@ mod tests {
                 &admin,
             ).unwrap();
 
-        let send = bm.send(MsgSend{
+        let send = bm.send(MsgSend {
             from_address: admin.address(),
             to_address: contract_address.to_string(),
-            amount: vec![OsmoCoin{ denom: DENOM_REWARD.to_string(), amount: "100000000000".to_string() }],
+            amount: vec![OsmoCoin { denom: DENOM_REWARD.to_string(), amount: "100000000000".to_string() }],
         }, &admin);
 
-        let balances_after = bm.query_all_balances(&QueryAllBalancesRequest{ address: contract_address.to_string(), pagination: None }).unwrap();
-        println!("After {:?}", balances_after.balances);
+        let balances_quote = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
+        assert_eq!("4999".to_string(), balances_quote.balance.unwrap().amount);
+        let balances_rewards = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_REWARD.to_string() }).unwrap();
+        assert_eq!("100000000000".to_string(), balances_rewards.balance.unwrap().amount);
 
-        // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
-        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
-            &result,
-            "total_collect_spread_rewards",
-            vec!["tokens_out"],
-        );
+        let path1 = vec![
+            SwapOperationBase::new(cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2)), AssetInfoBase::Native(DENOM_REWARD.to_string()), AssetInfoBase::Native(DENOM_QUOTE.to_string())),
+        ];
+        let path2 = vec![
+            SwapOperationBase::new(cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2)), AssetInfoBase::Native(DENOM_REWARD.to_string()), AssetInfoBase::Native(DENOM_QUOTE.to_string())),
+            SwapOperationBase::new(cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool1)), AssetInfoBase::Native(DENOM_QUOTE.to_string()), AssetInfoBase::Native(DENOM_BASE.to_string())),
+        ];
 
-        // Assert that 'tokens_out' values for events are empty
-        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
+        let auto_compound = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+                    force_swap_route: false,
+                    swap_routes: vec![
+                        AutoCompoundAsset {
+                            token_in_denom: DENOM_REWARD.to_string(),
+                            token_out_denom: DENOM_QUOTE.to_string(),
+                            token_in_amount: Uint128::new(50000000000),
+                            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(path1)),
+                        },
+                        AutoCompoundAsset {
+                            token_in_denom: DENOM_REWARD.to_string(),
+                            token_out_denom: DENOM_BASE.to_string(),
+                            token_in_amount: Uint128::new(50000000000),
+                            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(path2)),
+                        },
+                    ],
+                }),
+                &[],
+                &admin,
+            ).unwrap();
 
-        // Assert that 'tokens_out' values for events are empty
-        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
+        let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_REWARD.to_string() }).unwrap();
+        println!("Before auto compound {:?}", balances_after.balance);
+        // assert_eq!("0".to_string(), balances_after.balance.unwrap().amount);
+        let balances_before = bm.query_all_balances(&QueryAllBalancesRequest { address: contract_address.to_string(), pagination: None }).unwrap();
+        println!("Before auto compound{:?}", balances_before.balances);
+
+        let update_range = wasm
+            .execute(contract_address.as_str(), &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                ModifyRangeMsg {
+                    lower_price: Decimal::from_str("0.51").unwrap(),
+                    upper_price: Decimal::from_str("1.49").unwrap(),
+                    max_slippage: Decimal::bps(9500),
+                    ratio_of_swappable_funds_to_use: Decimal::one(),
+                    twap_window_seconds: 45,
+                }
+            )), &[], &admin)
+            .unwrap();
+
+        let balances_after = bm.query_all_balances(&QueryAllBalancesRequest { address: contract_address.to_string(), pagination: None }).unwrap();
+        println!("After auto compound{:?}", balances_after.balances);
+
+        for account in &accounts {
+            let balances_before_withdraw_quote_denom = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
+            println!("Balance before withdraw {:?}", balances_before_withdraw_quote_denom.balance);
+            let balances_before_withdraw_base_denom = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_BASE.to_string() }).unwrap();
+            println!("Balance before withdraw {:?}", balances_before_withdraw_base_denom.balance);
+
+            let shares_to_redeem: UserSharesBalanceResponse = wasm
+                .query(
+                    contract_address.as_str(),
+                    &VaultExtension(
+                        ExtensionQueryMsg::Balances(UserSharesBalance { user: account.address() })
+                    ),
+                ).unwrap();
+
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::Redeem { recipient: None, amount: shares_to_redeem.balance },
+                    &[],
+                    account,
+                )
+                .unwrap();
+
+            let balances_after_withdraw_quote_denom = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
+            println!("Balance after withdraw {:?}", balances_after_withdraw_quote_denom.balance);
+            let balances_after_withdraw_base_denom = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_BASE.to_string() }).unwrap();
+            println!("Balance after withdraw {:?}", balances_after_withdraw_base_denom.balance);
+
+            println!();
+        }
+
+
     }
 
     #[test]
@@ -298,7 +373,8 @@ mod tests {
 
             let coin_received =
                 get_event_attributes_by_ty_and_key(&result, "coin_received", vec!["amount"]);
-            let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value); // taking index 1 in this case as there are more then 1 coin_received tys
+            let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value);
+            // taking index 1 in this case as there are more then 1 coin_received tys
             assert_approx_eq!(
                 coin_received_u128,
                 expected_rewards_per_user as u128,
@@ -473,7 +549,8 @@ mod tests {
 
                 let coin_received =
                     get_event_attributes_by_ty_and_key(&result, "coin_received", vec!["amount"]);
-                let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value); // taking index 1 in this case as there are more then 1 coin_received tys
+                let coin_received_u128 = get_event_value_amount_numeric(&coin_received[1].value);
+                // taking index 1 in this case as there are more then 1 coin_received tys
                 assert_approx_eq!(
                     coin_received_u128,
                     expected_rewards_per_user as u128,

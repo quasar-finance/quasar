@@ -1,19 +1,14 @@
+use std::fmt::Debug;
 use std::ops::Sub;
 use super::helpers::CoinList;
 use crate::{
     msg::AutoCompoundAsset,
     reply::Replies,
-    state::{
-        CURRENT_TOKEN_IN, CURRENT_TOKEN_OUT_DENOM, DEX_ROUTER, POSITION,
-        STRATEGIST_REWARDS, VAULT_CONFIG,
-    },
+    state::{DEX_ROUTER, POSITION, STRATEGIST_REWARDS, VAULT_CONFIG},
     ContractError,
 };
 use apollo_cw_asset::AssetInfo;
-use cosmwasm_std::{
-    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, SubMsg, SubMsgResult,
-    Uint128, WasmMsg, StdError
-};
+use cosmwasm_std::{to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128, WasmMsg, StdError, Event};
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
     operations::SwapOperationsListUnchecked,
@@ -29,7 +24,6 @@ use osmosis_std::types::osmosis::{
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
-    deps.api.debug(&*msg.sender.to_string());
 
     Ok(Response::new()
         .add_attribute("method", "execute")
@@ -58,11 +52,8 @@ pub fn handle_collect_incentives_reply(
         }));
 
     let response: MsgCollectIncentivesResponse = data?;
-
-    deps.api.debug("Into collect incentives reply");
-
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge(CoinList::coin_list_from_coin(response.collected_incentives).coins())?;
+    response_coin_list.merge(CoinList::coin_list_from_coin(response.clone().collected_incentives).coins())?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -72,6 +63,8 @@ pub fn handle_collect_incentives_reply(
     // collect the spread rewards
     let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
     Ok(Response::new()
+        .add_event(Event::new("cl_collect_incentive"))
+        .add_attribute("collected_incentives", format!("{:?}", response.clone().collected_incentives))
         .add_attribute("method", "reply")
         .add_attribute("action", "handle_collect_incentives")
         .add_submessage(SubMsg::reply_on_success(
@@ -96,11 +89,9 @@ pub fn handle_collect_spread_rewards_reply(
             collected_spread_rewards: vec![],
         }));
 
-    deps.api.debug("Into collect spread rewards reply");
-
     let response: MsgCollectSpreadRewardsResponse = data?;
     let mut response_coin_list = CoinList::new();
-    response_coin_list.merge(CoinList::coin_list_from_coin(response.collected_spread_rewards).coins())?;
+    response_coin_list.merge(CoinList::coin_list_from_coin(response.clone().collected_spread_rewards).coins())?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -109,6 +100,8 @@ pub fn handle_collect_spread_rewards_reply(
 
     // TODO add a nice response
     Ok(Response::new()
+        .add_event(Event::new("cl_collect_spread_rewards"))
+        .add_attribute("collected_spread_rewards", format!("{:?}", response.clone().collected_spread_rewards))
         .add_attribute("method", "reply")
         .add_attribute("action", "handle_collect_spread_rewards"))
 }
@@ -135,6 +128,8 @@ pub fn execute_auto_compound_swap(
             needed: strategist_rewards.find_coin(current_swap_route.clone().token_in_denom).amount,
         })
     }
+
+    // todo : do a 50/50 split here for asset swapping
 
     let swap_msg: Result<CosmosMsg, _> = match dex_router {
         Some(dex_router_address) => {
@@ -214,15 +209,6 @@ pub fn execute_auto_compound_swap(
         new_response.add_message(next_autocompound_msg);
     }
 
-    CURRENT_TOKEN_IN.save(
-        deps.storage,
-        &CoinList::from_coins(vec![Coin {
-            denom: current_swap_route.clone().token_in_denom,
-            amount: current_swap_route.clone().token_in_amount,
-        }]),
-    )?;
-    CURRENT_TOKEN_OUT_DENOM.save(deps.storage, &current_swap_route.token_out_denom)?;
-
     let final_response = response.clone();
     Ok(final_response
         .add_attribute("method", "execute")
@@ -259,7 +245,6 @@ fn execute_swap_operations(
 
 fn get_collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
-    deps.api.debug(position.position_id.to_string().as_str());
     Ok(MsgCollectIncentives {
         position_ids: vec![position.position_id],
         sender: env.contract.address.into(),
