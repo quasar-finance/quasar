@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, CosmosMsg, Decimal, Deps, DepsMut, Env, Order, Response, StdError,
+    to_json_binary, Addr, Attribute, CosmosMsg, Decimal, Deps, DepsMut, Env, Order, Response, StdError,
     SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
@@ -43,7 +43,7 @@ pub fn execute_distribute_rewards(deps: DepsMut, env: Env) -> Result<Response, C
         )
         .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&ExtensionExecuteMsg::CallbackExecuteMsg(
+            msg: to_json_binary(&ExtensionExecuteMsg::CallbackExecuteMsg(
                 crate::msg::CallbackExecuteMsg::DistributeRewards(),
             ))?,
             funds: vec![],
