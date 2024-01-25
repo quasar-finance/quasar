@@ -57,8 +57,8 @@ cw20-base = "1.0.1"
 derive_builder = "0.11.2"
 liquidity-helper = "0.1.0"
 num_enum = "0.6.1"
-osmosis-std = "0.17.0-rc0"
-prost = {version = "0.11", default-features = false}
+osmosis-std = "0.22.0"
+prost = {version = "0.12.3", default-features = false}
 schemars = "0.8.10"
 semver = "1"
 serde = {version = "1.0.145", default-features = false, features = ["derive"]}
@@ -66,6 +66,6 @@ thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
 cw-multi-test = "0.16.2"
-osmosis-test-tube = {git = 'https://github.com/osmosis-labs/test-tube.git', version = "17.0.0-rc0"}
+osmosis-test-tube = { git="https://github.com/magiodev/test-tube/", branch="fix/v22_go_mod_tidy"}
 prost = {version = "0.11", default-features = false}
 proptest = "1.2.0"
