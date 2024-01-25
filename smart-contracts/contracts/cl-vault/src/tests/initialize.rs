@@ -104,7 +104,6 @@ pub fn init_test_contract(
             }],
         },
         admin.address(),
-        false,
         &admin,
     )
     .unwrap();
