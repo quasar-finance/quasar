@@ -3,7 +3,7 @@ pub mod initialize {
     use std::str::FromStr;
 
     use apollo_cw_asset::{AssetInfoBase, AssetInfoUnchecked};
-    use cosmwasm_std::{Addr, coin, Coin, Decimal, Uint128};
+    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::msg::ExecuteMsg as DexExecuteMsg;
     use cw_dex_router::msg::InstantiateMsg as DexInstantiate;
@@ -17,9 +17,14 @@ pub mod initialize {
         MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
-    use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, cosmrs::proto::traits::Message, Gamm, GovWithAppAccess, Module, osmosis_std::types::osmosis::concentratedliquidity::{
-        poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePosition,
-    }, OsmosisTestApp, PoolManager, SigningAccount, TokenFactory, Wasm};
+    use osmosis_test_tube::{
+        cosmrs::proto::traits::Message,
+        osmosis_std::types::osmosis::concentratedliquidity::{
+            poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePosition,
+        },
+        Account, Bank, ConcentratedLiquidity, Gamm, GovWithAppAccess, Module, OsmosisTestApp,
+        PoolManager, SigningAccount, TokenFactory, Wasm,
+    };
 
     use crate::helpers::sort_tokens;
     use crate::msg::{
@@ -152,23 +157,43 @@ pub mod initialize {
             admin.address(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         let pool_1_coins = vec![
-            Coin { denom: DENOM_BASE.to_string(), amount: Uint128::new(10000000000000000000000) },
-            Coin { denom: DENOM_QUOTE.to_string(), amount: Uint128::new(10000000000000000000000) }];
-        let lp_pool1 = gm.create_basic_pool(
-            &pool_1_coins,
-            &admin,
-        ).unwrap();
+            Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: Uint128::new(10000000000000000000000),
+            },
+            Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: Uint128::new(10000000000000000000000),
+            },
+        ];
+        let lp_pool1 = gm.create_basic_pool(&pool_1_coins, &admin).unwrap();
 
         let pool_2_coins = vec![
-            Coin { denom: DENOM_QUOTE.to_string(), amount: Uint128::new(10000000000000000000000) },
-            Coin { denom: DENOM_REWARD.to_string(), amount: Uint128::new(10000000000000000000000) }];
-        let lp_pool2 = gm.create_basic_pool(
-            &pool_2_coins,
-            &admin,
-        ).unwrap();
+            Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: Uint128::new(10000000000000000000000),
+            },
+            Coin {
+                denom: DENOM_REWARD.to_string(),
+                amount: Uint128::new(10000000000000000000000),
+            },
+        ];
+        let lp_pool2 = gm.create_basic_pool(&pool_2_coins, &admin).unwrap();
+
+        let pool_3_coins = vec![
+            Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: Uint128::new(10000000000000000000000),
+            },
+            Coin {
+                denom: DENOM_REWARD.to_string(),
+                amount: Uint128::new(10000000000000000000000),
+            },
+        ];
+        let lp_pool3 = gm.create_basic_pool(&pool_3_coins, &admin).unwrap();
 
         // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
@@ -190,7 +215,7 @@ pub mod initialize {
             },
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         // Get and assert spot price is 1.0
         let spot_price = pm
@@ -258,7 +283,8 @@ pub mod initialize {
             },
             sort_tokens(vec![]).as_ref(),
             &admin,
-        ).unwrap();
+        )
+        .unwrap();
 
         wasm.execute(
             &contract_dex_router.data.address,
@@ -274,7 +300,25 @@ pub mod initialize {
             },
             sort_tokens(vec![]).as_ref(),
             &admin,
-        ).unwrap();
+        )
+        .unwrap();
+
+        wasm.execute(
+            &contract_dex_router.data.address,
+            &DexExecuteMsg::SetPath {
+                offer_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
+                ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
+                path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
+                    pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool3.data.pool_id)),
+                    offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
+                    ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
+                }]),
+                bidirectional: true,
+            },
+            sort_tokens(vec![]).as_ref(),
+            &admin,
+        )
+        .unwrap();
 
         wasm.execute(
             &contract_dex_router.data.address,
@@ -285,22 +329,30 @@ pub mod initialize {
                     SwapOperationBase {
                         pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2.data.pool_id)),
                         ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string())
+                        offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
                     },
-                    SwapOperationBase{
+                    SwapOperationBase {
                         pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool1.data.pool_id)),
                         offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string())
-                    }
+                        ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
+                    },
                 ]),
                 bidirectional: true,
             },
             sort_tokens(vec![]).as_ref(),
             &admin,
-        ).unwrap();
+        )
+        .unwrap();
 
-
-        (app, Addr::unchecked(contract_cl.data.address), Addr::unchecked(contract_dex_router.data.address), pool.id, lp_pool1.data.pool_id, lp_pool2.data.pool_id, admin)
+        (
+            app,
+            Addr::unchecked(contract_cl.data.address),
+            Addr::unchecked(contract_dex_router.data.address),
+            pool.id,
+            lp_pool1.data.pool_id,
+            lp_pool2.data.pool_id,
+            admin,
+        )
     }
 
     pub fn init_test_contract(
@@ -347,7 +399,7 @@ pub mod initialize {
             admin.address(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
@@ -369,7 +421,7 @@ pub mod initialize {
             },
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         // Get and assert spot price is 1.0
         let spot_price = pm
@@ -450,8 +502,8 @@ pub mod initialize {
             tf.query_denoms_from_creator(&QueryDenomsFromCreatorRequest {
                 creator: contract_address.to_string()
             })
-                .unwrap()
-                .denoms[0]
+            .unwrap()
+            .denoms[0]
         );
 
         // Create Alice account
@@ -478,7 +530,7 @@ pub mod initialize {
             },
             &alice,
         )
-            .unwrap();
+        .unwrap();
 
         // Increment the app time for twaps to function
         app.increase_time(1000000);
@@ -498,6 +550,6 @@ pub mod initialize {
             &[],
             &admin,
         )
-            .unwrap();
+        .unwrap();
     }
 }

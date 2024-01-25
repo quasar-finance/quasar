@@ -35,9 +35,8 @@ pub enum ExtensionExecuteMsg {
 #[cw_serde]
 pub struct AutoCompoundAsset {
     pub token_in_denom: String,
-    pub token_out_denom: String,
-    pub token_in_amount: Uint128,
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
+    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
