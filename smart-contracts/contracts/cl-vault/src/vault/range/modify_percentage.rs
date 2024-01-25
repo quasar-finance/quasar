@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Coin, Decimal256, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
+    to_json_binary, Coin, Decimal256, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
@@ -141,7 +141,7 @@ pub fn handle_add_to_position_reply(
     let msg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&merge_msg)?,
+            msg: to_json_binary(&merge_msg)?,
             funds: vec![],
         },
         Replies::Merge.into(),

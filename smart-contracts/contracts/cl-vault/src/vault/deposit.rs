@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, MessageInfo,
+    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, MessageInfo,
     Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
@@ -142,7 +142,7 @@ pub(crate) fn execute_exact_deposit(
         .add_submessages(msgs??)
         .add_message(cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&mint)?,
+            msg: to_json_binary(&mint)?,
             funds: vec![],
         })
         .add_attribute("method", "exact_deposit")
@@ -209,7 +209,7 @@ pub fn handle_deposit_create_position_reply(
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&merge_msg)?,
+            msg: to_json_binary(&merge_msg)?,
             funds: vec![],
         },
         Replies::Merge.into(),
@@ -385,7 +385,7 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
+        to_json_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
     use osmosis_std::types::{

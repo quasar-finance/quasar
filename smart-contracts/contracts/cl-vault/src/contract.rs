@@ -32,7 +32,7 @@ use crate::vault::range::update_range::execute_update_range;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -108,37 +108,37 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {
-            Ok(to_binary(&query_info(deps)?)?)
+            Ok(to_json_binary(&query_info(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_binary(&query_total_assets(deps, env)?)?)
+            Ok(to_json_binary(&query_total_assets(deps, env)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
-            Ok(to_binary(&query_total_vault_token_supply(deps)?)?)
+            Ok(to_json_binary(&query_total_vault_token_supply(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount } => {
-            Ok(to_binary(&query_convert_to_assets(deps, env, amount)?)?)
+            Ok(to_json_binary(&query_convert_to_assets(deps, env, amount)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_json_binary(&query_metadata(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
-                    Ok(to_binary(&query_user_balance(deps, user)?)?)
+                    Ok(to_json_binary(&query_user_balance(deps, user)?)?)
                 }
                 crate::msg::UserBalanceQueryMsg::UserRewards { user } => {
-                    Ok(to_binary(&query_user_rewards(deps, user)?)?)
+                    Ok(to_json_binary(&query_user_rewards(deps, user)?)?)
                 }
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
-                crate::msg::ClQueryMsg::Pool {} => Ok(to_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Positions {} => Ok(to_binary(&query_positions(deps)?)?),
+                crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => Ok(to_json_binary(&query_positions(deps)?)?),
                 crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
                 crate::msg::ClQueryMsg::FullPositions {} => {
-                    Ok(to_binary(&query_full_positions(deps)?)?)
+                    Ok(to_json_binary(&query_full_positions(deps)?)?)
                 }
             },
         },

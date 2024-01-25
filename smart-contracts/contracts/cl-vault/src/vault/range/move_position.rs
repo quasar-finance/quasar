@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    to_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128,
 };
 
@@ -490,7 +490,7 @@ pub fn handle_iteration_create_position_reply(
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&merge_msg)?,
+            msg: to_json_binary(&merge_msg)?,
             funds: vec![],
         },
         Replies::Merge.into(),

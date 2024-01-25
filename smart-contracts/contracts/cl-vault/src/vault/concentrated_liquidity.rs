@@ -95,7 +95,7 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
     match pool.pool {
         // Some(pool) => Some(Pool::decode(pool.value.as_slice()).unwrap()),
         Some(pool) => {
-            let decoded_pool = Message::decode(pool.value.as_ref())?;
+            let decoded_pool: Pool = Message::decode(pool.value.as_ref())?;
             Ok(decoded_pool)
         }
         None => Err(ContractError::PoolNotFound { pool_id }),
