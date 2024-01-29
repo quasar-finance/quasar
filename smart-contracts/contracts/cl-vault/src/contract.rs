@@ -10,8 +10,8 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_auto_compound_swap, execute_collect_rewards,
-    handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+    execute_auto_compound_swap, execute_collect_rewards, handle_collect_incentives_reply,
+    handle_collect_spread_rewards_reply,
 };
 
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
