@@ -140,4 +140,6 @@ pub struct InstantiateMsg {
 pub struct MigrateMsg {
     /// The ID of the new pool
     pub pool_id: u64,
+    pub lower_tick: i64,
+    pub upper_tick: i64,
 }

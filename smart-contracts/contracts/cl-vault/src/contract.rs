@@ -207,8 +207,8 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
     // Prepare migration data
     let migration_data = MigrationData {
         new_pool_id: msg.pool_id,
-        lower_tick: position.lower_tick,
-        upper_tick: position.upper_tick,
+        lower_tick: msg.lower_tick,
+        upper_tick: msg.upper_tick,
     };
     MIGRATION_DATA.save(deps.storage, &migration_data)?;
 
@@ -250,7 +250,8 @@ fn handle_migration_withdrawal_reply(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    if (new_pool.token0 != pool_config.token0) || (new_pool.token1 != pool_config.token1) {
+    //as the pairs are inverted
+    if (new_pool.token0 != pool_config.token1) || (new_pool.token1 != pool_config.token0) {
         return Err(ContractError::PoolTokenMismatch {});
     }
 
@@ -271,26 +272,27 @@ fn handle_migration_withdrawal_reply(
         .amount
         .checked_sub(amount1)?;
 
-    amount0 = amount0.checked_add(unused_balance0)?;
-    amount1 = amount1.checked_add(unused_balance1)?;
+    //saving inverted curr balance
+    let new_amount0 = amount1.checked_add(unused_balance1)?;
+    let new_amount1 = amount0.checked_add(unused_balance0)?;
 
-    CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
+    CURRENT_BALANCE.save(deps.storage, &(new_amount0, new_amount1))?;
 
     let mut tokens_provided = vec![];
-    if !amount0.is_zero() {
+    if !new_amount0.is_zero() {
         tokens_provided.push(Coin {
             denom: pool_config.token0,
-            amount: amount0,
+            amount: new_amount0,
         })
     }
-    if !amount1.is_zero() {
+    if !new_amount1.is_zero() {
         tokens_provided.push(Coin {
             denom: pool_config.token1,
-            amount: amount1,
+            amount: new_amount1,
         })
     }
 
-    //save new pool info
+    //save new pool info (this is already coming from pool so no need of inversion)
     POOL_CONFIG.save(
         deps.storage,
         &PoolConfig {
