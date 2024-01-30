@@ -2,8 +2,8 @@ use std::ops::Sub;
 
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, QuerierWrapper, Response,
-    StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QuerierWrapper,
+    Response, StdError, Storage, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
@@ -15,7 +15,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectSpreadRewardsResponse,
 };
 
-use crate::state::POOL_CONFIG;
+use crate::state::{AUTO_COMPOUND_ADMIN, POOL_CONFIG};
 use crate::{
     msg::AutoCompoundAsset,
     reply::Replies,
@@ -123,10 +123,13 @@ pub fn handle_collect_spread_rewards_reply(
 pub fn execute_auto_compound_swap(
     deps: DepsMut,
     env: Env,
+    info: MessageInfo,
     force_swap_route: bool,
     swap_routes: Vec<AutoCompoundAsset>,
 ) -> Result<Response, ContractError> {
     // auto compound admin
+    assert_auto_compound_admin(deps.storage, &info.sender)?;
+
     let vault_config = VAULT_CONFIG.may_load(deps.storage)?;
     let dex_router = vault_config.unwrap().dex_router;
     if swap_routes.is_empty() {
@@ -301,6 +304,17 @@ fn get_collect_spread_rewards_msg(
         position_ids: vec![position.position_id],
         sender: env.contract.address.into(),
     })
+}
+
+fn assert_auto_compound_admin(
+    storage: &mut dyn Storage,
+    sender: &Addr,
+) -> Result<(), ContractError> {
+    let admin = AUTO_COMPOUND_ADMIN.load(storage)?;
+    if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
 
 // #[cfg(test)]

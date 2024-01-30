@@ -95,7 +95,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
                     force_swap_route,
                     swap_routes,
-                } => execute_auto_compound_swap(deps, env, force_swap_route, swap_routes),
+                } => execute_auto_compound_swap(deps, env, info, force_swap_route, swap_routes),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
                 }
