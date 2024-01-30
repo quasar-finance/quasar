@@ -184,6 +184,31 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // todo : do something about the coinlist not having a copy trait
+    // let mut output: Vec<Output> = vec![];
+    // let mut total_amount = CoinList::new();
+    // let mut addresses = vec![];
+    // for res in USER_REWARDS.range(deps.storage, None, None, Order::Ascending) {
+    //     addresses.push(res.as_ref().unwrap().clone().0);
+    //     output.push(Output{ address: res.as_ref().unwrap().0.to_string(), coins: res.as_ref().unwrap().1.osmo_coin_from_coin_list() });
+    //     total_amount.add(res.as_ref().unwrap().1.clone())?;
+    // }
+    //
+    // let temp_total_claimed = total_amount.clone();
+    // let send_message = MsgMultiSend{
+    //     inputs: vec![
+    //         Input{
+    //             address: env.contract.address.to_string(),
+    //             coins: temp_total_claimed.osmo_coin_from_coin_list(),
+    //         }
+    //     ],
+    //     outputs: output,
+    // };
+    //
+    // for addr in addresses {
+    //     USER_REWARDS.remove(deps.storage, addr);
+    // }
+
     Ok(Response::new().add_attribute("migrate", "successful"))
 }

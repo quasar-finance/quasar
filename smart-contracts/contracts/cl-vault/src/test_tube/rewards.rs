@@ -234,6 +234,10 @@ mod tests {
                 )
                 .unwrap();
 
+            if shares_to_redeem.balance.is_zero() {
+                continue;
+            }
+
             let _ = wasm
                 .execute(
                     contract_address.as_str(),

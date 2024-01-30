@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
@@ -139,8 +139,6 @@ pub struct InstantiateMsg {
     pub range_admin: String,
     /// Address that is allowed to auto compound
     pub auto_compound_admin: String,
-    /// Address foe the dex router
-    pub dex_router: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
     /// Configurable parameters for the contract.
@@ -155,4 +153,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    dex_router: Addr,
+    auto_compound_admin: Addr,
+}

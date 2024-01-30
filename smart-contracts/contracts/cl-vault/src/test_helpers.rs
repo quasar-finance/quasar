@@ -210,6 +210,7 @@ pub fn mock_deps_with_querier_with_balance(
                 performance_fee: Decimal::zero(),
                 treasury: Addr::unchecked("treasure"),
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                dex_router: Addr::unchecked("dex_router"),
             },
         )
         .unwrap();
@@ -283,6 +284,7 @@ pub fn mock_deps_with_querier(
                 performance_fee: Decimal::zero(),
                 treasury: Addr::unchecked("treasure"),
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                dex_router: Addr::unchecked("dex_router"),
             },
         )
         .unwrap();

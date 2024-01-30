@@ -6,7 +6,7 @@ use crate::state::{
     VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
+use cosmwasm_std::{BankMsg, Decimal, DepsMut, MessageInfo, Response, StdError};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
@@ -113,6 +113,15 @@ pub fn execute_update_config(
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
     assert_admin(deps.as_ref(), &info.sender)?;
 
+    deps.api.addr_validate(&updates.dex_router.as_str())?;
+    deps.api.addr_validate(&updates.treasury.as_str())?;
+    // a performance fee of more than 1 means that the performance fee is more than 100%
+    if updates.performance_fee > Decimal::one() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "performance fee cannot be more than 1.0",
+        )));
+    }
+
     VAULT_CONFIG.save(deps.storage, &updates)?;
 
     Ok(Response::default()
@@ -133,7 +142,7 @@ pub fn execute_build_tick_exp_cache(
     Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
 }
 
-/// Updates the admin of the contract.
+/// Updates the auto compound admin of the contract.
 ///
 /// This function first checks if the message sender is nonpayable. If the sender sent funds, a `ContractError::NonPayable` error is returned.
 /// Then, it checks if the message sender is the current admin. If not, a `ContractError::Unauthorized` error is returned.
@@ -284,6 +293,25 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_update_auto_compound_admin_success() {
+        let old_admin = Addr::unchecked("old_admin");
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS
+            .save(deps.as_mut().storage, &old_admin)
+            .unwrap();
+        AUTO_COMPOUND_ADMIN
+            .save(deps.as_mut().storage, &old_admin)
+            .unwrap();
+
+        let new_admin = Addr::unchecked("new_admin");
+        let info_admin: MessageInfo = mock_info("old_admin", &[]);
+
+        execute_update_auto_compound_admin(deps.as_mut(), info_admin, new_admin.to_string())
+            .unwrap();
+        assert_eq!(AUTO_COMPOUND_ADMIN.load(&deps.storage).unwrap(), new_admin);
+    }
+
+    #[test]
     fn test_execute_update_range_admin_success() {
         let admin = Addr::unchecked("admin");
         let mut deps = mock_dependencies();
@@ -367,6 +395,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -378,6 +407,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("new_dex_router"),
         };
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
@@ -395,6 +425,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -406,6 +437,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("new_dex_router"),
         };
         let info_not_admin = mock_info("not_admin", &[]);
 
@@ -423,6 +455,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -434,6 +467,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("new_dex_router"),
         };
 
         let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
@@ -449,6 +483,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();

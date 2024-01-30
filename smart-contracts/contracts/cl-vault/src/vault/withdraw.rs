@@ -1,6 +1,14 @@
+use crate::msg::{ExecuteMsg, ExtensionExecuteMsg};
+use crate::{
+    helpers::{get_unused_balances, sort_tokens},
+    reply::Replies,
+    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::{get_position, withdraw_from_position},
+    ContractError,
+};
 use cosmwasm_std::{
-    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Uint256,
+    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -8,14 +16,6 @@ use osmosis_std::types::{
         concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
         tokenfactory::v1beta1::MsgBurn,
     },
-};
-
-use crate::{
-    helpers::{get_unused_balances, sort_tokens},
-    reply::Replies,
-    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{get_position, withdraw_from_position},
-    ContractError,
 };
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
@@ -99,11 +99,21 @@ pub fn execute_withdraw(
     // withdraw the user's funds from the position
     let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?;
 
+    let collect_rewards_msg: CosmosMsg = WasmMsg::Execute {
+        contract_addr: env.contract.address.to_string(),
+        msg: to_json_binary(&ExecuteMsg::VaultExtension(
+            ExtensionExecuteMsg::CollectRewards {},
+        ))?,
+        funds: vec![],
+    }
+    .into();
+
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "withdraw")
         .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
         .add_attribute("share_amount", shares_to_withdraw)
+        .add_message(collect_rewards_msg)
         .add_message(burn_msg)
         .add_submessage(SubMsg::reply_on_success(
             withdraw_msg,

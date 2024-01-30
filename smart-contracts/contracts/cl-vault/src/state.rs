@@ -19,7 +19,6 @@ pub const METADATA: Item<Metadata> = Item::new("metadata");
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
 pub const AUTO_COMPOUND_ADMIN: Item<Addr> = Item::new("auto_compound_admin");
-pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 /// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
@@ -30,6 +29,8 @@ pub struct VaultConfig {
     pub treasury: Addr,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
+    /// auto compound admin
+    pub dex_router: Addr,
     // TODO
     // /// auto compound swap size
     // pub auto_compound_swap_size: Uint128,
@@ -95,6 +96,9 @@ pub enum RewardsStatus {
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+
+/// Shared collection+distribution states
+pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
