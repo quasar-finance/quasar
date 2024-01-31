@@ -41,7 +41,7 @@ pub mod initialize {
 
     pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         init_test_contract(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            "./test-tube-build/cl-vault/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
@@ -72,8 +72,8 @@ pub mod initialize {
 
     pub fn dex_cl_init() -> (OsmosisTestApp, Addr, Addr, u64, u64, u64, SigningAccount) {
         init_cl_vault_with_dex_router_contract(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            "./test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm",
+            "./test-tube-build/cl-vault/wasm32-unknown-unknown/release/cl_vault.wasm",
+            "./test-tube-build/cw-dex-router/wasm32-unknown-unknown/release/cw_dex_router.wasm",
             &[
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
