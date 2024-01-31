@@ -1,0 +1,3 @@
+[submodule "smart-contracts/contracts/cw-dex-router"]
+	path = smart-contracts/contracts/cw-dex-router
+	url = git@github.com:quasar-finance/cw-dex-router.git

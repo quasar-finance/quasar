@@ -463,7 +463,7 @@ mod tests {
             // Creating test core
             let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
                 // TODO: evaluate using default_init() here
-                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+                "./test-tube-build/cl-vault/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(340282366920938463463374607431768211455, "uosmo"),
                     Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
