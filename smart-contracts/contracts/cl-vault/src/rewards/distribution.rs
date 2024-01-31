@@ -2,23 +2,24 @@ use std::ops::Sub;
 
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, QuerierWrapper, Response,
-    StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QuerierWrapper,
+    Response, StdError, Storage, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
     operations::SwapOperationsListUnchecked,
 };
+use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
     MsgCollectSpreadRewardsResponse,
 };
 
-use crate::state::POOL_CONFIG;
+use crate::state::{AUTO_COMPOUND_ADMIN, POOL_CONFIG};
 use crate::{
     msg::AutoCompoundAsset,
     reply::Replies,
-    state::{DEX_ROUTER, POSITION, STRATEGIST_REWARDS, VAULT_CONFIG},
+    state::{POSITION, STRATEGIST_REWARDS, VAULT_CONFIG},
     ContractError,
 };
 
@@ -56,8 +57,9 @@ pub fn handle_collect_incentives_reply(
 
     let response: MsgCollectIncentivesResponse = data?;
     let mut response_coin_list = CoinList::new();
-    response_coin_list
-        .merge(CoinList::coin_list_from_coin(response.clone().collected_incentives).coins())?;
+    response_coin_list.merge(try_proto_to_cosmwasm_coins(
+        response.clone().collected_incentives,
+    )?)?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -98,8 +100,9 @@ pub fn handle_collect_spread_rewards_reply(
 
     let response: MsgCollectSpreadRewardsResponse = data?;
     let mut response_coin_list = CoinList::new();
-    response_coin_list
-        .merge(CoinList::coin_list_from_coin(response.clone().collected_spread_rewards).coins())?;
+    response_coin_list.merge(try_proto_to_cosmwasm_coins(
+        response.clone().collected_spread_rewards,
+    )?)?;
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -120,11 +123,15 @@ pub fn handle_collect_spread_rewards_reply(
 pub fn execute_auto_compound_swap(
     deps: DepsMut,
     env: Env,
+    info: MessageInfo,
     force_swap_route: bool,
     swap_routes: Vec<AutoCompoundAsset>,
 ) -> Result<Response, ContractError> {
     // auto compound admin
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+    assert_auto_compound_admin(deps.storage, &info.sender)?;
+
+    let vault_config = VAULT_CONFIG.may_load(deps.storage)?;
+    let dex_router = vault_config.unwrap().dex_router;
     if swap_routes.is_empty() {
         return Err(ContractError::EmptyCompoundAssetList {});
     }
@@ -164,7 +171,7 @@ pub fn execute_auto_compound_swap(
 
         swap_msgs.push(SubMsg::new(generate_swap_message(
             deps.querier,
-            dex_router.clone(),
+            Some(dex_router.clone()),
             current_swap_route.clone().recommended_swap_route_token_0,
             current_swap_route.clone().token_in_denom,
             part_1_amount,
@@ -173,7 +180,7 @@ pub fn execute_auto_compound_swap(
         )?));
         swap_msgs.push(SubMsg::new(generate_swap_message(
             deps.querier,
-            dex_router.clone(),
+            Some(dex_router.clone()),
             current_swap_route.clone().recommended_swap_route_token_1,
             current_swap_route.clone().token_in_denom,
             part_2_amount,
@@ -239,7 +246,7 @@ fn generate_swap_message(
             };
 
             // Execute swap operations once with the determined route
-            execute_swap_operations(
+            get_execute_swap_operations_msg(
                 dex_router_address.clone(),
                 route,
                 Uint128::zero(),
@@ -255,7 +262,7 @@ fn generate_swap_message(
     Ok(swap_msg?)
 }
 
-fn execute_swap_operations(
+fn get_execute_swap_operations_msg(
     dex_router_address: Addr,
     operations: SwapOperationsListUnchecked,
     token_out_min_amount: Uint128,
@@ -297,6 +304,17 @@ fn get_collect_spread_rewards_msg(
         position_ids: vec![position.position_id],
         sender: env.contract.address.into(),
     })
+}
+
+fn assert_auto_compound_admin(
+    storage: &mut dyn Storage,
+    sender: &Addr,
+) -> Result<(), ContractError> {
+    let admin = AUTO_COMPOUND_ADMIN.load(storage)?;
+    if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
 
 // #[cfg(test)]

@@ -12,13 +12,15 @@ impl CoinList {
         CoinList::default()
     }
 
-    pub fn coin_list_from_coin(coins: Vec<OsmoCoin>) -> CoinList {
+    pub fn osmo_coin_from_coin_list(&self) -> Vec<OsmoCoin> {
         let mut temp_coins = vec![];
-        for coin in coins {
-            let amount = coin.amount.parse::<u128>().unwrap();
-            temp_coins.push(Coin::new(amount, coin.denom))
+        for coin in self.coins() {
+            temp_coins.push(OsmoCoin {
+                amount: coin.amount.to_string(),
+                denom: coin.denom,
+            })
         }
-        CoinList(temp_coins)
+        temp_coins
     }
 
     /// calculates the ratio of the current rewards
