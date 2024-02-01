@@ -382,7 +382,6 @@ fn get_min_ratio_per_position(
     // per position, calculate the ratio of asset1 and asset2 a position needs
 
     // for each position, we take some set amount of liquidity and calculate how many asset0 and asset1 those would give us
-    // we assume
     let liquidity: Decimal256 = Decimal::new(100_000_000_000_000_000_000_000_u128.into()).into();
     let ps: Result<Vec<(Position, PositionRatio)>, ContractError> = positions
         .into_iter()
@@ -414,8 +413,8 @@ fn get_min_ratio_per_position(
         .into_iter()
         .map(|(p, internal_ratio)| {
             let external_ratio = Decimal::from_ratio(p.ratio, total_ratio);
-            let total_ratio = internal_ratio.checked_mul_ratio(external_ratio)?;
-            Ok((p, total_ratio))
+            let effective_ratio = internal_ratio.checked_mul_ratio(external_ratio)?;
+            Ok((p, effective_ratio))
         })
         .collect();
     positions
