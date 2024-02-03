@@ -70,9 +70,9 @@ impl CoinList {
     }
 
     /// add rewards to self and mutate self
-    pub fn add(mut self, rewards: CoinList) -> ContractResult<Self> {
+    pub fn add(&mut self, rewards: CoinList) -> ContractResult<()> {
         self.merge(rewards.coins())?;
-        Ok(self)
+        Ok(())
     }
 
     pub fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
@@ -316,7 +316,7 @@ mod tests {
                 },
             ])
             .unwrap();
-        rewards = rewards
+        rewards
             .add(CoinList::from_coins(vec![
                 coin(2000, "uosmo"),
                 coin(2000, "uatom"),

@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal};
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
@@ -30,6 +30,8 @@ pub enum ExtensionExecuteMsg {
     },
     /// Build tick exponent cache
     BuildTickCache {},
+    /// MigrationStep
+    MigrationStep { amount_of_users: Uint128 },
 }
 
 #[cw_serde]
@@ -154,6 +156,6 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    dex_router: Addr,
-    auto_compound_admin: Addr,
+    pub dex_router: Addr,
+    pub auto_compound_admin: Addr,
 }

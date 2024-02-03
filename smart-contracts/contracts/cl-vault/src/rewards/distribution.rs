@@ -2,20 +2,25 @@ use std::ops::Sub;
 
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QuerierWrapper,
-    Response, StdError, Storage, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Order,
+    QuerierWrapper, Response, StdError, Storage, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
     operations::SwapOperationsListUnchecked,
 };
-use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
     MsgCollectSpreadRewardsResponse,
 };
+use osmosis_std::{
+    try_proto_to_cosmwasm_coins,
+    types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output},
+};
 
-use crate::state::{AUTO_COMPOUND_ADMIN, POOL_CONFIG};
+use crate::state::{
+    MigrationStatus, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, POOL_CONFIG, USER_REWARDS,
+};
 use crate::{
     msg::AutoCompoundAsset,
     reply::Replies,
@@ -24,6 +29,64 @@ use crate::{
 };
 
 use super::helpers::CoinList;
+
+pub fn execute_migration_step(
+    deps: DepsMut,
+    env: Env,
+    amount_of_users: Uint128,
+) -> Result<Response, ContractError> {
+    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
+
+    if matches!(migration_status, MigrationStatus::Closed) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let mut outputs = Vec::new();
+    let mut addresses = Vec::new();
+    let mut total_amount = CoinList::new();
+
+    // Iterate user rewards ina paginated fashion
+    for item in USER_REWARDS
+        .range(deps.storage, None, None, Order::Ascending)
+        .take(amount_of_users.u128() as usize)
+    {
+        let (address, rewards) = item?;
+        addresses.push(address.clone());
+        outputs.push(Output {
+            address: address.to_string(),
+            coins: rewards.osmo_coin_from_coin_list(),
+        });
+        total_amount.add(rewards)?;
+    }
+
+    let send_message = MsgMultiSend {
+        inputs: vec![Input {
+            address: env.contract.address.to_string(),
+            coins: total_amount.osmo_coin_from_coin_list(),
+        }],
+        outputs,
+    };
+
+    // Remove processed rewards in a separate iteration.
+    for addr in addresses {
+        USER_REWARDS.remove(deps.storage, addr);
+    }
+
+    // Check if this is the last execution.
+    let is_last_execution = USER_REWARDS
+        .range(deps.storage, None, None, Order::Ascending)
+        .next()
+        .is_none();
+    if is_last_execution {
+        migration_status = MigrationStatus::Closed;
+        MIGRATION_STATUS.save(deps.storage, &migration_status)?;
+    }
+
+    Ok(Response::new()
+        .add_message(send_message)
+        .add_attribute("migration_status", format!("{:?}", migration_status))
+        .add_attribute("is_last_execution", is_last_execution.to_string()))
+}
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
@@ -63,8 +126,11 @@ pub fn handle_collect_incentives_reply(
 
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
-    let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+    let strategist_fee: CoinList = response_coin_list.sub_ratio(vault_config.performance_fee)?;
+    STRATEGIST_REWARDS.update(deps.storage, |mut old: CoinList| {
+        old.add(strategist_fee)?;
+        Ok::<CoinList, ContractError>(old)
+    })?;
 
     // collect the spread rewards
     let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
@@ -107,7 +173,10 @@ pub fn handle_collect_spread_rewards_reply(
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+    STRATEGIST_REWARDS.update(deps.storage, |mut old: CoinList| {
+        old.add(strategist_fee)?;
+        Ok::<CoinList, ContractError>(old)
+    })?;
 
     // TODO add a nice response
     Ok(Response::new()
@@ -204,7 +273,7 @@ fn generate_swap_message(
     token_out_denom: String,
     force_swap_route: bool,
 ) -> Result<CosmosMsg, ContractError> {
-    let swap_msg: Result<CosmosMsg, _> = match dex_router {
+    let swap_msg = match dex_router {
         Some(ref dex_router_address) => {
             let offer_asset = AssetInfo::Native(token_in_denom.clone());
             let ask_asset = AssetInfo::Native(token_out_denom);
@@ -259,7 +328,7 @@ fn generate_swap_message(
         }
     };
 
-    Ok(swap_msg?)
+    swap_msg
 }
 
 fn get_execute_swap_operations_msg(

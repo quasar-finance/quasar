@@ -38,7 +38,7 @@ pub fn handle_instantiate(
     build_tick_exp_cache(deps.storage)?;
     verify_tick_exp_cache(deps.storage)?;
 
-    deps.api.addr_validate(&msg.config.dex_router.as_str())?;
+    deps.api.addr_validate(msg.config.dex_router.as_str())?;
 
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
 

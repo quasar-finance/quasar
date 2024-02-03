@@ -40,6 +40,14 @@ pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
 
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
+/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade
+#[cw_serde]
+pub enum MigrationStatus {
+    Open,
+    Closed,
+}
+pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
+
 /// POOL_CONFIG
 #[cw_serde]
 pub struct PoolConfig {

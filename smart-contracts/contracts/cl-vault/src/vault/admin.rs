@@ -113,8 +113,8 @@ pub fn execute_update_config(
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
     assert_admin(deps.as_ref(), &info.sender)?;
 
-    deps.api.addr_validate(&updates.dex_router.as_str())?;
-    deps.api.addr_validate(&updates.treasury.as_str())?;
+    deps.api.addr_validate(updates.dex_router.as_str())?;
+    deps.api.addr_validate(updates.treasury.as_str())?;
     // a performance fee of more than 1 means that the performance fee is more than 100%
     if updates.performance_fee > Decimal::one() {
         return Err(ContractError::Std(StdError::generic_err(

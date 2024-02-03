@@ -10,10 +10,11 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_auto_compound_swap, execute_collect_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply,
+    execute_auto_compound_swap, execute_collect_rewards, execute_migration_step,
+    handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
+use crate::state::{MigrationStatus, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, VAULT_CONFIG};
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -98,6 +99,9 @@ pub fn execute(
                 } => execute_auto_compound_swap(deps, env, info, force_swap_route, swap_routes),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
+                }
+                crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
+                    execute_migration_step(deps, env, amount_of_users)
                 }
             }
         }
@@ -184,31 +188,18 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    // todo : do something about the coinlist not having a copy trait
-    // let mut output: Vec<Output> = vec![];
-    // let mut total_amount = CoinList::new();
-    // let mut addresses = vec![];
-    // for res in USER_REWARDS.range(deps.storage, None, None, Order::Ascending) {
-    //     addresses.push(res.as_ref().unwrap().clone().0);
-    //     output.push(Output{ address: res.as_ref().unwrap().0.to_string(), coins: res.as_ref().unwrap().1.osmo_coin_from_coin_list() });
-    //     total_amount.add(res.as_ref().unwrap().1.clone())?;
-    // }
-    //
-    // let temp_total_claimed = total_amount.clone();
-    // let send_message = MsgMultiSend{
-    //     inputs: vec![
-    //         Input{
-    //             address: env.contract.address.to_string(),
-    //             coins: temp_total_claimed.osmo_coin_from_coin_list(),
-    //         }
-    //     ],
-    //     outputs: output,
-    // };
-    //
-    // for addr in addresses {
-    //     USER_REWARDS.remove(deps.storage, addr);
-    // }
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let mut vault_config = VAULT_CONFIG.load(deps.storage)?;
+    vault_config.dex_router = deps.api.addr_validate(msg.dex_router.as_str())?;
+
+    VAULT_CONFIG.save(deps.storage, &vault_config)?;
+
+    AUTO_COMPOUND_ADMIN.save(
+        deps.storage,
+        &deps.api.addr_validate(msg.auto_compound_admin.as_ref())?,
+    )?;
+
+    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
 
     Ok(Response::new().add_attribute("migrate", "successful"))
 }

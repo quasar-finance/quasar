@@ -355,7 +355,16 @@ pub mod initialize {
         )
     }
 
-    pub fn dex_cl_init_cl_pools() -> (OsmosisTestApp, Addr, Addr, u64, u64, u64, u64, SigningAccount) {
+    pub fn dex_cl_init_cl_pools() -> (
+        OsmosisTestApp,
+        Addr,
+        Addr,
+        u64,
+        u64,
+        u64,
+        u64,
+        SigningAccount,
+    ) {
         init_cl_vault_with_dex_router_contract_cl_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             "./test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm",
@@ -398,7 +407,16 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
-    ) -> (OsmosisTestApp, Addr, Addr, u64, u64, u64, u64, SigningAccount) {
+    ) -> (
+        OsmosisTestApp,
+        Addr,
+        Addr,
+        u64,
+        u64,
+        u64,
+        u64,
+        SigningAccount,
+    ) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let pm = PoolManager::new(&app);
@@ -442,7 +460,7 @@ pub mod initialize {
             admin.address(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         gov.propose_and_execute(
             CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
@@ -459,7 +477,7 @@ pub mod initialize {
             admin.address(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         gov.propose_and_execute(
             CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
@@ -476,7 +494,7 @@ pub mod initialize {
             admin.address(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         gov.propose_and_execute(
             CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
@@ -493,7 +511,7 @@ pub mod initialize {
             admin.address(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         let pool_1_coins = vec![
             v1beta1::Coin {
@@ -539,7 +557,7 @@ pub mod initialize {
         let lp_pool3: Pool = Pool::decode(pools.pools[3].value.as_slice()).unwrap();
 
         cl.create_position(
-            MsgCreatePosition{
+            MsgCreatePosition {
                 pool_id: lp_pool1.id,
                 sender: admin.address(),
                 lower_tick,
@@ -549,9 +567,10 @@ pub mod initialize {
                 token_min_amount1: token_min_amount1.to_string(),
             },
             &admin,
-        ).unwrap();
+        )
+        .unwrap();
         cl.create_position(
-            MsgCreatePosition{
+            MsgCreatePosition {
                 pool_id: lp_pool2.id,
                 sender: admin.address(),
                 lower_tick,
@@ -561,9 +580,10 @@ pub mod initialize {
                 token_min_amount1: token_min_amount1.to_string(),
             },
             &admin,
-        ).unwrap();
+        )
+        .unwrap();
         cl.create_position(
-            MsgCreatePosition{
+            MsgCreatePosition {
                 pool_id: lp_pool3.id,
                 sender: admin.address(),
                 lower_tick,
@@ -573,7 +593,8 @@ pub mod initialize {
                 token_min_amount1: token_min_amount1.to_string(),
             },
             &admin,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
@@ -591,7 +612,7 @@ pub mod initialize {
             },
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         // Get and assert spot price is 1.0
         let spot_price = pm
@@ -660,7 +681,7 @@ pub mod initialize {
             sort_tokens(vec![]).as_ref(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         wasm.execute(
             &contract_dex_router.data.address,
@@ -677,7 +698,7 @@ pub mod initialize {
             sort_tokens(vec![]).as_ref(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         wasm.execute(
             &contract_dex_router.data.address,
@@ -694,7 +715,7 @@ pub mod initialize {
             sort_tokens(vec![]).as_ref(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         wasm.execute(
             &contract_dex_router.data.address,
@@ -718,7 +739,7 @@ pub mod initialize {
             sort_tokens(vec![]).as_ref(),
             &admin,
         )
-            .unwrap();
+        .unwrap();
 
         (
             app,

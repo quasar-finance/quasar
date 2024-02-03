@@ -25,7 +25,9 @@ mod tests {
     use crate::test_tube::helpers::{
         get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
     };
-    use crate::test_tube::initialize::initialize::{default_init, dex_cl_init_lp_pools, dex_cl_init_cl_pools};
+    use crate::test_tube::initialize::initialize::{
+        default_init, dex_cl_init_cl_pools, dex_cl_init_lp_pools,
+    };
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
@@ -289,8 +291,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_auto_compound_rewards_cl_pools() {
-        let (app, contract_address, dex_router_addr, cl_pool_id, lp_pool1, lp_pool2, lp_pool3, admin) =
-            dex_cl_init_cl_pools();
+        let (
+            app,
+            contract_address,
+            dex_router_addr,
+            cl_pool_id,
+            lp_pool1,
+            lp_pool2,
+            lp_pool3,
+            admin,
+        ) = dex_cl_init_cl_pools();
         let bm = Bank::new(&app);
 
         // Initialize accounts
