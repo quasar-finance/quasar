@@ -69,7 +69,9 @@ pub mod initialize {
         )
     }
 
-    pub fn dex_cl_init_lp_pools() -> (OsmosisTestApp, Addr, Addr, u64, u64, u64, SigningAccount) {
+    pub fn dex_cl_init_lp_pools() -> (OsmosisTestApp, Addr, Addr, u64, Vec<u64>, SigningAccount) {
+        // TODO: We should be reusing the init_test_contract() for basic setup,
+        // and init_cl_vault_with_dex_router_contract_with_lp_pools should be like init_dex_router_contract_with_lp_pools only.
         init_cl_vault_with_dex_router_contract_with_lp_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             "./test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm",
@@ -112,7 +114,7 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
-    ) -> (OsmosisTestApp, Addr, Addr, u64, u64, u64, SigningAccount) {
+    ) -> (OsmosisTestApp, Addr, Addr, u64, Vec<u64>, SigningAccount) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let pm = PoolManager::new(&app);
@@ -157,45 +159,52 @@ pub mod initialize {
         )
         .unwrap();
 
-        let pool_1_coins = vec![
-            Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: Uint128::new(10000000000000000000000),
-            },
-            Coin {
-                denom: DENOM_QUOTE.to_string(),
-                amount: Uint128::new(10000000000000000000000),
-            },
-        ];
-        let lp_pool1 = gm.create_basic_pool(&pool_1_coins, &admin).unwrap();
-
-        let pool_2_coins = vec![
-            Coin {
-                denom: DENOM_QUOTE.to_string(),
-                amount: Uint128::new(10000000000000000000000),
-            },
-            Coin {
-                denom: DENOM_REWARD.to_string(),
-                amount: Uint128::new(10000000000000000000000),
-            },
-        ];
-        let lp_pool2 = gm.create_basic_pool(&pool_2_coins, &admin).unwrap();
-
-        let pool_3_coins = vec![
-            Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: Uint128::new(10000000000000000000000),
-            },
-            Coin {
-                denom: DENOM_REWARD.to_string(),
-                amount: Uint128::new(10000000000000000000000),
-            },
-        ];
-        let lp_pool3 = gm.create_basic_pool(&pool_3_coins, &admin).unwrap();
-
         // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+
+        // Finishing basic CL setup ... starting advanced multi-pool setup for DexRouter support and Gamm Balancer pools
+
+        // Declare Balancer LP pools coins
+        let pools_coins = vec![
+            vec![
+                Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: Uint128::new(10000000000000000000000),
+                },
+                Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: Uint128::new(10000000000000000000000),
+                },
+            ],
+            vec![
+                Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: Uint128::new(10000000000000000000000),
+                },
+                Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: Uint128::new(10000000000000000000000),
+                },
+            ],
+            vec![
+                Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: Uint128::new(10000000000000000000000),
+                },
+                Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: Uint128::new(10000000000000000000000),
+                },
+            ],
+        ];
+
+        // Create Balancer pools with previous vec of vec of coins
+        let mut lp_pools = vec![];
+        for pool_coins in &pools_coins {
+            let lp_pool = gm.create_basic_pool(&pool_coins, &admin).unwrap();
+            lp_pools.push(lp_pool.data.pool_id);
+        }
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
@@ -228,6 +237,7 @@ pub mod initialize {
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
         app.increase_time(1000000);
 
+        // Instantiate Dex Router
         let contract_dex_router = wasm
             .instantiate(
                 code_id_dex,
@@ -238,6 +248,57 @@ pub mod initialize {
                 &admin,
             )
             .unwrap();
+
+        // Set Dex Router contract paths
+        for (index, lp_pool_id) in lp_pools.iter().enumerate() {
+            wasm.execute(
+                &contract_dex_router.data.address,
+                &DexExecuteMsg::SetPath {
+                    offer_asset: AssetInfoUnchecked::Native(
+                        pools_coins[index][0].denom.to_string(),
+                    ),
+                    ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
+                    path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
+                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool_id.clone())),
+                        offer_asset_info: AssetInfoBase::Native(
+                            pools_coins[index][0].denom.to_string(),
+                        ),
+                        ask_asset_info: AssetInfoBase::Native(
+                            pools_coins[index][1].denom.to_string(),
+                        ),
+                    }]),
+                    bidirectional: true,
+                },
+                vec![].as_ref(),
+                &admin,
+            )
+            .unwrap();
+        }
+
+        // Set additional path
+        wasm.execute(
+            &contract_dex_router.data.address,
+            &DexExecuteMsg::SetPath {
+                offer_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
+                ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
+                path: SwapOperationsListUnchecked::new(vec![
+                    SwapOperationBase {
+                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pools[1])),
+                        ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
+                        offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
+                    },
+                    SwapOperationBase {
+                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pools[0])),
+                        offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
+                        ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
+                    },
+                ]),
+                bidirectional: true,
+            },
+            sort_tokens(vec![]).as_ref(),
+            &admin,
+        )
+        .unwrap();
 
         // Instantiate vault
         let contract_cl = wasm
@@ -267,88 +328,12 @@ pub mod initialize {
             )
             .unwrap();
 
-        wasm.execute(
-            &contract_dex_router.data.address,
-            &DexExecuteMsg::SetPath {
-                offer_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
-                ask_asset: AssetInfoUnchecked::Native(DENOM_QUOTE.to_string()),
-                path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                    pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool1.data.pool_id)),
-                    offer_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
-                    ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                }]),
-                bidirectional: true,
-            },
-            sort_tokens(vec![]).as_ref(),
-            &admin,
-        )
-        .unwrap();
-
-        wasm.execute(
-            &contract_dex_router.data.address,
-            &DexExecuteMsg::SetPath {
-                offer_asset: AssetInfoUnchecked::Native(DENOM_QUOTE.to_string()),
-                ask_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
-                path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                    pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2.data.pool_id)),
-                    offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                    ask_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                }]),
-                bidirectional: true,
-            },
-            sort_tokens(vec![]).as_ref(),
-            &admin,
-        )
-        .unwrap();
-
-        wasm.execute(
-            &contract_dex_router.data.address,
-            &DexExecuteMsg::SetPath {
-                offer_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
-                ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
-                path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                    pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool3.data.pool_id)),
-                    offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                    ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
-                }]),
-                bidirectional: true,
-            },
-            sort_tokens(vec![]).as_ref(),
-            &admin,
-        )
-        .unwrap();
-
-        wasm.execute(
-            &contract_dex_router.data.address,
-            &DexExecuteMsg::SetPath {
-                offer_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
-                ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
-                path: SwapOperationsListUnchecked::new(vec![
-                    SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2.data.pool_id)),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                    },
-                    SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool1.data.pool_id)),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
-                    },
-                ]),
-                bidirectional: true,
-            },
-            sort_tokens(vec![]).as_ref(),
-            &admin,
-        )
-        .unwrap();
-
         (
             app,
             Addr::unchecked(contract_cl.data.address),
             Addr::unchecked(contract_dex_router.data.address),
             pool.id,
-            lp_pool1.data.pool_id,
-            lp_pool2.data.pool_id,
+            lp_pools,
             admin,
         )
     }
