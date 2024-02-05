@@ -206,3 +206,35 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Addr,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_migrate() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // TODO: Set mocked before state
+
+        let _ = migrate(
+            deps.as_mut(),
+            env,
+            MigrateMsg {
+                dex_router: Addr::unchecked("dex_router"),
+                auto_compound_admin: Addr::unchecked("auto_compound_admin"),
+            },
+        );
+
+        // TODO: We expect VAULT_CONFIG.dex_router to be equal to what we set
+        // TODO: We expect AUTO_COMPOUND_ADMIN to be equal to what we set
+        // TODO: We expect MIGRATION_STATUS to be equal to what we set
+        //assert_eq!((), something);
+    }
+}
