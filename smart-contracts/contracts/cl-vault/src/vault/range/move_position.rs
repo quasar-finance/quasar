@@ -511,10 +511,12 @@ pub fn handle_iteration_create_position_reply(
 
 // store new position id and exit
 pub fn handle_merge_response(
-    _deps: DepsMut,
+    deps: DepsMut,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let _: MergeResponse = data.try_into()?;
+
+    MODIFY_RANGE_STATE.remove(deps.storage);
 
     Ok(Response::new()
         .add_attribute("action", "swap_deposit_merge")
