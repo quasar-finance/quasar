@@ -5,8 +5,8 @@ use crate::instantiate::{
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
     query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
-    query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_verify_tick_cache, RangeAdminResponse,
+    query_share_price, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -153,6 +153,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                 }
                 crate::msg::ClQueryMsg::VerifyTickCache => {
                     Ok(to_json_binary(&query_verify_tick_cache(deps)?)?)
+                }
+                crate::msg::ClQueryMsg::SharePrice { shares } => {
+                    Ok(to_json_binary(&query_share_price(deps, env, shares)?)?)
                 }
             },
         },

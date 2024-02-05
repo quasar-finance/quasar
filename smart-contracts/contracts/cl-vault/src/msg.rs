@@ -6,7 +6,7 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserSharesBalanceResponse, VerifyTickCacheResponse,
+        SharePriceResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::VaultConfig,
 };
@@ -121,6 +121,8 @@ pub enum ClQueryMsg {
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
+    #[returns(SharePriceResponse)]
+    SharePrice { shares: Uint128 },
 }
 
 /// ExecuteMsg for an Autocompounding Vault.

@@ -6,22 +6,24 @@ mod tests {
     use std::str::FromStr;
 
     use apollo_cw_asset::AssetInfoBase;
-    use cosmwasm_std::Decimal;
     use cosmwasm_std::{assert_approx_eq, Coin};
+    use cosmwasm_std::{Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::{MsgSend, QueryBalanceRequest};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    use osmosis_std::types::cosmos::orm::query::v1alpha1::index_value::Value::Uint;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, PoolManager, Runner, Wasm};
 
-    use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
+    use crate::msg::ClQueryMsg::SharePrice;
+    use crate::msg::UserBalanceQueryMsg::{UserAssetsBalance, UserSharesBalance};
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
-    use crate::query::UserSharesBalanceResponse;
+    use crate::query::{AssetsBalanceResponse, SharePriceResponse, UserSharesBalanceResponse};
     use crate::test_tube::helpers::{
         get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
     };
@@ -136,6 +138,18 @@ mod tests {
             balances_rewards.balance.unwrap().amount,
         );
 
+        let shares_price: SharePriceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
+                    shares: Uint128::new(10),
+                })),
+            )
+            .unwrap();
+        println!("{:?}", shares_price.balances);
+        assert_eq!(Uint128::new(2), shares_price.balances[0].amount);
+        assert_eq!(Uint128::new(3), shares_price.balances[1].amount);
+
         let path1 = vec![
             SwapOperationBase::new(
                 cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2)),
@@ -202,6 +216,17 @@ mod tests {
                 &admin,
             )
             .unwrap();
+
+        let shares_price: SharePriceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
+                    shares: Uint128::new(10),
+                })),
+            )
+            .unwrap();
+        assert_eq!(Uint128::new(2763), shares_price.balances[0].amount);
+        assert_eq!(Uint128::new(4368), shares_price.balances[1].amount);
 
         for account in &accounts {
             let balances_before_withdraw_quote_denom = bm
@@ -286,6 +311,18 @@ mod tests {
                     > DEPOSIT_AMOUNT
             );
         }
+
+        // as there are no more deposists the share price should not change
+        let shares_price: SharePriceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
+                    shares: Uint128::new(10),
+                })),
+            )
+            .unwrap();
+        assert_eq!(Uint128::new(2763), shares_price.balances[0].amount);
+        assert_eq!(Uint128::new(4368), shares_price.balances[1].amount);
     }
 
     #[test]
