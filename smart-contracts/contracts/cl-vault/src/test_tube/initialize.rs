@@ -1,7 +1,5 @@
 #[cfg(test)]
 pub mod initialize {
-    use std::str::FromStr;
-
     use apollo_cw_asset::{AssetInfoBase, AssetInfoUnchecked};
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
@@ -22,9 +20,10 @@ pub mod initialize {
         osmosis_std::types::osmosis::concentratedliquidity::{
             poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePosition,
         },
-        Account, Bank, ConcentratedLiquidity, Gamm, GovWithAppAccess, Module, OsmosisTestApp,
+        Account, ConcentratedLiquidity, Gamm, GovWithAppAccess, Module, OsmosisTestApp,
         PoolManager, SigningAccount, TokenFactory, Wasm,
     };
+    use std::str::FromStr;
 
     use crate::helpers::sort_tokens;
     use crate::msg::{
@@ -120,7 +119,6 @@ pub mod initialize {
         let gm = Gamm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let wasm = Wasm::new(&app);
-        let bm = Bank::new(&app);
 
         let admin = app.init_account(admin_balance).unwrap();
 
@@ -420,10 +418,8 @@ pub mod initialize {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let pm = PoolManager::new(&app);
-        let gm = Gamm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let wasm = Wasm::new(&app);
-        let bm = Bank::new(&app);
 
         let admin = app.init_account(admin_balance).unwrap();
 

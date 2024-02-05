@@ -2,9 +2,6 @@
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Mul;
-    use std::str::FromStr;
-
     use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::{assert_approx_eq, Coin};
     use cosmwasm_std::{Decimal, Uint128};
@@ -13,17 +10,18 @@ mod tests {
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::{MsgSend, QueryBalanceRequest};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
-    use osmosis_std::types::cosmos::orm::query::v1alpha1::index_value::Value::Uint;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
     use osmosis_test_tube::RunnerError::ExecuteError;
-    use osmosis_test_tube::{Account, Bank, Module, PoolManager, Runner, Wasm};
+    use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
+    use std::ops::Mul;
+    use std::str::FromStr;
 
     use crate::msg::ClQueryMsg::SharePrice;
-    use crate::msg::UserBalanceQueryMsg::{UserAssetsBalance, UserSharesBalance};
+    use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
-    use crate::query::{AssetsBalanceResponse, SharePriceResponse, UserSharesBalanceResponse};
+    use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
     use crate::test_tube::helpers::{
         get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
     };
@@ -44,7 +42,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_auto_compound_rewards_lp_pools() {
-        let (app, contract_address, dex_router_addr, cl_pool_id, lp_pool1, lp_pool2, admin) =
+        let (app, contract_address, _dex_router_addr, cl_pool_id, lp_pool1, lp_pool2, admin) =
             dex_cl_init_lp_pools();
         let bm = Bank::new(&app);
 
@@ -99,7 +97,7 @@ mod tests {
                 .unwrap();
         }
 
-        let result = wasm
+        let _result = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
@@ -108,7 +106,7 @@ mod tests {
             )
             .unwrap();
 
-        let send = bm.send(
+        let _send = bm.send(
             MsgSend {
                 from_address: admin.address(),
                 to_address: contract_address.to_string(),
@@ -168,7 +166,7 @@ mod tests {
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
         )];
 
-        let auto_compound = wasm
+        let _auto_compound = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
@@ -200,7 +198,7 @@ mod tests {
         // let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
         // assert_eq!("49500004998".to_string(), balances_after.balance.unwrap().amount);
 
-        let update_range = wasm
+        let _update_range = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
@@ -331,11 +329,11 @@ mod tests {
         let (
             app,
             contract_address,
-            dex_router_addr,
+            _dex_router_addr,
             cl_pool_id,
             lp_pool1,
             lp_pool2,
-            lp_pool3,
+            _lp_pool3,
             admin,
         ) = dex_cl_init_cl_pools();
         let bm = Bank::new(&app);
@@ -391,7 +389,7 @@ mod tests {
                 .unwrap();
         }
 
-        let result = wasm
+        let _result = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
@@ -400,7 +398,7 @@ mod tests {
             )
             .unwrap();
 
-        let send = bm.send(
+        let _send = bm.send(
             MsgSend {
                 from_address: admin.address(),
                 to_address: contract_address.to_string(),
@@ -448,7 +446,7 @@ mod tests {
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
         )];
 
-        let auto_compound = wasm
+        let _auto_compound = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
@@ -480,7 +478,7 @@ mod tests {
         // let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
         // assert_eq!("49500004998".to_string(), balances_after.balance.unwrap().amount);
 
-        let update_range = wasm
+        let _update_range = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
