@@ -409,7 +409,8 @@ fn get_min_ratio_per_position(
     positions
 }
 
-/// get the final ratio of a set of positions by 
+/// get the final ratio of a set of positions by multiplying the internal ratio of a position with the external ratio
+/// that that position has in the total set of positions
 fn get_final_ratio(positions: Vec<(Position, PositionRatio)>) -> Result<Vec<(Position, PositionRatio)>, ContractError> {
     let total_ratio = positions
     .iter()
