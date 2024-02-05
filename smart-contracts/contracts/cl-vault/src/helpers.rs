@@ -401,14 +401,20 @@ fn get_min_ratio_per_position(
 
     let positions = ps?;
 
-    let total_ratio = positions
-        .iter()
-        .fold(Uint128::zero(), |acc, (p, _)| acc + p.ratio);
-
     // now that we know how much tokens a positions internal ratio needs, we need to normalize these internal ratios to eachother using the positions ratios
     // Each position might get ratio/total_ratio of tokens. We want to find the effective ratio for each position then.
     // we multiply the position's internal ratio by the positions external ratio
     // The external ratio is the positions ratio divided by the total ratio of all positions
+    let positions = get_final_ratio(positions);
+    positions
+}
+
+/// get the final ratio of a set of positions by 
+fn get_final_ratio(positions: Vec<(Position, PositionRatio)>) -> Result<Vec<(Position, PositionRatio)>, ContractError> {
+    let total_ratio = positions
+    .iter()
+    .fold(Uint128::zero(), |acc, (p, _)| acc + p.ratio);
+    
     let positions: Result<Vec<(Position, PositionRatio)>, ContractError> = positions
         .into_iter()
         .map(|(p, internal_ratio)| {
