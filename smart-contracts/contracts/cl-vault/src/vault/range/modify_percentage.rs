@@ -119,7 +119,7 @@ pub fn increase_position_funds(
     )))
 }
 
-pub fn handle_add_to_position_reply(
+pub fn handle_range_add_to_position_reply(
     deps: DepsMut,
     env: Env,
     result: SubMsgResult,
