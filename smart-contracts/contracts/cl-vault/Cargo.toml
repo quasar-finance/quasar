@@ -50,12 +50,12 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 osmosis-test-tube = { workspace = true }
 prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
 
 apollo-cw-asset = "0.1.0"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", features = ["library", "osmosis"]}
-cw-utils = "1.0.2"
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-cw2 = "1.0.1"
 num_enum = "0.7.0"
 
 [dev-dependencies]

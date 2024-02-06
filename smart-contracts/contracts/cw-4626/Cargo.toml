@@ -27,11 +27,11 @@ schemars ={ workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+cw20 = { workspace = true }
+cw20-base = { workspace = true }
 
-cw-utils = "0.13.4"
-cw2 = "0.13.4"
-cw20 = "0.13.4"
-cw20-base = { version = "0.13.4", features = ["library"]}
 quasar-traits = { path = "../../packages/quasar-traits" }
 quasar-types = { path = "../../packages/quasar-types"}
 strategy = { path = "../strategy", features = ["library"]}

@@ -54,8 +54,8 @@ cw-storage-plus ={ workspace = true }
 schemars ={ workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+cw2 = { workspace = true }
+cw20 = { workspace = true }
 
 cw-asset = "3"
-cw2 = "1.0"
-cw20 = "1.0"
 itertools = "0.10"
