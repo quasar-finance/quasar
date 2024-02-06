@@ -48,6 +48,7 @@ cw-storage-plus ={ workspace = true }
 schemars ={ workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+osmosis-test-tube = { workspace = true }
 
 apollo-cw-asset = "0.1.0"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", features = ["library", "osmosis"]}
@@ -58,6 +59,5 @@ num_enum = "0.7.0"
 prost = {version = "0.12.3", default-features = false}
 [dev-dependencies]
 ## todo : change this once branch is merges.
-osmosis-test-tube = { git="https://github.com/magiodev/test-tube/", branch="fix/v22_go_mod_tidy"}
 cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
 proptest = "1.2.0"

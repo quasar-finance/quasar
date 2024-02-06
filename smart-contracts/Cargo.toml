@@ -15,13 +15,19 @@ members = [
 ]
 
 [workspace.dependencies]
+# CosmWasm
 cosmwasm-std = "1.5.3"
+cosmwasm-schema = "1.5.3"
+cw-storage-plus = "1.2.0"
 osmosis-std = "0.22.0"
 osmosis-std-derive = "0.20.1"
-cosmwasm-schema = "1.2"
-cw-storage-plus = "1.0"
+
+# Serialization
 schemars = "0.8.16"
-thiserror = { version = "1.0.56" }
 serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1.0.113" , default-features = false, features = ["alloc"]}
+thiserror = { version = "1.0.56" }
+
+# Testing
 cw-multi-test = "0.20.0" #cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}
+osmosis-test-tube = "22.1.0"
