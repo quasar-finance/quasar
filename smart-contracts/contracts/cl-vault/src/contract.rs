@@ -4,9 +4,10 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
+    query_all_users_balance, query_assets_from_shares, query_dex_router, query_info,
+    query_metadata, query_pool, query_position, query_total_assets, query_total_vault_token_supply,
+    query_user_assets, query_user_balance, query_user_rewards, query_verify_tick_cache,
+    RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -134,6 +135,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)
+                }
+                crate::msg::UserBalanceQueryMsg::AllUsersSharesBalance { offset, limit } => {
+                    Ok(to_binary(&query_all_users_balance(deps, offset, limit)?)?)
                 }
                 crate::msg::UserBalanceQueryMsg::UserRewards { user } => {
                     Ok(to_binary(&query_user_rewards(deps, user)?)?)

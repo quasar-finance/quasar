@@ -1,6 +1,8 @@
-use cosmwasm_std::{Addr, DepsMut, Response};
+use std::fmt;
 
-use crate::{state::USER_REWARDS, ContractError};
+use cosmwasm_std::{Addr, Coin, DepsMut, Env, Response, Uint128};
+
+use crate::{helpers::sort_tokens, state::USER_REWARDS, ContractError};
 
 pub fn execute_claim_user_rewards(
     deps: DepsMut,

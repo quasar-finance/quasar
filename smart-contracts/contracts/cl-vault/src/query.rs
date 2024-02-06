@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Order, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -49,6 +49,7 @@ pub struct AssetsBalanceResponse {
 
 #[cw_serde]
 pub struct UserSharesBalanceResponse {
+    pub address: String,
     pub balance: Uint128,
 }
 
@@ -176,7 +177,33 @@ pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserShares
     let balance = SHARES
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?
         .unwrap_or(Uint128::zero());
-    Ok(UserSharesBalanceResponse { balance })
+    Ok(UserSharesBalanceResponse {
+        balance,
+        address: user,
+    })
+}
+
+pub fn query_all_users_balance(
+    deps: Deps,
+    offset: Option<u64>,
+    limit: Option<u64>,
+) -> ContractResult<Vec<UserSharesBalanceResponse>> {
+    let offset = offset.unwrap_or(0);
+    let limit = limit.unwrap_or(200 as u64); // todo: check if this is a good default
+
+    // todo: would the below be sufficient to avoid any gas issues?
+    SHARES
+        .range(deps.storage, None, None, Order::Ascending)
+        .skip(offset as usize)
+        .take(limit as usize)
+        .map(|item| {
+            let (address, balance) = item?;
+            Ok(UserSharesBalanceResponse {
+                address: address.to_string(),
+                balance,
+            })
+        })
+        .collect()
 }
 
 pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserRewardsResponse> {

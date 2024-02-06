@@ -98,6 +98,11 @@ pub enum ExtensionQueryMsg {
 pub enum UserBalanceQueryMsg {
     #[returns(UserSharesBalanceResponse)]
     UserSharesBalance { user: String },
+    #[returns(Vec<UserSharesBalanceResponse>)]
+    AllUsersSharesBalance {
+        offset: Option<u64>,
+        limit: Option<u64>,
+    },
     #[returns(AssetsBalanceResponse)]
     UserAssetsBalance { user: String },
     #[returns(UserRewardsResponse)]
