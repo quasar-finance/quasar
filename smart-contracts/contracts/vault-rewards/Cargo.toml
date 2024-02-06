@@ -32,26 +32,30 @@ backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
-[package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)":/code \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.12
-"""
-optimize-arm64 = """docker run --rm -v "$(pwd)":/code \
---mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
---mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-cosmwasm/rust-optimizer-arm64:0.12.12
-"""
+# This is deprecated by the just workspace-optimize command on "justfile". Get rid of this commented block when sure.
+# [package.metadata.scripts]
+# optimize = """docker run --rm -v "$(pwd)":/code \
+#   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+#   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+#   cosmwasm/rust-optimizer:0.12.12
+# """
+# optimize-arm64 = """docker run --rm -v "$(pwd)":/code \
+# --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+# --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+# cosmwasm/rust-optimizer-arm64:0.12.12
+# """
 
 [dependencies]
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
 cw-asset = "3"
-cosmwasm-std = "1.2"
-cosmwasm-schema = "1.2"
-cw-storage-plus = "1.0"
 cw2 = "1.0"
 cw20 = "1.0"
 itertools = "0.10"
-schemars = "0.8"
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0" }

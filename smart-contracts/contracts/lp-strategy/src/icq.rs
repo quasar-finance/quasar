@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg, Uint128,
+    to_json_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
+    Uint128,
 };
 use osmosis_std::types::{
     cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
@@ -85,7 +86,7 @@ pub fn try_icq(
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
-            data: to_binary(&packet)?,
+            data: to_json_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
@@ -331,7 +332,7 @@ mod tests {
 
         let pkt = IbcMsg::SendPacket {
             channel_id: icq_channel.clone(),
-            data: to_binary(
+            data: to_json_binary(
                 &prepare_full_query(
                     deps.as_mut().storage,
                     env.clone(),

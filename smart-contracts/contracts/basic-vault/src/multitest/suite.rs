@@ -189,7 +189,7 @@ impl QuasarVaultSuite {
         //     primitive.clone(),
         //     CosmosMsg::Ibc(IbcMsg::SendPacket {
         //         channel_id: "channel-0".to_string(),
-        //         data: to_binary(&ibc_channel_open_msg)?,
+        //         data: to_json_binary(&ibc_channel_open_msg)?,
         //         timeout: IbcTimeout::with_block(IbcTimeoutBlock {
         //             revision: 1,
         //             height: app.block_info().height + 5,

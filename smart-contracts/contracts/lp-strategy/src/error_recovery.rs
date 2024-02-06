@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    from_binary, Addr, DepsMut, Env, IbcAcknowledgement, Response, Storage, SubMsg, Uint128,
+    from_json_binary, Addr, DepsMut, Env, IbcAcknowledgement, Response, Storage, SubMsg, Uint128,
 };
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinSwapExternAmountInResponse;
 use quasar_types::{
@@ -168,7 +168,7 @@ fn _handle_last_failed_ica_recovery(
 fn de_succcesful_join(
     ack_bin: IbcAcknowledgement,
 ) -> Result<MsgJoinSwapExternAmountInResponse, ContractError> {
-    let ack: IcsAck = from_binary(&ack_bin.data)?;
+    let ack: IcsAck = from_json_binary(&ack_bin.data)?;
     if let IcsAck::Result(val) = ack {
         let ack_body = AckBody::from_bytes(val.0.as_ref())?.to_any()?;
         let ack = MsgJoinSwapExternAmountInResponse::unpack(ack_body)?;

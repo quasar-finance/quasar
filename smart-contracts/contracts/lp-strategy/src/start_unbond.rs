@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, Env, IbcMsg, IbcTimeout, QuerierWrapper, Response, Storage, SubMsg,
-    Uint128, WasmMsg,
+    to_json_binary, Addr, CosmosMsg, Env, IbcMsg, IbcTimeout, QuerierWrapper, Response, Storage,
+    SubMsg, Uint128, WasmMsg,
 };
 
 use osmosis_std::types::{cosmos::base::v1beta1::Coin, osmosis::lockup::MsgBeginUnlocking};
@@ -247,7 +247,7 @@ fn start_internal_unbond(
     {
         Ok(Some(WasmMsg::Execute {
             contract_addr: unbond.owner.to_string(),
-            msg: to_binary(&msg)?,
+            msg: to_json_binary(&msg)?,
             funds: vec![],
         }))
     } else {
@@ -558,7 +558,7 @@ mod tests {
 
         deps.querier.update_wasm(|q| match q {
             cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => QuerierResult::Ok(
-                ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()),
+                ContractResult::Ok(to_json_binary(&ContractInfoResponse::default()).unwrap()),
             ),
             _ => unimplemented!(),
         });
@@ -582,7 +582,7 @@ mod tests {
             res.unwrap(),
             WasmMsg::Execute {
                 contract_addr: owner.to_string(),
-                msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
+                msg: to_json_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
                     unbond_id: id.to_string(),
                     unlock_time: env
                         .block
@@ -606,7 +606,7 @@ mod tests {
 
         deps.querier.update_wasm(|q| match q {
             cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => QuerierResult::Ok(
-                ContractResult::Ok(to_binary(&ContractInfoResponse::default()).unwrap()),
+                ContractResult::Ok(to_json_binary(&ContractInfoResponse::default()).unwrap()),
             ),
             _ => unimplemented!(),
         });
@@ -628,7 +628,7 @@ mod tests {
             res.unwrap(),
             WasmMsg::Execute {
                 contract_addr: owner.to_string(),
-                msg: to_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
+                msg: to_json_binary(&Callback::StartUnbondResponse(StartUnbondResponse {
                     unbond_id: id.to_string(),
                     unlock_time: env
                         .block

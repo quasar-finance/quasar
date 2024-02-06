@@ -15,4 +15,13 @@ members = [
 ]
 
 [workspace.dependencies]
-cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}
+cosmwasm-std = "1.5.3"
+osmosis-std = "0.22.0"
+osmosis-std-derive = "0.20.1"
+cosmwasm-schema = "1.2"
+cw-storage-plus = "1.0"
+schemars = "0.8.16"
+thiserror = { version = "1.0.56" }
+serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.113" , default-features = false, features = ["alloc"]}
+cw-multi-test = "0.20.0" #cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}

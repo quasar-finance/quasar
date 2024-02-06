@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult
 };
 // use cw2::set_contract_version;
 
@@ -123,15 +123,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             timeout,
             retries,
             actual_memo,
-        } => Ok(to_binary(&handle_get_memo(
+        } => Ok(to_json_binary(&handle_get_memo(
             deps,
             route_id,
             timeout,
             retries,
             actual_memo,
         )?)?),
-        QueryMsg::GetRoute { route_id } => Ok(to_binary(&handle_get_route(deps, route_id)?)?),
-        QueryMsg::ListRoutes {} => Ok(to_binary(&handle_list_routes(deps)?)?),
+        QueryMsg::GetRoute { route_id } => Ok(to_json_binary(&handle_get_route(deps, route_id)?)?),
+        QueryMsg::ListRoutes {} => Ok(to_json_binary(&handle_list_routes(deps)?)?),
     }
 }
 
@@ -181,7 +181,7 @@ fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        from_binary,
+        from_json_binary,
         testing::{mock_dependencies, mock_env},
     };
 
@@ -235,7 +235,7 @@ mod tests {
             .unwrap();
 
         let result = query(deps.as_ref(), env, crate::msg::QueryMsg::ListRoutes {}).unwrap();
-        let response: ListRoutesResponse = from_binary(&result).unwrap();
+        let response: ListRoutesResponse = from_json_binary(&result).unwrap();
         assert_eq!(
             response,
             ListRoutesResponse {

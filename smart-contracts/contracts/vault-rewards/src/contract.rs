@@ -13,7 +13,7 @@ use crate::query::{query_config, query_pending_rewards, query_user_rewards_index
 use crate::state::{Config, CONFIG};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -77,14 +77,14 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, VaultRewardsError> {
     match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps, env)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps, env)?),
         QueryMsg::PendingRewards(user) => {
             let user = deps.api.addr_validate(&user)?;
-            to_binary(&query_pending_rewards(deps, env, user)?)
+            to_json_binary(&query_pending_rewards(deps, env, user)?)
         }
         QueryMsg::GetUserRewardsIndex(user) => {
             let user = deps.api.addr_validate(&user)?;
-            to_binary(&query_user_rewards_index(deps, user)?)
+            to_json_binary(&query_user_rewards_index(deps, user)?)
         }
     }
     .map_err(|e| e.into())

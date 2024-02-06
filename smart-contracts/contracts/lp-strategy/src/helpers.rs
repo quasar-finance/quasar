@@ -11,7 +11,7 @@ use crate::{
     unbond::PendingReturningUnbonds,
 };
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, BankMsg, Binary, CosmosMsg, DepsMut, Env, IbcMsg,
+    from_json_binary, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, DepsMut, Env, IbcMsg,
     IbcPacketAckMsg, Order, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
 use prost::Message;
@@ -73,7 +73,7 @@ pub fn create_callback_submsg(
     let data: SubMsgKind = match &cosmos_msg {
         CosmosMsg::Wasm(WasmMsg::Execute { msg, funds, .. }) => {
             SubMsgKind::Callback(ContractCallback::Callback {
-                callback: from_binary(msg)?,
+                callback: from_json_binary(msg)?,
                 // if we send funds, we expect them to be in local denom
                 amount: funds
                     .iter()
@@ -216,7 +216,7 @@ pub fn ack_submsg(
     Ok(SubMsg::reply_always(
         WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&ExecuteMsg::Ack { ack: msg })?,
+            msg: to_json_binary(&ExecuteMsg::Ack { ack: msg })?,
             funds: vec![],
         },
         id,
