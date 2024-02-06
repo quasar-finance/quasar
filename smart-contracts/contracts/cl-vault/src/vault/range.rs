@@ -626,8 +626,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(res.messages.len(), 1);
-        assert_eq!(res.attributes[0].value, "modify_range");
-        assert_eq!(res.attributes[1].value, "withdraw_position");
+        assert_eq!(res.attributes[0].value, "execute");
+        assert_eq!(res.attributes[1].value, "update_range_ticks");
         assert_eq!(res.attributes[2].value, "1");
         assert_eq!(res.attributes[3].value, "1000000.1");
     }
@@ -681,8 +681,7 @@ mod tests {
 
         // verify that we went straight to swap_deposit_merge
         assert_eq!(res.messages.len(), 1);
-        assert_eq!(res.attributes[0].value, "swap_deposit_merge");
-        assert_eq!(res.attributes[1].value, "swap");
+        assert_eq!(res.attributes[1].value, "do_swap_deposit_merge");
         // check that our token1 attribute is incremented with the local balance - strategist rewards
         assert_eq!(
             res.attributes
@@ -740,8 +739,8 @@ mod tests {
 
         // verify that we did create_position first
         assert_eq!(res.messages.len(), 1);
-        assert_eq!(res.attributes[0].value, "modify_range");
-        assert_eq!(res.attributes[1].value, "create_position");
+        assert_eq!(res.attributes[0].value, "reply");
+        assert_eq!(res.attributes[1].value, "handle_withdraw_position");
         assert_eq!(
             res.attributes
                 .iter()
