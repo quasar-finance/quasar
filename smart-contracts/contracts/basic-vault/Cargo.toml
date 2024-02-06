@@ -42,7 +42,7 @@ quasar-types = {path = "../../packages/quasar-types"}
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
+prost = { workspace = true }
 
 anyhow = "1"
 derivative = "2"
-prost = "0.9"

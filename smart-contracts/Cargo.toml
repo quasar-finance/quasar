@@ -27,6 +27,7 @@ schemars = "0.8.16"
 serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1.0.113" , default-features = false, features = ["alloc"]}
 thiserror = { version = "1.0.56" }
+prost = {version = "0.12.3", default-features = false}
 
 # Testing
 cw-multi-test = "0.20.0" #cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}
