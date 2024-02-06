@@ -44,7 +44,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_json_binary, to_json_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    from_json, to_json_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
@@ -363,7 +363,7 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let ack: InterchainQueryPacketAck = from_json_binary(&ack_bin)?;
+    let ack: InterchainQueryPacketAck = from_json(&ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point

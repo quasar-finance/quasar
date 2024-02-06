@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
+    from_json, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
     Reply, Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
@@ -282,7 +282,7 @@ pub fn execute_ack(
 
     // TODO: trap error like in receive?
     // pro's acks happen anyway, cons?
-    let ack: IcsAck = from_json_binary(&msg.acknowledgement.data)?;
+    let ack: IcsAck = from_json(&msg.acknowledgement.data)?;
     match ack {
         IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
         IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),

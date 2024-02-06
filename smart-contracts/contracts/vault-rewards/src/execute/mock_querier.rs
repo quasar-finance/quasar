@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_json_binary, from_slice, to_json_binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
+    from_json, from_slice, to_json_binary, Coin, ContractResult, Empty, OwnedDeps, Querier,
     QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cw20::{BalanceResponse, Cw20QueryMsg, TokenInfoResponse};
@@ -52,7 +52,7 @@ impl WasmMockQuerier {
             QueryRequest::Wasm(WasmQuery::Smart {
                 contract_addr: _,
                 msg,
-            }) => match from_json_binary(msg).unwrap() {
+            }) => match from_json(msg).unwrap() {
                 Cw20QueryMsg::TokenInfo {} => QuerierResult::Ok(ContractResult::Ok(
                     to_json_binary(&TokenInfoResponse {
                         total_supply: self.token_querier.supply,

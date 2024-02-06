@@ -261,7 +261,7 @@ pub fn handle_list_claimable_funds(deps: Deps) -> StdResult<ListClaimableFundsRe
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        from_json_binary,
+        from_json,
         testing::{mock_dependencies, mock_env},
     };
 
@@ -299,7 +299,7 @@ mod tests {
         let q = QueryMsg::TrappedErrors {};
 
         let res: TrappedErrorsResponse =
-            from_json_binary(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+            from_json(&query(deps.as_ref(), env, q).unwrap()).unwrap();
 
         assert!(res.errors.is_empty());
     }
@@ -325,7 +325,7 @@ mod tests {
             .unwrap();
 
         let res = query(deps.as_ref(), env, q).unwrap();
-        let claimable_funds: ListClaimableFundsResponse = from_json_binary(&res).unwrap();
+        let claimable_funds: ListClaimableFundsResponse = from_json(&res).unwrap();
 
         println!("{claimable_funds:?}");
         assert_eq!(claimable_funds.claimable_funds.len(), 1);

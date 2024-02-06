@@ -180,10 +180,7 @@ fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{
-        from_json_binary,
-        testing::{mock_dependencies, mock_env},
-    };
+    use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env}};
 
     use crate::route::{Destination, Hop};
 
@@ -235,7 +232,7 @@ mod tests {
             .unwrap();
 
         let result = query(deps.as_ref(), env, crate::msg::QueryMsg::ListRoutes {}).unwrap();
-        let response: ListRoutesResponse = from_json_binary(&result).unwrap();
+        let response: ListRoutesResponse = from_json(&result).unwrap();
         assert_eq!(
             response,
             ListRoutesResponse {

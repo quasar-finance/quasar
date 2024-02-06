@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{
-    attr, entry_point, from_json_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    attr, entry_point, from_json, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
     IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcOrder, IbcPacket,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse,
 };
@@ -130,7 +130,7 @@ pub fn ibc_packet_ack(
     // Design decision: should we trap error like in receive?
     // TODO: unsure... as it is now a failed ack handling would revert the tx and would be
     // retried again and again. is that good?
-    let ics_msg: IcsAck = from_json_binary(&msg.acknowledgement.data)?;
+    let ics_msg: IcsAck = from_json(&msg.acknowledgement.data)?;
     match ics_msg {
         IcsAck::Result(data) => on_packet_success(deps, data, msg.original_packet, env),
         IcsAck::Error(err) => on_packet_failure(deps, msg.original_packet, err),
@@ -155,7 +155,7 @@ fn on_packet_success(
     original: IbcPacket,
     env: Env,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let ack: InterchainQueryPacketAck = from_json_binary(&data)?;
+    let ack: InterchainQueryPacketAck = from_json(&data)?;
 
     let buf = Bytes::copy_from_slice(ack.data.as_slice());
     let resp: CosmosResponse = match CosmosResponse::decode(buf) {
