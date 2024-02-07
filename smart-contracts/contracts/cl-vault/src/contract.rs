@@ -14,7 +14,10 @@ use crate::rewards::{
     handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
-use crate::state::{MigrationStatus, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, VAULT_CONFIG};
+use crate::state::{
+    MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
+    VAULT_CONFIG,
+};
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -192,10 +195,15 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    VAULT_CONFIG.update(deps.storage, |mut vault_config| -> Result<_, ContractError> {
-        vault_config.dex_router = deps.api.addr_validate(msg.dex_router.as_str())?;
-        Ok(vault_config)
-    })?;
+    let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
+    let new_vault_config = VaultConfig {
+        performance_fee: old_vault_config.performance_fee,
+        treasury: old_vault_config.treasury,
+        swap_max_slippage: old_vault_config.swap_max_slippage,
+        dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
+    };
+
+    VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
 
     AUTO_COMPOUND_ADMIN.save(
         deps.storage,
@@ -216,7 +224,7 @@ mod tests {
         Addr, Decimal,
     };
 
-    use crate::state::VaultConfig;
+    use crate::state::{OldVaultConfig, VaultConfig};
 
     use super::*;
 
@@ -230,14 +238,13 @@ mod tests {
         let new_auto_compound_admin = Addr::unchecked("auto_compound_admin"); // completely new state item
 
         // Mock a previous state item
-        VAULT_CONFIG
+        OLD_VAULT_CONFIG
             .save(
                 deps.as_mut().storage,
-                &VaultConfig {
+                &OldVaultConfig {
                     performance_fee: Decimal::from_str("0.2").unwrap(),
                     treasury: Addr::unchecked("treasury"),
                     swap_max_slippage: Decimal::bps(5),
-                    dex_router: Addr::unchecked("not_set_dex_router"), // This wouldn't be here in a real world scenario
                 },
             )
             .unwrap();

@@ -21,9 +21,7 @@ mod tests {
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
     use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
     use crate::test_tube::helpers::get_amount_from_denom;
-    use crate::test_tube::initialize::initialize::{
-        dex_cl_init_cl_pools, dex_cl_init_lp_pools,
-    };
+    use crate::test_tube::initialize::initialize::{dex_cl_init_cl_pools, dex_cl_init_lp_pools};
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";

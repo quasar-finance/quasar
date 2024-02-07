@@ -33,7 +33,19 @@ pub struct VaultConfig {
     pub dex_router: Addr,
 }
 
-pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
+/// VAULT_CONFIG: Base config struct for the contract.
+#[cw_serde]
+pub struct OldVaultConfig {
+    /// Percentage of profit to be charged as performance fee
+    pub performance_fee: Decimal,
+    /// Account to receive fee payments
+    pub treasury: Addr,
+    /// swap max slippage
+    pub swap_max_slippage: Decimal,
+}
+
+pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
+pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("new_vault_config");
 
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
