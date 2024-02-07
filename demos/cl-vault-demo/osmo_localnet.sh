@@ -12,11 +12,11 @@ RELAYER_ACC="$(cat ./keys/osmo.key)"
 
 mkdir logs
 
-ALICE_GENESIS_COINS=20000000uosmo,2000000000stake,1000000000000fakestake
-BOB_GENESIS_COINS=10000000000000uosmo,1000000000stake,1000000000000fakestake,100000000000000usdc
-USER_1_GENESIS_COINS=10000000000stake,10000000000uosmo
-USER_2_GENESIS_COINS=10000000000stake,10000000000uosmo
-RELAYER_ACC_GENESIS_COINS=10000000uosmo,10000000000stake
+ALICE_GENESIS_COINS=100000000000000000000uosmo,100000000000000000000stake,100000000000000000000uatom,100000000000000000000fakestake
+BOB_GENESIS_COINS=100000000000000000000uosmo,100000000000000000000stake,1000000000000fakestake,100000000000000000000uatom
+USER_1_GENESIS_COINS=100000000000000000000stake,100000000000000000000uosmo,100000000000000000000uatom
+USER_2_GENESIS_COINS=100000000000000000000stake,100000000000000000000uosmo,100000000000000000000uatom
+RELAYER_ACC_GENESIS_COINS=100000000000000000000uosmo,100000000000000000000stake,100000000000000000000uatom
 
 echo $HOME_OSMOSIS
 
@@ -144,113 +144,9 @@ cat $HOME_OSMOSIS/config/genesis_original.json |
   }' |
   jq '.app_state.txfees.basedenom="uosmo"' |
   jq '.app_state.gov.deposit_params.min_deposit=[{denom:"uosmo",amount:"1"}]' |
-  jq '.app_state.gov.voting_params.voting_period="30s"' |
+  jq '.app_state.gov.params.voting_period="30s"' |
   jq '.app_state.gov.tally_params={quorum:"0.000000000000000001",threshold:"0.5",veto_threshold:"0.334"}' |
-  jq '.app_state.interchainaccounts = {
-    host_genesis_state: {
-      port: "icahost",
-      params: {
-        host_enabled: true, 
-        allow_messages: [ 
-          "/ibc.applications.transfer.v1.MsgTransfer",
-          "/cosmos.bank.v1beta1.MsgSend",
-          "/cosmos.staking.v1beta1.MsgDelegate",
-          "/cosmos.staking.v1beta1.MsgBeginRedelegate",
-          "/cosmos.staking.v1beta1.MsgCreateValidator",
-          "/cosmos.staking.v1beta1.MsgEditValidator",
-          "/cosmos.staking.v1beta1.MsgUndelegate",
-          "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward",
-          "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress",
-          "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission",
-          "/cosmos.distribution.v1beta1.MsgFundCommunityPool",
-          "/cosmos.gov.v1beta1.MsgVote",
-          "/osmosis.gamm.v1beta1.MsgJoinPool",
-          "/osmosis.gamm.v1beta1.MsgExitPool",
-          "/osmosis.gamm.v1beta1.MsgSwapExactAmountIn",
-          "/osmosis.gamm.v1beta1.MsgSwapExactAmountOut",
-          "/osmosis.gamm.v1beta1.MsgJoinSwapExternAmountIn",
-          "/osmosis.gamm.v1beta1.MsgJoinSwapShareAmountOut",
-          "/osmosis.gamm.v1beta1.MsgExitSwapExternAmountOut",
-          "/osmosis.gamm.v1beta1.MsgExitSwapShareAmountIn",
-          "/osmosis.lockup.MsgBeginUnlocking",
-          "/osmosis.lockup.MsgLockTokens", 
-          "/osmosis.superfluid.MsgSuperfluidUnbondLock"
-       ]
-      }
-    }
-  }' |
-  jq '.app_state.interchainquery = {
-    host_port: "icqhost",
-    params: {
-      host_enabled: true,
-      allow_queries: [
-          "/ibc.applications.transfer.v1.Query/DenomTrace",
-          "/cosmos.auth.v1beta1.Query/Account",
-          "/cosmos.auth.v1beta1.Query/Params",
-          "/cosmos.bank.v1beta1.Query/Balance",
-          "/cosmos.bank.v1beta1.Query/DenomMetadata",
-          "/cosmos.bank.v1beta1.Query/Params",
-          "/cosmos.bank.v1beta1.Query/SupplyOf",
-          "/cosmos.distribution.v1beta1.Query/Params",
-          "/cosmos.distribution.v1beta1.Query/DelegatorWithdrawAddress",
-          "/cosmos.distribution.v1beta1.Query/ValidatorCommission",
-          "/cosmos.gov.v1beta1.Query/Deposit",
-          "/cosmos.gov.v1beta1.Query/Params",
-          "/cosmos.gov.v1beta1.Query/Vote",
-          "/cosmos.slashing.v1beta1.Query/Params",
-          "/cosmos.slashing.v1beta1.Query/SigningInfo",
-          "/cosmos.staking.v1beta1.Query/Delegation",
-          "/cosmos.staking.v1beta1.Query/Params",
-          "/cosmos.staking.v1beta1.Query/Validator",
-          "/osmosis.epochs.v1beta1.Query/EpochInfos",
-          "/osmosis.epochs.v1beta1.Query/CurrentEpoch",
-          "/osmosis.gamm.v1beta1.Query/NumPools",
-          "/osmosis.gamm.v1beta1.Query/TotalLiquidity",
-          "/osmosis.gamm.v1beta1.Query/Pool",
-          "/osmosis.gamm.v1beta1.Query/PoolParams",
-          "/osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
-          "/osmosis.gamm.v1beta1.Query/TotalShares",
-          "/osmosis.gamm.v1beta1.Query/CalcJoinPoolShares",
-          "/osmosis.gamm.v1beta1.Query/CalcExitPoolCoinsFromShares",
-          "/osmosis.gamm.v1beta1.Query/CalcJoinPoolNoSwapShares",
-          "/osmosis.gamm.v1beta1.Query/PoolType",
-          "/osmosis.gamm.v2.Query/SpotPrice",
-          "/osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
-          "/osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
-          "/osmosis.incentives.Query/ModuleToDistributeCoins",
-          "/osmosis.incentives.Query/LockableDurations",
-          "/osmosis.lockup.Query/ModuleBalance",
-          "/osmosis.lockup.Query/ModuleLockedAmount",
-          "/osmosis.lockup.Query/AccountUnlockableCoins",
-          "/osmosis.lockup.Query/AccountUnlockingCoins",
-          "/osmosis.lockup.Query/LockedDenom",
-          "/osmosis.lockup.Query/LockedByID",
-          "/osmosis.lockup.Query/NextLockID", 
-          "/osmosis.mint.v1beta1.Query/EpochProvisions",
-          "/osmosis.mint.v1beta1.Query/Params",
-          "/osmosis.poolincentives.v1beta1.Query/GaugeIds",
-          "/osmosis.superfluid.Query/Params",
-          "/osmosis.superfluid.Query/AssetType",
-          "/osmosis.superfluid.Query/AllAssets",
-          "/osmosis.superfluid.Query/AssetMultiplier",
-          "/osmosis.poolmanager.v1beta1.Query/NumPools",
-          "/osmosis.poolmanager.v1beta1.Query/EstimateSwapExactAmountIn",
-          "/osmosis.poolmanager.v1beta1.Query/EstimateSwapExactAmountOut",
-          "/osmosis.txfees.v1beta1.Query/FeeTokens",
-          "/osmosis.txfees.v1beta1.Query/DenomSpotPrice",
-          "/osmosis.txfees.v1beta1.Query/DenomPoolId",
-          "/osmosis.txfees.v1beta1.Query/BaseDenom",
-          "/osmosis.tokenfactory.v1beta1.Query/Params",
-          "/osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
-          "/osmosis.twap.v1beta1.Query/ArithmeticTwap",
-          "/osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
-          "/osmosis.twap.v1beta1.Query/GeometricTwap",
-          "/osmosis.twap.v1beta1.Query/GeometricTwapToNow",
-          "/osmosis.twap.v1beta1.Query/Params",
-          "/osmosis.downtimedetector.v1beta1.Query/RecoveredSinceDowntimeOfLength"
-      ]
-    }
-  }' \
+  jq '.app_state.concentratedliquidity.params.is_permissionless_pool_creation_enabled=true' \
     >$HOME_OSMOSIS/config/genesis.json
 
 # Start

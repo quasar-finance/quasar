@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
+    attr, coin, to_json_binary, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
     MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
@@ -91,7 +91,7 @@ pub(crate) fn execute_exact_deposit(
             create_position_msg,
             Replies::DepositCreatePosition as u64,
         ))
-        .add_attribute("method", "exact_deposit")
+        .add_attribute("method", "execute")
         .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", token0.amount)
         .add_attribute("amount1", token1.amount))
@@ -205,7 +205,7 @@ pub fn handle_deposit_create_position_reply(
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&merge_msg)?,
+            msg: to_json_binary(&merge_msg)?,
             funds: vec![],
         },
         Replies::Merge.into(),
@@ -231,8 +231,8 @@ pub fn handle_deposit_create_position_reply(
         )
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
-        .add_attribute("method", "create_position_reply")
-        .add_attribute("action", "exact_deposit");
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_deposit_create_position");
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
@@ -291,7 +291,7 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
+        to_json_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
     use osmosis_std::types::{
@@ -371,7 +371,7 @@ mod tests {
             SubMsg::reply_on_success(
                 WasmMsg::Execute {
                     contract_addr: env.contract.address.to_string(),
-                    msg: to_binary(&ExecuteMsg::VaultExtension(
+                    msg: to_json_binary(&ExecuteMsg::VaultExtension(
                         crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
                             position_ids: vec![1, 2]
                         })
@@ -535,7 +535,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 

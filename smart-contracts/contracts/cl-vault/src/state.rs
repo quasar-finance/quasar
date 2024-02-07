@@ -1,10 +1,9 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
-use cw_storage_plus::{Deque, Item, Map};
-
 use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cw_storage_plus::{Deque, Item, Map};
 
 /// metadata useful for display purposes
 #[cw_serde]
@@ -19,6 +18,7 @@ pub const METADATA: Item<Metadata> = Item::new("metadata");
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
+pub const AUTO_COMPOUND_ADMIN: Item<Addr> = Item::new("auto_compound_admin");
 
 /// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
@@ -29,11 +29,33 @@ pub struct VaultConfig {
     pub treasury: Addr,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
+    /// Dex router address
+    pub dex_router: Addr,
 }
 
-pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
+/// OLD_VAULT_CONFIG: Base config struct for the contract (pre-autocompound implementation).
+#[cw_serde]
+pub struct OldVaultConfig {
+    /// Percentage of profit to be charged as performance fee
+    pub performance_fee: Decimal,
+    /// Account to receive fee payments
+    pub treasury: Addr,
+    /// swap max slippage
+    pub swap_max_slippage: Decimal,
+}
+
+pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
+pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("new_vault_config");
 
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
+
+/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade
+#[cw_serde]
+pub enum MigrationStatus {
+    Open,
+    Closed,
+}
+pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
 
 /// POOL_CONFIG
 #[cw_serde]
@@ -90,21 +112,12 @@ pub enum RewardsStatus {
 }
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-/// Collection related states
-pub const REWARDS_STATUS: Item<RewardsStatus> = Item::new("rewards_status");
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
-pub const LAST_ADDRESS_COLLECTED: Item<Addr> = Item::new("last_address_collect");
-/// Distribution related states
-pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
-pub const DISTRIBUTED_REWARDS: Item<CoinList> = Item::new("distributed_rewards");
+
 /// Shared collection+distribution states
-pub const CURRENT_TOTAL_SUPPLY: Item<Uint128> = Item::new("current_total_supply");
-pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-pub const DISTRIBUTION_SNAPSHOT: Deque<(Addr, Uint128)> = Deque::new("distribution_snapshot");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
-pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 
@@ -146,6 +159,15 @@ pub struct TickExpIndexData {
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
 pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
 pub const CURRENT_WITHDRAWER_DUST: Item<(Uint128, Uint128)> = Item::new("current_withdrawer_dust");
+
+#[cw_serde]
+pub struct MigrationData {
+    pub new_pool_id: u64,
+    pub lower_tick: i64,
+    pub upper_tick: i64,
+}
+
+pub const MIGRATION_DATA: Item<MigrationData> = Item::new("migration_data");
 
 #[cfg(test)]
 mod tests {

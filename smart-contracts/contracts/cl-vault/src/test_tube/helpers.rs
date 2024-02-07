@@ -16,7 +16,7 @@ pub fn get_event_attributes_by_ty_and_key(
         .collect()
 }
 
-pub fn get_event_value_amount_numeric(value: &String) -> u128 {
+pub fn get_amount_from_denom(value: &String) -> u128 {
     // Find the position where the non-numeric part starts
     let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
     // Extract the numeric part from the string
