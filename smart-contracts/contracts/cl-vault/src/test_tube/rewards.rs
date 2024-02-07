@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     use apollo_cw_asset::AssetInfoBase;
-    use cosmwasm_std::{assert_approx_eq, Coin};
+    use cosmwasm_std::Coin;
     use cosmwasm_std::{Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -13,18 +13,16 @@ mod tests {
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
-    use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
-    use std::ops::Mul;
     use std::str::FromStr;
 
     use crate::msg::ClQueryMsg::SharePrice;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
     use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
-    use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
+    use crate::test_tube::helpers::get_amount_from_denom;
     use crate::test_tube::initialize::initialize::{
-        default_init, dex_cl_init_cl_pools, dex_cl_init_lp_pools,
+        dex_cl_init_cl_pools, dex_cl_init_lp_pools,
     };
 
     const DENOM_BASE: &str = "uatom";

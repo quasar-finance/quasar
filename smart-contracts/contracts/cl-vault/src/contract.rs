@@ -192,10 +192,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let mut vault_config = VAULT_CONFIG.load(deps.storage)?;
-    vault_config.dex_router = deps.api.addr_validate(msg.dex_router.as_str())?;
-
-    VAULT_CONFIG.save(deps.storage, &vault_config)?;
+    VAULT_CONFIG.update(deps.storage, |mut vault_config| -> Result<_, ContractError> {
+        vault_config.dex_router = deps.api.addr_validate(msg.dex_router.as_str())?;
+        Ok(vault_config)
+    })?;
 
     AUTO_COMPOUND_ADMIN.save(
         deps.storage,
