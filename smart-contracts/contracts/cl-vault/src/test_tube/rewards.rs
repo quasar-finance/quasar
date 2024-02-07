@@ -490,29 +490,27 @@ mod tests {
             .unwrap();
 
         for account in &accounts {
-            let balances_before_withdraw_quote_denom = bm
-                .query_balance(&QueryBalanceRequest {
+            // Get balances before for current account
+            let balances_before_withdraw_quote_denom = get_amount_from_denom(
+                &bm.query_balance(&QueryBalanceRequest {
                     address: account.address(),
                     denom: DENOM_QUOTE.to_string(),
                 })
                 .unwrap()
                 .balance
                 .unwrap()
-                .amount
-                .parse::<u128>()
-                .unwrap_or_default();
-            let balances_before_withdraw_base_denom = bm
-                .query_balance(&QueryBalanceRequest {
+                .amount,
+            );
+            let balances_before_withdraw_base_denom = get_amount_from_denom(
+                &bm.query_balance(&QueryBalanceRequest {
                     address: account.address(),
                     denom: DENOM_BASE.to_string(),
                 })
                 .unwrap()
                 .balance
                 .unwrap()
-                .amount
-                .parse::<u128>()
-                .unwrap_or_default();
-
+                .amount,
+            );
             let shares_to_redeem: UserSharesBalanceResponse = wasm
                 .query(
                     contract_address.as_str(),
@@ -538,28 +536,26 @@ mod tests {
                 )
                 .unwrap();
 
-            let balances_after_withdraw_quote_denom = bm
-                .query_balance(&QueryBalanceRequest {
+            let balances_after_withdraw_quote_denom = get_amount_from_denom(
+                &bm.query_balance(&QueryBalanceRequest {
                     address: account.address(),
                     denom: DENOM_QUOTE.to_string(),
                 })
                 .unwrap()
                 .balance
                 .unwrap()
-                .amount
-                .parse::<u128>()
-                .unwrap_or_default();
-            let balances_after_withdraw_base_denom = bm
-                .query_balance(&QueryBalanceRequest {
+                .amount,
+            );
+            let balances_after_withdraw_base_denom = get_amount_from_denom(
+                &bm.query_balance(&QueryBalanceRequest {
                     address: account.address(),
                     denom: DENOM_BASE.to_string(),
                 })
                 .unwrap()
                 .balance
                 .unwrap()
-                .amount
-                .parse::<u128>()
-                .unwrap_or_default();
+                .amount,
+            );
 
             assert_eq!(
                 true,
