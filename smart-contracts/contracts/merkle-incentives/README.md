@@ -1,85 +1,72 @@
-# CosmWasm Starter Pack
+# Merkle Incentives
 
-This is a template to build smart contracts in Rust to run inside a
-[Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
-To understand the framework better, please read the overview in the
-[cosmwasm repo](https://github.com/CosmWasm/cosmwasm/blob/master/README.md),
-and dig into the [cosmwasm docs](https://www.cosmwasm.com).
-This assumes you understand the theory and just want to get coding.
+The merkle incentives contract uses a merkle tree generated from a list of addresses and corresponding token amounts for those addresses.
 
-## Creating a new repo from template
+The bulk of the logic sits inside of src/incentives/helpers.rs. In the function is_valid_claim
 
-Assuming you have a recent version of Rust and Cargo installed
-(via [rustup](https://rustup.rs/)),
-then the following should get you a new repo to start a contract:
+The merkle tree is generated from a csv with an arbitrary number of columns, where the first column is the user address and the next columns are the token amounts for that user. The csv is then hashed to create the merkle root.
 
-Install [cargo-generate](https://github.com/ashleygwilliams/cargo-generate) and cargo-run-script.
-Unless you did that before, run this line now:
+The only constraint on the token amounts is that they must be sorted alphabetically. so this would be valid:
 
-```sh
-cargo install cargo-generate --features vendored-openssl
-cargo install cargo-run-script
+```
+osmo123,1uatom,1usmo
+osmo124,4uatom,4usmo
 ```
 
-Now, use it to create your new contract.
-Go to the folder in which you want to place it and run:
+but this would not:
 
-**Latest**
-
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME
+```
+osmo123,1usmo,1uatom
+osmo124,4usmo,4uatom
 ```
 
-For cloning minimal code repo:
+The merkle proof/root generator will strip commas and spaces from the csv before hashing it. This is the same as the behavior inside of the contract. This is important to keep in mind when generating a merkle tree from a database rather than a csv.
 
-```sh
-cargo generate --git https://github.com/CosmWasm/cw-template.git --name PROJECT_NAME -d minimal=true
+during the claim, the contract will automatically sort the tokens and strip commas/whitespace, so no additional work is required on the client side in order to claim, as long as they have the proper proof generated.
+
+## Test
+
+The test data directory contains a csv called testdata.csv. This is the source document that a merkle tree can be generated on. As you can see we can easily add more rows to add users and more columns to add more incentive tokens.
+
+To test the proof verification mechanism, we make sure to build the whole smart-contracts directory so that the merkle-cli rust binary is built. Then we can run the following command to generate a merkle root, then a proof for a user that wants to claim:
+
+(run the following from the root of the merkle-incentives contract)
+
+```bash
+../../target/debug/merkle-cli generate-root testdata/testdata.csv
+
+# Expected output: rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=
 ```
 
-You will now have a new folder called `PROJECT_NAME` (I hope you changed that to something else)
-containing a simple working contract and build system that you can customize.
+Then we can generate a proof for a user:
 
-## Create a Repo
+```bash
+# this is the first entry in the csv, we can take any entry of course
+../../target/debug/merkle-cli generate-proof testdata/testdata.csv osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz testdata/proof_data.json
 
-After generating, you have a initialized local git repo, but no commits, and no remote.
-Go to a server (eg. github) and create a new upstream repo (called `YOUR-GIT-URL` below).
-Then run the following:
-
-```sh
-# this is needed to create a valid Cargo.lock file (see below)
-cargo check
-git branch -M main
-git add .
-git commit -m 'Initial Commit'
-git remote add origin YOUR-GIT-URL
-git push -u origin main
+# the output of this will be saved in testdata/proof_data.json
 ```
 
-## CI Support
+Then we can verify a proof for a user:
 
-We have template configurations for both [GitHub Actions](.github/workflows/Basic.yml)
-and [Circle CI](.circleci/config.yml) in the generated project, so you can
-get up and running with CI right away.
+```bash
+# this is the first entry in the csv, we can take any entry of course
+../../target/debug/merkle-cli verify-proof rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI= osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz testdata/proof_data.json
 
-One note is that the CI runs all `cargo` commands
-with `--locked` to ensure it uses the exact same versions as you have locally. This also means
-you must have an up-to-date `Cargo.lock` file, which is not auto-generated.
-The first time you set up the project (or after adding any dep), you should ensure the
-`Cargo.lock` file is updated, so the CI will test properly. This can be done simply by
-running `cargo check` or `cargo unit-test`.
+# the output if everything was correct should be The proof is succesfully verified. Given data is present in the Merkle Tree
+# We can change slightly either the root or the claim string and we will see that we don't get the proof verified
+```
 
-## Using your project
+## Good to know
 
-Once you have your custom repo, you should check out [Developing](./Developing.md) to explain
-more on how to run tests and develop code. Or go through the
-[online tutorial](https://docs.cosmwasm.com/) to get a better feel
-of how to develop.
+If you see the testdata.csv file, you will see that multiple users can have entries in the merkle root, allowing for multiple claims per user. I don't like this architecture, but if we want to do this, the contract will work for it out of the box.
 
-[Publishing](./Publishing.md) contains useful information on how to publish your contract
-to the world, once you are ready to deploy it on a running blockchain. And
-[Importing](./Importing.md) contains information about pulling in other contracts or crates
-that have been published.
+## Future work
 
-Please replace this README file with information about your specific project. You can keep
-the `Developing.md` and `Publishing.md` files as useful references, but please set some
-proper description in the README.
+This contract should be tested extensively against the following cases:
+
+- A user tries to claim with a proof that is not valid
+- A user tries to claim with a proof that is valid, against a valid root, but has already claimed
+- A user has already claimed, the root is updated, and they:
+  - Try to claim again when they have additional incentives
+  - Try to claim again when they have the same incentives

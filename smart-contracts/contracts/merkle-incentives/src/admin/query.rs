@@ -1,6 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{to_json_binary, Binary, Deps, Env, StdResult};
 
+use crate::state::INCENTIVES_ADMIN;
+
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum AdminQueryMsg {
@@ -16,5 +18,6 @@ pub fn query_admin(deps: Deps, _env: Env, query_msg: AdminQueryMsg) -> StdResult
 }
 
 pub fn get_incentives_admin(deps: Deps) -> StdResult<Binary> {
-    todo!()
+    let incentives_admin = INCENTIVES_ADMIN.may_load(deps.storage)?;
+    to_json_binary(&incentives_admin)
 }

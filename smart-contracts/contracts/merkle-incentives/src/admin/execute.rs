@@ -1,9 +1,12 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo, Response};
 
-use crate::ContractError;
+use crate::{
+    state::{INCENTIVES_ADMIN, MERKLE_ROOT},
+    ContractError,
+};
 
-use super::helpers::is_contract_admin;
+use super::helpers::{is_contract_admin, is_contract_or_incentives_admin, is_incentives_admin};
 
 #[cw_serde]
 pub enum AdminExecuteMsg {
@@ -36,7 +39,11 @@ pub fn update_merkle_root(
     info: MessageInfo,
     new_root: String,
 ) -> Result<Response, ContractError> {
-    todo!()
+    is_incentives_admin(deps.as_ref(), &info.sender)?;
+
+    MERKLE_ROOT.save(deps.storage, &new_root)?;
+
+    Ok(Response::default())
 }
 
 pub fn update_incentives_admin(
@@ -45,5 +52,10 @@ pub fn update_incentives_admin(
     info: MessageInfo,
     new_admin: String,
 ) -> Result<Response, ContractError> {
-    todo!()
+    let new_admin_addr = deps.api.addr_validate(&new_admin)?;
+    is_contract_or_incentives_admin(deps.as_ref(), &env, &new_admin_addr)?;
+
+    INCENTIVES_ADMIN.save(deps.storage, &new_admin_addr)?;
+
+    Ok(Response::default())
 }
