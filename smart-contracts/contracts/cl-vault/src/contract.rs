@@ -209,10 +209,14 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr,
+        Addr, Decimal,
     };
+
+    use crate::state::VaultConfig;
 
     use super::*;
 
@@ -221,20 +225,42 @@ mod tests {
         let mut deps = mock_dependencies();
         let env = mock_env();
 
-        // TODO: Set mocked before state
+        // Declare new items for states
+        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
+        let new_auto_compound_admin = Addr::unchecked("auto_compound_admin"); // completely new state item
+
+        // Mock a previous state item
+        VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &VaultConfig {
+                    performance_fee: Decimal::from_str("0.2").unwrap(),
+                    treasury: Addr::unchecked("treasury"),
+                    swap_max_slippage: Decimal::bps(5),
+                    dex_router: Addr::unchecked("not_set_dex_router"), // This wouldn't be here in a real world scenario
+                },
+            )
+            .unwrap();
 
         let _ = migrate(
             deps.as_mut(),
             env,
             MigrateMsg {
-                dex_router: Addr::unchecked("dex_router"),
-                auto_compound_admin: Addr::unchecked("auto_compound_admin"),
+                dex_router: new_dex_router.clone(),
+                auto_compound_admin: new_auto_compound_admin.clone(),
             },
         );
 
-        // TODO: We expect VAULT_CONFIG.dex_router to be equal to what we set
-        // TODO: We expect AUTO_COMPOUND_ADMIN to be equal to what we set
-        // TODO: We expect MIGRATION_STATUS to be equal to what we set
-        //assert_eq!((), something);
+        // Assert new VAULT_CONFIG.dex_router field have correct value
+        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
+        assert_eq!(vault_config.dex_router, new_dex_router);
+
+        // Assert new AUTO_COMPOUND_ADMIN state have correct value
+        let auto_compound_admin = AUTO_COMPOUND_ADMIN.load(deps.as_mut().storage).unwrap();
+        assert_eq!(auto_compound_admin, new_auto_compound_admin);
+
+        // Assert new MIGRATION_STATUS state have correct value
+        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
+        assert_eq!(migration_status, MigrationStatus::Open);
     }
 }
