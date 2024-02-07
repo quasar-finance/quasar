@@ -203,6 +203,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
     };
 
+    OLD_VAULT_CONFIG.remove(deps.storage);
     VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
 
     AUTO_COMPOUND_ADMIN.save(
@@ -224,7 +225,7 @@ mod tests {
         Addr, Decimal,
     };
 
-    use crate::state::{OldVaultConfig, VaultConfig};
+    use crate::state::OldVaultConfig;
 
     use super::*;
 
@@ -257,6 +258,9 @@ mod tests {
                 auto_compound_admin: new_auto_compound_admin.clone(),
             },
         );
+
+        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
+        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
 
         // Assert new VAULT_CONFIG.dex_router field have correct value
         let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();

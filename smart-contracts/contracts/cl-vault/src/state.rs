@@ -33,7 +33,7 @@ pub struct VaultConfig {
     pub dex_router: Addr,
 }
 
-/// VAULT_CONFIG: Base config struct for the contract.
+/// OLD_VAULT_CONFIG: Base config struct for the contract (pre-autocompound implementation).
 #[cw_serde]
 pub struct OldVaultConfig {
     /// Percentage of profit to be charged as performance fee
