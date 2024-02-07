@@ -29,11 +29,8 @@ pub struct VaultConfig {
     pub treasury: Addr,
     /// swap max slippage
     pub swap_max_slippage: Decimal,
-    /// auto compound admin
+    /// Dex router address
     pub dex_router: Addr,
-    // TODO
-    // /// auto compound swap size
-    // pub auto_compound_swap_size: Uint128,
 }
 
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
