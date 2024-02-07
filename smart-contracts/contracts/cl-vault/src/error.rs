@@ -135,4 +135,7 @@ pub enum ContractError {
 
     #[error("Auto compound swap list is empty")]
     EmptyCompoundAssetList {},
+
+    #[error("Migration status is closed")]
+    MigrationStatusClosed {},
 }

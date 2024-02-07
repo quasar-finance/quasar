@@ -13,6 +13,7 @@ mod tests {
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
+    use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
     use std::str::FromStr;
 
@@ -20,8 +21,10 @@ mod tests {
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
     use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
-    use crate::test_tube::helpers::get_amount_from_denom;
-    use crate::test_tube::initialize::initialize::{dex_cl_init_cl_pools, dex_cl_init_lp_pools};
+    use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
+    use crate::test_tube::initialize::initialize::{
+        default_init, dex_cl_init_cl_pools, dex_cl_init_lp_pools,
+    };
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
@@ -568,5 +571,207 @@ mod tests {
                     > DEPOSIT_AMOUNT
             );
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_migration_step_with_rewards_works() {
+        let (app, contract_address, cl_pool_id, admin) = default_init();
+
+        // Initialize accounts
+        let accounts = app
+            .init_accounts(
+                &[
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+                ],
+                ACCOUNTS_NUM,
+            )
+            .unwrap();
+
+        // Depositing with users
+        let wasm = Wasm::new(&app);
+        for account in &accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
+
+        // Declare swapper and claimer accounts
+        let ops_accounts = app
+            .init_accounts(
+                &[
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+                ],
+                2,
+            )
+            .unwrap();
+        let swapper = &ops_accounts[0];
+
+        // Swaps to generate spread rewards on previously created user positions
+        for _ in 0..SWAPS_NUM {
+            PoolManager::new(&app)
+                .swap_exact_amount_in(
+                    MsgSwapExactAmountIn {
+                        sender: swapper.address(),
+                        routes: vec![SwapAmountInRoute {
+                            pool_id: cl_pool_id,
+                            token_out_denom: DENOM_BASE.to_string(),
+                        }],
+                        token_in: Some(OsmoCoin {
+                            denom: DENOM_QUOTE.to_string(),
+                            amount: SWAPS_AMOUNT.to_string(),
+                        }),
+                        token_out_min_amount: "1".to_string(),
+                    },
+                    &swapper,
+                )
+                .unwrap();
+        }
+
+        // TODO: With autocompounding we are not collecting rewards anymore. We should populate the USER_REWARDS somehow here.
+
+        // Collect init
+        for i in 0..(ACCOUNTS_NUM - 1) {
+            println!("{:?}", i);
+            let result = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                        amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
+                    }),
+                    &[],
+                    &admin,
+                )
+                .unwrap();
+            // Extract the 'is_last_collection' attribute from the 'wasm' event
+            let is_last_collection = get_event_attributes_by_ty_and_key(
+                &result,
+                "wasm",
+                vec!["is_last_execution", "migration_status"],
+            );
+            assert_eq!(is_last_collection[0].value, "Open".to_string());
+            assert_eq!(is_last_collection[1].value, "false".to_string());
+        }
+
+        // Try to collect one more time, this should be closing the process and set to Ready as there are not rewards
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let rewards_status =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["migration_status"]);
+        assert_eq!(rewards_status[0].value, "Closed".to_string());
+        // Extract the 'is_last_collection' attribute from the 'wasm' event
+        let is_last_collection =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_execution"]);
+        assert_eq!(is_last_collection[0].value, "true".to_string());
+
+        // Distribute just one time, as there are no rewards we expect this to clear the state even if 1 user < 10 users
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
+                &[],
+                &admin,
+            )
+            .unwrap_err();
+
+        println!("{:?}", result);
+
+        // Assert that the response is an error
+        assert!(
+            matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Migration status is closed: execute wasm contract failed"))
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_migration_step_no_rewards_works() {
+        let (app, contract_address, _cl_pool_id, admin) = default_init();
+
+        // Initialize accounts
+        let accounts = app
+            .init_accounts(
+                &[
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+                ],
+                ACCOUNTS_NUM,
+            )
+            .unwrap();
+
+        // Depositing with users
+        let wasm = Wasm::new(&app);
+        for account in &accounts {
+            let _ = wasm
+                .execute(
+                    contract_address.as_str(),
+                    &ExecuteMsg::ExactDeposit { recipient: None },
+                    &[
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                    ],
+                    account,
+                )
+                .unwrap();
+        }
+
+        // Try to collect one more time, this should be closing the process and set to Ready as there are not rewards
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let rewards_status =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["migration_status"]);
+        assert_eq!(rewards_status[0].value, "Closed".to_string());
+        // Extract the 'is_last_collection' attribute from the 'wasm' event
+        let is_last_collection =
+            get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_execution"]);
+        assert_eq!(is_last_collection[0].value, "true".to_string());
+
+        // Distribute just one time, as there are no rewards we expect this to clear the state even if 1 user < 10 users
+        let result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
+                &[],
+                &admin,
+            )
+            .unwrap_err();
+
+        println!("{:?}", result);
+
+        // Assert that the response is an error
+        assert!(
+            matches!(result, ExecuteError { msg } if msg.contains("failed to execute message; message index: 0: Migration status is closed: execute wasm contract failed"))
+        );
     }
 }

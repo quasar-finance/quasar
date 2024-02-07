@@ -826,7 +826,7 @@ pub mod initialize {
                         performance_fee: Decimal::percent(20),
                         treasury: Addr::unchecked(admin.address()),
                         swap_max_slippage: Decimal::bps(5),
-                        dex_router: Addr::unchecked(admin.address()),
+                        dex_router: Addr::unchecked(admin.address()), // Just to fulfill bech32 requirement
                     },
                     vault_token_subdenom: "utestvault".to_string(),
                     range_admin: admin.address(),

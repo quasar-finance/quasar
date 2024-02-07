@@ -38,7 +38,7 @@ pub fn execute_migration_step(
     let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
 
     if matches!(migration_status, MigrationStatus::Closed) {
-        return Err(ContractError::Unauthorized {});
+        return Err(ContractError::MigrationStatusClosed {});
     }
 
     let mut outputs = Vec::new();
@@ -51,6 +51,9 @@ pub fn execute_migration_step(
         .take(amount_of_users.u128() as usize)
     {
         let (address, rewards) = item?;
+        deps.api.debug(format!("address {:?}", address).as_str());
+        deps.api.debug(format!("rewards {:?}", rewards).as_str());
+
         addresses.push(address.clone());
         outputs.push(Output {
             address: address.to_string(),
@@ -58,14 +61,8 @@ pub fn execute_migration_step(
         });
         total_amount.add(rewards)?;
     }
-
-    let send_message = MsgMultiSend {
-        inputs: vec![Input {
-            address: env.contract.address.to_string(),
-            coins: total_amount.osmo_coin_from_coin_list(),
-        }],
-        outputs,
-    };
+    deps.api
+        .debug(format!("total_amount {:?}", total_amount).as_str());
 
     // Remove processed rewards in a separate iteration.
     for addr in addresses {
@@ -77,15 +74,32 @@ pub fn execute_migration_step(
         .range(deps.storage, None, None, Order::Ascending)
         .next()
         .is_none();
+    deps.api
+        .debug(format!("is_last_execution {:?}", is_last_execution).as_str());
+
     if is_last_execution {
+        deps.api.debug("{:?}");
         migration_status = MigrationStatus::Closed;
         MIGRATION_STATUS.save(deps.storage, &migration_status)?;
     }
 
-    Ok(Response::new()
-        .add_message(send_message)
+    let mut response = Response::new();
+    // Only if there are rewards append the send_message
+    if !total_amount.is_empty() {
+        let send_message = MsgMultiSend {
+            inputs: vec![Input {
+                address: env.contract.address.to_string(),
+                coins: total_amount.osmo_coin_from_coin_list(),
+            }],
+            outputs,
+        };
+        response = response.add_message(send_message);
+    }
+    response = response
         .add_attribute("migration_status", format!("{:?}", migration_status))
-        .add_attribute("is_last_execution", is_last_execution.to_string()))
+        .add_attribute("is_last_execution", is_last_execution.to_string());
+
+    Ok(response)
 }
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
