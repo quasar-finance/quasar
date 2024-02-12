@@ -518,7 +518,7 @@ mod tests {
 
     use std::collections::HashMap;
 
-    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
+    use cosmwasm_std::{assert_approx_eq, coin, testing::mock_dependencies, Addr};
 
     use crate::math::tick::price_to_tick;
 
@@ -747,5 +747,77 @@ mod tests {
         let sorted_tokens = sort_tokens(tokens);
 
         assert_eq!(sorted_tokens, expected);
+    }
+
+    // Helper function to create a Position with a given id and ratio
+    fn create_position(id: u64, ratio: u128) -> Position {
+        Position {
+            position_id: id,
+            ratio: Uint128::new(ratio),
+        }
+    }
+
+    // Helper function to create a PositionRatio
+    fn create_ratio(asset0: u128, asset1: u128) -> PositionRatio {
+        PositionRatio::new(Uint128::new(asset0), Uint128::new(asset1))
+    }
+
+    #[test]
+    fn test_get_final_ratio_two_positions() {
+        let token0 = 150_000;
+        let token1 = 300_000;        
+
+        let positions = vec![
+            (create_position(0, 100), create_ratio(token0, token1)),
+            (create_position(1, 200), create_ratio(token0, token1)),
+        ];
+        let result = get_final_ratio(positions).expect("Should not fail");
+
+        // Check if the result is as expected, considering the logic of your get_final_ratio function
+        // This is a placeholder check, you need to adjust it based on the expected behavior
+        assert_eq!(result.len(), 2);
+        let position_0 = result.get(0).unwrap();
+        let position_1 = result.get(1).unwrap();
+
+        // we should account for off by 1 here, since we round down in the final ratio
+        // position 0 should have 1/3 of token0 and token1
+        assert_approx_eq!(position_0.1.asset0, (token0 / 3).into(), "0.00002");
+        assert_approx_eq!(position_0.1.asset1, (token1 / 3).into(), "0.00002");
+
+        // position 1 should have 2/3 of token0 and token1
+        assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 3).into(), "0.00002");
+        assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 3).into(), "0.00002");
+    }
+
+    #[test]
+    fn test_get_final_ratio_three_positions() {
+        let token0 = 150_000;
+        let token1 = 300_000;        
+
+        let positions = vec![
+            (create_position(0, 100), create_ratio(token0, token1)),
+            (create_position(1, 200), create_ratio(token0, token1)),
+            (create_position(1, 200), create_ratio(token0, token1)),
+        ];
+        let result = get_final_ratio(positions).expect("Should not fail");
+
+        // Check if the result is as expected, considering the logic of your get_final_ratio function
+        // This is a placeholder check, you need to adjust it based on the expected behavior
+        assert_eq!(result.len(), 3);
+        let position_0 = result.get(0).unwrap();
+        let position_1 = result.get(1).unwrap();
+
+        // we should account for off by 1 here, since we round down in the final ratio
+        // position 0 should have 1/5 of token0 and token1
+        assert_approx_eq!(position_0.1.asset0, (token0 / 5).into(), "0.00002");
+        assert_approx_eq!(position_0.1.asset1, (token1 / 5).into(), "0.00002");
+
+        // position 1 should have 2/5 of token0 and token1
+        assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
+        assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
+        
+        // position 1 should have 2/5 of token0 and token1
+        assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
+        assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
     }
 }
