@@ -180,11 +180,6 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
 
-    // let pool_metadata_constant: Decimal256 = cur_price_sqrt
-    //     .checked_mul(lower_price_sqrt)?
-    //     .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
-    //     .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
-
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
         .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?))?
