@@ -132,7 +132,7 @@ pub mod initialize {
                 pool_id: pool.id,
                 sender: admin.address(),
                 lower_tick: -108000000, // min tick
-                upper_tick: 342000000, // max tick
+                upper_tick: 342000000,  // max tick
                 tokens_provided: tokens_provided.clone(),
                 token_min_amount0: token_min_amount0.to_string(),
                 token_min_amount1: token_min_amount1.to_string(),
@@ -183,11 +183,7 @@ pub mod initialize {
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
                 // sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
-                sort_tokens(vec![
-                    coin(1000000, pool.token0),
-                    coin(1000000, pool.token1),
-                ])
-                .as_ref(), // TODO: De-hardcode this and makes this configurable as argument
+                sort_tokens(vec![coin(1000000, pool.token0), coin(1000000, pool.token1)]).as_ref(), // TODO: De-hardcode this and makes this configurable as argument
                 &admin,
             )
             .unwrap();
