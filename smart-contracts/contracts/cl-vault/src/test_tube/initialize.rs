@@ -151,22 +151,16 @@ pub mod initialize {
             .unwrap();
         // Assuming tokens_provided[0].amount and tokens_provided[1].amount are String
         let tokens_provided_0_amount: u128 =
-            tokens_provided[0].amount.parse().expect("Invalid number");
+            tokens_provided[0].amount.parse().unwrap();
         let tokens_provided_1_amount: u128 =
-            tokens_provided[1].amount.parse().expect("Invalid number");
+            tokens_provided[1].amount.parse().unwrap();
         // Assuming `spot_price.spot_price` is a string representation of a float.
         let spot_price_float: f64 = spot_price
             .spot_price
-            .parse()
-            .expect("Failed to parse spot price as float");
+            .parse().unwrap();
         let division_result: f64 =
             tokens_provided_1_amount as f64 / tokens_provided_0_amount as f64;
-        assert!(
-            (spot_price_float - division_result).abs() < f64::EPSILON,
-            "Assertion failed: spot prices do not match. Expected: {}, got: {}",
-            spot_price_float,
-            division_result
-        );
+        assert!((spot_price_float - division_result).abs() < f64::EPSILON);
 
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
         app.increase_time(1000000);
@@ -192,7 +186,8 @@ pub mod initialize {
                 },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
+                // sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
+                sort_tokens(vec![coin(1000000000000000, pool.token0), coin(1000, pool.token1)]).as_ref(), // TODO: De-hardcode this and makes this configurable as argument
                 &admin,
             )
             .unwrap();

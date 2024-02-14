@@ -73,7 +73,7 @@ mod test {
         //     .unwrap();
         // println!("pool: {:?}", pool_response);
 
-        // Pool.CurrentTick here is -101750000
+        // Pool.CurrentTick here is -101750000 or price is 0.00000000000725
         // If we go out of upper range we will be one-sided token0 (base denom, left denom)
         // If we go out of lower range we will be one-sided token1 (quote denom, right denom)
 
@@ -105,42 +105,43 @@ mod test {
 
         // TODO: At the moment we are trying that with this instantiation funds on initialize::195
         // -> sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
+        // and this -> sort_tokens(vec![coin(1000000000000000, pool.token0), coin(1000, pool.token1)]).as_ref(),
 
         // Two sided re-range (50% 50%)
-        // let _result = wasm
-        //     .execute(
-        //         contract.as_str(),
-        //         &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-        //             ModifyRangeMsg {
-        //                 lower_price: Decimal::from_str("7.0").unwrap(),
-        //                 upper_price: Decimal::from_str("7.5").unwrap(),
-        //                 max_slippage: Decimal::bps(9500),
-        //                 ratio_of_swappable_funds_to_use: Decimal::one(),
-        //                 twap_window_seconds: 45,
-        //             },
-        //         )),
-        //         &[],
-        //         &admin,
-        //     )
-        //     .unwrap();
+        let _result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("0.000000000007").unwrap(),
+                        upper_price: Decimal::from_str("0.0000000000075").unwrap(),
+                        max_slippage: Decimal::bps(9500),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
 
         // One-sided re-range (above current tick, 100% token0)
-        // let _result = wasm
-        //     .execute(
-        //         contract.as_str(),
-        //         &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-        //             ModifyRangeMsg {
-        //                 lower_price: Decimal::from_str("7.5").unwrap(),
-        //                 upper_price: Decimal::from_str("8.0").unwrap(),
-        //                 max_slippage: Decimal::bps(9500),
-        //                 ratio_of_swappable_funds_to_use: Decimal::one(),
-        //                 twap_window_seconds: 45,
-        //             },
-        //         )),
-        //         &[],
-        //         &admin,
-        //     )
-        //     .unwrap();
+        let _result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("0.0000000000075").unwrap(),
+                        upper_price: Decimal::from_str("0.000000000008").unwrap(),
+                        max_slippage: Decimal::bps(9500),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
 
         // One-sided re-range (below current tick, 100% token1)
         let _result = wasm
@@ -148,8 +149,8 @@ mod test {
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
-                        lower_price: Decimal::from_str("6.5").unwrap(),
-                        upper_price: Decimal::from_str("7.0").unwrap(),
+                        lower_price: Decimal::from_str("0.0000000000065").unwrap(),
+                        upper_price: Decimal::from_str("0.000000000007").unwrap(),
                         max_slippage: Decimal::bps(9500),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
