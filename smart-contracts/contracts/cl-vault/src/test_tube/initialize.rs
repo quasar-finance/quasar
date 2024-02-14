@@ -185,7 +185,7 @@ pub mod initialize {
                 // sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
                 sort_tokens(vec![
                     coin(1000000000000000, pool.token0),
-                    coin(1000, pool.token1),
+                    coin(100012312313, pool.token1),
                 ])
                 .as_ref(), // TODO: De-hardcode this and makes this configurable as argument
                 &admin,
