@@ -29,7 +29,7 @@ pub mod initialize {
     use crate::state::VaultConfig;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
+    const TOKENS_PROVIDED_AMOUNT: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
 
@@ -50,14 +50,12 @@ pub mod initialize {
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
             vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
             ],
             Uint128::zero(),
             Uint128::zero(),
@@ -70,7 +68,8 @@ pub mod initialize {
         pool: MsgCreateConcentratedPool,
         lower_tick: i64,
         upper_tick: i64,
-        mut tokens_provided: Vec<v1beta1::Coin>,
+        mut pool_tokens: Vec<Coin>,
+        mut vault_tokens: Vec<Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
     ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
@@ -115,7 +114,7 @@ pub mod initialize {
         let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
-        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
+        pool_tokens.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
 
         // Create a first position in the pool with the admin user
         cl.create_position(
@@ -124,7 +123,7 @@ pub mod initialize {
                 sender: admin.address(),
                 lower_tick,
                 upper_tick,
-                tokens_provided: tokens_provided.clone(),
+                tokens_provided: osmosis_std::cosmwasm_to_proto_coins(pool_tokens.clone()),
                 token_min_amount0: token_min_amount0.to_string(),
                 token_min_amount1: token_min_amount1.to_string(),
             },
@@ -135,8 +134,8 @@ pub mod initialize {
         // Get and assert spot price is 1.0
         let spot_price = pm
             .query_spot_price(&SpotPriceRequest {
-                base_asset_denom: tokens_provided[0].denom.to_string(),
-                quote_asset_denom: tokens_provided[1].denom.to_string(),
+                base_asset_denom: pool_tokens[0].denom.to_string(),
+                quote_asset_denom: pool_tokens[1].denom.to_string(),
                 pool_id: pool.id,
             })
             .unwrap();
@@ -166,7 +165,7 @@ pub mod initialize {
                 },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                sort_tokens(vec![coin(100_000, pool.token0), coin(100_000, pool.token1)]).as_ref(),
+                vault_tokens.as_ref(),
                 &admin,
             )
             .unwrap();

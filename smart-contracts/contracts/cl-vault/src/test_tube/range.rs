@@ -24,7 +24,7 @@ mod test {
     use prost::Message;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
+    const TOKENS_PROVIDED_AMOUNT: u128 = 1_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
 
@@ -48,14 +48,12 @@ mod test {
             21205000,
             27448000,
             vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(1_000_000, DENOM_BASE.to_string()),
+                coin(1_000_000, DENOM_QUOTE.to_string()),
             ],
             Uint128::zero(),
             Uint128::zero(),
@@ -172,14 +170,12 @@ mod test {
             21205000,
             27448000,
             vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(1_000_000, DENOM_BASE.to_string()),
+                coin(1_000_000, DENOM_QUOTE.to_string()),
             ],
             Uint128::zero(),
             Uint128::zero(),
@@ -278,14 +274,12 @@ mod test {
             -102029400,
             -102029300,
             vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(1_000_000, DENOM_BASE.to_string()),
+                coin(1_000_000, DENOM_QUOTE.to_string()),
             ],
             Uint128::zero(),
             Uint128::zero(),
@@ -293,7 +287,6 @@ mod test {
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let pm = PoolManager::new(&app);
-
 
         let alice = app
             .init_account(&[
@@ -325,8 +318,8 @@ mod test {
         )
         .unwrap();
 
-         // do a swap to move the cur tick
-         pm.swap_exact_amount_in(
+        // do a swap to move the cur tick
+        pm.swap_exact_amount_in(
             MsgSwapExactAmountIn {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
@@ -408,14 +401,12 @@ mod test {
             -102029400,
             -102029300,
             vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(1_000_000, DENOM_BASE.to_string()),
+                coin(1_000_000, DENOM_QUOTE.to_string()),
             ],
             Uint128::zero(),
             Uint128::zero(),
@@ -423,7 +414,6 @@ mod test {
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let pm = PoolManager::new(&app);
-
 
         let alice = app
             .init_account(&[
@@ -455,8 +445,8 @@ mod test {
         )
         .unwrap();
 
-         // do a swap to move the cur tick
-         pm.swap_exact_amount_in(
+        // do a swap to move the cur tick
+        pm.swap_exact_amount_in(
             MsgSwapExactAmountIn {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
@@ -517,7 +507,7 @@ mod test {
             )
             .unwrap();
 
-            let _result = wasm
+        let _result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
@@ -534,7 +524,6 @@ mod test {
             )
             .unwrap();
     }
-
 
     /*
     we try the following position from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
@@ -567,14 +556,12 @@ mod test {
             30500000, // 4500
             31500000, // 5500
             vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: "1000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "1000000".to_string(),
-                },
+                coin(1_000_000, DENOM_BASE.to_string()),
+                coin(1_000_000, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(1_000_000, DENOM_BASE.to_string()),
+                coin(1_000_000, DENOM_QUOTE.to_string()),
             ],
             Uint128::zero(),
             Uint128::zero(),
