@@ -165,10 +165,6 @@ pub fn handle_withdraw_position_reply(
         .find_coin(pool_config.token1.clone())
         .amount
         .checked_sub(amount1)?;
-    deps.api
-        .debug(format!("unused_balance0 {:?}", unused_balance0).as_str());
-    deps.api
-        .debug(format!("unused_balance1 {:?}", unused_balance1).as_str());
 
     amount0 = amount0.checked_add(unused_balance0)?;
     amount1 = amount1.checked_add(unused_balance1)?;
@@ -188,12 +184,8 @@ pub fn handle_withdraw_position_reply(
             amount: amount1,
         })
     }
-    deps.api
-        .debug(format!("tokens_provided {:?}", tokens_provided).as_str());
 
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-    deps.api
-        .debug(format!("pool_details {:?}", pool_details).as_str());
 
     // if only one token is being deposited, and we are moving into a position where any amount of the other token is needed,
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
@@ -250,9 +242,6 @@ pub fn handle_initial_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    deps.api
-        .debug(format!("handle_initial_create_position_reply {:?}", "").as_str());
-
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
@@ -300,9 +289,6 @@ pub fn do_swap_deposit_merge(
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
-    deps.api
-        .debug(format!("do_swap_deposit_merge {:?}", "").as_str());
-
     if SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
@@ -385,8 +371,6 @@ pub fn do_swap_deposit_merge(
             .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
-    deps.api
-        .debug(format!("do_swap_deposit_merge 2 {:?}", "").as_str());
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
@@ -443,9 +427,6 @@ fn handle_swap_success(
     env: Env,
     resp: MsgSwapExactAmountInResponse,
 ) -> Result<Response, ContractError> {
-    deps.api
-        .debug(format!("handle_swap_success {:?}", "").as_str());
-
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
@@ -515,9 +496,6 @@ pub fn handle_iteration_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    deps.api
-        .debug(format!("handle_iteration_create_position_reply {:?}", "").as_str());
-
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
     let mut swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
@@ -560,9 +538,6 @@ pub fn handle_iteration_create_position_reply(
 
 // store new position id and exit
 pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
-    deps.api
-        .debug(format!("handle_merge_response {:?}", "").as_str());
-
     let merge_response: MergeResponse = data.try_into()?;
 
     POSITION.save(
