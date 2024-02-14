@@ -125,14 +125,31 @@ pub mod initialize {
         .unwrap();
 
         // Get and assert spot price is 1.0
-        let spot_price = pm
+        let spot_price: osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceResponse = pm
             .query_spot_price(&SpotPriceRequest {
                 base_asset_denom: tokens_provided[0].denom.to_string(),
                 quote_asset_denom: tokens_provided[1].denom.to_string(),
                 pool_id: pool.id,
             })
             .unwrap();
-        assert_eq!(spot_price.spot_price, "1.000000000000000000");
+        // Assuming tokens_provided[0].amount and tokens_provided[1].amount are String
+        let tokens_provided_0_amount: u128 =
+            tokens_provided[0].amount.parse().expect("Invalid number");
+        let tokens_provided_1_amount: u128 =
+            tokens_provided[1].amount.parse().expect("Invalid number");
+        // Assuming `spot_price.spot_price` is a string representation of a float.
+        let spot_price_float: f64 = spot_price
+            .spot_price
+            .parse()
+            .expect("Failed to parse spot price as float");
+        let division_result: f64 =
+            tokens_provided_1_amount as f64 / tokens_provided_0_amount as f64;
+        assert!(
+            (spot_price_float - division_result).abs() < f64::EPSILON,
+            "Assertion failed: spot prices do not match. Expected: {}, got: {}",
+            spot_price_float,
+            division_result
+        );
 
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
         app.increase_time(1000000);
