@@ -126,13 +126,13 @@ pub mod initialize {
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
 
-        // Create a first position in the pool with the admin user
+        // Create a first position in the pool with the admin user (wide position) to simulate liquidity availability on the CL Pool
         cl.create_position(
             MsgCreatePosition {
                 pool_id: pool.id,
                 sender: admin.address(),
-                lower_tick,
-                upper_tick,
+                lower_tick: -108000000, // min tick
+                upper_tick: 342000000, // max tick
                 tokens_provided: tokens_provided.clone(),
                 token_min_amount0: token_min_amount0.to_string(),
                 token_min_amount1: token_min_amount1.to_string(),
@@ -184,8 +184,8 @@ pub mod initialize {
                 Some("cl-vault"),
                 // sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
                 sort_tokens(vec![
-                    coin(1000000000000000, pool.token0),
-                    coin(1000, pool.token1),
+                    coin(1000000, pool.token0),
+                    coin(1000000, pool.token1),
                 ])
                 .as_ref(), // TODO: De-hardcode this and makes this configurable as argument
                 &admin,
