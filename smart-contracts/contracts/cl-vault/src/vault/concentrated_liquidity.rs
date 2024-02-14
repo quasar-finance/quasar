@@ -12,7 +12,7 @@ use crate::{
     ContractError,
 };
 
-pub fn create_position(
+pub fn get_create_position_msg(
     deps: DepsMut,
     env: &Env,
     lower_tick: i64,
@@ -43,6 +43,7 @@ pub fn create_position(
         // An sdk.Int in the Go code
         token_min_amount1: token_min_amount1.to_string(),
     };
+
     Ok(create_position)
 }
 
@@ -165,7 +166,7 @@ mod tests {
         let token_min_amount0 = Uint128::new(1000);
         let token_min_amount1 = Uint128::new(2000);
 
-        let result = create_position(
+        let result = get_create_position_msg(
             deps_mut,
             &env,
             lower_tick,

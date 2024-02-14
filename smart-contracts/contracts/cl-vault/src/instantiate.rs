@@ -20,7 +20,7 @@ use crate::state::{
     DISTRIBUTED_REWARDS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN, REWARDS_STATUS,
     STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
 };
-use crate::vault::concentrated_liquidity::create_position;
+use crate::vault::concentrated_liquidity::get_create_position_msg;
 use crate::ContractError;
 
 pub fn handle_instantiate(
@@ -86,7 +86,7 @@ pub fn handle_instantiate(
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
     let (initial0, initial1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    let create_position_msg = create_position(
+    let create_position_msg = get_create_position_msg(
         deps,
         &env,
         msg.initial_lower_tick,
