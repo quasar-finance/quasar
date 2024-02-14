@@ -28,7 +28,7 @@ pub mod initialize {
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
 
-    const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000;
+    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455;
 
     // Define init variants here
 
@@ -212,7 +212,8 @@ pub mod initialize {
                 denom: "uosmo".to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]).unwrap();
+        ])
+        .unwrap();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
