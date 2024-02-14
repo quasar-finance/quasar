@@ -22,7 +22,7 @@ mod test {
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
 
-    /// # Test: move_range_works_dym_usdc
+    /// # Test: move_range_works_18dec_usdc
     ///
     /// This test case initializes a Concentrated Liquidity (CL) pool with 18DEC and USDC tokens
     /// to simulate a real-world scenario on the blockchain with a specific spot price. The purpose
@@ -49,7 +49,7 @@ mod test {
     /// calculating the spot price in raw integer format without adjusting for decimal places, representing the USDC required to purchase one unit of 18DEC.
     #[test]
     #[ignore]
-    fn move_range_works_dym_usdc() {
+    fn move_range_works_18dec_usdc() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
             v1beta1::Coin {
                 denom: "u18dec".to_string(),
