@@ -27,7 +27,8 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ])
+        .unwrap();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -145,7 +146,8 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ])
+        .unwrap();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -282,7 +284,8 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ])
+        .unwrap();
         //let bank = Bank::new(&app);
 
         let wasm = Wasm::new(&app);

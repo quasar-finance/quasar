@@ -36,7 +36,7 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ]).unwrap();
 
         // Initialize accounts
         let accounts = app
@@ -238,7 +238,7 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ]).unwrap();
 
         // Initialize accounts
         let accounts = app
@@ -433,7 +433,7 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ]).unwrap();
 
         // Initialize accounts
         let accounts = app
@@ -542,7 +542,7 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ]).unwrap();
 
         // Initialize accounts
         let accounts = app

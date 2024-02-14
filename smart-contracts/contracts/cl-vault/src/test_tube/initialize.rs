@@ -2,7 +2,7 @@
 pub mod initialize {
     use std::str::FromStr;
 
-    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{coin, Addr, Coin, Decimal, StdError, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
@@ -34,17 +34,32 @@ pub mod initialize {
 
     pub fn default_init(
         tokens_provided: Vec<v1beta1::Coin>,
-    ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
-        init_test_contract(
+    ) -> Result<(OsmosisTestApp, Addr, u64, SigningAccount), StdError> {
+        if tokens_provided.len() > 2 {
+            return Err(StdError::generic_err("More than two tokens provided"));
+        }
+
+        // Prepare admin balances, including "uosmo" if neither of the provided tokens is "uosmo"
+        let mut admin_balances = tokens_provided
+            .iter()
+            .map(|coin| Coin::new(ADMIN_BALANCE_AMOUNT, coin.denom.clone()))
+            .collect::<Vec<Coin>>();
+
+        if !tokens_provided.iter().any(|coin| coin.denom == "uosmo") {
+            admin_balances.push(Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo".to_string()));
+        }
+
+        let (app, contract, cl_pool_id, admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, tokens_provided[0].denom.clone()),
-                Coin::new(ADMIN_BALANCE_AMOUNT, tokens_provided[1].denom.clone()),
-            ],
+            &admin_balances,
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: tokens_provided[0].denom.to_string(),
-                denom1: tokens_provided[1].denom.to_string(),
+                denom0: tokens_provided
+                    .get(0)
+                    .map_or(String::new(), |coin| coin.denom.clone()),
+                denom1: tokens_provided
+                    .get(1)
+                    .map_or(String::new(), |coin| coin.denom.clone()),
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
             },
@@ -53,7 +68,9 @@ pub mod initialize {
             tokens_provided,
             Uint128::zero(),
             Uint128::zero(),
-        )
+        );
+
+        Ok((app, contract, cl_pool_id, admin))
     }
 
     pub fn init_test_contract(
@@ -195,7 +212,7 @@ pub mod initialize {
                 denom: "uosmo".to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ]).unwrap();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);

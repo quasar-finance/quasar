@@ -19,7 +19,8 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
                 amount: "1000000000000".to_string(),
             },
-        ]);
+        ])
+        .unwrap();
         // change the range admin and verify that it works
     }
 }
