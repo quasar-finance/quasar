@@ -8,7 +8,7 @@ mod tests {
     };
     use crate::test_tube::initialize::initialize::default_init;
     use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
-    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    use osmosis_std::types::cosmos::base::v1beta1::{self, Coin as OsmoCoin};
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
@@ -27,7 +27,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim() {
-        let (app, contract_address, cl_pool_id, _admin) = default_init();
+        let (app, contract_address, cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
 
         // Initialize accounts
         let accounts = app
@@ -220,7 +229,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_cycles() {
-        let (app, contract_address, cl_pool_id, _admin) = default_init();
+        let (app, contract_address, cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
 
         // Initialize accounts
         let accounts = app
@@ -406,7 +424,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_no_rewards_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
 
         // Initialize accounts
         let accounts = app
@@ -506,7 +533,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_deposit_between() {
-        let (app, contract_address, cl_pool_id, _admin) = default_init();
+        let (app, contract_address, cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
 
         // Initialize accounts
         let accounts = app

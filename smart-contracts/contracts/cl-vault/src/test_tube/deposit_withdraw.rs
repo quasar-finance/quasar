@@ -2,6 +2,7 @@
 mod tests {
     use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
 
+    use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
@@ -17,7 +18,16 @@ mod tests {
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -126,7 +136,16 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -254,7 +273,16 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
         //let bank = Bank::new(&app);
 
         let wasm = Wasm::new(&app);

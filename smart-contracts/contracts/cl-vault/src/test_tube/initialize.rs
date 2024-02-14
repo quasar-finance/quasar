@@ -28,37 +28,29 @@ pub mod initialize {
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
 
-    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
+    const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000;
 
-    pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+    // Define init variants here
+
+    pub fn default_init(
+        tokens_provided: Vec<v1beta1::Coin>,
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, tokens_provided[0].denom.clone()),
+                Coin::new(ADMIN_BALANCE_AMOUNT, tokens_provided[1].denom.clone()),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
+                denom0: tokens_provided[0].denom.to_string(),
+                denom1: tokens_provided[1].denom.to_string(),
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-            ],
+            tokens_provided,
             Uint128::zero(),
             Uint128::zero(),
         )
@@ -177,7 +169,16 @@ pub mod initialize {
     #[test]
     #[ignore]
     fn default_init_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
+        let (app, contract_address, cl_pool_id, admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: "uatom".to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: "uosmo".to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ]);
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
@@ -216,8 +217,8 @@ pub mod initialize {
         // Create Alice account
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(1_000_000_000_000, "uatom"),
+                Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
 
@@ -227,10 +228,10 @@ pub mod initialize {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
                     pool_id: cl_pool_id,
-                    token_out_denom: DENOM_BASE.to_string(),
+                    token_out_denom: "uatom".to_string(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
+                    denom: "uosmo".to_string(),
                     amount: "1000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),
