@@ -2,7 +2,7 @@
 pub mod initialize {
     use std::str::FromStr;
 
-    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{coin, Addr, Coin, Decimal, StdError, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
@@ -33,17 +33,36 @@ pub mod initialize {
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
 
-    pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
-        init_test_contract(
+    // Define init variants here
+
+    pub fn default_init(
+        tokens_provided: Vec<v1beta1::Coin>,
+    ) -> Result<(OsmosisTestApp, Addr, u64, SigningAccount), StdError> {
+        if tokens_provided.len() > 2 {
+            return Err(StdError::generic_err("More than two tokens provided"));
+        }
+
+        // Prepare admin balances, including "uosmo" if neither of the provided tokens is "uosmo"
+        let mut admin_balances = tokens_provided
+            .iter()
+            .map(|coin| Coin::new(ADMIN_BALANCE_AMOUNT, coin.denom.clone()))
+            .collect::<Vec<Coin>>();
+
+        if !tokens_provided.iter().any(|coin| coin.denom == "uosmo") {
+            admin_balances.push(Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo".to_string()));
+        }
+
+        let (app, contract, cl_pool_id, admin) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
+            &admin_balances,
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
+                denom0: tokens_provided
+                    .get(0)
+                    .map_or(String::new(), |coin| coin.denom.clone()),
+                denom1: tokens_provided
+                    .get(1)
+                    .map_or(String::new(), |coin| coin.denom.clone()),
                 tick_spacing: 100,
                 spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
             },
@@ -59,7 +78,9 @@ pub mod initialize {
             ],
             Uint128::zero(),
             Uint128::zero(),
-        )
+        );
+
+        Ok((app, contract, cl_pool_id, admin))
     }
 
     pub fn init_test_contract(
@@ -132,14 +153,21 @@ pub mod initialize {
         .unwrap();
 
         // Get and assert spot price is 1.0
-        let spot_price = pm
+        let spot_price: osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceResponse = pm
             .query_spot_price(&SpotPriceRequest {
                 base_asset_denom: pool_tokens[0].denom.to_string(),
                 quote_asset_denom: pool_tokens[1].denom.to_string(),
                 pool_id: pool.id,
             })
             .unwrap();
-        assert_eq!(spot_price.spot_price, "1.000000000000000000");
+        // Assuming tokens_provided[0].amount and tokens_provided[1].amount are String
+        let tokens_provided_0_amount: u128 = tokens_provided[0].amount.parse().unwrap();
+        let tokens_provided_1_amount: u128 = tokens_provided[1].amount.parse().unwrap();
+        // Assuming `spot_price.spot_price` is a string representation of a float.
+        let spot_price_float: f64 = spot_price.spot_price.parse().unwrap();
+        let division_result: f64 =
+            tokens_provided_1_amount as f64 / tokens_provided_0_amount as f64;
+        assert!((spot_price_float - division_result).abs() < f64::EPSILON);
 
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
         app.increase_time(1000000);
@@ -176,7 +204,17 @@ pub mod initialize {
     #[test]
     #[ignore]
     fn default_init_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
+        let (app, contract_address, cl_pool_id, admin) = default_init(vec![
+            v1beta1::Coin {
+                denom: "uatom".to_string(),
+                amount: "1000000000000".to_string(),
+            },
+            v1beta1::Coin {
+                denom: "uosmo".to_string(),
+                amount: "1000000000000".to_string(),
+            },
+        ])
+        .unwrap();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
@@ -215,8 +253,8 @@ pub mod initialize {
         // Create Alice account
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                Coin::new(1_000_000_000_000, "uatom"),
+                Coin::new(1_000_000_000_000, "uosmo"),
             ])
             .unwrap();
 
@@ -226,10 +264,10 @@ pub mod initialize {
                 sender: alice.address(),
                 routes: vec![SwapAmountInRoute {
                     pool_id: cl_pool_id,
-                    token_out_denom: DENOM_BASE.to_string(),
+                    token_out_denom: "uatom".to_string(),
                 }],
                 token_in: Some(v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
+                    denom: "uosmo".to_string(),
                     amount: "1000".to_string(),
                 }),
                 token_out_min_amount: "1".to_string(),

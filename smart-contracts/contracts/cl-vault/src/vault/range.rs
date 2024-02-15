@@ -24,7 +24,7 @@ use crate::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
         POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
-    vault::concentrated_liquidity::create_position,
+    vault::concentrated_liquidity::get_create_position_msg,
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
     vault::swap::swap,
@@ -211,7 +211,7 @@ pub fn handle_withdraw_position_reply(
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
-        let create_position_msg = create_position(
+        let create_position_msg = get_create_position_msg(
             deps,
             &env,
             modify_range_state.lower_tick,
@@ -460,7 +460,7 @@ fn handle_swap_success(
             amount: balance1,
         });
     }
-    let create_position_msg = create_position(
+    let create_position_msg = get_create_position_msg(
         deps,
         &env,
         swap_deposit_merge_state.target_lower_tick,

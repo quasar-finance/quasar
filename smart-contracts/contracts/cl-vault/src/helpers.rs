@@ -160,6 +160,44 @@ pub fn get_twap_price(
 //     ))
 // }
 
+const SCALE_FACTOR: u128 = 10u128.pow(12);
+
+fn scale_if_needed(
+    cur_price_sqrt: Decimal256,
+    upper_price_sqrt: Decimal256,
+    lower_price_sqrt: Decimal256,
+    current_price: Decimal256,
+) -> (bool, Decimal256, Decimal256, Decimal256, Decimal256) {
+    let scale_up_threshold = Decimal256::from_ratio(1u128, SCALE_FACTOR);
+    let product = cur_price_sqrt * upper_price_sqrt * lower_price_sqrt;
+
+    if product < scale_up_threshold {
+        let scale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
+
+        // Scale the square root prices and current price
+        let scaled_cur_price_sqrt = cur_price_sqrt.checked_mul(scale_factor).unwrap();
+        let scaled_upper_price_sqrt = upper_price_sqrt.checked_mul(scale_factor).unwrap();
+        let scaled_lower_price_sqrt = lower_price_sqrt.checked_mul(scale_factor).unwrap();
+        let scaled_current_price = current_price.checked_mul(scale_factor).unwrap();
+
+        return (
+            true,
+            scaled_cur_price_sqrt,
+            scaled_upper_price_sqrt,
+            scaled_lower_price_sqrt,
+            scaled_current_price,
+        );
+    }
+
+    (
+        false,
+        cur_price_sqrt,
+        upper_price_sqrt,
+        lower_price_sqrt,
+        current_price,
+    )
+}
+
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
     token0_balance: Uint128,
@@ -167,11 +205,6 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    // TODO error here if this condition holds
-    // if current_tick < lower_tick {
-    //     return ;
-    // }
-
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
@@ -179,6 +212,14 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let cur_price_sqrt = current_price.sqrt();
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
+
+    let (is_scale_needed, cur_price_sqrt, upper_price_sqrt, lower_price_sqrt, current_price) =
+        scale_if_needed(
+            cur_price_sqrt,
+            upper_price_sqrt,
+            lower_price_sqrt,
+            current_price,
+        );
 
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
@@ -188,7 +229,16 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let spot_price_over_pool_metadata_constant =
         current_price.checked_div(pool_metadata_constant)?;
 
-    let denominator = Decimal256::one().checked_add(spot_price_over_pool_metadata_constant)?;
+    // Adjust spot_price_over_pool_metadata_constant back to its original scale if scaling was applied
+    let adjusted_spot_price_over_pool_metadata_constant = if is_scale_needed {
+        let underscale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
+        spot_price_over_pool_metadata_constant.checked_div(underscale_factor)?
+    } else {
+        spot_price_over_pool_metadata_constant
+    };
+
+    let denominator =
+        Decimal256::one().checked_add(adjusted_spot_price_over_pool_metadata_constant)?;
 
     let swap_amount: Uint128 = Uint256::from(token0_balance)
         .multiply_ratio(denominator.denominator(), denominator.numerator())
@@ -211,6 +261,14 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
 
+    let (is_scale_needed, cur_price_sqrt, upper_price_sqrt, lower_price_sqrt, current_price) =
+        scale_if_needed(
+            cur_price_sqrt,
+            upper_price_sqrt,
+            lower_price_sqrt,
+            current_price,
+        );
+
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
         .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?))?
@@ -219,7 +277,16 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let pool_metadata_constant_over_spot_price: Decimal256 =
         pool_metadata_constant.checked_div(current_price)?;
 
-    let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
+    // Adjust spot_price_over_pool_metadata_constant back to its original scale if scaling was applied
+    let adjusted_pool_metadata_over_spot_price_constant = if is_scale_needed {
+        let underscale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
+        pool_metadata_constant_over_spot_price.checked_div(underscale_factor)?
+    } else {
+        pool_metadata_constant_over_spot_price
+    };
+
+    let denominator =
+        Decimal256::one().checked_add(adjusted_pool_metadata_over_spot_price_constant)?;
 
     let swap_amount: Uint128 = Uint256::from(token1_balance)
         .multiply_ratio(denominator.denominator(), denominator.numerator())
