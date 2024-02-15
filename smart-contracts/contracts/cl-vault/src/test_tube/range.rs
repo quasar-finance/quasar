@@ -64,6 +64,30 @@ mod test {
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
 
+        // Create a second position in the pool with the admin user (wide position) to simulate liquidity availability on the CL Pool
+        cl.create_position(
+            MsgCreatePosition {
+                pool_id: cl_pool_id,
+                sender: admin.address(),
+                lower_tick: -108000000, // min tick
+                upper_tick: 342000000,  // max tick
+                tokens_provided: vec![
+                    v1beta1::Coin {
+                        denom: "u18dec".to_string(),
+                        amount: "1000000000000000000000000000000".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: "uusdc".to_string(),
+                        amount: "7250000000000000000".to_string(),
+                    },
+                ],
+                token_min_amount0: Uint128::zero().to_string(),
+                token_min_amount1: Uint128::zero().to_string(),
+            },
+            &admin,
+        )
+        .unwrap();
+
         // Two sided re-range (50% 50%)
         let _result = wasm
             .execute(

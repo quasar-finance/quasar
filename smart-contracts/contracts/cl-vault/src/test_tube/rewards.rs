@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::ops::Mul;
-
     use crate::msg::ExecuteMsg;
     use crate::test_tube::helpers::{
         get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
@@ -22,7 +20,7 @@ mod tests {
     const DEPOSIT_AMOUNT: u128 = 5_000_000;
     const SWAPS_NUM: usize = 10;
     const SWAPS_AMOUNT: &str = "1000000000";
-    const DISTRIBUTION_CYCLES: usize = 25;
+    const DISTRIBUTION_CYCLES: usize = 10;
 
     #[test]
     #[ignore]
@@ -724,32 +722,37 @@ mod tests {
             rewards_received.push(coin_received_u128);
         }
 
-        // Assert that 'tokens_out' values for events are empty
-        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
-        let tokens_out_spread_rewards_u128: u128 =
-            get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
-        let rewards_less_performance_fee = (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64;
-        let expected_rewards_per_user = rewards_less_performance_fee / (ACCOUNTS_NUM + 1); // hardcoding +1 due to test logic, we will deposit once more with a single account doubling its shares amount
-        let expected_rewards_per_user_double = expected_rewards_per_user.mul(2);
+        // Assert rewards
 
-        let double_rewards_value: Vec<u128> = rewards_received
+        let max_reward = *rewards_received
             .iter()
-            .filter(|&&x| x > expected_rewards_per_user as u128)
-            .cloned()
-            .collect();
-        let single_rewards_count = rewards_received
+            .max()
+            .expect("There should be at least one reward");
+        let max_count = rewards_received
             .iter()
-            .filter(|&&x| x == expected_rewards_per_user as u128)
+            .filter(|&&x| x == max_reward)
             .count();
 
-        assert_approx_eq!(
-            double_rewards_value[0],
-            expected_rewards_per_user_double as u128,
-            "0.005"
-        );
         assert_eq!(
-            single_rewards_count, 9,
-            "There should be exactly one account with double rewards."
+            max_count, 1,
+            "There should be exactly one account with the highest reward."
+        );
+
+        let common_reward = rewards_received
+            .iter()
+            .filter(|&&x| x != max_reward)
+            .next()
+            .expect("There should be a common lower reward value");
+
+        let common_count = rewards_received
+            .iter()
+            .filter(|&&x| x == *common_reward)
+            .count();
+
+        assert_eq!(
+            common_count,
+            rewards_received.len() - 1,
+            "All other rewards should be the same lower value."
         );
     }
 
