@@ -163,34 +163,28 @@ pub fn get_twap_price(
 const SCALE_FACTOR: u128 = 10u128.pow(12);
 
 fn scale_if_needed(
-    cur_price_sqrt: Decimal256,
-    upper_price_sqrt: Decimal256,
-    lower_price_sqrt: Decimal256,
-    current_price: Decimal256,
+    mut cur_price_sqrt: Decimal256,
+    mut upper_price_sqrt: Decimal256,
+    mut lower_price_sqrt: Decimal256,
+    mut current_price: Decimal256,
 ) -> (bool, Decimal256, Decimal256, Decimal256, Decimal256) {
     let scale_up_threshold = Decimal256::from_ratio(1u128, SCALE_FACTOR);
     let product = cur_price_sqrt * upper_price_sqrt * lower_price_sqrt;
+    let mut needs_scaling = false;
 
+    // Scale the square root prices and current price only if needed
     if product <= scale_up_threshold {
         let scale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
 
-        // Scale the square root prices and current price
-        let scaled_cur_price_sqrt = cur_price_sqrt.checked_mul(scale_factor).unwrap();
-        let scaled_upper_price_sqrt = upper_price_sqrt.checked_mul(scale_factor).unwrap();
-        let scaled_lower_price_sqrt = lower_price_sqrt.checked_mul(scale_factor).unwrap();
-        let scaled_current_price = current_price.checked_mul(scale_factor).unwrap();
-
-        return (
-            true,
-            scaled_cur_price_sqrt,
-            scaled_upper_price_sqrt,
-            scaled_lower_price_sqrt,
-            scaled_current_price,
-        );
+        needs_scaling = true;
+        cur_price_sqrt = cur_price_sqrt.checked_mul(scale_factor).unwrap();
+        upper_price_sqrt = upper_price_sqrt.checked_mul(scale_factor).unwrap();
+        lower_price_sqrt = lower_price_sqrt.checked_mul(scale_factor).unwrap();
+        current_price = current_price.checked_mul(scale_factor).unwrap();
     }
 
     (
-        false,
+        needs_scaling,
         cur_price_sqrt,
         upper_price_sqrt,
         lower_price_sqrt,
