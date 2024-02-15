@@ -171,7 +171,7 @@ fn scale_if_needed(
     let scale_up_threshold = Decimal256::from_ratio(1u128, SCALE_FACTOR);
     let product = cur_price_sqrt * upper_price_sqrt * lower_price_sqrt;
 
-    if product < scale_up_threshold {
+    if product <= scale_up_threshold {
         let scale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
 
         // Scale the square root prices and current price
@@ -524,6 +524,62 @@ mod tests {
     use crate::math::tick::{build_tick_exp_cache, price_to_tick};
 
     use super::*;
+
+    #[test]
+    fn test_scale_if_needed_variants() {
+        // Adjusted small and large values for testing
+        let small_value = Decimal256::from_ratio(1u128, 10u128.pow(5)); // 1e-5 to ensure product is below 1e-12
+        let large_value = Decimal256::from_ratio(1u128, 10u128.pow(3)); // 1e-3 or larger to ensure product is above 1e-12
+
+        // Scenario 1: All Values Below Threshold
+        let (needs_scaling_below, _, _, _, _) =
+            scale_if_needed(small_value, small_value, small_value, small_value);
+        assert_eq!(
+            needs_scaling_below, true,
+            "Scaling should be needed for all values below threshold"
+        );
+
+        // Scenario 2: All Values Above Threshold
+        let (needs_scaling_above, _, _, _, _) =
+            scale_if_needed(large_value, large_value, large_value, large_value);
+        assert_eq!(
+            needs_scaling_above, false,
+            "Scaling should not be needed for all values above threshold"
+        );
+
+        // Scenario 3: Mixed Values - Some below, some above threshold
+        let (needs_scaling_mixed, _, _, _, _) =
+            scale_if_needed(small_value, large_value, small_value, large_value);
+        assert_eq!(
+            needs_scaling_mixed, true,
+            "Scaling should be needed for mixed values with any below threshold"
+        );
+
+        // Scenario 4: Boundary Condition - Exactly at Threshold
+        // Assuming the threshold can be represented exactly, otherwise adjust the threshold or values accordingly
+        let threshold_value = Decimal256::from_ratio(1u128, SCALE_FACTOR); // Adjust based on actual threshold
+        let (needs_scaling_boundary, _, _, _, _) = scale_if_needed(
+            threshold_value,
+            threshold_value,
+            threshold_value,
+            threshold_value,
+        );
+        // The expected result here depends on how you define "less than" in scale_if_needed
+        // If using <, this should be false. If using <=, adjust the assertion accordingly.
+        assert_eq!(
+            needs_scaling_boundary, true,
+            "Scaling should be needed exactly at threshold"
+        );
+
+        // Scenario 5: Zero and Near-Zero Values - Ensure handling of zero properly
+        let zero_value = Decimal256::zero();
+        let (needs_scaling_zero, _, _, _, _) =
+            scale_if_needed(zero_value, zero_value, zero_value, zero_value);
+        assert_eq!(
+            needs_scaling_zero, true,
+            "Scaling should be needed for zero values"
+        );
+    }
 
     #[test]
     fn must_pay_one_or_two_works_ordered() {

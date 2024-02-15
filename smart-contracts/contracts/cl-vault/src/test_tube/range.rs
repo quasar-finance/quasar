@@ -23,32 +23,32 @@ mod test {
 
     /// # Test: move_range_works_dym_usdc
     ///
-    /// This test case initializes a Concentrated Liquidity (CL) pool with DYM and USDC tokens
+    /// This test case initializes a Concentrated Liquidity (CL) pool with 18DEC and USDC tokens
     /// to simulate a real-world scenario on the blockchain with a specific spot price. The purpose
     /// of this test is to ensure that operations such as moving the range within the CL pool function
     /// correctly, especially when dealing with tokens of different decimal precisions.
     ///
     /// ## Initialization Parameters:
-    /// - DYM Token (udym): 18 decimal places, represented as `1000000000000000000udym` (for 1 DYM).
-    /// - USDC Token (uusdc): 6 decimal places, represented as `7250000uusdc` (to establish a spot price of 7.25 USDC for 1 DYM).
+    /// - 18DEC Token (u18dec): 18 decimal places, represented as `1000000000000000000u18dec` (for 1 18DEC).
+    /// - USDC Token (uusdc): 6 decimal places, represented as `7250000uusdc` (to establish a spot price of 7.25 USDC for 1 18DEC).
     ///
-    /// The test initializes a CL pool with these tokens to establish a spot price of 7.25 DYM/USD.
-    /// This spot price accurately reflects the real-world ratio between DYM and USDC on the mainnet,
+    /// The test initializes a CL pool with these tokens to establish a spot price of 7.25 18DEC/USD.
+    /// This spot price accurately reflects the real-world ratio between 18DEC and USDC on the mainnet,
     /// adjusted for the blockchain's unit representation.
     ///
     /// ## Decimal Precision and Spot Price Consideration:
-    /// The significant difference in decimal places between DYM (18 decimals) and USDC (6 decimals)
+    /// The significant difference in decimal places between 18DEC (18 decimals) and USDC (6 decimals)
     /// necessitates precise calculation to ensure the spot price is accurately represented in the
-    /// blockchain's terms. The chosen amounts of `1000000000000000000udym` for DYM and `7250000uusdc`
-    /// for USDC effectively establish a starting spot price of 7.25 DYM/USD in the CL pool, accurately
+    /// blockchain's terms. The chosen amounts of `1000000000000000000u18dec` for 18DEC and `7250000uusdc`
+    /// for USDC effectively establish a starting spot price of 7.25 18DEC/USD in the CL pool, accurately
     /// representing the spot price in a manner that does not require adjustment for decimal places in
     /// the context of Osmosis' handling of token amounts.
     ///
     /// Spot price it would be: `spot_price = 7250000 / 1000000000000000000`,
-    /// calculating the spot price in raw integer format without adjusting for decimal places, representing the USDC required to purchase one unit of DYM.
+    /// calculating the spot price in raw integer format without adjusting for decimal places, representing the USDC required to purchase one unit of 18DEC.
     #[test]
     #[ignore]
-    fn move_range_works_dym_usdc() {
+    fn move_range_works_18dec_usdc() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
             coin(1_000_000_000_000_000_000, "udym"),
             coin(7_250_000, "uusdc"),
@@ -56,35 +56,22 @@ mod test {
         .unwrap();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
-        // let pm = PoolManager::new(&app);
 
-        // // Get pool information
-        // let pool_response = pm
-        //     .query_pool(&PoolRequest {
-        //         pool_id: cl_pool_id,
-        //     })
-        //     .unwrap();
-        // println!("pool: {:?}", pool_response);
-
-        // Pool.CurrentTick here is -101750000 or price is 0.00000000000725
-        // If we go out of upper range we will be one-sided token0 (base denom, left denom)
-        // If we go out of lower range we will be one-sided token1 (quote denom, right denom)
-
-        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
+        // Create a second position in the pool with the admin user (wide position) to simulate liquidity availability on the CL Pool
         cl.create_position(
             MsgCreatePosition {
                 pool_id: cl_pool_id,
                 sender: admin.address(),
-                lower_tick: -101760000, // -10000 ticks
-                upper_tick: -101740000, // +10000 ticks
+                lower_tick: -108000000, // min tick
+                upper_tick: 342000000,  // max tick
                 tokens_provided: vec![
                     v1beta1::Coin {
-                        denom: "udym".to_string(),
-                        amount: "1000000000000000000".to_string(),
+                        denom: "u18dec".to_string(),
+                        amount: "1000000000000000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: "uusdc".to_string(),
-                        amount: "7250000".to_string(),
+                        amount: "7250000000000000000".to_string(),
                     },
                 ],
                 token_min_amount0: Uint128::zero().to_string(),
@@ -93,12 +80,6 @@ mod test {
             &admin,
         )
         .unwrap();
-
-        // TODO: We should also try depositing with users here, after being able to reproduce the "Denominator zero" bug
-
-        // TODO: At the moment we are trying that with this instantiation funds on initialize::195
-        // -> sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
-        // and this -> sort_tokens(vec![coin(1000000000000000, pool.token0), coin(1000, pool.token1)]).as_ref(),
 
         // Two sided re-range (50% 50%)
         let _result = wasm

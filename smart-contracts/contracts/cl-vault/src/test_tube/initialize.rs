@@ -139,7 +139,7 @@ pub mod initialize {
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         pool_tokens.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
 
-        // Create a first position in the pool with the admin user
+        // Create a first position in the pool with the admin user to simulate liquidity availability on the CL Pool
         cl.create_position(
             MsgCreatePosition {
                 pool_id: pool.id,
