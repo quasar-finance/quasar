@@ -38,19 +38,20 @@ pub mod initialize {
     // Define init variants here
 
     pub fn default_init(
-        tokens_provided: Vec<Coin>,
+        pool_tokens: Vec<Coin>,
+        vault_tokens: Vec<Coin>,
     ) -> Result<(OsmosisTestApp, Addr, u64, SigningAccount), StdError> {
-        if tokens_provided.len() > 2 {
+        if pool_tokens.len() > 2 {
             return Err(StdError::generic_err("More than two tokens provided"));
         }
 
         // Prepare admin balances, including "uosmo" if neither of the provided tokens is "uosmo"
-        let mut admin_balances = tokens_provided
+        let mut admin_balances = pool_tokens
             .iter()
             .map(|coin| Coin::new(ADMIN_BALANCE_AMOUNT, coin.denom.clone()))
             .collect::<Vec<Coin>>();
 
-        if !tokens_provided.iter().any(|coin| coin.denom == "uosmo") {
+        if !pool_tokens.iter().any(|coin| coin.denom == "uosmo") {
             admin_balances.push(Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo".to_string()));
         }
 
@@ -59,10 +60,10 @@ pub mod initialize {
             &admin_balances,
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: tokens_provided
+                denom0: pool_tokens
                     .get(0)
                     .map_or(String::new(), |coin| coin.denom.clone()),
-                denom1: tokens_provided
+                denom1: pool_tokens
                     .get(1)
                     .map_or(String::new(), |coin| coin.denom.clone()),
                 tick_spacing: 100,
@@ -70,14 +71,8 @@ pub mod initialize {
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
+            pool_tokens,
+            vault_tokens,
             Uint128::zero(),
             Uint128::zero(),
         );
@@ -207,6 +202,10 @@ pub mod initialize {
     #[ignore]
     fn default_init_works() {
         let (app, contract_address, cl_pool_id, admin) = default_init(vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ],
+        vec![
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ])

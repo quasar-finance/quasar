@@ -11,9 +11,13 @@ mod tests {
     #[test]
     #[ignore]
     fn range_admin_update_works() {
-        let (_app, _contract_address, _cl_pool_id, _admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE),
+        let (_app, _contract, _cl_pool_id, _admin) = default_init(vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ],
+        vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ])
         .unwrap();
         // change the range admin and verify that it works

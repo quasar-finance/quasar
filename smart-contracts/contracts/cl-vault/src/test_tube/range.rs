@@ -52,6 +52,10 @@ mod test {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
             coin(1_000_000_000_000_000_000, "udym"),
             coin(7_250_000, "uusdc"),
+        ],
+        vec![
+            coin(1_000_000, "udym"),
+            coin(1_000_000, "uusdc"),
         ])
         .unwrap();
         let wasm = Wasm::new(&app);
@@ -166,6 +170,10 @@ mod test {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ],
+        vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ])
         .unwrap();
 
@@ -234,7 +242,7 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("400").unwrap(),
                         upper_price: Decimal::from_str("1466").unwrap(),
-                        max_slippage: Decimal::bps(9500),
+                        max_slippage: Decimal::bps(5000), // this max slippage allows for a very large amount of price impact, mostly relevant here since the pool is illiquid
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                     },
@@ -258,6 +266,10 @@ mod test {
     #[ignore]
     fn move_range_same_single_side_works() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ],
+        vec![
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ])
@@ -345,6 +357,10 @@ mod test {
     #[ignore]
     fn test_swap_math() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ],
+        vec![
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ])
