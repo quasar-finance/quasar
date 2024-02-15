@@ -609,13 +609,6 @@ mod tests {
             )
             .unwrap();
 
-        // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
-        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
-            &result,
-            "total_collect_spread_rewards",
-            vec!["tokens_out"],
-        );
-
         // Collect init
         for _ in 0..(ACCOUNTS_NUM - 1) {
             let result = wasm
