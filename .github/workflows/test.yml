@@ -52,11 +52,6 @@ jobs:
         with:
           PATTERNS: |
             **/**.rs
-      - name: Setup Golang
-        if: env.GIT_DIFF
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.22.0
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable

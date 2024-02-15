@@ -70,13 +70,6 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
-      - name: Setup Golang
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.22.0
-        env:
-          GOOS: ${{ matrix.targetos }}
-          GOARCH: ${{ matrix.arch }}
       - name: Build smart contracts
         if: env.GIT_DIFF
         run: make compile-wasm-artifacts
