@@ -1134,7 +1134,7 @@ func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 func (app *App) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
 }
-
+//  Client config 
 func (app *App) GetTxConfig() client.TxConfig {
 	return MakeEncodingConfig().TxConfig
 }
