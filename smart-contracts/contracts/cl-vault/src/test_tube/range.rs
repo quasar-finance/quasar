@@ -70,7 +70,7 @@ mod test {
                 upper_tick: 342000000,  // max tick
                 tokens_provided: vec![
                     v1beta1::Coin {
-                        denom: "u18dec".to_string(),
+                        denom: "udym".to_string(),
                         amount: "1000000000000000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
@@ -270,8 +270,8 @@ mod test {
             coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ],
         vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            coin(100_000_000, DENOM_BASE.to_string()),
+            coin(100_000_000, DENOM_QUOTE.to_string()),
         ])
         .unwrap();
 
