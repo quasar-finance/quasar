@@ -2,7 +2,6 @@
 mod tests {
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
 
-    use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
@@ -18,14 +17,16 @@ mod tests {
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, _cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
         let wasm = Wasm::new(&app);
 
@@ -135,14 +136,16 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, _cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
         let wasm = Wasm::new(&app);
 
@@ -271,14 +274,16 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, _cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
         //let bank = Bank::new(&app);
 

@@ -21,7 +21,6 @@ pub mod initialize {
         SigningAccount, TokenFactory, Wasm,
     };
 
-    use crate::helpers::sort_tokens;
     use crate::msg::{
         ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
     };
@@ -33,7 +32,6 @@ pub mod initialize {
     pub(crate) const DENOM_BASE: &str = "uatom";
     pub(crate) const DENOM_QUOTE: &str = "uosmo";
     pub(crate) const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
-
 
     // Define init variants here
 
@@ -87,7 +85,7 @@ pub mod initialize {
         lower_tick: i64,
         upper_tick: i64,
         mut pool_tokens: Vec<Coin>,
-        mut vault_tokens: Vec<Coin>,
+        vault_tokens: Vec<Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
     ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
@@ -201,16 +199,18 @@ pub mod initialize {
     #[test]
     #[ignore]
     fn default_init_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract_address, cl_pool_id, admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
-    
+
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);

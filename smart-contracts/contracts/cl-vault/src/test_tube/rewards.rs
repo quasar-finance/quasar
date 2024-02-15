@@ -8,7 +8,7 @@ mod tests {
         default_init, ACCOUNTS_INIT_BALANCE, DENOM_BASE, DENOM_QUOTE, TOKENS_PROVIDED_AMOUNT,
     };
     use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
-    use osmosis_std::types::cosmos::base::v1beta1::{self, Coin as OsmoCoin};
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
     };
@@ -24,14 +24,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
 
         // Initialize accounts
@@ -225,14 +227,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_cycles() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
 
         // Initialize accounts
@@ -419,14 +423,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_no_rewards_works() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, _cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
 
         // Initialize accounts
@@ -527,14 +533,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_deposit_between() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, cl_pool_id, _admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
 
         // Initialize accounts
@@ -589,7 +597,7 @@ mod tests {
                 .unwrap();
         }
 
-        let result = wasm
+        let _result = wasm
             .execute(
                 contract.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {

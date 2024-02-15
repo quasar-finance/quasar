@@ -16,8 +16,7 @@ mod test {
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
         test_tube::initialize::initialize::{
-            default_init, init_test_contract, ADMIN_BALANCE_AMOUNT, DENOM_BASE, DENOM_QUOTE,
-            TOKENS_PROVIDED_AMOUNT,
+            default_init, DENOM_BASE, DENOM_QUOTE, TOKENS_PROVIDED_AMOUNT,
         },
     };
 
@@ -49,14 +48,13 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_works_18dec_usdc() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(1_000_000_000_000_000_000, "udym"),
-            coin(7_250_000, "uusdc"),
-        ],
-        vec![
-            coin(1_000_000, "udym"),
-            coin(1_000_000, "uusdc"),
-        ])
+        let (app, contract, cl_pool_id, admin) = default_init(
+            vec![
+                coin(1_000_000_000_000_000_000, "udym"),
+                coin(7_250_000, "uusdc"),
+            ],
+            vec![coin(1_000_000, "udym"), coin(1_000_000, "uusdc")],
+        )
         .unwrap();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
@@ -167,14 +165,16 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_works() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, cl_pool_id, admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
 
         let wasm = Wasm::new(&app);
@@ -265,14 +265,16 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_same_single_side_works() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(100_000_000, DENOM_BASE.to_string()),
-            coin(100_000_000, DENOM_QUOTE.to_string()),
-        ])
+        let (app, contract, cl_pool_id, admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(100_000_000, DENOM_BASE.to_string()),
+                coin(100_000_000, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
 
         let wasm = Wasm::new(&app);
@@ -356,22 +358,17 @@ mod test {
     #[test]
     #[ignore]
     fn test_swap_math() {
-        let (app, contract, cl_pool_id, admin) = default_init(vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ],
-        vec![
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-        ])
+        let (app, _contract, _cl_pool_id, admin) = default_init(
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+            vec![
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+            ],
+        )
         .unwrap();
-
-        let alice = app
-            .init_account(&[
-                coin(1_000_000_000_000, DENOM_BASE),
-                coin(1_000_000_000_000, DENOM_QUOTE),
-            ])
-            .unwrap();
 
         let cl = ConcentratedLiquidity::new(&app);
 
