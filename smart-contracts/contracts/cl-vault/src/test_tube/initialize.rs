@@ -28,15 +28,17 @@ pub mod initialize {
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
 
-    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: u128 = 1_000_000_000_000;
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
+    pub(crate) const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
+    pub(crate) const TOKENS_PROVIDED_AMOUNT: u128 = 1_000_000_000_000;
+    pub(crate) const DENOM_BASE: &str = "uatom";
+    pub(crate) const DENOM_QUOTE: &str = "uosmo";
+    pub(crate) const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
+
 
     // Define init variants here
 
     pub fn default_init(
-        tokens_provided: Vec<v1beta1::Coin>,
+        tokens_provided: Vec<Coin>,
     ) -> Result<(OsmosisTestApp, Addr, u64, SigningAccount), StdError> {
         if tokens_provided.len() > 2 {
             return Err(StdError::generic_err("More than two tokens provided"));
@@ -161,8 +163,8 @@ pub mod initialize {
             })
             .unwrap();
         // Assuming tokens_provided[0].amount and tokens_provided[1].amount are String
-        let tokens_provided_0_amount: u128 = tokens_provided[0].amount.parse().unwrap();
-        let tokens_provided_1_amount: u128 = tokens_provided[1].amount.parse().unwrap();
+        let tokens_provided_0_amount: u128 = pool_tokens[0].amount.u128();
+        let tokens_provided_1_amount: u128 = pool_tokens[1].amount.u128();
         // Assuming `spot_price.spot_price` is a string representation of a float.
         let spot_price_float: f64 = spot_price.spot_price.parse().unwrap();
         let division_result: f64 =
@@ -205,16 +207,11 @@ pub mod initialize {
     #[ignore]
     fn default_init_works() {
         let (app, contract_address, cl_pool_id, admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: "uatom".to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            v1beta1::Coin {
-                denom: "uosmo".to_string(),
-                amount: "1000000000000".to_string(),
-            },
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
         ])
         .unwrap();
+    
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);

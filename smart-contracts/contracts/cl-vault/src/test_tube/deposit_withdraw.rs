@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
+    use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
 
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_test_tube::{Account, Module, Wasm};
@@ -8,7 +8,7 @@ mod tests {
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
-        test_tube::initialize::initialize::default_init,
+        test_tube::initialize::initialize::{default_init, TOKENS_PROVIDED_AMOUNT},
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
@@ -19,14 +19,8 @@ mod tests {
     #[ignore]
     fn single_deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            v1beta1::Coin {
-                denom: DENOM_QUOTE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE),
         ])
         .unwrap();
         let wasm = Wasm::new(&app);
@@ -138,14 +132,8 @@ mod tests {
     #[ignore]
     fn multiple_deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            v1beta1::Coin {
-                denom: DENOM_QUOTE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE),
         ])
         .unwrap();
         let wasm = Wasm::new(&app);
@@ -276,14 +264,8 @@ mod tests {
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
         let (app, contract_address, _cl_pool_id, _admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            v1beta1::Coin {
-                denom: DENOM_QUOTE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE),
         ])
         .unwrap();
         //let bank = Bank::new(&app);

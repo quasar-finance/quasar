@@ -15,15 +15,11 @@ mod test {
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::default_init,
+        test_tube::initialize::initialize::{
+            default_init, init_test_contract, ADMIN_BALANCE_AMOUNT, DENOM_BASE, DENOM_QUOTE,
+            TOKENS_PROVIDED_AMOUNT,
+        },
     };
-
-    use prost::Message;
-
-    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: u128 = 1_000_000_000_000;
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
 
     /// # Test: move_range_works_dym_usdc
     ///
@@ -54,14 +50,8 @@ mod test {
     #[ignore]
     fn move_range_works_dym_usdc() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: "udym".to_string(),
-                amount: "1000000000000000000".to_string(),
-            },
-            v1beta1::Coin {
-                denom: "uusdc".to_string(),
-                amount: "7250000".to_string(),
-            },
+            coin(1_000_000_000_000_000_000, "udym"),
+            coin(7_250_000, "uusdc"),
         ])
         .unwrap();
         let wasm = Wasm::new(&app);
@@ -128,8 +118,8 @@ mod test {
             )
             .unwrap();
 
-         // Create a first position in the pool with the admin user
-         cl.create_position(
+        // Create a first position in the pool with the admin user
+        cl.create_position(
             MsgCreatePosition {
                 pool_id: cl_pool_id,
                 sender: admin.address(),
@@ -193,23 +183,11 @@ mod test {
     #[ignore]
     fn move_range_works() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            21205000,
-            27448000,
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(1_000_000, DENOM_BASE.to_string()),
-                coin(1_000_000, DENOM_QUOTE.to_string()),
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ])
+        .unwrap();
+
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let pm = PoolManager::new(&app);
@@ -299,23 +277,11 @@ mod test {
     #[ignore]
     fn move_range_same_single_side_works() {
         let (app, contract, cl_pool_id, admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            21205000,
-            27448000,
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(1_000_000, DENOM_BASE.to_string()),
-                coin(1_000_000, DENOM_QUOTE.to_string()),
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ])
+        .unwrap();
+
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let pm = PoolManager::new(&app);
@@ -383,277 +349,6 @@ mod test {
             .unwrap();
     }
 
-    #[test]
-    #[ignore]
-    fn move_range_18_decimal_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
-            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            -102029400,
-            -102029300,
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(1_000_000, DENOM_BASE.to_string()),
-                coin(1_000_000, DENOM_QUOTE.to_string()),
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
-        let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
-        let pm = PoolManager::new(&app);
-
-        let alice = app
-            .init_account(&[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -106000000,
-                upper_tick: -10000000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        // do a swap to move the cur tick
-        pm.swap_exact_amount_in(
-            MsgSwapExactAmountIn {
-                sender: alice.address(),
-                routes: vec![SwapAmountInRoute {
-                    pool_id: cl_pool_id,
-                    token_out_denom: DENOM_QUOTE.to_string(),
-                }],
-                token_in: Some(v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: 100_000_000_000u128.to_string(),
-                }),
-                token_out_min_amount: "1".to_string(),
-            },
-            &alice,
-        )
-        .unwrap();
-
-        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -108000000,
-                upper_tick: -10000000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        //let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        //let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
-
-        let _result = wasm
-            .execute(
-                contract.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("0.00000000000675000").unwrap(),
-                        upper_price: Decimal::from_str("0.00000000000750000").unwrap(),
-                        max_slippage: Decimal::bps(1),
-                        ratio_of_swappable_funds_to_use: Decimal::one(),
-                        twap_window_seconds: 45,
-                    },
-                )),
-                &[],
-                &admin,
-            )
-            .unwrap();
-    }
-
-    #[test]
-    #[ignore]
-    fn move_range_from_single_sided_18_decimal_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
-            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            -102029400,
-            -102029300,
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(1_000_000, DENOM_BASE.to_string()),
-                coin(1_000_000, DENOM_QUOTE.to_string()),
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
-        let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
-        let pm = PoolManager::new(&app);
-
-        let alice = app
-            .init_account(&[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -106000000,
-                upper_tick: -10000000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        // do a swap to move the cur tick
-        pm.swap_exact_amount_in(
-            MsgSwapExactAmountIn {
-                sender: alice.address(),
-                routes: vec![SwapAmountInRoute {
-                    pool_id: cl_pool_id,
-                    token_out_denom: DENOM_QUOTE.to_string(),
-                }],
-                token_in: Some(v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: 100_000_000_000u128.to_string(),
-                }),
-                token_out_min_amount: "1".to_string(),
-            },
-            &alice,
-        )
-        .unwrap();
-
-        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -108000000,
-                upper_tick: -10000000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: 100_000_000_000_000_000_000_000u128.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        //let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        //let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
-
-        let _result = wasm
-            .execute(
-                contract.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("1.00000000000675000").unwrap(),
-                        upper_price: Decimal::from_str("2.00000000000750000").unwrap(),
-                        max_slippage: Decimal::bps(1),
-                        ratio_of_swappable_funds_to_use: Decimal::one(),
-                        twap_window_seconds: 45,
-                    },
-                )),
-                &[],
-                &admin,
-            )
-            .unwrap();
-
-        let _result = wasm
-            .execute(
-                contract.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("0.00000000000675000").unwrap(),
-                        upper_price: Decimal::from_str("0.00000000000750000").unwrap(),
-                        max_slippage: Decimal::bps(1),
-                        ratio_of_swappable_funds_to_use: Decimal::one(),
-                        twap_window_seconds: 45,
-                    },
-                )),
-                &[],
-                &admin,
-            )
-            .unwrap();
-    }
-
     /*
     we try the following position from https://docs.google.com/spreadsheets/d/1xPsKsQkM0apTZQPBBwVlEyB5Sk31sw6eE8U0FgnTWUQ/edit?usp=sharing
     lower_price:   4500
@@ -667,29 +362,17 @@ mod test {
     */
     #[test]
     #[ignore]
-    fn test_swap_math_poc() {
-        let (app, _contract, _cl_pool_id, admin) = default_init(vec![
-            v1beta1::Coin {
-                denom: DENOM_BASE.to_string(),
-                amount: "1000000000000".to_string(),
-            },
-            30500000, // 4500
-            31500000, // 5500
-            vec![
-                coin(1_000_000, DENOM_BASE.to_string()),
-                coin(1_000_000, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(1_000_000, DENOM_BASE.to_string()),
-                coin(1_000_000, DENOM_QUOTE.to_string()),
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+    fn test_swap_math() {
+        let (app, contract, cl_pool_id, admin) = default_init(vec![
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
+            coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
+        ])
+        .unwrap();
+
         let alice = app
             .init_account(&[
-                Coin::new(1_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+                coin(1_000_000_000_000, DENOM_BASE),
+                coin(1_000_000_000_000, DENOM_QUOTE),
             ])
             .unwrap();
 
