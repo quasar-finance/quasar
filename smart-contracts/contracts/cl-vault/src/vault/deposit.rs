@@ -19,7 +19,7 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{create_position, get_position},
+    vault::concentrated_liquidity::{get_create_position_msg, get_position},
     ContractError,
 };
 
@@ -76,7 +76,7 @@ pub(crate) fn execute_exact_deposit(
         coins_to_send.push(token1.clone());
     }
 
-    let create_position_msg = create_position(
+    let create_position_msg = get_create_position_msg(
         deps,
         &env,
         position.lower_tick,
