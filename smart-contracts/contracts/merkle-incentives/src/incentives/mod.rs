@@ -1,8 +1,7 @@
 use core::fmt;
-use std::ops::Sub;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, OverflowError, Querier, StdError, Uint128};
+use cosmwasm_std::{Coin, OverflowError, Uint128};
 
 use crate::ContractError;
 

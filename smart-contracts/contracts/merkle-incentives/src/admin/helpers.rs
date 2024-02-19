@@ -22,16 +22,16 @@ pub fn is_contract_admin(
 pub fn is_incentives_admin(deps: Deps, sus_admin: &Addr) -> Result<(), ContractError> {
     let incentives_admin = INCENTIVES_ADMIN.may_load(deps.storage)?;
 
-    return match incentives_admin {
+    match incentives_admin {
         Some(incentives_admin) => {
-            if (incentives_admin != sus_admin) {
+            if incentives_admin != sus_admin {
                 Err(ContractError::Unauthorized {})
             } else {
                 Ok(())
             }
         }
         None => Err(ContractError::Unauthorized {}),
-    };
+    }
 }
 
 pub fn is_contract_or_incentives_admin(

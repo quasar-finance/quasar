@@ -55,7 +55,7 @@ pub fn get_next_level_length(level_len: u128) -> u128 {
 }
 
 /// TODO: spec
-fn calculate_tree_capacity<T>(items: &[T]) -> u128 {
+fn _calculate_tree_capacity<T>(items: &[T]) -> u128 {
     let leaves_count = items.len() as u128;
     let branch_node_count = round_up_power_of_two(items.len() as u128);
     leaves_count + branch_node_count
@@ -63,7 +63,7 @@ fn calculate_tree_capacity<T>(items: &[T]) -> u128 {
 
 /// round_up_power_of_two returns the next power of two
 /// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-fn round_up_power_of_two(n: u128) -> u128 {
+fn _round_up_power_of_two(n: u128) -> u128 {
     let mut v = n;
     v -= 1;
     v |= v >> 1;

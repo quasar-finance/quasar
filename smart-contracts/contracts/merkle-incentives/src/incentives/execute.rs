@@ -1,10 +1,5 @@
-use cl_vault::{
-    msg::{ClQueryMsg, ExecuteMsg as VaultExecuteMsg, ModifyRangeMsg, QueryMsg as VaultQueryMsg},
-    query::PoolResponse,
-};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, Coin, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 
 use crate::{state::CLAIMED_INCENTIVES, ContractError};
 
@@ -31,14 +26,14 @@ pub fn execute_incentives_msg(
             for_user,
             claim_coins,
             proof_str,
-        } => claim(deps, env, info, for_user, claim_coins, proof_str),
+        } => execute_claim(deps, env, info, for_user, claim_coins, proof_str),
     }
 }
 
-pub fn claim(
+pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     for_user: String,
     claim_coins: CoinVec,
     proof_str: String,

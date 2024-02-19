@@ -3,7 +3,7 @@ use crate::{
     error::ContractError,
     state::{CLAIMED_INCENTIVES, MERKLE_ROOT},
 };
-use cosmwasm_std::{Addr, BankMsg, Deps, Storage};
+use cosmwasm_std::{Addr, Deps};
 use merkle::{hash::Hash, proof::Proof};
 
 pub fn is_valid_claim(

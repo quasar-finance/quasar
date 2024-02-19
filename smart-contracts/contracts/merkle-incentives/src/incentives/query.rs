@@ -1,6 +1,5 @@
-use cl_vault::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{to_json_binary, Binary, Coin, Deps, DepsMut, Env, StdResult};
+use cosmwasm_std::{to_json_binary, Binary, Deps, Env, StdResult};
 
 use crate::state::MERKLE_ROOT;
 
