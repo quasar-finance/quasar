@@ -1,6 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Decimal;
-use cw_dex_router::operations::SwapOperationsListUnchecked;
+use cosmwasm_std::{Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
@@ -21,8 +20,10 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// Collect any rewards from Osmosis to the Vault
+    CollectRewards { amount_of_users: Uint128 },
     /// Distribute any rewards over all users
-    DistributeRewards {},
+    DistributeRewards { amount_of_users: Uint128 },
     /// Claim rewards belonging to a single user
     ClaimRewards {},
     /// Build tick exponent cache
@@ -48,11 +49,6 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
-    /// Update the dex router address.
-    UpdateDexRouter {
-        /// The new dex router address.
-        address: Option<String>,
-    },
     ClaimStrategistRewards {},
 }
 
@@ -68,10 +64,6 @@ pub struct ModifyRangeMsg {
     pub ratio_of_swappable_funds_to_use: Decimal,
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
-    /// recommended swap route to take
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    /// whether or not to force the swap route
-    pub force_swap_route: Option<bool>,
 }
 
 #[cw_serde]
@@ -88,8 +80,6 @@ pub enum ExtensionQueryMsg {
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
-    /// Query the DexRouter address
-    DexRouter {},
 }
 
 /// Extension query messages for user balance related queries
@@ -98,11 +88,6 @@ pub enum ExtensionQueryMsg {
 pub enum UserBalanceQueryMsg {
     #[returns(UserSharesBalanceResponse)]
     UserSharesBalance { user: String },
-    #[returns(Vec<UserSharesBalanceResponse>)]
-    AllUsersSharesBalance {
-        offset: Option<u64>,
-        limit: Option<u64>,
-    },
     #[returns(AssetsBalanceResponse)]
     UserAssetsBalance { user: String },
     #[returns(UserRewardsResponse)]
