@@ -1,10 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
-    use osmosis_std::types::osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
+    use osmosis_std::types::{
+        cosmos::base::v1beta1,
+        osmosis::concentratedliquidity::poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+    };
     use osmosis_test_tube::{
         Account, Bank, ConcentratedLiquidity, ExecuteResponse, Module, OsmosisTestApp,
         SigningAccount, Wasm,
@@ -313,8 +316,6 @@ mod tests {
                         max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
-                        recommended_swap_route: None,
-                        force_swap_route: None,
                     },
                 )),
                 &[],
@@ -478,12 +479,14 @@ mod tests {
                 initial_lower_tick,
                 initial_upper_tick,
                 vec![
-                    coin(1_000_000_000_000_000_000,DENOM_BASE.to_string()),
-                    coin(1_000_000_000_000_000_000, DENOM_QUOTE.to_string())
-                ],
-                vec![
-                    coin(1_000_000,DENOM_BASE.to_string()),
-                    coin(1_000_000, DENOM_QUOTE.to_string())
+                    v1beta1::Coin {
+                        denom: DENOM_BASE.to_string(),
+                        amount: "1000000000000000000".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: "1000000000000000000".to_string(),
+                    },
                 ],
                 Uint128::zero(),
                 Uint128::zero(),

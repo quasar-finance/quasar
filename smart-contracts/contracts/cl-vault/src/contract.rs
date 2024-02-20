@@ -11,9 +11,10 @@ use crate::query::{
 use crate::reply::Replies;
 use crate::rewards::{
     execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply,
+    handle_collect_spread_rewards_reply, CoinList,
 };
 
+use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS};
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -28,7 +29,7 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -185,6 +186,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
+    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
+    CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
     Ok(Response::new().add_attribute("migrate", "successful"))
 }

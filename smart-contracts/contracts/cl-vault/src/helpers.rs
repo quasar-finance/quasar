@@ -160,39 +160,6 @@ pub fn get_twap_price(
 //     ))
 // }
 
-const SCALE_FACTOR: u128 = 10u128.pow(12);
-
-fn scale_if_needed(
-    cur_price_sqrt: Decimal256,
-    upper_price_sqrt: Decimal256,
-    lower_price_sqrt: Decimal256,
-    current_price: Decimal256,
-) -> (bool, Decimal256, Decimal256, Decimal256, Decimal256) {
-    let scale_up_threshold = Decimal256::from_ratio(1u128, SCALE_FACTOR);
-    let product = cur_price_sqrt * upper_price_sqrt * lower_price_sqrt;
-
-    // Scale the square root prices and current price only if needed
-    if product <= scale_up_threshold {
-        let scale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
-
-        (
-            true,
-            cur_price_sqrt.checked_mul(scale_factor).unwrap(),
-            upper_price_sqrt.checked_mul(scale_factor).unwrap(),
-            lower_price_sqrt.checked_mul(scale_factor).unwrap(),
-            current_price.checked_mul(scale_factor).unwrap(),
-        )
-    } else {
-        (
-            false,
-            cur_price_sqrt,
-            upper_price_sqrt,
-            lower_price_sqrt,
-            current_price,
-        )
-    }
-}
-
 // this math is straight from the readme
 pub fn get_single_sided_deposit_0_to_1_swap_amount(
     token0_balance: Uint128,
@@ -200,6 +167,11 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
+    // TODO error here if this condition holds
+    // if current_tick < lower_tick {
+    //     return ;
+    // }
+
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
@@ -208,13 +180,10 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
 
-    let (is_scale_needed, cur_price_sqrt, upper_price_sqrt, lower_price_sqrt, current_price) =
-        scale_if_needed(
-            cur_price_sqrt,
-            upper_price_sqrt,
-            lower_price_sqrt,
-            current_price,
-        );
+    // let pool_metadata_constant: Decimal256 = cur_price_sqrt
+    //     .checked_mul(lower_price_sqrt)?
+    //     .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
+    //     .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
 
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
@@ -224,16 +193,7 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let spot_price_over_pool_metadata_constant =
         current_price.checked_div(pool_metadata_constant)?;
 
-    // Adjust spot_price_over_pool_metadata_constant back to its original scale if scaling was applied
-    let adjusted_spot_price_over_pool_metadata_constant = if is_scale_needed {
-        let underscale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
-        spot_price_over_pool_metadata_constant.checked_div(underscale_factor)?
-    } else {
-        spot_price_over_pool_metadata_constant
-    };
-
-    let denominator =
-        Decimal256::one().checked_add(adjusted_spot_price_over_pool_metadata_constant)?;
+    let denominator = Decimal256::one().checked_add(spot_price_over_pool_metadata_constant)?;
 
     let swap_amount: Uint128 = Uint256::from(token0_balance)
         .multiply_ratio(denominator.denominator(), denominator.numerator())
@@ -256,14 +216,6 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
 
-    let (is_scale_needed, cur_price_sqrt, upper_price_sqrt, lower_price_sqrt, current_price) =
-        scale_if_needed(
-            cur_price_sqrt,
-            upper_price_sqrt,
-            lower_price_sqrt,
-            current_price,
-        );
-
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
         .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?))?
@@ -272,16 +224,7 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let pool_metadata_constant_over_spot_price: Decimal256 =
         pool_metadata_constant.checked_div(current_price)?;
 
-    // Adjust spot_price_over_pool_metadata_constant back to its original scale if scaling was applied
-    let adjusted_pool_metadata_over_spot_price_constant = if is_scale_needed {
-        let underscale_factor = Decimal256::from_atomics(SCALE_FACTOR, 0).unwrap();
-        pool_metadata_constant_over_spot_price.checked_div(underscale_factor)?
-    } else {
-        pool_metadata_constant_over_spot_price
-    };
-
-    let denominator =
-        Decimal256::one().checked_add(adjusted_pool_metadata_over_spot_price_constant)?;
+    let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
 
     let swap_amount: Uint128 = Uint256::from(token1_balance)
         .multiply_ratio(denominator.denominator(), denominator.numerator())
@@ -519,62 +462,6 @@ mod tests {
     use crate::math::tick::{build_tick_exp_cache, price_to_tick};
 
     use super::*;
-
-    #[test]
-    fn test_scale_if_needed_variants() {
-        // Adjusted small and large values for testing
-        let small_value = Decimal256::from_ratio(1u128, 10u128.pow(5)); // 1e-5 to ensure product is below 1e-12
-        let large_value = Decimal256::from_ratio(1u128, 10u128.pow(3)); // 1e-3 or larger to ensure product is above 1e-12
-
-        // Scenario 1: All Values Below Threshold
-        let (needs_scaling_below, _, _, _, _) =
-            scale_if_needed(small_value, small_value, small_value, small_value);
-        assert_eq!(
-            needs_scaling_below, true,
-            "Scaling should be needed for all values below threshold"
-        );
-
-        // Scenario 2: All Values Above Threshold
-        let (needs_scaling_above, _, _, _, _) =
-            scale_if_needed(large_value, large_value, large_value, large_value);
-        assert_eq!(
-            needs_scaling_above, false,
-            "Scaling should not be needed for all values above threshold"
-        );
-
-        // Scenario 3: Mixed Values - Some below, some above threshold
-        let (needs_scaling_mixed, _, _, _, _) =
-            scale_if_needed(small_value, large_value, small_value, large_value);
-        assert_eq!(
-            needs_scaling_mixed, true,
-            "Scaling should be needed for mixed values with any below threshold"
-        );
-
-        // Scenario 4: Boundary Condition - Exactly at Threshold
-        // Assuming the threshold can be represented exactly, otherwise adjust the threshold or values accordingly
-        let threshold_value = Decimal256::from_ratio(1u128, SCALE_FACTOR); // Adjust based on actual threshold
-        let (needs_scaling_boundary, _, _, _, _) = scale_if_needed(
-            threshold_value,
-            threshold_value,
-            threshold_value,
-            threshold_value,
-        );
-        // The expected result here depends on how you define "less than" in scale_if_needed
-        // If using <, this should be false. If using <=, adjust the assertion accordingly.
-        assert_eq!(
-            needs_scaling_boundary, true,
-            "Scaling should be needed exactly at threshold"
-        );
-
-        // Scenario 5: Zero and Near-Zero Values - Ensure handling of zero properly
-        let zero_value = Decimal256::zero();
-        let (needs_scaling_zero, _, _, _, _) =
-            scale_if_needed(zero_value, zero_value, zero_value, zero_value);
-        assert_eq!(
-            needs_scaling_zero, true,
-            "Scaling should be needed for zero values"
-        );
-    }
 
     #[test]
     fn must_pay_one_or_two_works_ordered() {

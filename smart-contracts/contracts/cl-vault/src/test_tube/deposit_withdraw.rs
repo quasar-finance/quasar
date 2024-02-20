@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
+    use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
 
     use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
-        test_tube::initialize::initialize::{default_init, TOKENS_PROVIDED_AMOUNT},
+        test_tube::initialize::initialize::default_init,
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
@@ -17,17 +17,7 @@ mod tests {
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract, _cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -39,12 +29,12 @@ mod tests {
             .unwrap();
 
         let vault_assets_before: TotalAssetsResponse = wasm
-            .query(contract.as_str(), &QueryMsg::TotalAssets {})
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
         wasm.execute(
-            contract.as_str(),
+            contract_address.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None },
             &[
                 Coin::new(1_000_000_000_000_000, DENOM_BASE),
@@ -57,7 +47,7 @@ mod tests {
         // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
                     crate::msg::UserBalanceQueryMsg::UserSharesBalance {
                         user: alice.address(),
@@ -70,7 +60,7 @@ mod tests {
         // Get user_assets for Alice from vault contract and assert
         let user_assets: AssetsBalanceResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
                     crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
                         user: alice.address(),
@@ -95,7 +85,7 @@ mod tests {
 
         // Get vault assets and assert
         let vault_assets: TotalAssetsResponse = wasm
-            .query(contract.as_str(), &QueryMsg::TotalAssets {})
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
         assert_approx_eq!(
             vault_assets.token0.amount,
@@ -120,7 +110,7 @@ mod tests {
 
         let _withdraw = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::Redeem {
                     recipient: None,
                     amount: shares.balance,
@@ -136,17 +126,7 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract, _cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -159,13 +139,13 @@ mod tests {
 
         // Get vaults assets before doing anything for future assertions
         let vault_assets_before: TotalAssetsResponse = wasm
-            .query(contract.as_str(), &QueryMsg::TotalAssets {})
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
         // Loop 3 times to do multiple deposits as Alice
         for _ in 0..3 {
             wasm.execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
                     Coin::new(1_000_000_000_000_000_000, DENOM_BASE),
@@ -179,7 +159,7 @@ mod tests {
         // Get Alice shares from vault contract
         let shares: UserSharesBalanceResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
                     crate::msg::UserBalanceQueryMsg::UserSharesBalance {
                         user: alice.address(),
@@ -192,7 +172,7 @@ mod tests {
         // Get Alice assets from vault contract
         let user_assets: AssetsBalanceResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
                     crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
                         user: alice.address(),
@@ -216,7 +196,7 @@ mod tests {
 
         let user_assets_again: AssetsBalanceResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::ConvertToAssets {
                     amount: shares.balance,
                 },
@@ -234,7 +214,7 @@ mod tests {
         );
 
         let vault_assets: TotalAssetsResponse = wasm
-            .query(contract.as_str(), &QueryMsg::TotalAssets {})
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
         assert_approx_eq!(
@@ -259,7 +239,7 @@ mod tests {
 
         let _withdraw = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::Redeem {
                     recipient: None,
                     amount: shares.balance,
@@ -274,17 +254,7 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract, _cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
         //let bank = Bank::new(&app);
 
         let wasm = Wasm::new(&app);
@@ -334,7 +304,7 @@ mod tests {
             // depositing
             for user in &users {
                 wasm.execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
                         Coin::new(deposit_amount, DENOM_BASE),
@@ -351,7 +321,7 @@ mod tests {
         for user in users {
             let user_shares: UserSharesBalanceResponse = wasm
                 .query(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
                         crate::msg::UserBalanceQueryMsg::UserSharesBalance {
                             user: user.address(),
@@ -362,13 +332,13 @@ mod tests {
 
             // let _balances = bank
             //     .query_all_balances(&QueryAllBalancesRequest {
-            //         address: contract.to_string(),
+            //         address: contract_address.to_string(),
             //         pagination: None,
             //     })
             //     .unwrap();
             // let pos_id: PositionResponse = wasm
             //     .query(
-            //         contract.as_str(),
+            //         contract_address.as_str(),
             //         &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
             //             crate::msg::ClQueryMsg::Position {},
             //         )),
@@ -382,7 +352,7 @@ mod tests {
 
             // withdrawing
             wasm.execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::Redeem {
                     recipient: None,
                     amount: user_shares.balance,

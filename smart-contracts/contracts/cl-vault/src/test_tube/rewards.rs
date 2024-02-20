@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
+    use std::ops::Mul;
+
     use crate::msg::ExecuteMsg;
     use crate::test_tube::helpers::{
         get_event_attributes_by_ty_and_key, get_event_value_amount_numeric,
     };
-    use crate::test_tube::initialize::initialize::{
-        default_init, ACCOUNTS_INIT_BALANCE, DENOM_BASE, DENOM_QUOTE, TOKENS_PROVIDED_AMOUNT,
-    };
-    use cosmwasm_std::{assert_approx_eq, coin, Coin, Uint128};
+    use crate::test_tube::initialize::initialize::default_init;
+    use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -15,26 +15,19 @@ mod tests {
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
 
+    const DENOM_BASE: &str = "uatom";
+    const DENOM_QUOTE: &str = "uosmo";
     const ACCOUNTS_NUM: u64 = 10;
+    const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     const DEPOSIT_AMOUNT: u128 = 5_000_000;
     const SWAPS_NUM: usize = 10;
     const SWAPS_AMOUNT: &str = "1000000000";
-    const DISTRIBUTION_CYCLES: usize = 10;
+    const DISTRIBUTION_CYCLES: usize = 25;
 
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim() {
-        let (app, contract, cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
         let accounts = app
@@ -52,7 +45,7 @@ mod tests {
         for account in &accounts {
             let _ = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
                         Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -90,7 +83,7 @@ mod tests {
 
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                     amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
                 }),
@@ -117,7 +110,7 @@ mod tests {
         for _ in 0..(ACCOUNTS_NUM - 1) {
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                         amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
                     }),
@@ -138,7 +131,7 @@ mod tests {
         // Collect one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -160,7 +153,7 @@ mod tests {
             // Adjust the number of distribute actions as needed
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(
                         crate::msg::ExtensionExecuteMsg::DistributeRewards {
                             amount_of_users: Uint128::one(), // hardcoding 1
@@ -184,7 +177,7 @@ mod tests {
         // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -206,7 +199,7 @@ mod tests {
         for account in &accounts {
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {}),
                     &[],
                     account,
@@ -227,17 +220,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_cycles() {
-        let (app, contract, cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
         let accounts = app
@@ -260,7 +243,7 @@ mod tests {
             for account in &accounts {
                 let _ = wasm
                     .execute(
-                        contract.as_str(),
+                        contract_address.as_str(),
                         &ExecuteMsg::ExactDeposit { recipient: None },
                         &[
                             Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -294,7 +277,7 @@ mod tests {
 
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                         amount_of_users: Uint128::new(1),
                     }),
@@ -319,7 +302,7 @@ mod tests {
             for _ in 0..(ACCOUNTS_NUM - 1) {
                 let result = wasm
                     .execute(
-                        contract.as_str(),
+                        contract_address.as_str(),
                         &ExecuteMsg::VaultExtension(
                             crate::msg::ExtensionExecuteMsg::CollectRewards {
                                 amount_of_users: Uint128::new(1),
@@ -338,7 +321,7 @@ mod tests {
             // Collect one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                         amount_of_users: Uint128::one(),
                     }),
@@ -356,7 +339,7 @@ mod tests {
                 // Adjust the number of distribute actions as needed
                 let result = wasm
                     .execute(
-                        contract.as_str(),
+                        contract_address.as_str(),
                         &ExecuteMsg::VaultExtension(
                             crate::msg::ExtensionExecuteMsg::DistributeRewards {
                                 amount_of_users: Uint128::one(), // hardcoding 1
@@ -379,7 +362,7 @@ mod tests {
             // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(
                         crate::msg::ExtensionExecuteMsg::DistributeRewards {
                             amount_of_users: Uint128::one(),
@@ -399,7 +382,7 @@ mod tests {
             for account in &accounts {
                 let result = wasm
                     .execute(
-                        contract.as_str(),
+                        contract_address.as_str(),
                         &ExecuteMsg::VaultExtension(
                             crate::msg::ExtensionExecuteMsg::ClaimRewards {},
                         ),
@@ -423,17 +406,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_no_rewards_works() {
-        let (app, contract, _cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, _cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
         let accounts = app
@@ -451,7 +424,7 @@ mod tests {
         for account in &accounts {
             let _ = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
                         Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -468,7 +441,7 @@ mod tests {
         // Collect and Distribute Rewards (there should be anything)
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -495,7 +468,7 @@ mod tests {
         // Try to collect one more time, this should be closing the process and set to Ready as there are not rewards
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -515,7 +488,7 @@ mod tests {
         // Distribute just one time, as there are no rewards we expect this to clear the state even if 1 user < 10 users
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -533,17 +506,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_rewards_single_distribute_claim_deposit_between() {
-        let (app, contract, cl_pool_id, _admin) = default_init(
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-            vec![
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_BASE.to_string()),
-                coin(TOKENS_PROVIDED_AMOUNT, DENOM_QUOTE.to_string()),
-            ],
-        )
-        .unwrap();
+        let (app, contract_address, cl_pool_id, _admin) = default_init();
 
         // Initialize accounts
         let accounts = app
@@ -561,7 +524,7 @@ mod tests {
         for account in &accounts {
             let _ = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
                         Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -597,9 +560,9 @@ mod tests {
                 .unwrap();
         }
 
-        let _result = wasm
+        let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                     amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
                 }),
@@ -608,11 +571,18 @@ mod tests {
             )
             .unwrap();
 
+        // Extract 'tokens_out' attribute value for 'total_collect_spread_rewards'
+        let tokens_out_spread_rewards = get_event_attributes_by_ty_and_key(
+            &result,
+            "total_collect_spread_rewards",
+            vec!["tokens_out"],
+        );
+
         // Collect init
         for _ in 0..(ACCOUNTS_NUM - 1) {
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                         amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
                     }),
@@ -630,7 +600,7 @@ mod tests {
         for account in &accounts {
             let _ = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
                     &[
                         Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -644,7 +614,7 @@ mod tests {
         // Collect one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -662,7 +632,7 @@ mod tests {
             // Adjust the number of distribute actions as needed
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(
                         crate::msg::ExtensionExecuteMsg::DistributeRewards {
                             amount_of_users: Uint128::one(), // hardcoding 1
@@ -682,7 +652,7 @@ mod tests {
         // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
         let result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
                     amount_of_users: Uint128::one(),
                 }),
@@ -701,7 +671,7 @@ mod tests {
         for account in &accounts {
             let result = wasm
                 .execute(
-                    contract.as_str(),
+                    contract_address.as_str(),
                     &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {}),
                     &[],
                     account,
@@ -714,37 +684,32 @@ mod tests {
             rewards_received.push(coin_received_u128);
         }
 
-        // Assert rewards
+        // Assert that 'tokens_out' values for events are empty
+        assert_ne!(tokens_out_spread_rewards[0].value, "".to_string());
+        let tokens_out_spread_rewards_u128: u128 =
+            get_event_value_amount_numeric(&tokens_out_spread_rewards[0].value);
+        let rewards_less_performance_fee = (tokens_out_spread_rewards_u128 as f64 * 0.8) as u64;
+        let expected_rewards_per_user = rewards_less_performance_fee / (ACCOUNTS_NUM + 1); // hardcoding +1 due to test logic, we will deposit once more with a single account doubling its shares amount
+        let expected_rewards_per_user_double = expected_rewards_per_user.mul(2);
 
-        let max_reward = *rewards_received
+        let double_rewards_value: Vec<u128> = rewards_received
             .iter()
-            .max()
-            .expect("There should be at least one reward");
-        let max_count = rewards_received
+            .filter(|&&x| x > expected_rewards_per_user as u128)
+            .cloned()
+            .collect();
+        let single_rewards_count = rewards_received
             .iter()
-            .filter(|&&x| x == max_reward)
+            .filter(|&&x| x == expected_rewards_per_user as u128)
             .count();
 
-        assert_eq!(
-            max_count, 1,
-            "There should be exactly one account with the highest reward."
+        assert_approx_eq!(
+            double_rewards_value[0],
+            expected_rewards_per_user_double as u128,
+            "0.005"
         );
-
-        let common_reward = rewards_received
-            .iter()
-            .filter(|&&x| x != max_reward)
-            .next()
-            .expect("There should be a common lower reward value");
-
-        let common_count = rewards_received
-            .iter()
-            .filter(|&&x| x == *common_reward)
-            .count();
-
         assert_eq!(
-            common_count,
-            rewards_received.len() - 1,
-            "All other rewards should be the same lower value."
+            single_rewards_count, 9,
+            "There should be exactly one account with double rewards."
         );
     }
 
@@ -760,7 +725,7 @@ mod tests {
     //     #[test]
     //     #[ignore]
     //     fn test_rewards_single_distribute_claim_max_users(users in 10..u64::MAX) {
-    //     let (app, contract, cl_pool_id, _admin) = default_init();
+    //     let (app, contract_address, cl_pool_id, _admin) = default_init();
 
     //     // Initialize accounts
     //     let accounts = app
@@ -778,7 +743,7 @@ mod tests {
     //     for account in &accounts {
     //         let _ = wasm
     //             .execute(
-    //                 contract.as_str(),
+    //                 contract_address.as_str(),
     //                 &ExecuteMsg::ExactDeposit { recipient: None },
     //                 &[
     //                     Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -817,7 +782,7 @@ mod tests {
     //     // Collect and Distribute Rewards
     //     let result = wasm
     //         .execute(
-    //             contract.as_str(),
+    //             contract_address.as_str(),
     //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
     //             &[],
     //             claimer,
@@ -846,7 +811,7 @@ mod tests {
     //         // Adjust the number of distribute actions as needed
     //         let result = wasm
     //             .execute(
-    //                 contract.as_str(),
+    //                 contract_address.as_str(),
     //                 &ExecuteMsg::VaultExtension(
     //                     crate::msg::ExtensionExecuteMsg::DistributeRewards {
     //                         amount_of_users: Uint128::new(1), // hardcoding 1
@@ -877,7 +842,7 @@ mod tests {
     //     for account in &extra_accounts {
     //         let _ = wasm
     //             .execute(
-    //                 contract.as_str(),
+    //                 contract_address.as_str(),
     //                 &ExecuteMsg::ExactDeposit { recipient: None },
     //                 &[
     //                     Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
@@ -891,7 +856,7 @@ mod tests {
     //     // Distribute one more time to finish, even if we extra deposited with one more user we expect the distribution to finish
     //     let result = wasm
     //         .execute(
-    //             contract.as_str(),
+    //             contract_address.as_str(),
     //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::DistributeRewards {
     //                 amount_of_users: Uint128::new(1),
     //             }),
@@ -912,7 +877,7 @@ mod tests {
     //     for account in &accounts {
     //         let result = wasm
     //             .execute(
-    //                 contract.as_str(),
+    //                 contract_address.as_str(),
     //                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ClaimRewards {}),
     //                 &[],
     //                 account,

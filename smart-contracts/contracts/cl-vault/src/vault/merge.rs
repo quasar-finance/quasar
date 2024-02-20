@@ -16,7 +16,7 @@ use crate::{
     msg::MergePositionMsg,
     reply::Replies,
     state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
-    vault::concentrated_liquidity::get_create_position_msg,
+    vault::concentrated_liquidity::create_position,
     ContractError,
 };
 
@@ -159,7 +159,7 @@ pub fn handle_merge_withdraw_reply(
         // this is expected to panic if tokens is an empty vec![]
         // tokens should never be an empty vec![] as this would mean that all the current positions
         // are returning zero tokens and this would fail on osmosis side
-        let position = get_create_position_msg(
+        let position = create_position(
             deps,
             &env,
             range.lower_tick,
