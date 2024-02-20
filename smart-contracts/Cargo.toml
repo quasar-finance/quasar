@@ -1,17 +1,16 @@
 [workspace]
 
 members = [
-  # "contracts/icq",
   "contracts/airdrop",
   "contracts/lp-strategy",
-  # "contracts/ibc-transfer",
   "contracts/basic-vault",
   "contracts/vault-rewards",
-  # "contracts/intergamm-bindings-test",
   "contracts/multihop-router",
   "contracts/cl-vault",
-  # "packages/intergamm-bindings",
+  "contracts/merkle-incentives",
   "packages/quasar-types",
+  "packages/merkle",
+  "packages/merkle-cli",
 ]
 
 [workspace.dependencies]

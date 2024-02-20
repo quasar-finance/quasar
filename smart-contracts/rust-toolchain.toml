@@ -1,5 +1,5 @@
 [toolchain]
-channel = "1.72.0"
-targets = [ "wasm32-unknown-unknown" ]
-profile = "default"
+channel = "1.74.0"
 components = ["rust-analyzer"]
+profile = "default"
+targets = ["wasm32-unknown-unknown"]

@@ -1,0 +1,7 @@
+{
+    "hash": "some_hash_to_test_2",
+    "time": 123456789,
+    "amount": 1000.01,
+    "to": "to_address",
+    "from": "from_address"
+}

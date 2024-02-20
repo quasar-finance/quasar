@@ -1,0 +1,13 @@
+[package]
+name = "merkle-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "3.0", features = ["derive"] }
+csv = "1.1"
+base64 = "0.13.0"
+serde-json-wasm = "0.4.1"
+merkle = { path= "../merkle" }
