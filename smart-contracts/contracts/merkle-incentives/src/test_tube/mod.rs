@@ -1,2 +1,2 @@
-mod merkle;
 mod initialize;
+mod merkle;

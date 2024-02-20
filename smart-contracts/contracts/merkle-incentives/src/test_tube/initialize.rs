@@ -11,17 +11,15 @@ pub mod initialize {
         )
     }
 
-    pub fn init_test_contract(
-        filename: &str,
-    ) -> (OsmosisTestApp, Addr, SigningAccount) {
+    pub fn init_test_contract(filename: &str) -> (OsmosisTestApp, Addr, SigningAccount) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let wasm = Wasm::new(&app);
 
         // Create new account with initial funds
-        let admin = app.init_account(&vec![
-            Coin::new(100_000_000_000_000_000_000, "osmo")
-        ]).unwrap();
+        let admin = app
+            .init_account(&vec![Coin::new(100_000_000_000_000_000_000, "osmo")])
+            .unwrap();
 
         // Load compiled wasm bytecode
         let wasm_byte_code = std::fs::read(filename).unwrap();

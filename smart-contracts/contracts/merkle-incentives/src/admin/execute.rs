@@ -27,9 +27,7 @@ pub fn execute_admin_msg(
         AdminExecuteMsg::UpdateMerkleRoot { new_root } => {
             update_merkle_root(deps, env, info, new_root)
         }
-        AdminExecuteMsg::UpdateAdmin { new_admin } => {
-            update_admin(deps, env, info, new_admin)
-        }
+        AdminExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, env, info, new_admin),
     }
 }
 

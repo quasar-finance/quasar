@@ -8,37 +8,38 @@ use merkle::{hash::Hash, proof::Proof};
 
 pub fn is_valid_claim(
     deps: Deps,
-    for_user: Addr,
-    claim_coins: &CoinVec,
-    proof_str: String,
+    address: Addr,
+    coins: &CoinVec,
+    proof: String,
 ) -> Result<CoinVec, ContractError> {
     // the format of this will look like "addr1000utokena2000utokenb"
-    let claim = format!("{}{}", for_user.to_string(), claim_coins.to_string());
+    let claim = format!("{}{}", address.to_string(), coins.to_string());
 
     let merkle_root = MERKLE_ROOT.load(deps.storage)?;
 
-    verify_proof(&merkle_root, &proof_str, claim)?;
+    // TODO: Edit this
+    verify_proof(&merkle_root, &proof, claim)?;
 
     let user_claimed = CLAIMED_INCENTIVES
-        .load(deps.storage, for_user.clone())
+        .load(deps.storage, address.clone())
         .unwrap_or(CoinVec::new());
 
-    if &user_claimed >= claim_coins {
+    if &user_claimed >= coins {
         return Err(ContractError::IncentivesAlreadyClaimed {});
     }
 
     // subtract the current claim from all time claims
-    let this_claim = claim_coins.checked_sub(user_claimed)?;
+    let this_claim = coins.checked_sub(user_claimed)?;
 
     Ok(this_claim)
 }
 
 pub fn verify_proof(
     merkle_root: &String,
-    proof_str: &str,
+    proof: &str,
     to_verify: String,
 ) -> Result<(), ContractError> {
-    let proof: Proof = serde_json_wasm::from_str(proof_str).unwrap();
+    let proof: Proof = serde_json_wasm::from_str(proof).unwrap();
     let root = match base64::decode(merkle_root) {
         Ok(f) => f,
         Err(e) => {
