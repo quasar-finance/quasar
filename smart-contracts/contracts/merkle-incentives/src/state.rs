@@ -11,8 +11,8 @@ pub const INCENTIVES_ADMIN: Item<Addr> = Item::new("incentives_admin");
 
 #[cw_serde]
 pub struct MerkleProof {
-    pub is_left_sibling: String,
-    pub hash: String,
+    pub is_left_sibling: bool,
+    pub hash: Vec<u8>,
 }
 
 #[cw_serde]
