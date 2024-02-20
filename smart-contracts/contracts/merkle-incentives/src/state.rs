@@ -10,7 +10,7 @@ pub const MERKLE_ROOT: Item<String> = Item::new("merkle_root");
 pub const INCENTIVES_ADMIN: Item<Addr> = Item::new("incentives_admin");
 
 #[cw_serde]
-pub struct Proof {
+pub struct MerkleProof {
     pub is_left_sibling: String,
     pub hash: String,
 }
@@ -18,6 +18,6 @@ pub struct Proof {
 #[cw_serde]
 pub struct ClaimAccount {
     pub seed: String,
-    pub proofs: Vec<Proof>,
+    pub proofs: Vec<MerkleProof>,
     pub coins: CoinVec,
 }
