@@ -18,7 +18,7 @@ pub mod initialize {
 
         // Create new account with initial funds
         let admin = app
-            .init_account(&vec![Coin::new(100_000_000_000_000_000_000, "osmo")])
+            .init_account(&vec![Coin::new(100_000_000_000_000_000_000, "uosmo")])
             .unwrap();
 
         // Load compiled wasm bytecode

@@ -17,6 +17,16 @@ impl CoinVec {
         Self(vec![])
     }
 
+    // A getter method to access the coins
+    pub fn coins(&self) -> &Vec<Coin> {
+        &self.0
+    }
+
+    // If you need to mutate the coins, you can also have a getter for mutable reference
+    pub fn coins_mut(&mut self) -> &mut Vec<Coin> {
+        &mut self.0
+    }
+
     pub fn sort(&mut self) {
         self.0.sort_by(|a, b| a.denom.cmp(&b.denom));
     }
