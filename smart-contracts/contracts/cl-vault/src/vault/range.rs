@@ -25,7 +25,7 @@ use crate::{
         ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
         POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
-    vault::concentrated_liquidity::create_position,
+    vault::concentrated_liquidity::get_create_position_msg,
     vault::concentrated_liquidity::get_position,
     vault::merge::MergeResponse,
     vault::swap::swap,
@@ -186,18 +186,17 @@ pub fn handle_withdraw_position_reply(
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     // if only one token is being deposited, and we are moving into a position where any amount of the other token is needed,
-    // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
+    // creating the position here will fail because liquidityNeeded is calculated as 0 on the chain module level
     // we can fix this by going straight into a swap-deposit-merge before creating any positions
 
-    // todo: Check if needs LTE or just LT
-    // 0 token0 and current_tick > lower_tick
-    // 0 token1 and current_tick < upper_tick
-    // if (lower < current < upper) && amount0 == 0  || amount1 == 0
-    // also onesided but wrong token
-    // bad complexity demon, grug no like
-    if (amount0.is_zero() && pool_details.current_tick < modify_range_state.upper_tick)
-        || (amount1.is_zero() && pool_details.current_tick > modify_range_state.lower_tick)
-    {
+    // we swap token 1 to token 0 if we don't have any token 0 and the upper price is above the current price
+    let should_swap_1_to_0 =
+        amount0.is_zero() && pool_details.current_tick < modify_range_state.upper_tick;
+    // we swap token 0 to token 1 if we don't have any token 1 and the lower price is below the current price
+    let should_swap_0_to_1 =
+        amount1.is_zero() && pool_details.current_tick > modify_range_state.lower_tick;
+
+    if should_swap_1_to_0 || should_swap_0_to_1 {
         do_swap_deposit_merge(
             deps,
             env,
@@ -210,7 +209,7 @@ pub fn handle_withdraw_position_reply(
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
-        let create_position_msg = create_position(
+        let create_position_msg = get_create_position_msg(
             deps,
             &env,
             modify_range_state.lower_tick,
@@ -467,7 +466,7 @@ fn handle_swap_success(
             amount: balance1,
         });
     }
-    let create_position_msg = create_position(
+    let create_position_msg = get_create_position_msg(
         deps,
         &env,
         swap_deposit_merge_state.target_lower_tick,
