@@ -1921,7 +1921,6 @@ dependencies = [
  "serde",
  "serde-json-wasm 1.0.1",
  "thiserror",
- "tiny-bip39",
 ]
 
 [[package]]
@@ -2193,8 +2192,7 @@ dependencies = [
 [[package]]
 name = "osmosis-test-tube"
 version = "22.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a082b97136d15470a37aa758f227c865594590b69d74721248ed5adf59bf1ca2"
+source = "git+https://github.com/magiodev/test-tube.git?branch=feat/init_account_from_mnemonic#c1ce8bf8ad2584001ef1a6ed2b067ef8b4b4e200"
 dependencies = [
  "base64 0.21.7",
  "bindgen",
@@ -2213,15 +2211,6 @@ name = "paste"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
-
-[[package]]
-name = "pbkdf2"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83a0692ec44e4cf1ef28ca317f14f8f07da2d95ec3fa01f86e4467b725e60917"
-dependencies = [
- "digest 0.10.7",
-]
 
 [[package]]
 name = "pdqsort"
@@ -3459,8 +3448,7 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09184c7655b2bdaf4517b06141a2e4c44360904f2706a05b24c831bd97ad1db6"
+source = "git+https://github.com/magiodev/test-tube.git?branch=feat/init_account_from_mnemonic#c1ce8bf8ad2584001ef1a6ed2b067ef8b4b4e200"
 dependencies = [
  "base64 0.21.7",
  "cosmrs",
@@ -3514,25 +3502,6 @@ name = "time-macros"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42657b1a6f4d817cda8e7a0ace261fe0cc946cf3a80314390b22cc61ae080792"
-
-[[package]]
-name = "tiny-bip39"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62cc94d358b5a1e84a5cb9109f559aa3c4d634d2b1b4de3d0fa4adc7c78e2861"
-dependencies = [
- "anyhow",
- "hmac",
- "once_cell",
- "pbkdf2",
- "rand",
- "rustc-hash",
- "sha2 0.10.8",
- "thiserror",
- "unicode-normalization",
- "wasm-bindgen",
- "zeroize",
-]
 
 [[package]]
 name = "tinyvec"
