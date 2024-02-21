@@ -112,7 +112,7 @@ fn verify_proof_cmd(
     proof_path: std::path::PathBuf,
     to_verify: String,
 ) -> Result<(), Box<dyn Error>> {
-    let data = fs::read_to_string(&proof_path)?;
+    let data = fs::read_to_string(proof_path)?;
 
     let is_valid = controller::verify_proof(root, &data, to_verify)?;
 

@@ -23,10 +23,7 @@ impl Tree {
 
         builder::build_branch_levels(&mut nodes);
 
-        Tree {
-            leaf_count,
-            nodes: nodes,
-        }
+        Tree { leaf_count, nodes }
     }
 
     pub fn get_root(&self) -> Option<hash::Hash> {

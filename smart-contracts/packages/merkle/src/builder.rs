@@ -54,33 +54,33 @@ pub fn get_next_level_length(level_len: u128) -> u128 {
     }
 }
 
-/// TODO: spec
-fn calculate_tree_capacity<T>(items: &[T]) -> u128 {
-    let leaves_count = items.len() as u128;
-    let branch_node_count = round_up_power_of_two(items.len() as u128);
-    leaves_count + branch_node_count
-}
-
-/// round_up_power_of_two returns the next power of two
-/// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-fn round_up_power_of_two(n: u128) -> u128 {
-    let mut v = n;
-    v -= 1;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v += 1;
-    v
-}
-
 #[cfg(test)]
 mod tests {
     use crate::test_util;
     use std::{collections::HashMap, vec};
 
     use super::*;
+
+    /// TODO: spec
+    fn calculate_tree_capacity<T>(items: &[T]) -> u128 {
+        let leaves_count = items.len() as u128;
+        let branch_node_count = round_up_power_of_two(items.len() as u128);
+        leaves_count + branch_node_count
+    }
+
+    /// round_up_power_of_two returns the next power of two
+    /// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+    fn round_up_power_of_two(n: u128) -> u128 {
+        let mut v = n;
+        v -= 1;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v += 1;
+        v
+    }
 
     #[test]
     fn build_branch_level_one_node() {

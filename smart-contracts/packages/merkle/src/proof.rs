@@ -10,8 +10,8 @@ pub struct Entry {
 impl Entry {
     pub fn new(is_left_sibling: bool, hash: hash::Hash) -> Self {
         Entry {
-            is_left_sibling: is_left_sibling,
-            hash: hash,
+            is_left_sibling,
+            hash,
         }
     }
 }
@@ -23,7 +23,7 @@ impl Proof {
     pub fn push(&mut self, is_left_sibling: bool, hash: hash::Hash) {
         self.0.push(Entry {
             is_left_sibling,
-            hash: hash,
+            hash,
         })
     }
 
