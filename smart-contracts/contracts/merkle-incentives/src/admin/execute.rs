@@ -1,6 +1,5 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
-use merkle::hash::Hash;
 
 use crate::{
     state::{INCENTIVES_ADMIN, MERKLE_ROOT},

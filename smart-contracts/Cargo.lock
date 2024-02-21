@@ -2192,7 +2192,7 @@ dependencies = [
 [[package]]
 name = "osmosis-test-tube"
 version = "22.1.0"
-source = "git+https://github.com/magiodev/test-tube.git?branch=feat/init_account_from_mnemonic#c1ce8bf8ad2584001ef1a6ed2b067ef8b4b4e200"
+source = "git+https://github.com/magiodev/test-tube.git?rev=5cbde355e101070a5ff2fed9d9e5a76fc02c161d#5cbde355e101070a5ff2fed9d9e5a76fc02c161d"
 dependencies = [
  "base64 0.21.7",
  "bindgen",
@@ -3448,7 +3448,7 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.5.0"
-source = "git+https://github.com/magiodev/test-tube.git?branch=feat/init_account_from_mnemonic#c1ce8bf8ad2584001ef1a6ed2b067ef8b4b4e200"
+source = "git+https://github.com/magiodev/test-tube.git?rev=5cbde355e101070a5ff2fed9d9e5a76fc02c161d#5cbde355e101070a5ff2fed9d9e5a76fc02c161d"
 dependencies = [
  "base64 0.21.7",
  "cosmrs",
