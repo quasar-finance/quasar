@@ -65,7 +65,7 @@ impl QuasarQuerier {
         new_states
             .into_iter()
             .for_each(|(address, shares, balance)| {
-                let val = self
+                let mut val = self
                     .primitive_states
                     .iter_mut()
                     .find(|(prim_addr, _, _, _)| prim_addr == address)
@@ -2122,7 +2122,7 @@ fn test_dup_token_deposits() {
 
     for deposit_amount in deposit_amounts {
         // test params
-        let weights = [
+        let weights = vec![
             Decimal::from_str("0.2").unwrap(),
             Decimal::from_str("0.3").unwrap(),
             Decimal::from_str("0.5").unwrap(),

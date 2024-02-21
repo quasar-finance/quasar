@@ -1,7 +1,6 @@
 use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
-use crate::state::DEX_ROUTER;
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use crate::{
@@ -12,7 +11,7 @@ use crate::{
     },
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Order, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 
@@ -49,7 +48,6 @@ pub struct AssetsBalanceResponse {
 
 #[cw_serde]
 pub struct UserSharesBalanceResponse {
-    pub address: String,
     pub balance: Uint128,
 }
 
@@ -114,15 +112,6 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
     })
 }
 
-pub fn query_dex_router(deps: Deps) -> ContractResult<Option<String>> {
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-
-    match dex_router {
-        Some(dex_router) => Ok(Some(dex_router.to_string())),
-        _ => Ok(None),
-    }
-}
-
 pub fn query_info(deps: Deps) -> ContractResult<VaultInfoResponse> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let vault_token = VAULT_DENOM.load(deps.storage)?;
@@ -177,33 +166,7 @@ pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserShares
     let balance = SHARES
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?
         .unwrap_or(Uint128::zero());
-    Ok(UserSharesBalanceResponse {
-        balance,
-        address: user,
-    })
-}
-
-pub fn query_all_users_balance(
-    deps: Deps,
-    offset: Option<u64>,
-    limit: Option<u64>,
-) -> ContractResult<Vec<UserSharesBalanceResponse>> {
-    let offset = offset.unwrap_or(0);
-    let limit = limit.unwrap_or(200 as u64); // todo: check if this is a good default
-
-    // todo: would the below be sufficient to avoid any gas issues?
-    SHARES
-        .range(deps.storage, None, None, Order::Ascending)
-        .skip(offset as usize)
-        .take(limit as usize)
-        .map(|item| {
-            let (address, balance) = item?;
-            Ok(UserSharesBalanceResponse {
-                address: address.to_string(),
-                balance,
-            })
-        })
-        .collect()
+    Ok(UserSharesBalanceResponse { balance })
 }
 
 pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserRewardsResponse> {

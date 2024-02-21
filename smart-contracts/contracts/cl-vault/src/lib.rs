@@ -4,7 +4,7 @@ pub mod helpers;
 mod instantiate;
 mod math;
 pub mod msg;
-pub mod query;
+mod query;
 mod reply;
 mod rewards;
 pub mod state;

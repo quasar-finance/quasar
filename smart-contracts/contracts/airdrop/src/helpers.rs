@@ -217,7 +217,7 @@ mod tests {
             },
             err
         );
-        let _resp = validate_amount(User {
+        let resp = validate_amount(User {
             address: "test".to_string(),
             amount: Uint128::new(10),
         })
