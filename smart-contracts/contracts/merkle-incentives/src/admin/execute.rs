@@ -6,7 +6,7 @@ use crate::{
     ContractError,
 };
 
-use super::helpers::{is_contract_admin, is_contract_or_incentives_admin, is_incentives_admin};
+use super::helpers::{is_contract_admin, is_incentives_admin};
 
 #[cw_serde]
 pub enum AdminExecuteMsg {
@@ -20,10 +20,9 @@ pub fn execute_admin_msg(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    admin_msg: AdminExecuteMsg,
+    msg: AdminExecuteMsg,
 ) -> Result<Response, ContractError> {
-    is_contract_admin(&deps.querier, &env, &info.sender)?;
-    match admin_msg {
+    match msg {
         AdminExecuteMsg::UpdateMerkleRoot { new_root } => {
             update_merkle_root(deps, env, info, new_root)
         }
@@ -47,13 +46,13 @@ pub fn update_merkle_root(
 pub fn update_admin(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     new_admin: String,
 ) -> Result<Response, ContractError> {
-    let new_admin_addr = deps.api.addr_validate(&new_admin)?;
-    is_contract_or_incentives_admin(deps.as_ref(), &env, &new_admin_addr)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
 
-    INCENTIVES_ADMIN.save(deps.storage, &new_admin_addr)?;
+    let address_validated = deps.api.addr_validate(&new_admin)?;
+    INCENTIVES_ADMIN.save(deps.storage, &address_validated)?;
 
     Ok(Response::default())
 }

@@ -33,10 +33,7 @@ pub mod initialize {
         let contract = wasm
             .instantiate(
                 code_id,
-                &InstantiateMsg {
-                    range_submitter_admin: admin.address(),
-                    range_executor_admin: admin.address(),
-                },
+                &InstantiateMsg {},
                 Some(admin.address().as_str()),
                 Some("merkle-incentives"),
                 &[],

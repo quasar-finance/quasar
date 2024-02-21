@@ -7,10 +7,7 @@ use crate::{
 };
 
 #[cw_serde]
-pub struct InstantiateMsg {
-    pub range_submitter_admin: String,
-    pub range_executor_admin: String,
-}
+pub struct InstantiateMsg {}
 
 #[cw_serde]
 pub enum ExecuteMsg {

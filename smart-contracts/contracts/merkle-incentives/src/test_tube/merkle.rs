@@ -158,19 +158,19 @@ mod tests {
         );
 
         // TODO: Execute AdminMsg::UpdateAdmin
-        // let new_admin = app
-        //     .init_account(&[Coin::new(1_000_000_000, "uosmo")])
-        //     .unwrap();
-        // let _ = wasm
-        //     .execute(
-        //         contract.as_str(),
-        //         &ExecuteMsg::AdminMsg(AdminExecuteMsg::UpdateAdmin {
-        //             new_admin: new_admin.address(),
-        //         }),
-        //         &[],
-        //         &admin,
-        //     )
-        //     .unwrap();
+        let new_admin = app
+            .init_account(&[Coin::new(1_000_000_000, "uosmo")])
+            .unwrap();
+        let _ = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::AdminMsg(AdminExecuteMsg::UpdateAdmin {
+                    new_admin: new_admin.address(),
+                }),
+                &[],
+                &admin,
+            )
+            .unwrap();
         // TODO: Assert admin changed and queriable
 
         // Execute AdminMsg::UpdateMerkleRoot
@@ -183,7 +183,7 @@ mod tests {
                     new_root: merkle_root.to_string(),
                 }),
                 &[],
-                &admin,
+                &new_admin,
             )
             .unwrap();
 
