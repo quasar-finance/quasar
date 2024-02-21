@@ -14,8 +14,7 @@ pub struct MerkleProof {
 }
 
 #[cw_serde]
-pub struct ClaimAccount<'a> {
-    pub mnemonic: &'a str,
+pub struct ClaimAccount {
     pub proofs: Vec<MerkleProof>,
     pub coins: CoinVec,
 }

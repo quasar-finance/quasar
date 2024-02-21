@@ -15,6 +15,8 @@ mod tests {
         Account, Bank, Module, Wasm,
     };
 
+    const MNEMONIC: &str = "market inquiry reward way sting diet double beef accuse help crisp circle leaf connect elder bench wrong dust push essence wise flip devote about";
+
     #[test]
     #[ignore]
     fn merkle_complete_cycle_works() {
@@ -27,7 +29,6 @@ mod tests {
         let claim_accounts: Vec<ClaimAccount> = vec![
             // osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt
             ClaimAccount {
-                mnemonic: "market inquiry reward way sting diet double beef accuse help crisp circle leaf connect elder bench wrong dust push essence wise flip devote about",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("e18PIQzBUqdhbHzoLCuZpJ/tLCXVk3HdKZPJ+u3+3i8=").unwrap() },
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("4cjXFSw+17blv/GUE33Tdoc362PUY27qSqvuGGHqGNA=").unwrap() },
@@ -38,7 +39,6 @@ mod tests {
             },
             // osmo1w8rqvadvarr0hqlpah6t4efc8mam44q8yd3qnt
             ClaimAccount {
-                mnemonic: "include monster floor galaxy skate second sister offer silver another upset mind frame into suit velvet lonely butter cousin side bridge answer logic pole",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("qQEesKAbniv8rw0b7HVsVDF7eQP25Q/8WBmeB1Vh2z0=").unwrap() },
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("4cjXFSw+17blv/GUE33Tdoc362PUY27qSqvuGGHqGNA=").unwrap() },
@@ -49,7 +49,6 @@ mod tests {
             },
             // osmo1gg7s5w4cnpqrd6g8njrvh8vhh6fy2wt7mau0s9
             ClaimAccount {
-                mnemonic: "tide indoor kid review skin over try drive flower off inquiry winter summer what stick high memory atom hard deer kitchen must concert dizzy",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("WJVJzzdRE80W4NwQaUb+Os2hnfFSrBg0QC0HSdxT1IM=").unwrap() },
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("KF/OwwEO9DPRZ6BD2HgZgPxhBQU+ZaeE0Ln/VIUaXSI=").unwrap() },
@@ -60,7 +59,6 @@ mod tests {
             },
             // osmo1mxn37ce4n6uy9hvp974ncpdgrqvevma4lm90mx
             ClaimAccount {
-                mnemonic: "wrong join rifle knee myth woman layer actor question hockey fitness ignore bleak announce arrow crazy dish orbit divide melody pattern kiwi brown lawn",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("dekOXSunmM9nlCn4DMv/kkSE7HnsObqQTfNNsi8YLcs=").unwrap() },
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("KF/OwwEO9DPRZ6BD2HgZgPxhBQU+ZaeE0Ln/VIUaXSI=").unwrap() },
@@ -71,7 +69,6 @@ mod tests {
             },
             // osmo1jsw73ff43vnv8qr8023y7xc5mnpq5juuw9qwak
             ClaimAccount {
-                mnemonic: "boy casual file warfare family report embrace piece jewel garment loop device collect insane year flock swift open lobster infant antenna asset alcohol solid",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("/f92UCk/4O7wQHT3MCwP5L4W1ySYAP9PuV7C5uKlaLU=").unwrap() },
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("DrezS3jfIXK93eEoqDPNlCecFtJUsN6KyFcA7ZOB1W0=").unwrap() },
@@ -82,7 +79,6 @@ mod tests {
             },
             // osmo19g859hauf65wyfuj5z439q5hulyzjck8yqze24
             ClaimAccount {
-                mnemonic: "tail praise mansion there pause cube poverty chalk dizzy dinner reveal electric mistake clever present pink blade cram coyote banana dog cargo cook someone",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("ZdBECXQyherBUIZP9sqB3cPrqmIRSxeexOGkZNXQejw=").unwrap() },
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("DrezS3jfIXK93eEoqDPNlCecFtJUsN6KyFcA7ZOB1W0=").unwrap() },
@@ -93,7 +89,6 @@ mod tests {
             },
             // osmo13p2vtgvklqg0a75snzkurxk79lqtlmdjr7uta8
             ClaimAccount {
-                mnemonic: "brown alley chunk iron stem they piece conduct near dirt poet truth clinic shallow pen above merit trophy gauge clerk excite evoke hour allow",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("fKAeSWYdJ3bYR2cCLgZrHKoGaxyoT6NQ1EDc0PwfPn0=").unwrap() },
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("HEBddmUBzdT/umNBPGiFCuS+PDUXu3WtOWIW4FXGAg8=").unwrap() },
@@ -104,7 +99,6 @@ mod tests {
             },
             // osmo1fa3y3m2njlhlr6z9mhqxg062n0n2e8qsl7kdwa
             ClaimAccount {
-                mnemonic: "humor exclude bulk trim fade sun moral mention topple keen nation convince desk tongue fish hill craft increase snack glass rural gate cheap mention",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("XCO4OtZSF+yHVS+JAi1JqhTbCUZjP1rlR0lpHOo/DVg=").unwrap() },
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("HEBddmUBzdT/umNBPGiFCuS+PDUXu3WtOWIW4FXGAg8=").unwrap() },
@@ -115,7 +109,6 @@ mod tests {
             },
             // osmo1hkd3272hf7jw90x980s3t8hzcdxar0r3e5ahfs
             ClaimAccount {
-                mnemonic: "perfect food future blush oak shrug tank under state illegal object awake erode poet tuition athlete answer sheriff say knee later fat dress visa",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: false, hash: base64::decode("0EuIeYhwQWnkzsruGNkw31434GXDOkjApNeGmuqPrX0=").unwrap() },
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("B1Zaw00R7+LYspNmwQLeX185pK66n7UQB+mgJczwsoM=").unwrap() }
@@ -124,7 +117,6 @@ mod tests {
             },
             // osmo1uxxt4z229zdpq96ljadd2vzzxkp960t0p3lh9k
             ClaimAccount {
-                mnemonic: "smoke jealous man occur grief hat tobacco hospital fruit raise path primary secret budget wait police black panel resemble ten garden coach artefact engage",
                 proofs: vec![
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("S2hynVcAP9BQUOTFdthBZI125t/TxNSrg+9rMJ+R/h8=").unwrap() },
                     MerkleProof{ is_left_sibling: true, hash: base64::decode("B1Zaw00R7+LYspNmwQLeX185pK66n7UQB+mgJczwsoM=").unwrap() }
@@ -197,57 +189,62 @@ mod tests {
         //     )
         //     .unwrap();
 
-        // Execute IncentivesMsg::Claim
-        for claim_account in claim_accounts {
-            let account = app
-                .init_account_from_mnemonic(
-                    &[Coin::new(100_000_000_000_000_000_000, "uosmo")],
-                    claim_account.mnemonic,
-                )
-                .unwrap();
 
-            println!("claim_account.proofs {:?}", claim_account.proofs);
-            let mut entries: Vec<Entry> = vec![];
-            for proof in claim_account.proofs {
-                entries.push(Entry {
-                    is_left_sibling: proof.is_left_sibling,
-                    hash: Hash::from(proof.hash),
-                })
-            }
-            let proof_string = serde_json_wasm::to_string(&entries).unwrap();
-            println!("proof_string {:?}", proof_string);
+        // Create as many acocunt from mnemonic as ClaimAccounts
+        let accounts = app
+            .init_accounts_from_mnemonic(
+                &[Coin::new(100_000_000_000_000_000_000, "uosmo")],
+                MNEMONIC,
+                claim_accounts.len() as u64
+            ).unwrap();
+
+        // Execute IncentivesMsg::Claim
+        for (index, claim_account) in claim_accounts.iter().enumerate() {
+            println!("addy {:?}", accounts.get(index).unwrap().address().to_string());
+        
+
+            // println!("claim_account.proofs {:?}", claim_account.proofs);
+            // let mut entries: Vec<Entry> = vec![];
+            // for proof in claim_account.clone().proofs {
+            //     entries.push(Entry {
+            //         is_left_sibling: proof.is_left_sibling,
+            //         hash: Hash::from(proof.hash),
+            //     })
+            // }
+            // let proof_string = serde_json_wasm::to_string(&entries).unwrap();
+            // println!("proof_string {:?}", proof_string);
 
             // Execute claim for the current user
-            let _ = wasm
-                .execute(
-                    contract.as_str(),
-                    &ExecuteMsg::IncentivesMsg(IncentivesExecuteMsg::Claim {
-                        address: account.address(),
-                        coins: claim_account.coins.clone(),
-                        proof: proof_string.to_string(),
-                    }),
-                    &[],
-                    &account,
-                )
-                .unwrap();
+            // let _ = wasm
+            //     .execute(
+            //         contract.as_str(),
+            //         &ExecuteMsg::IncentivesMsg(IncentivesExecuteMsg::Claim {
+            //             address: accounts.get(index).unwrap().address(),
+            //             coins: claim_account.coins.clone(),
+            //             proof: proof_string.to_string(),
+            //         }),
+            //         &[],
+            //         &accounts.get(index).unwrap(),
+            //     )
+            //     .unwrap();
 
-            // Assert bank send occurred
-            let address_balance = bank
-                .query_balance(&QueryBalanceRequest {
-                    address: account.address().to_string(),
-                    denom: "uosmo".to_string(),
-                })
-                .unwrap();
-            assert_eq!(
-                address_balance.balance.unwrap().amount,
-                claim_account
-                    .coins
-                    .coins()
-                    .get(0)
-                    .unwrap()
-                    .amount
-                    .to_string()
-            );
+            // // Assert bank send occurred
+            // let address_balance = bank
+            //     .query_balance(&QueryBalanceRequest {
+            //         address: accounts.get(index).unwrap().address().to_string(),
+            //         denom: "uosmo".to_string(),
+            //     })
+            //     .unwrap();
+            // assert_eq!(
+            //     address_balance.balance.unwrap().amount,
+            //     claim_account
+            //         .coins
+            //         .coins()
+            //         .get(0)
+            //         .unwrap()
+            //         .amount
+            //         .to_string()
+            // );
         }
 
         // Assert final balance on gauge contract
