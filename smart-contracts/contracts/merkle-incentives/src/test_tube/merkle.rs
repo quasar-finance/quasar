@@ -157,7 +157,7 @@ mod tests {
             "1000000000000000000".to_string()
         );
 
-        // TODO: Execute AdminMsg::UpdateAdmin
+        // Execute AdminMsg::UpdateAdmin
         let new_admin = app
             .init_account(&[Coin::new(1_000_000_000, "uosmo")])
             .unwrap();
@@ -171,9 +171,10 @@ mod tests {
                 &admin,
             )
             .unwrap();
+
         // TODO: Assert admin changed and queriable
 
-        // Execute AdminMsg::UpdateMerkleRoot
+        // AdminMsg::UpdateMerkleRoot
         // https://github.com/quasar-finance/merkle-incentives/blob/main/incentives/contracts/osmo1u4ppw4mxp00znxq5ll834dgr7ctd7jrp5hrzshch5ngfpwmp2fqsputgsx/merkle/100001.json#L3
         let merkle_root: &str = "iGptCz22uFWoIxkwaqRzv5xV5DMnGz+hJntxP2YVsro=";
         let _ = wasm
@@ -209,6 +210,7 @@ mod tests {
             let proof = serde_json_wasm::to_string(&claim_account.proofs)
                 .expect("Failed to serialize proofs");
 
+            // Execute claim for the current user
             let _ = wasm
                 .execute(
                     contract.as_str(),
@@ -222,7 +224,7 @@ mod tests {
                 )
                 .unwrap();
 
-            // TODO: Assert bank send occurred
+            // Assert bank send occurred
             let address_balace = bank
                 .query_balance(&QueryBalanceRequest {
                     address: account.address().to_string(),
