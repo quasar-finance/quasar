@@ -3,42 +3,40 @@ use crate::{
     error::ContractError,
     state::{CLAIMED_INCENTIVES, MERKLE_ROOT},
 };
-use cosmwasm_std::{Addr, BankMsg, Deps, Storage};
+use cosmwasm_std::{Addr, Deps};
 use merkle::{hash::Hash, proof::Proof};
 
 pub fn is_valid_claim(
     deps: Deps,
-    for_user: Addr,
-    claim_coins: &CoinVec,
-    proof_str: String,
+    address: Addr,
+    coins: &CoinVec,
+    proof: String,
 ) -> Result<CoinVec, ContractError> {
     // the format of this will look like "addr1000utokena2000utokenb"
-    let claim = format!("{}{}", for_user.to_string(), claim_coins.to_string());
+    let claim = format!("{}{}", address.to_string(), coins.to_string());
 
     let merkle_root = MERKLE_ROOT.load(deps.storage)?;
+    deps.api
+        .debug(format!("merkle_root {:?}", merkle_root).as_str());
 
-    verify_proof(&merkle_root, &proof_str, claim)?;
+    verify_proof(&merkle_root, &proof, &claim)?;
 
     let user_claimed = CLAIMED_INCENTIVES
-        .load(deps.storage, for_user.clone())
+        .load(deps.storage, address.clone())
         .unwrap_or(CoinVec::new());
 
-    if &user_claimed >= claim_coins {
+    if &user_claimed >= coins {
         return Err(ContractError::IncentivesAlreadyClaimed {});
     }
 
     // subtract the current claim from all time claims
-    let this_claim = claim_coins.checked_sub(user_claimed)?;
+    let this_claim = coins.checked_sub(user_claimed)?;
 
     Ok(this_claim)
 }
 
-pub fn verify_proof(
-    merkle_root: &String,
-    proof_str: &str,
-    to_verify: String,
-) -> Result<(), ContractError> {
-    let proof: Proof = serde_json_wasm::from_str(proof_str).unwrap();
+pub fn verify_proof(merkle_root: &str, proof: &str, to_verify: &str) -> Result<(), ContractError> {
+    let proof: Proof = serde_json_wasm::from_str(proof).unwrap();
     let root = match base64::decode(merkle_root) {
         Ok(f) => f,
         Err(e) => {
@@ -74,7 +72,7 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
         let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
-        let to_verify = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz".to_string();
+        let to_verify = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz";
 
         verify_proof(&merkle_root.to_string(), proof_str, to_verify).unwrap();
     }
@@ -84,7 +82,7 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let invalid_merkle_root = "INVALIDROOTRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
         let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
-        let to_verify = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz".to_string();
+        let to_verify = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz";
 
         let result = verify_proof(&invalid_merkle_root.to_string(), proof_str, to_verify);
 
@@ -100,8 +98,7 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
         let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
-        let to_verify_invalid =
-            "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo10uxyz".to_string(); // 9 extra uxyz attempted
+        let to_verify_invalid = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo10uxyz"; // 9 extra uxyz attempted
 
         let result = verify_proof(&merkle_root.to_string(), proof_str, to_verify_invalid);
         println!("Result: {:?}", result);

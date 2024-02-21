@@ -6,4 +6,7 @@ pub mod incentives;
 pub mod msg;
 pub mod state;
 
+#[cfg(test)]
+mod test_tube;
+
 pub use crate::error::ContractError;

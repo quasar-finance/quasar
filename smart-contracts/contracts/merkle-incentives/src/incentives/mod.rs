@@ -1,8 +1,7 @@
 use core::fmt;
-use std::ops::Sub;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Coin, OverflowError, Querier, StdError, Uint128};
+use cosmwasm_std::{Coin, OverflowError, Uint128};
 
 use crate::ContractError;
 
@@ -16,6 +15,16 @@ pub struct CoinVec(Vec<Coin>);
 impl CoinVec {
     pub fn new() -> Self {
         Self(vec![])
+    }
+
+    // A getter method to access the coins
+    pub fn coins(&self) -> &Vec<Coin> {
+        &self.0
+    }
+
+    // If you need to mutate the coins, you can also have a getter for mutable reference
+    pub fn coins_mut(&mut self) -> &mut Vec<Coin> {
+        &mut self.0
     }
 
     pub fn sort(&mut self) {
