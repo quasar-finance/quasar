@@ -67,24 +67,32 @@ mod tests {
 
     use super::verify_proof;
 
+    const MERKLE_ROOT_STRING: &str = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
+    const USER_MERKLE_PROOF: &str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
+    const USER_ADDRESS: &str = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p4";
+    const TO_VERIFY: &str = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz";
+
     #[test]
     fn test_verify_success() {
         // this test is taken directly from the testdata. See the README.md of this contract
-        let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
-        let to_verify = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz";
-
-        verify_proof(&merkle_root.to_string(), proof_str, to_verify).unwrap();
+        verify_proof(
+            &MERKLE_ROOT_STRING.to_string(),
+            USER_MERKLE_PROOF,
+            TO_VERIFY,
+        )
+        .unwrap();
     }
 
     #[test]
     fn test_verify_err() {
         // this test is taken directly from the testdata. See the README.md of this contract
         let invalid_merkle_root = "INVALIDROOTRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
-        let to_verify = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz";
 
-        let result = verify_proof(&invalid_merkle_root.to_string(), proof_str, to_verify);
+        let result = verify_proof(
+            &invalid_merkle_root.to_string(),
+            USER_MERKLE_PROOF,
+            TO_VERIFY,
+        );
 
         if let Err(ContractError::FailedVerifyProof {}) = result {
             assert!(true); // expected
@@ -96,11 +104,13 @@ mod tests {
     #[test]
     fn test_verify_bad_claim() {
         // this test is taken directly from the testdata. See the README.md of this contract
-        let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
         let to_verify_invalid = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo10uxyz"; // 9 extra uxyz attempted
 
-        let result = verify_proof(&merkle_root.to_string(), proof_str, to_verify_invalid);
+        let result = verify_proof(
+            &MERKLE_ROOT_STRING.to_string(),
+            USER_MERKLE_PROOF,
+            to_verify_invalid,
+        );
         println!("Result: {:?}", result);
         if let Err(ContractError::FailedVerifyProof {}) = result {
             assert!(true); // expected
@@ -114,8 +124,6 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let mut deps = mock_dependencies();
 
-        let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
         let claim_coins = vec![
             // notice these are not alphabetically sorted
             Coin {
@@ -127,17 +135,16 @@ mod tests {
                 amount: Uint128::from(7u128),
             },
         ];
-        let for_user = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p4";
 
         MERKLE_ROOT
-            .save(deps.as_mut().storage, &merkle_root.to_string())
+            .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
             .unwrap();
 
         let result = super::is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(for_user),
+            Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
-            proof_str.to_string(),
+            USER_MERKLE_PROOF.to_string(),
         );
 
         assert_eq!(result.unwrap(), claim_coins.into());
@@ -148,8 +155,6 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let mut deps = mock_dependencies();
 
-        let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
         let claim_coins = vec![
             // notice these are not alphabetically sorted
             Coin {
@@ -161,16 +166,15 @@ mod tests {
                 amount: Uint128::from(7u128),
             },
         ];
-        let for_user = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p4";
 
         MERKLE_ROOT
-            .save(deps.as_mut().storage, &merkle_root.to_string())
+            .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
             .unwrap();
 
         CLAIMED_INCENTIVES
             .save(
                 deps.as_mut().storage,
-                Addr::unchecked(for_user),
+                Addr::unchecked(USER_ADDRESS),
                 &CoinVec(vec![Coin {
                     denom: "uosmo".to_string(),
                     amount: Uint128::from(3u128),
@@ -180,9 +184,9 @@ mod tests {
 
         let result = super::is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(for_user),
+            Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
-            proof_str.to_string(),
+            USER_MERKLE_PROOF.to_string(),
         );
 
         let expected_claim = vec![
@@ -204,8 +208,6 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let mut deps = mock_dependencies();
 
-        let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
         let claim_coins = vec![
             // notice these are not alphabetically sorted
             Coin {
@@ -217,16 +219,15 @@ mod tests {
                 amount: Uint128::from(7u128),
             },
         ];
-        let for_user = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p4";
 
         MERKLE_ROOT
-            .save(deps.as_mut().storage, &merkle_root.to_string())
+            .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
             .unwrap();
 
         CLAIMED_INCENTIVES
             .save(
                 deps.as_mut().storage,
-                Addr::unchecked(for_user),
+                Addr::unchecked(USER_ADDRESS),
                 &CoinVec(vec![
                     Coin {
                         denom: "uosmo".to_string(),
@@ -242,9 +243,9 @@ mod tests {
 
         let result = super::is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(for_user),
+            Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
-            proof_str.to_string(),
+            USER_MERKLE_PROOF.to_string(),
         );
         if let Err(ContractError::IncentivesAlreadyClaimed {}) = result {
             assert!(true); // expected
@@ -258,8 +259,6 @@ mod tests {
         // this test is taken directly from the testdata. See the README.md of this contract
         let mut deps = mock_dependencies();
 
-        let merkle_root = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-        let proof_str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
         let claim_coins = vec![
             // notice these are not alphabetically sorted
             Coin {
@@ -271,16 +270,15 @@ mod tests {
                 amount: Uint128::from(8u128), // trying to claim too much of uosmo
             },
         ];
-        let for_user = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p4";
 
         MERKLE_ROOT
-            .save(deps.as_mut().storage, &merkle_root.to_string())
+            .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
             .unwrap();
 
         CLAIMED_INCENTIVES
             .save(
                 deps.as_mut().storage,
-                Addr::unchecked(for_user),
+                Addr::unchecked(USER_ADDRESS),
                 &CoinVec(vec![
                     Coin {
                         denom: "uosmo".to_string(),
@@ -296,9 +294,9 @@ mod tests {
 
         let result = super::is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(for_user),
+            Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
-            proof_str.to_string(),
+            USER_MERKLE_PROOF.to_string(),
         );
         if let Err(ContractError::FailedVerifyProof {}) = result {
             assert!(true); // expected
