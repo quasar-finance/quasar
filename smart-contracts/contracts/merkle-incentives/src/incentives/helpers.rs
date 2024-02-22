@@ -72,14 +72,15 @@ pub fn verify_proof(
 mod tests {
     use crate::{incentives::helpers::verify_proof, ContractError};
 
+    // Test constants
     const MERKLE_ROOT_STRING: &str = "0hGvbH+l9pdPgOmJY6wZuwjsrvtPsuslgTURavrUP6I=";
     const MERKLE_ROOT_INVALID_STRING: &str = "INVALIDROOTRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
     const CLAIM_PROOF_STRING: &str = "osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt900000000ugauge";
     const CLAIM_PROOF_INVALID_STRING: &str =
         "osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt999999999ugauge";
 
-    #[test]
-    fn test_verify_success() {
+    // Utils functions
+    fn get_proof_hashes() -> Vec<[u8; 32]> {
         let proof = vec![
             base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
             base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
@@ -96,10 +97,14 @@ mod tests {
                 eprintln!("Error: Hash is not 32 bytes.");
             }
         }
+        proof_hashes
+    }
 
+    #[test]
+    fn test_verify_success() {
         verify_proof(
             &MERKLE_ROOT_STRING.to_string(),
-            proof_hashes,
+            get_proof_hashes(),
             &[0usize],
             10usize,
             CLAIM_PROOF_STRING,
@@ -109,26 +114,9 @@ mod tests {
 
     #[test]
     fn test_verify_bad_root() {
-        let proof = vec![
-            base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
-            base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
-            base64::decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=").unwrap(),
-            base64::decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=").unwrap(),
-        ];
-        let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
-        for proof in &proof {
-            if proof.len() == 32 {
-                let mut arr = [0u8; 32];
-                arr.copy_from_slice(&proof);
-                proof_hashes.push(arr);
-            } else {
-                eprintln!("Error: Hash is not 32 bytes.");
-            }
-        }
-
         let result = verify_proof(
             &MERKLE_ROOT_INVALID_STRING.to_string(),
-            proof_hashes,
+            get_proof_hashes(),
             &[0usize],
             10usize,
             CLAIM_PROOF_STRING,
@@ -143,26 +131,9 @@ mod tests {
 
     #[test]
     fn test_verify_bad_claim() {
-        let proof = vec![
-            base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
-            base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
-            base64::decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=").unwrap(),
-            base64::decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=").unwrap(),
-        ];
-        let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
-        for proof in &proof {
-            if proof.len() == 32 {
-                let mut arr = [0u8; 32];
-                arr.copy_from_slice(&proof);
-                proof_hashes.push(arr);
-            } else {
-                eprintln!("Error: Hash is not 32 bytes.");
-            }
-        }
-
         let result = verify_proof(
             &MERKLE_ROOT_STRING.to_string(),
-            proof_hashes,
+            get_proof_hashes(),
             &[0usize],
             10usize,
             CLAIM_PROOF_INVALID_STRING,
