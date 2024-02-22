@@ -16,7 +16,7 @@ pub enum AdminExecuteMsg {
     UpdateMerkleRoot { new_root: String },
 }
 
-pub fn match_execute_admin(
+pub fn handle_execute_admin(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,

@@ -11,7 +11,7 @@ pub enum AdminQueryMsg {
     GetIncentivesAdmin {},
 }
 
-pub fn match_query_admin(deps: Deps, _env: Env, query_msg: AdminQueryMsg) -> StdResult<Binary> {
+pub fn handle_query_admin(deps: Deps, _env: Env, query_msg: AdminQueryMsg) -> StdResult<Binary> {
     match query_msg {
         AdminQueryMsg::GetIncentivesAdmin {} => query_incentives_admin(deps),
     }

@@ -22,7 +22,7 @@ pub enum IncentivesQueryMsg {
     },
 }
 
-pub fn match_query_incentives(
+pub fn handle_query_incentives(
     deps: Deps,
     _env: Env,
     query_msg: IncentivesQueryMsg,

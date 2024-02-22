@@ -3,11 +3,11 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 
-use crate::admin::execute::match_execute_admin;
-use crate::admin::query::match_query_admin;
+use crate::admin::execute::handle_execute_admin;
+use crate::admin::query::handle_query_admin;
 use crate::error::ContractError;
-use crate::incentives::execute::match_execute_incentives;
-use crate::incentives::query::match_query_incentives;
+use crate::incentives::execute::handle_execute_incentives;
+use crate::incentives::query::handle_query_incentives;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::INCENTIVES_ADMIN;
 
@@ -38,17 +38,17 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::IncentivesMsg(incentives_msg) => {
-            match_execute_incentives(deps, info, incentives_msg)
+            handle_execute_incentives(deps, info, incentives_msg)
         }
-        ExecuteMsg::AdminMsg(admin_msg) => match_execute_admin(deps, env, info, admin_msg),
+        ExecuteMsg::AdminMsg(admin_msg) => handle_execute_admin(deps, env, info, admin_msg),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::IncentivesQuery(range_query) => match_query_incentives(deps, env, range_query),
-        QueryMsg::AdminQuery(admin_query) => match_query_admin(deps, env, admin_query),
+        QueryMsg::IncentivesQuery(range_query) => handle_query_incentives(deps, env, range_query),
+        QueryMsg::AdminQuery(admin_query) => handle_query_admin(deps, env, admin_query),
     }
 }
 

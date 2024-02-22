@@ -15,7 +15,7 @@ pub enum IncentivesExecuteMsg {
     },
 }
 
-pub fn match_execute_incentives(
+pub fn handle_execute_incentives(
     deps: DepsMut,
     info: MessageInfo,
     incentives_msg: IncentivesExecuteMsg,
