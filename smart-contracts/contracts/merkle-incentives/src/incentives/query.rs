@@ -16,7 +16,9 @@ pub enum IncentivesQueryMsg {
     IsValidClaim {
         address: String,
         coins: CoinVec,
-        proof: String,
+        proof_hashes: Vec<[u8; 32]>,
+        leaf_index: usize,
+        total_leaves_count: usize,
     },
 }
 
@@ -26,8 +28,17 @@ pub fn query_incentives(deps: Deps, _env: Env, query_msg: IncentivesQueryMsg) ->
         IncentivesQueryMsg::IsValidClaim {
             address,
             coins,
-            proof,
-        } => is_valid_claim(deps, address, coins, proof),
+            proof_hashes,
+            leaf_index,
+            total_leaves_count,
+        } => is_valid_claim(
+            deps,
+            address,
+            coins,
+            proof_hashes,
+            leaf_index,
+            total_leaves_count,
+        ),
     }
 }
 
@@ -41,10 +52,19 @@ pub fn is_valid_claim(
     deps: Deps,
     address: String,
     coins: CoinVec,
-    proof: String,
+    proof_hashes: Vec<[u8; 32]>,
+    leaf_index: usize,
+    total_leaves_count: usize,
 ) -> StdResult<Binary> {
     let address_validated = deps.api.addr_validate(&address)?;
-    match super::helpers::is_valid_claim(deps, address_validated, &coins, proof) {
+    match super::helpers::is_valid_claim(
+        deps,
+        address_validated,
+        &coins,
+        proof_hashes,
+        leaf_index,
+        total_leaves_count,
+    ) {
         Ok(_coins) => to_json_binary(&true),
         Err(_err) => to_json_binary(&false),
     }

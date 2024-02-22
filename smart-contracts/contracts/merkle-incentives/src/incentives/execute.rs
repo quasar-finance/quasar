@@ -9,9 +9,10 @@ use super::{helpers::is_valid_claim, CoinVec};
 pub enum IncentivesExecuteMsg {
     /// Submit a range to the range middleware
     Claim {
-        address: String,
         coins: CoinVec,
-        proof: String,
+        proof_hashes: Vec<[u8; 32]>,
+        leaf_index: usize,
+        total_leaves_count: usize,
     },
 }
 
@@ -23,34 +24,51 @@ pub fn execute_incentives_msg(
 ) -> Result<Response, ContractError> {
     match incentives_msg {
         IncentivesExecuteMsg::Claim {
-            address,
             coins,
-            proof,
-        } => execute_claim(deps, env, info, address, coins, proof),
+            proof_hashes,
+            leaf_index,
+            total_leaves_count,
+        } => execute_claim(
+            deps,
+            env,
+            info,
+            coins,
+            proof_hashes,
+            leaf_index,
+            total_leaves_count,
+        ),
     }
 }
 
 pub fn execute_claim(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
-    address: String,
+    info: MessageInfo,
     coins: CoinVec,
-    proof: String,
+    proof_hashes: Vec<[u8; 32]>,
+    leaf_index: usize,
+    total_leaves_count: usize,
 ) -> Result<Response, ContractError> {
-    let address_validated = deps.api.addr_validate(&address)?;
+    let address_validated = deps.api.addr_validate(&info.sender.to_string())?;
 
-    let this_claim = is_valid_claim(deps.as_ref(), address_validated.clone(), &coins, proof)?;
+    let claim_amount = is_valid_claim(
+        deps.as_ref(),
+        address_validated.clone(),
+        &coins,
+        proof_hashes,
+        leaf_index,
+        total_leaves_count,
+    )?;
 
     // bank sends for all coins in this_claim
-    let msgs = this_claim.into_bank_sends(&address.to_string())?;
+    let bank_msgs = claim_amount.into_bank_sends(&info.sender.to_string().to_string())?;
 
     CLAIMED_INCENTIVES.save(deps.storage, address_validated, &coins)?;
 
     Ok(Response::new()
-        .add_messages(msgs)
+        .add_messages(bank_msgs)
         .add_attribute("action", "claim")
         .add_attribute("result", "success")
-        .add_attribute("address", address)
-        .add_attribute("claimed_amount", this_claim.to_string()))
+        .add_attribute("address", info.sender.to_string())
+        .add_attribute("claimed_amount", claim_amount.to_string()))
 }
