@@ -7,7 +7,6 @@ use super::{helpers::is_valid_claim, CoinVec};
 
 #[cw_serde]
 pub enum IncentivesExecuteMsg {
-    /// Submit a range to the range middleware
     Claim {
         coins: CoinVec,
         proof_hashes: Vec<[u8; 32]>,
@@ -16,7 +15,7 @@ pub enum IncentivesExecuteMsg {
     },
 }
 
-pub fn execute_incentives_msg(
+pub fn match_execute_incentives(
     deps: DepsMut,
     info: MessageInfo,
     incentives_msg: IncentivesExecuteMsg,

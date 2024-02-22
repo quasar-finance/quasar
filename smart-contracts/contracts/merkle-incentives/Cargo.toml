@@ -41,7 +41,6 @@ cosmwasm-std = "1.2.1"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", feature = ["library"]}
 cw-storage-plus = "1.1.0"
 cw2 = "1.1.1"
-#merkle = {path = "../../packages/merkle"}
 rs_merkle = { version = "1.4.2", default-features = false }
 schemars = "0.8.15"
 serde = {version = "1.0.189", default-features = false, features = ["derive"]}

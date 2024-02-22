@@ -3,7 +3,7 @@ use cosmwasm_std::{to_json_binary, Binary, Deps, Env, StdResult};
 
 use crate::state::MERKLE_ROOT;
 
-use super::CoinVec;
+use super::{helpers::is_valid_claim, CoinVec};
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -22,16 +22,20 @@ pub enum IncentivesQueryMsg {
     },
 }
 
-pub fn query_incentives(deps: Deps, _env: Env, query_msg: IncentivesQueryMsg) -> StdResult<Binary> {
+pub fn match_query_incentives(
+    deps: Deps,
+    _env: Env,
+    query_msg: IncentivesQueryMsg,
+) -> StdResult<Binary> {
     match query_msg {
-        IncentivesQueryMsg::GetMerkleRoot {} => get_merkle_root(deps),
+        IncentivesQueryMsg::GetMerkleRoot {} => query_merkle_root(deps),
         IncentivesQueryMsg::IsValidClaim {
             address,
             coins,
             proof_hashes,
             leaf_index,
             total_leaves_count,
-        } => is_valid_claim(
+        } => query_is_valid_claim(
             deps,
             address,
             coins,
@@ -42,13 +46,13 @@ pub fn query_incentives(deps: Deps, _env: Env, query_msg: IncentivesQueryMsg) ->
     }
 }
 
-pub fn get_merkle_root(deps: Deps) -> StdResult<Binary> {
+pub fn query_merkle_root(deps: Deps) -> StdResult<Binary> {
     let merkle_root = MERKLE_ROOT.may_load(deps.storage)?;
 
     to_json_binary(&merkle_root)
 }
 
-pub fn is_valid_claim(
+pub fn query_is_valid_claim(
     deps: Deps,
     address: String,
     coins: CoinVec,
@@ -57,7 +61,7 @@ pub fn is_valid_claim(
     total_leaves_count: usize,
 ) -> StdResult<Binary> {
     let address_validated = deps.api.addr_validate(&address)?;
-    match super::helpers::is_valid_claim(
+    match is_valid_claim(
         deps,
         address_validated,
         &coins,

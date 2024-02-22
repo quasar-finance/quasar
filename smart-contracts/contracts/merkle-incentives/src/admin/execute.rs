@@ -16,7 +16,7 @@ pub enum AdminExecuteMsg {
     UpdateMerkleRoot { new_root: String },
 }
 
-pub fn execute_admin_msg(
+pub fn match_execute_admin(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -24,15 +24,15 @@ pub fn execute_admin_msg(
 ) -> Result<Response, ContractError> {
     match msg {
         AdminExecuteMsg::UpdateAdmin { new_admin } => {
-            update_incentives_admin(deps, env, info, new_admin)
+            execute_update_incentives_admin(deps, env, info, new_admin)
         }
         AdminExecuteMsg::UpdateMerkleRoot { new_root } => {
-            update_merkle_root(deps, env, info, new_root)
+            execute_update_merkle_root(deps, env, info, new_root)
         }
     }
 }
 
-pub fn update_incentives_admin(
+pub fn execute_update_incentives_admin(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -46,7 +46,7 @@ pub fn update_incentives_admin(
     Ok(Response::default())
 }
 
-pub fn update_merkle_root(
+pub fn execute_update_merkle_root(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -71,8 +71,8 @@ pub fn update_merkle_root(
 
 #[cfg(test)]
 mod tests {
-    use super::update_merkle_root;
     use crate::{
+        admin::execute::execute_update_merkle_root,
         state::{INCENTIVES_ADMIN, MERKLE_ROOT},
         ContractError,
     };
@@ -99,7 +99,8 @@ mod tests {
         let merkle_root = MERKLE_ROOT.may_load(&deps.storage).unwrap();
         assert_eq!(merkle_root, None);
 
-        update_merkle_root(deps.as_mut(), env, info, MERKLE_ROOT_STRING.to_string()).unwrap();
+        execute_update_merkle_root(deps.as_mut(), env, info, MERKLE_ROOT_STRING.to_string())
+            .unwrap();
 
         // Assert after
         let merkle_root = MERKLE_ROOT.load(&deps.storage).unwrap();
@@ -121,7 +122,7 @@ mod tests {
         let merkle_root = MERKLE_ROOT.may_load(&deps.storage).unwrap();
         assert_eq!(merkle_root, None);
 
-        let error = update_merkle_root(
+        let error = execute_update_merkle_root(
             deps.as_mut(),
             env,
             info,

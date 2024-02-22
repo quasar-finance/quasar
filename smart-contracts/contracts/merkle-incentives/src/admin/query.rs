@@ -11,13 +11,13 @@ pub enum AdminQueryMsg {
     GetIncentivesAdmin {},
 }
 
-pub fn query_admin(deps: Deps, _env: Env, query_msg: AdminQueryMsg) -> StdResult<Binary> {
+pub fn match_query_admin(deps: Deps, _env: Env, query_msg: AdminQueryMsg) -> StdResult<Binary> {
     match query_msg {
-        AdminQueryMsg::GetIncentivesAdmin {} => get_incentives_admin(deps),
+        AdminQueryMsg::GetIncentivesAdmin {} => query_incentives_admin(deps),
     }
 }
 
-pub fn get_incentives_admin(deps: Deps) -> StdResult<Binary> {
+pub fn query_incentives_admin(deps: Deps) -> StdResult<Binary> {
     let incentives_admin = INCENTIVES_ADMIN.may_load(deps.storage)?;
     to_json_binary(&incentives_admin)
 }
