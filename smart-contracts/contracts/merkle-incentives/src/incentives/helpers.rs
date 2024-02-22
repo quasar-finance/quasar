@@ -15,29 +15,29 @@ pub fn is_valid_claim(
     leaf_index: usize,
     total_leaves_count: usize,
 ) -> Result<CoinVec, ContractError> {
+    let merkle_root = MERKLE_ROOT.load(deps.storage)?;
+
     // the format of this will look like "addr1000utokena2000utokenb"
     let claim_string = format!("{}{}", address.to_string(), coins.to_string());
-
-    let merkle_root = MERKLE_ROOT.load(deps.storage)?;
 
     verify_proof(
         &merkle_root,
         proof_hashes,
-        &[leaf_index], // TODO: We could support for multi-claim in a single tx here
+        &[leaf_index],
         total_leaves_count,
         &claim_string,
     )?;
 
-    let user_claimed = CLAIMED_INCENTIVES
+    let claimed_amount = CLAIMED_INCENTIVES
         .load(deps.storage, address.clone())
         .unwrap_or(CoinVec::new());
 
-    if &user_claimed >= coins {
+    if &claimed_amount >= coins {
         return Err(ContractError::IncentivesAlreadyClaimed {});
     }
 
     // subtract the current claim from all time claims
-    let claim_amount = coins.checked_sub(user_claimed)?;
+    let claim_amount = coins.checked_sub(claimed_amount)?;
 
     Ok(claim_amount)
 }
@@ -49,21 +49,15 @@ pub fn verify_proof(
     total_leaves_count: usize,
     to_verify: &str,
 ) -> Result<(), ContractError> {
-    // Decode the merkle root from base64
     let root_hash = base64::decode(merkle_root).unwrap();
-
-    // Assuming `to_verify` needs to be hashed to match the format of leaves in the tree
     let to_verify_hash = Sha256::hash(to_verify.as_bytes());
 
-    // Create the proof object
-    // Note: This part needs adjustment to fit how rs-merkle expects the proofs
     let proof = MerkleProof::<Sha256>::new(proof_hashes);
 
-    // Verify the proof
     let is_valid = proof.verify(
         root_hash.try_into().unwrap(),
         leaf_indices,
-        &[to_verify_hash], // Assuming you're verifying a single leaf here
+        &[to_verify_hash],
         total_leaves_count,
     );
 

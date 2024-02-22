@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{DepsMut, MessageInfo, Response};
 
 use crate::{state::CLAIMED_INCENTIVES, ContractError};
 
@@ -18,7 +18,6 @@ pub enum IncentivesExecuteMsg {
 
 pub fn execute_incentives_msg(
     deps: DepsMut,
-    env: Env,
     info: MessageInfo,
     incentives_msg: IncentivesExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -30,7 +29,6 @@ pub fn execute_incentives_msg(
             total_leaves_count,
         } => execute_claim(
             deps,
-            env,
             info,
             coins,
             proof_hashes,
@@ -42,7 +40,6 @@ pub fn execute_incentives_msg(
 
 pub fn execute_claim(
     deps: DepsMut,
-    _env: Env,
     info: MessageInfo,
     coins: CoinVec,
     proof_hashes: Vec<[u8; 32]>,
