@@ -68,254 +68,295 @@ pub fn verify_proof(
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use cosmwasm_std::{testing::mock_dependencies, Addr, Coin, Uint128};
-//     use merkle::{
-//         hash::Hash,
-//         proof::{Entry, Proof},
-//     };
+#[cfg(test)]
+mod tests {
+    use crate::{incentives::helpers::verify_proof, ContractError};
 
-//     use crate::{
-//         incentives::{helpers::verify_proof, CoinVec},
-//         state::{CLAIMED_INCENTIVES, MERKLE_ROOT},
-//         ContractError,
-//     };
+    const MERKLE_ROOT_STRING: &str = "0hGvbH+l9pdPgOmJY6wZuwjsrvtPsuslgTURavrUP6I=";
+    const MERKLE_ROOT_INVALID_STRING: &str = "INVALIDROOTRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
+    const CLAIM_PROOF_STRING: &str = "osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt900000000ugauge";
+    const CLAIM_PROOF_INVALID_STRING: &str =
+        "osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt999999999ugauge";
 
-//     const MERKLE_ROOT_STRING: &str = "rZh9kBgioPQRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
-//     const USER_MERKLE_PROOF: &str = r#"[{"is_left_sibling":false,"hash":[100,110,108,104,75,52,65,71,97,67,66,74,49,111,98,50,43,108,51,43,115,97,106,74,57,102,56,57,103,89,86,69,81,107,85,47,78,98,73,119,66,105,115,61]},{"is_left_sibling":false,"hash":[80,101,119,71,108,73,79,97,114,52,98,49,89,122,69,111,90,47,74,105,99,115,105,50,84,74,122,100,98,54,80,72,103,71,52,110,97,66,85,105,97,75,111,61]},{"is_left_sibling":true,"hash":[98,103,119,115,113,65,118,107,79,99,79,115,48,81,85,80,110,70,115,81,76,107,108,119,71,115,68,102,50,111,106,98,50,116,67,107,49,81,53,49,69,112,73,61]},{"is_left_sibling":true,"hash":[122,99,119,55,111,117,82,71,68,112,57,79,72,89,56,105,77,47,88,122,87,80,119,70,104,70,88,52,53,66,120,80,74,98,70,103,98,82,69,122,82,103,56,61]},{"is_left_sibling":false,"hash":[77,113,116,72,72,81,43,48,109,54,115,55,82,113,97,84,100,121,122,56,69,74,65,54,51,97,81,89,83,119,112,109,100,119,122,99,111,90,80,105,122,50,69,61]}]"#;
-//     const USER_ADDRESS: &str = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p4";
-//     const TO_VERIFY: &str = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo1uxyz";
+    #[test]
+    fn test_verify_success() {
+        let proof = vec![
+            base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
+            base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
+            base64::decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=").unwrap(),
+            base64::decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=").unwrap(),
+        ];
+        let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
+        for proof in &proof {
+            if proof.len() == 32 {
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(&proof);
+                proof_hashes.push(arr);
+            } else {
+                eprintln!("Error: Hash is not 32 bytes.");
+            }
+        }
 
-//     #[test]
-//     fn test_verify_success() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         verify_proof(
-//             &MERKLE_ROOT_STRING.to_string(),
-//             USER_MERKLE_PROOF,
-//             TO_VERIFY,
-//         )
-//         .unwrap();
-//     }
+        verify_proof(
+            &MERKLE_ROOT_STRING.to_string(),
+            proof_hashes,
+            &[0usize],
+            10usize,
+            CLAIM_PROOF_STRING,
+        )
+        .unwrap();
+    }
 
-//     #[test]
-//     fn test_verify_err() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         let invalid_merkle_root = "INVALIDROOTRC3R6LzoFpYmMJ81IUY5nTVr+X5/OsXI=";
+    #[test]
+    fn test_verify_bad_root() {
+        let proof = vec![
+            base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
+            base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
+            base64::decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=").unwrap(),
+            base64::decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=").unwrap(),
+        ];
+        let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
+        for proof in &proof {
+            if proof.len() == 32 {
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(&proof);
+                proof_hashes.push(arr);
+            } else {
+                eprintln!("Error: Hash is not 32 bytes.");
+            }
+        }
 
-//         let result = verify_proof(
-//             &invalid_merkle_root.to_string(),
-//             USER_MERKLE_PROOF,
-//             TO_VERIFY,
-//         );
+        let result = verify_proof(
+            &MERKLE_ROOT_INVALID_STRING.to_string(),
+            proof_hashes,
+            &[0usize],
+            10usize,
+            CLAIM_PROOF_STRING,
+        );
 
-//         if let Err(ContractError::FailedVerifyProof {}) = result {
-//             assert!(true); // expected
-//         } else {
-//             panic!("unexpected result");
-//         }
-//     }
+        if let Err(ContractError::FailedVerifyProof {}) = result {
+            assert!(true); // expected
+        } else {
+            panic!("unexpected result");
+        }
+    }
 
-//     #[test]
-//     fn test_verify_bad_claim() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         let to_verify_invalid = "osmo10004ufcv2aln3vl8defyk9agv5kacrzpkyw5p47uosmo10uxyz"; // 9 extra uxyz attempted
+    #[test]
+    fn test_verify_bad_claim() {
+        let proof = vec![
+            base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
+            base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
+            base64::decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=").unwrap(),
+            base64::decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=").unwrap(),
+        ];
+        let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
+        for proof in &proof {
+            if proof.len() == 32 {
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(&proof);
+                proof_hashes.push(arr);
+            } else {
+                eprintln!("Error: Hash is not 32 bytes.");
+            }
+        }
 
-//         let result = verify_proof(
-//             &MERKLE_ROOT_STRING.to_string(),
-//             USER_MERKLE_PROOF,
-//             to_verify_invalid,
-//         );
-//         println!("Result: {:?}", result);
-//         if let Err(ContractError::FailedVerifyProof {}) = result {
-//             assert!(true); // expected
-//         } else {
-//             panic!("unexpected result");
-//         }
-//     }
+        let result = verify_proof(
+            &MERKLE_ROOT_STRING.to_string(),
+            proof_hashes,
+            &[0usize],
+            10usize,
+            CLAIM_PROOF_INVALID_STRING,
+        );
 
-//     #[test]
-//     fn test_is_valid_claim_true() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         let mut deps = mock_dependencies();
+        if let Err(ContractError::FailedVerifyProof {}) = result {
+            assert!(true); // expected
+        } else {
+            panic!("unexpected result");
+        }
+    }
 
-//         let claim_coins = vec![
-//             // notice these are not alphabetically sorted
-//             Coin {
-//                 denom: "uxyz".to_string(),
-//                 amount: Uint128::from(1u128),
-//             },
-//             Coin {
-//                 denom: "uosmo".to_string(),
-//                 amount: Uint128::from(7u128),
-//             },
-//         ];
+    // #[test]
+    // fn test_is_valid_claim_true() {
+    //     // this test is taken directly from the testdata. See the README.md of this contract
+    //     let mut deps = mock_dependencies();
 
-//         MERKLE_ROOT
-//             .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
-//             .unwrap();
+    //     let claim_coins = vec![
+    //         // notice these are not alphabetically sorted
+    //         Coin {
+    //             denom: "uxyz".to_string(),
+    //             amount: Uint128::from(1u128),
+    //         },
+    //         Coin {
+    //             denom: "uosmo".to_string(),
+    //             amount: Uint128::from(7u128),
+    //         },
+    //     ];
 
-//         let result = is_valid_claim(
-//             deps.as_ref(),
-//             Addr::unchecked(USER_ADDRESS),
-//             &claim_coins.clone().into(),
-//             USER_MERKLE_PROOF.to_string(),
-//         );
+    //     MERKLE_ROOT
+    //         .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
+    //         .unwrap();
 
-//         assert_eq!(result.unwrap(), claim_coins.into());
-//     }
+    //     let result = is_valid_claim(
+    //         deps.as_ref(),
+    //         Addr::unchecked(USER_ADDRESS),
+    //         &claim_coins.clone().into(),
+    //         USER_MERKLE_PROOF.to_string(),
+    //     );
 
-//     #[test]
-//     fn test_is_valid_claim_some_already_claimed() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         let mut deps = mock_dependencies();
+    //     assert_eq!(result.unwrap(), claim_coins.into());
+    // }
 
-//         let claim_coins = vec![
-//             // notice these are not alphabetically sorted
-//             Coin {
-//                 denom: "uxyz".to_string(),
-//                 amount: Uint128::from(1u128),
-//             },
-//             Coin {
-//                 denom: "uosmo".to_string(),
-//                 amount: Uint128::from(7u128),
-//             },
-//         ];
+    // #[test]
+    // fn test_is_valid_claim_some_already_claimed() {
+    //     // this test is taken directly from the testdata. See the README.md of this contract
+    //     let mut deps = mock_dependencies();
 
-//         MERKLE_ROOT
-//             .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
-//             .unwrap();
+    //     let claim_coins = vec![
+    //         // notice these are not alphabetically sorted
+    //         Coin {
+    //             denom: "uxyz".to_string(),
+    //             amount: Uint128::from(1u128),
+    //         },
+    //         Coin {
+    //             denom: "uosmo".to_string(),
+    //             amount: Uint128::from(7u128),
+    //         },
+    //     ];
 
-//         CLAIMED_INCENTIVES
-//             .save(
-//                 deps.as_mut().storage,
-//                 Addr::unchecked(USER_ADDRESS),
-//                 &CoinVec(vec![Coin {
-//                     denom: "uosmo".to_string(),
-//                     amount: Uint128::from(3u128),
-//                 }]),
-//             )
-//             .unwrap();
+    //     MERKLE_ROOT
+    //         .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
+    //         .unwrap();
 
-//         let result = is_valid_claim(
-//             deps.as_ref(),
-//             &claim_coins.clone().into(),
-//             USER_MERKLE_PROOF.to_string(),
-//         );
+    //     CLAIMED_INCENTIVES
+    //         .save(
+    //             deps.as_mut().storage,
+    //             Addr::unchecked(USER_ADDRESS),
+    //             &CoinVec(vec![Coin {
+    //                 denom: "uosmo".to_string(),
+    //                 amount: Uint128::from(3u128),
+    //             }]),
+    //         )
+    //         .unwrap();
 
-//         let expected_claim = vec![
-//             // notice these are not alphabetically sorted
-//             Coin {
-//                 denom: "uxyz".to_string(),
-//                 amount: Uint128::from(1u128),
-//             },
-//             Coin {
-//                 denom: "uosmo".to_string(),
-//                 amount: Uint128::from(4u128),
-//             },
-//         ];
-//         assert_eq!(result.unwrap(), expected_claim.into());
-//     }
+    //     let result = is_valid_claim(
+    //         deps.as_ref(),
+    //         &claim_coins.clone().into(),
+    //         USER_MERKLE_PROOF.to_string(),
+    //     );
 
-//     #[test]
-//     fn test_is_valid_claim_all_already_claimed() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         let mut deps = mock_dependencies();
+    //     let expected_claim = vec![
+    //         // notice these are not alphabetically sorted
+    //         Coin {
+    //             denom: "uxyz".to_string(),
+    //             amount: Uint128::from(1u128),
+    //         },
+    //         Coin {
+    //             denom: "uosmo".to_string(),
+    //             amount: Uint128::from(4u128),
+    //         },
+    //     ];
+    //     assert_eq!(result.unwrap(), expected_claim.into());
+    // }
 
-//         let claim_coins = vec![
-//             // notice these are not alphabetically sorted
-//             Coin {
-//                 denom: "uxyz".to_string(),
-//                 amount: Uint128::from(1u128),
-//             },
-//             Coin {
-//                 denom: "uosmo".to_string(),
-//                 amount: Uint128::from(7u128),
-//             },
-//         ];
+    // #[test]
+    // fn test_is_valid_claim_all_already_claimed() {
+    //     // this test is taken directly from the testdata. See the README.md of this contract
+    //     let mut deps = mock_dependencies();
 
-//         MERKLE_ROOT
-//             .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
-//             .unwrap();
+    //     let claim_coins = vec![
+    //         // notice these are not alphabetically sorted
+    //         Coin {
+    //             denom: "uxyz".to_string(),
+    //             amount: Uint128::from(1u128),
+    //         },
+    //         Coin {
+    //             denom: "uosmo".to_string(),
+    //             amount: Uint128::from(7u128),
+    //         },
+    //     ];
 
-//         CLAIMED_INCENTIVES
-//             .save(
-//                 deps.as_mut().storage,
-//                 Addr::unchecked(USER_ADDRESS),
-//                 &CoinVec(vec![
-//                     Coin {
-//                         denom: "uosmo".to_string(),
-//                         amount: Uint128::from(7u128),
-//                     },
-//                     Coin {
-//                         denom: "uxyz".to_string(),
-//                         amount: Uint128::from(1u128),
-//                     },
-//                 ]),
-//             )
-//             .unwrap();
+    //     MERKLE_ROOT
+    //         .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
+    //         .unwrap();
 
-//         let result = super::is_valid_claim(
-//             deps.as_ref(),
-//             Addr::unchecked(USER_ADDRESS),
-//             &claim_coins.clone().into(),
-//             USER_MERKLE_PROOF.to_string(),
-//         );
-//         if let Err(ContractError::IncentivesAlreadyClaimed {}) = result {
-//             assert!(true); // expected
-//         } else {
-//             panic!("unexpected result");
-//         }
-//     }
+    //     CLAIMED_INCENTIVES
+    //         .save(
+    //             deps.as_mut().storage,
+    //             Addr::unchecked(USER_ADDRESS),
+    //             &CoinVec(vec![
+    //                 Coin {
+    //                     denom: "uosmo".to_string(),
+    //                     amount: Uint128::from(7u128),
+    //                 },
+    //                 Coin {
+    //                     denom: "uxyz".to_string(),
+    //                     amount: Uint128::from(1u128),
+    //                 },
+    //             ]),
+    //         )
+    //         .unwrap();
 
-//     #[test]
-//     fn test_is_valid_claim_with_bad_claim_amount() {
-//         // this test is taken directly from the testdata. See the README.md of this contract
-//         let mut deps = mock_dependencies();
+    //     let result = super::is_valid_claim(
+    //         deps.as_ref(),
+    //         Addr::unchecked(USER_ADDRESS),
+    //         &claim_coins.clone().into(),
+    //         USER_MERKLE_PROOF.to_string(),
+    //     );
+    //     if let Err(ContractError::IncentivesAlreadyClaimed {}) = result {
+    //         assert!(true); // expected
+    //     } else {
+    //         panic!("unexpected result");
+    //     }
+    // }
 
-//         let claim_coins = vec![
-//             // notice these are not alphabetically sorted
-//             Coin {
-//                 denom: "uxyz".to_string(),
-//                 amount: Uint128::from(1u128),
-//             },
-//             Coin {
-//                 denom: "uosmo".to_string(),
-//                 amount: Uint128::from(8u128), // trying to claim too much of uosmo
-//             },
-//         ];
+    // #[test]
+    // fn test_is_valid_claim_with_bad_claim_amount() {
+    //     // this test is taken directly from the testdata. See the README.md of this contract
+    //     let mut deps = mock_dependencies();
 
-//         MERKLE_ROOT
-//             .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
-//             .unwrap();
+    //     let claim_coins = vec![
+    //         // notice these are not alphabetically sorted
+    //         Coin {
+    //             denom: "uxyz".to_string(),
+    //             amount: Uint128::from(1u128),
+    //         },
+    //         Coin {
+    //             denom: "uosmo".to_string(),
+    //             amount: Uint128::from(8u128), // trying to claim too much of uosmo
+    //         },
+    //     ];
 
-//         CLAIMED_INCENTIVES
-//             .save(
-//                 deps.as_mut().storage,
-//                 Addr::unchecked(USER_ADDRESS),
-//                 &CoinVec(vec![
-//                     Coin {
-//                         denom: "uosmo".to_string(),
-//                         amount: Uint128::from(7u128),
-//                     },
-//                     Coin {
-//                         denom: "uxyz".to_string(),
-//                         amount: Uint128::from(1u128),
-//                     },
-//                 ]),
-//             )
-//             .unwrap();
+    //     MERKLE_ROOT
+    //         .save(deps.as_mut().storage, &MERKLE_ROOT_STRING.to_string())
+    //         .unwrap();
 
-//         let result = super::is_valid_claim(
-//             deps.as_ref(),
-//             Addr::unchecked(USER_ADDRESS),
-//             &claim_coins.clone().into(),
-//             USER_MERKLE_PROOF.to_string(),
-//         );
-//         if let Err(ContractError::FailedVerifyProof {}) = result {
-//             assert!(true); // expected
-//         } else {
-//             panic!("unexpected result");
-//         }
-//     }
-// }
+    //     CLAIMED_INCENTIVES
+    //         .save(
+    //             deps.as_mut().storage,
+    //             Addr::unchecked(USER_ADDRESS),
+    //             &CoinVec(vec![
+    //                 Coin {
+    //                     denom: "uosmo".to_string(),
+    //                     amount: Uint128::from(7u128),
+    //                 },
+    //                 Coin {
+    //                     denom: "uxyz".to_string(),
+    //                     amount: Uint128::from(1u128),
+    //                 },
+    //             ]),
+    //         )
+    //         .unwrap();
+
+    //     let result = super::is_valid_claim(
+    //         deps.as_ref(),
+    //         Addr::unchecked(USER_ADDRESS),
+    //         &claim_coins.clone().into(),
+    //         USER_MERKLE_PROOF.to_string(),
+    //     );
+    //     if let Err(ContractError::FailedVerifyProof {}) = result {
+    //         assert!(true); // expected
+    //     } else {
+    //         panic!("unexpected result");
+    //     }
+    // }
+}
