@@ -7,7 +7,7 @@ use crate::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
         UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
-    state::VaultConfig,
+    state::{Metadata, VaultConfig},
 };
 
 /// Extension execute messages for an apollo autocompounding vault
@@ -26,8 +26,6 @@ pub enum ExtensionExecuteMsg {
     DistributeRewards { amount_of_users: Uint128 },
     /// Claim rewards belonging to a single user
     ClaimRewards {},
-    /// Build tick exponent cache
-    BuildTickCache {},
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -49,7 +47,13 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
+    UpdateMetadata {
+        /// The metadata updates.
+        updates: Metadata,
+    },
     ClaimStrategistRewards {},
+    /// Build tick exponent cache
+    BuildTickCache {},
 }
 
 #[cw_serde]
