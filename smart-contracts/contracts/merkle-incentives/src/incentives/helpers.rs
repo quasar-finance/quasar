@@ -11,7 +11,7 @@ use super::CoinVec;
 
 pub fn is_valid_claim(
     deps: Deps,
-    address: Addr,
+    address: &Addr,
     coins: &CoinVec,
     proof_hashes: Vec<[u8; 32]>,
     leaf_index: usize,
@@ -62,7 +62,7 @@ pub fn verify_proof(
         &[to_verify_hash],
         total_leaves_count,
     ) {
-        Err(ContractError::FailedVerifyProof {})
+        return Err(ContractError::FailedVerifyProof {});
     }
 
     Ok(())
@@ -134,7 +134,7 @@ mod tests {
         // Is valid claim
         let result = is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(USER_ADDRESS),
+            &Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
             get_proof_hashes(),
             0usize,
@@ -171,7 +171,7 @@ mod tests {
         // Is valid claim
         let result = is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(USER_ADDRESS),
+            &Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
             get_proof_hashes(),
             0usize,
@@ -213,7 +213,7 @@ mod tests {
         // Is valid claim
         let result = is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(USER_ADDRESS),
+            &Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
             get_proof_hashes(),
             0usize,
@@ -254,7 +254,7 @@ mod tests {
         // Is valid claim
         let result = is_valid_claim(
             deps.as_ref(),
-            Addr::unchecked(USER_ADDRESS),
+            &Addr::unchecked(USER_ADDRESS),
             &claim_coins.clone().into(),
             get_proof_hashes(),
             0usize,

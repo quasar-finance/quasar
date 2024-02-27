@@ -63,7 +63,7 @@ pub fn query_is_valid_claim(
     let address_validated = deps.api.addr_validate(&address)?;
     match is_valid_claim(
         deps,
-        address_validated,
+        &address_validated,
         &coins,
         proof_hashes,
         leaf_index,

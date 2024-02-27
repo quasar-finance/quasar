@@ -227,6 +227,7 @@ mod tests {
                 .execute(
                     contract.as_str(),
                     &ExecuteMsg::IncentivesMsg(IncentivesExecuteMsg::Claim {
+                        address: accounts.get(index).unwrap().address().to_string(),
                         coins: claim_account.coins.clone(),
                         proof_hashes,
                         leaf_index: index,

@@ -38,7 +38,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::IncentivesMsg(incentives_msg) => {
-            handle_execute_incentives(deps, info, incentives_msg)
+            handle_execute_incentives(deps, incentives_msg)
         }
         ExecuteMsg::AdminMsg(admin_msg) => handle_execute_admin(deps, env, info, admin_msg),
     }
