@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, DepsMut, Response};
+use cosmwasm_std::{DepsMut, Response};
 
 use crate::{state::CLAIMED_INCENTIVES, ContractError};
 
@@ -58,7 +58,8 @@ pub fn execute_claim(
     )?;
 
     // bank sends for all coins in this_claim
-    let bank_msgs = claim_amount.into_bank_sends(deps.api.addr_validate(address_validated.as_str())?.as_str())?;
+    let bank_msgs = claim_amount
+        .into_bank_sends(deps.api.addr_validate(address_validated.as_str())?.as_str())?;
 
     CLAIMED_INCENTIVES.save(deps.storage, address_validated, &coins)?;
 

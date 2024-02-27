@@ -76,16 +76,15 @@ pub fn query_is_valid_claim(
 
 #[cfg(test)]
 mod tests {
+    use crate::incentives::query::query_merkle_root;
     use crate::{
         admin::execute::execute_update_merkle_root,
         state::{INCENTIVES_ADMIN, MERKLE_ROOT},
-        ContractError,
     };
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
         Addr,
     };
-    use crate::incentives::query::query_merkle_root;
 
     const MERKLE_ROOT_STRING: &str = "iGptCz22uFWoIxkwaqRzv5xV5DMnGz+hJntxP2YVsro=";
 
