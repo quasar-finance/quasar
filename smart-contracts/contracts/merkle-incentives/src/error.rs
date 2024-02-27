@@ -2,6 +2,7 @@ use cosmwasm_std::{OverflowError, StdError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[derive(PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
