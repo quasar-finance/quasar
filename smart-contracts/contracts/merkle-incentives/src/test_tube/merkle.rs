@@ -232,7 +232,6 @@ mod tests {
                         proof_hashes,
                         leaf_index: index,
                         total_leaves_count: 10usize,
-                        destination_address: Addr::unchecked(accounts.get(index).unwrap().address()),
                         // total_leaves_count: claim_accounts.len(), // TODO: reimplement this with all 10 users claiming
                     }),
                     &[],
