@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{DepsMut, MessageInfo, Response};
+use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
 
 use crate::{state::CLAIMED_INCENTIVES, ContractError};
 
@@ -12,6 +12,7 @@ pub enum IncentivesExecuteMsg {
         proof_hashes: Vec<[u8; 32]>,
         leaf_index: usize,
         total_leaves_count: usize,
+        destination_address: Addr,
     },
 }
 
@@ -26,6 +27,7 @@ pub fn handle_execute_incentives(
             proof_hashes,
             leaf_index,
             total_leaves_count,
+            destination_address,
         } => execute_claim(
             deps,
             info,
@@ -33,6 +35,7 @@ pub fn handle_execute_incentives(
             proof_hashes,
             leaf_index,
             total_leaves_count,
+            destination_address,
         ),
     }
 }
@@ -44,12 +47,13 @@ pub fn execute_claim(
     proof_hashes: Vec<[u8; 32]>,
     leaf_index: usize,
     total_leaves_count: usize,
+    destination_address: Addr,
 ) -> Result<Response, ContractError> {
-    let address_validated = deps.api.addr_validate(&info.sender.to_string())?;
+    let address_validated = deps.api.addr_validate(destination_address.as_str())?;
 
     let claim_amount = is_valid_claim(
         deps.as_ref(),
-        address_validated.clone(),
+        address_validated,
         &coins,
         proof_hashes,
         leaf_index,
@@ -57,7 +61,7 @@ pub fn execute_claim(
     )?;
 
     // bank sends for all coins in this_claim
-    let bank_msgs = claim_amount.into_bank_sends(&info.sender.to_string().to_string())?;
+    let bank_msgs = claim_amount.into_bank_sends(address_validated.as_str())?;
 
     CLAIMED_INCENTIVES.save(deps.storage, address_validated, &coins)?;
 

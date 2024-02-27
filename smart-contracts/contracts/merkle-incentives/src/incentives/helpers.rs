@@ -1,11 +1,13 @@
-use super::CoinVec;
+use cosmwasm_std::{Addr, Deps};
+use rs_merkle::algorithms::Sha256;
+use rs_merkle::{Hasher, MerkleProof};
+
 use crate::{
     error::ContractError,
     state::{CLAIMED_INCENTIVES, MERKLE_ROOT},
 };
-use cosmwasm_std::{Addr, Deps};
-use rs_merkle::algorithms::Sha256;
-use rs_merkle::{Hasher, MerkleProof};
+
+use super::CoinVec;
 
 pub fn is_valid_claim(
     deps: Deps,
@@ -18,7 +20,7 @@ pub fn is_valid_claim(
     let merkle_root = MERKLE_ROOT.load(deps.storage)?;
 
     // the format of this will look like "addr1000utokena2000utokenb"
-    let claim_string = format!("{}{}", address.to_string(), coins.to_string());
+    let claim_string = format!("{}{}", address.as_str(), coins.to_string());
 
     verify_proof(
         &merkle_root,
@@ -54,18 +56,16 @@ pub fn verify_proof(
 
     let proof = MerkleProof::<Sha256>::new(proof_hashes);
 
-    let is_valid = proof.verify(
+    if !proof.verify(
         root_hash.try_into().unwrap(),
         leaf_indices,
         &[to_verify_hash],
         total_leaves_count,
-    );
-
-    if is_valid {
-        Ok(())
-    } else {
+    ) {
         Err(ContractError::FailedVerifyProof {})
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -116,7 +116,6 @@ mod tests {
     }
 
     /// IS VALID CLAIM
-
     #[test]
     fn test_is_valid_claim_true() {
         // this test is taken directly from the testdata. See the README.md of this contract
@@ -270,7 +269,6 @@ mod tests {
     }
 
     /// VERIFY PROOF
-
     #[test]
     fn test_verify_success() {
         verify_proof(
