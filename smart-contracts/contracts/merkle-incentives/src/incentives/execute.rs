@@ -61,9 +61,9 @@ pub fn execute_claim(
     )?;
 
     // bank sends for all coins in this_claim
-    let bank_msgs = claim_amount.into_bank_sends(address_validated.as_str())?;
+    let bank_msgs = claim_amount.into_bank_sends(deps.api.addr_validate(destination_address.as_str())?.as_str())?;
 
-    CLAIMED_INCENTIVES.save(deps.storage, address_validated, &coins)?;
+    CLAIMED_INCENTIVES.save(deps.storage, deps.api.addr_validate(destination_address.as_str())?, &coins)?;
 
     Ok(Response::new()
         .add_messages(bank_msgs)

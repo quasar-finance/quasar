@@ -7,7 +7,7 @@ mod tests {
         state::ClaimAccount,
         test_tube::initialize::initialize::default_init,
     };
-    use cosmwasm_std::Coin;
+    use cosmwasm_std::{Addr, Coin};
     use osmosis_test_tube::osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceRequest;
     use osmosis_test_tube::{
         osmosis_std::types::cosmos::{bank::v1beta1::MsgSend, base::v1beta1::Coin as OsmoCoin},
@@ -231,6 +231,7 @@ mod tests {
                         proof_hashes,
                         leaf_index: index,
                         total_leaves_count: 10usize,
+                        destination_address: Addr::unchecked(accounts.get(index).unwrap().address()),
                         // total_leaves_count: claim_accounts.len(), // TODO: reimplement this with all 10 users claiming
                     }),
                     &[],

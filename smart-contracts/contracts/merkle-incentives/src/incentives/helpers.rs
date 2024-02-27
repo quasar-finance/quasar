@@ -62,7 +62,7 @@ pub fn verify_proof(
         &[to_verify_hash],
         total_leaves_count,
     ) {
-        Err(ContractError::FailedVerifyProof {})
+        return Err(ContractError::FailedVerifyProof {});
     }
 
     Ok(())
@@ -220,11 +220,10 @@ mod tests {
             10usize,
         );
 
-        if let Err(ContractError::IncentivesAlreadyClaimed {}) = result {
-            assert!(true); // expected
-        } else {
-            panic!("unexpected result");
-        }
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::IncentivesAlreadyClaimed {}
+        );
     }
 
     #[test]
@@ -261,11 +260,7 @@ mod tests {
             10usize,
         );
 
-        if let Err(ContractError::FailedVerifyProof {}) = result {
-            assert!(true); // expected
-        } else {
-            panic!("unexpected result");
-        }
+        assert_eq!(result.unwrap_err(), ContractError::FailedVerifyProof {})
     }
 
     /// VERIFY PROOF
@@ -291,11 +286,7 @@ mod tests {
             CLAIM_PROOF_STRING,
         );
 
-        if let Err(ContractError::FailedVerifyProof {}) = result {
-            assert!(true); // expected
-        } else {
-            panic!("unexpected result");
-        }
+        assert_eq!(result.unwrap_err(), ContractError::FailedVerifyProof {})
     }
 
     #[test]
@@ -308,10 +299,6 @@ mod tests {
             CLAIM_PROOF_INVALID_STRING,
         );
 
-        if let Err(ContractError::FailedVerifyProof {}) = result {
-            assert!(true); // expected
-        } else {
-            panic!("unexpected result");
-        }
+        assert_eq!(result.unwrap_err(), ContractError::FailedVerifyProof {})
     }
 }

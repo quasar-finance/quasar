@@ -73,3 +73,41 @@ pub fn query_is_valid_claim(
         Err(_err) => to_json_binary(&false),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        admin::execute::execute_update_merkle_root,
+        state::{INCENTIVES_ADMIN, MERKLE_ROOT},
+        ContractError,
+    };
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Addr,
+    };
+    use crate::incentives::query::query_merkle_root;
+
+    const MERKLE_ROOT_STRING: &str = "iGptCz22uFWoIxkwaqRzv5xV5DMnGz+hJntxP2YVsro=";
+
+    #[test]
+    fn test_query_merkle_root() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("admin", &vec![]);
+
+        // Set incentives admin
+        INCENTIVES_ADMIN
+            .save(&mut deps.storage, &Addr::unchecked("admin"))
+            .unwrap();
+
+        // Assert before
+        let merkle_root = MERKLE_ROOT.may_load(&deps.storage).unwrap();
+        assert_eq!(merkle_root, None);
+
+        execute_update_merkle_root(deps.as_mut(), env, info, MERKLE_ROOT_STRING.to_string())
+            .unwrap();
+
+        let merkle_root = query_merkle_root(deps.as_ref()).unwrap();
+        println!("{:?}", merkle_root);
+    }
+}
