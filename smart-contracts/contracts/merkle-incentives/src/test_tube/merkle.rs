@@ -210,12 +210,6 @@ mod tests {
 
         // Execute IncentivesMsg::Claim
         for (index, claim_account) in claim_accounts.iter().enumerate() {
-            println!(
-                "{:?} {:?} {:?}",
-                accounts.get(index).unwrap().address().to_string(),
-                index,
-                claim_accounts.len()
-            );
             let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
             for proof in &claim_account.proof {
                 if proof.len() == 32 {
@@ -318,9 +312,6 @@ mod tests {
         let merkle_proof = merkle_tree.proof(&indices_to_prove);
 
         let merkle_root = merkle_tree.root().unwrap();
-        // gorbachev, show us that root!
-        let encoded = base64::encode(merkle_root.clone());
-        println!("Base64 encoded: {}", encoded);
 
         // Serialize proof to pass it to the client
         let proof_bytes = merkle_proof.to_bytes();
@@ -415,12 +406,6 @@ mod tests {
 
         // Execute IncentivesMsg::Claim
         for (index, claim_account) in claim_accounts.iter().enumerate() {
-            println!(
-                "{:?} {:?} {:?}",
-                accounts.get(index).unwrap().address().to_string(),
-                index,
-                claim_accounts.len()
-            );
             let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
             for proof in &claim_account.proof {
                 if proof.len() == 32 {
