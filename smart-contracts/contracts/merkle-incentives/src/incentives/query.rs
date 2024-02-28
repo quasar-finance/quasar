@@ -107,6 +107,5 @@ mod tests {
             .unwrap();
 
         let merkle_root = query_merkle_root(deps.as_ref()).unwrap();
-        println!("{:?}", merkle_root);
     }
 }
