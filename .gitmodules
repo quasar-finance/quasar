@@ -1,0 +1,3 @@
+[submodule "smart-contracts/external_deps/dao-contracts"]
+	path = smart-contracts/external_deps/dao-contracts
+	url = https://github.com/magiodev/dao-contracts.git
