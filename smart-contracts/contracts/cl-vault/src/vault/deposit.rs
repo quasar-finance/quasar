@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env,
+    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{

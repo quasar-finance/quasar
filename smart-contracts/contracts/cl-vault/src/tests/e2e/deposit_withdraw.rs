@@ -9,7 +9,9 @@ use osmosis_std::types::{
         concentratedliquidity::v1beta1::PositionByIdRequest, poolmanager::v1beta1::SpotPriceRequest,
     },
 };
-use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, PoolManager, Wasm, SigningAccount, Runner, Gamm};
+use osmosis_test_tube::{
+    Account, Bank, ConcentratedLiquidity, Gamm, Module, PoolManager, Runner, SigningAccount, Wasm,
+};
 
 use crate::{
     assert_share_price, assert_total_assets, assert_unused_funds,
@@ -30,187 +32,214 @@ use crate::tests::helpers::get_total_assets;
 
 #[test]
 fn deposit_withdraw_single_user_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
-        let init_balance = CoinList::from_coins(vec![
-            Coin::new(1_000_000_000_000, "uatom"),
-            Coin::new(1_000_000_000_000, "uosmo"),
-        ]);
-    
-        let users = app.init_accounts(&init_balance.coins(), 1).unwrap();
-        let mut alice = User::new(&users[0]);
-    
-        let wasm = Wasm::new(&app);
-        let bank = Bank::new(&app);
-    
-        // make sure we have some fee uosmo and uatom to create the new position
-        // here we introduce new funds into the test, after this point, we'd expect the share price to no longer change
-        bank.send(
-            MsgSend {
-                from_address: admin.address(),
-                to_address: contract_address.to_string(),
-                amount: vec![
-                    Coin::new(1_000_000, "uatom").into(),
-                    Coin::new(1_000_000, "uosmo").into(),
-                ],
-            },
+    let (app, contract_address, cl_pool_id, admin) = default_init();
+    let init_balance = CoinList::from_coins(vec![
+        Coin::new(1_000_000_000_000, "uatom"),
+        Coin::new(1_000_000_000_000, "uosmo"),
+    ]);
+
+    let users = app.init_accounts(&init_balance.coins(), 1).unwrap();
+    let mut alice = User::new(&users[0]);
+
+    let wasm = Wasm::new(&app);
+    let bank = Bank::new(&app);
+
+    // make sure we have some fee uosmo and uatom to create the new position
+    // here we introduce new funds into the test, after this point, we'd expect the share price to no longer change
+    bank.send(
+        MsgSend {
+            from_address: admin.address(),
+            to_address: contract_address.to_string(),
+            amount: vec![
+                Coin::new(1_000_000, "uatom").into(),
+                Coin::new(1_000_000, "uosmo").into(),
+            ],
+        },
+        &admin,
+    )
+    .unwrap();
+
+    // total assets increase after we deposit
+    let mut total_assets: (Coin, Coin) =
+        get_total_assets(&wasm, contract_address.as_str()).unwrap();
+    let original_share_price = get_share_price(&app, cl_pool_id, contract_address.as_str());
+
+    // create a new position
+    let _res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                crate::msg::ModifyRange::CreatePosition {
+                    lower_price: Decimal::from_str("0.90").unwrap(),
+                    upper_price: Decimal::from_str("1.1").unwrap(),
+                    ratio: Uint128::one(),
+                },
+            )),
+            &vec![],
             &admin,
         )
         .unwrap();
-    
-        // total assets increase after we deposit
-        let mut total_assets: (Coin, Coin) =
-            get_total_assets(&wasm, contract_address.as_str()).unwrap();
-        let original_share_price = get_share_price(&app, cl_pool_id, contract_address.as_str());
-    
-        // create a new position
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    crate::msg::ModifyRange::CreatePosition {
-                        lower_price: Decimal::from_str("0.90").unwrap(),
-                        upper_price: Decimal::from_str("1.1").unwrap(),
-                        ratio: Uint128::one(),
-                    },
-                )),
-                &vec![],
-                &admin,
-            )
-            .unwrap();
-    
-        assert_share_price!(
-            &app,
-            contract_address.as_str(),
-            original_share_price,
-            cl_pool_id
-        );
-    
-        // depositing
-        assert_share_price!(
-            &app,
-            contract_address.as_str(),
-            original_share_price,
-            cl_pool_id
-        );
-        let unused_funds = get_unused_funds(&wasm, contract_address.as_str()).unwrap();
-    
-        total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
 
-        deposit_and_assert(&app, contract_address.as_str(), cl_pool_id, original_share_price, &mut alice);
-    
-        // create a new position
-        // this introduction should not introduce new funds as long as we free up some funds first
-        let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
-        let fp = positions
-            .get(0)
-            .unwrap()
-            .full_breakdown
-            .position
-            .clone()
-            .unwrap();
-    
-        let share_price = get_share_price(&app, cl_pool_id, contract_address.as_str());
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    crate::msg::ModifyRange::DecreaseFunds {
-                        position_id: fp.position_id,
-                        liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap()
-                            / Decimal::from_ratio(2_u128, 1_u128))
-                        .into(),
-                    },
-                )),
-                &vec![],
-                &admin,
-            )
-            .unwrap();
-    
-        assert_share_price!(&app, contract_address.as_str(), share_price, cl_pool_id);
-    
-        let _res = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    crate::msg::ModifyRange::CreatePosition {
-                        lower_price: Decimal::from_str("0.80").unwrap(),
-                        upper_price: Decimal::from_str("1.2").unwrap(),
-                        ratio: Uint128::one(),
-                    },
-                )),
-                &vec![],
-                &admin,
-            )
-            .unwrap();
-    
-        assert_share_price!(
-            &app,
-            contract_address.as_str(),
-            original_share_price,
-            cl_pool_id
-        );
-    
-        deposit_and_assert(&app, contract_address.as_str(), cl_pool_id, original_share_price, &mut alice);
-        total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    
-        // check that alices balance + funds in positions
-        let user_shares = get_user_shares(&wasm, contract_address.as_str(), alice.acc().address()).unwrap();
-        let share_value = get_share_value(&wasm, contract_address.as_str(), user_shares).unwrap();
-        let current_balance = bank
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: alice.acc().address(),
-                pagination: None,
-            })
-            .unwrap()
-            .balances;
-    
-        total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
-    
-        // TODO add all paid tx fees here
-        let total_value = CoinList::from_coins(share_value)
-            .add(CoinList::from_coins(
-                osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
-            ))
-            .unwrap()
-            .add(alice.fees().clone())
-            .unwrap();
-    
-        let spot_price: Decimal = PoolManager::new(&app)
-            .query_spot_price(&SpotPriceRequest {
-                pool_id: cl_pool_id,
-                base_asset_denom: "uatom".into(),
-                quote_asset_denom: "uosmo".into(),
-            })
-            .unwrap()
-            .spot_price
-            .parse()
-            .unwrap();
-    
-        assert_approx_eq!(
-            get_asset0_value(
-                init_balance.find_coin("uatom".into()).amount,
-                init_balance.find_coin("uosmo".into()).amount,
-                spot_price
-            )
-            .unwrap(),
-            get_asset0_value(
-                total_value.find_coin("uatom".into()).amount,
-                total_value.find_coin("uosmo".into()).amount,
-                spot_price
-            )
-            .unwrap(),
-            "0.00000001",
-        );
-    
-        let w1 = user_shares / Uint128::new(2);
-        // let w2 = user_shares - w1;
-        withdraw_and_assert(w1, &app, contract_address.as_str(), &mut alice, init_balance.clone(), spot_price);
-    
-        let w2 = get_user_shares(&wasm, contract_address.as_str(), alice.acc().address()).unwrap();
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
 
-        withdraw_and_assert(w2, &app, contract_address.as_str(), &mut alice, init_balance, spot_price);
-    }
-    
+    // depositing
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+    let unused_funds = get_unused_funds(&wasm, contract_address.as_str()).unwrap();
+
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+
+    deposit_and_assert(
+        &app,
+        contract_address.as_str(),
+        cl_pool_id,
+        original_share_price,
+        &mut alice,
+    );
+
+    // create a new position
+    // this introduction should not introduce new funds as long as we free up some funds first
+    let positions = get_full_positions(&wasm, contract_address.as_str()).unwrap();
+    let fp = positions
+        .get(0)
+        .unwrap()
+        .full_breakdown
+        .position
+        .clone()
+        .unwrap();
+
+    let share_price = get_share_price(&app, cl_pool_id, contract_address.as_str());
+    let _res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                crate::msg::ModifyRange::DecreaseFunds {
+                    position_id: fp.position_id,
+                    liquidity: (Decimal::from_str(fp.liquidity.as_str()).unwrap()
+                        / Decimal::from_ratio(2_u128, 1_u128))
+                    .into(),
+                },
+            )),
+            &vec![],
+            &admin,
+        )
+        .unwrap();
+
+    assert_share_price!(&app, contract_address.as_str(), share_price, cl_pool_id);
+
+    let _res = wasm
+        .execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                crate::msg::ModifyRange::CreatePosition {
+                    lower_price: Decimal::from_str("0.80").unwrap(),
+                    upper_price: Decimal::from_str("1.2").unwrap(),
+                    ratio: Uint128::one(),
+                },
+            )),
+            &vec![],
+            &admin,
+        )
+        .unwrap();
+
+    assert_share_price!(
+        &app,
+        contract_address.as_str(),
+        original_share_price,
+        cl_pool_id
+    );
+
+    deposit_and_assert(
+        &app,
+        contract_address.as_str(),
+        cl_pool_id,
+        original_share_price,
+        &mut alice,
+    );
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+
+    // check that alices balance + funds in positions
+    let user_shares =
+        get_user_shares(&wasm, contract_address.as_str(), alice.acc().address()).unwrap();
+    let share_value = get_share_value(&wasm, contract_address.as_str(), user_shares).unwrap();
+    let current_balance = bank
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: alice.acc().address(),
+            pagination: None,
+        })
+        .unwrap()
+        .balances;
+
+    total_assets = get_total_assets(&wasm, contract_address.as_str()).unwrap();
+
+    // TODO add all paid tx fees here
+    let total_value = CoinList::from_coins(share_value)
+        .add(CoinList::from_coins(
+            osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
+        ))
+        .unwrap()
+        .add(alice.fees().clone())
+        .unwrap();
+
+    let spot_price: Decimal = PoolManager::new(&app)
+        .query_spot_price(&SpotPriceRequest {
+            pool_id: cl_pool_id,
+            base_asset_denom: "uatom".into(),
+            quote_asset_denom: "uosmo".into(),
+        })
+        .unwrap()
+        .spot_price
+        .parse()
+        .unwrap();
+
+    assert_approx_eq!(
+        get_asset0_value(
+            init_balance.find_coin("uatom".into()).amount,
+            init_balance.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        get_asset0_value(
+            total_value.find_coin("uatom".into()).amount,
+            total_value.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        "0.00000001",
+    );
+
+    let w1 = user_shares / Uint128::new(2);
+    // let w2 = user_shares - w1;
+    withdraw_and_assert(
+        w1,
+        &app,
+        contract_address.as_str(),
+        &mut alice,
+        init_balance.clone(),
+        spot_price,
+    );
+
+    let w2 = get_user_shares(&wasm, contract_address.as_str(), alice.acc().address()).unwrap();
+
+    withdraw_and_assert(
+        w2,
+        &app,
+        contract_address.as_str(),
+        &mut alice,
+        init_balance,
+        spot_price,
+    );
+}
+
 // #[test]
 // fn deposit_withdraw_multiple_users_works() {
 //     let (app, contract_address, cl_pool_id, admin) = default_init();
@@ -337,9 +366,6 @@ fn deposit_withdraw_single_user_works() {
 //         original_share_price,
 //         cl_pool_id
 //     );
-
-
-
 
 //     // create a new position
 //     // this introduction should not introduce new funds as long as we free up some funds first
@@ -577,7 +603,13 @@ fn deposit_withdraw_single_user_works() {
 // }
 
 // TODO incorporate this in the above tests
-fn deposit_and_assert<'a, R: Runner<'a>>(app: &'a R, contract_address: &str, cl_pool_id: u64, original_share_price: Decimal, user: &mut User) {
+fn deposit_and_assert<'a, R: Runner<'a>>(
+    app: &'a R,
+    contract_address: &str,
+    cl_pool_id: u64,
+    original_share_price: Decimal,
+    user: &mut User,
+) {
     let wasm = Wasm::new(app);
     let unused_funds = get_unused_funds(&wasm, contract_address).unwrap();
     let res = wasm
@@ -601,81 +633,86 @@ fn deposit_and_assert<'a, R: Runner<'a>>(app: &'a R, contract_address: &str, cl_
     // we accept a non-default share price relative difference here. Due to the low vault value,
     // rounding causes a change in share price here, which at low vault value is a non-negligible percentual
     // increase. This is fine assuming that the relative percentual change decreases as the vault value increases
-    assert_share_price!(
-        app,
-        contract_address,
-        original_share_price,
-        cl_pool_id
-    );
+    assert_share_price!(app, contract_address, original_share_price, cl_pool_id);
 }
 
-fn withdraw_and_assert<'a, R: Runner<'a>>(user_shares: Uint128, app: &'a R, contract_address: &str, user: &mut User<'_>, init_balance: CoinList, spot_price: Decimal) {
+fn withdraw_and_assert<'a, R: Runner<'a>>(
+    user_shares: Uint128,
+    app: &'a R,
+    contract_address: &str,
+    user: &mut User<'_>,
+    init_balance: CoinList,
+    spot_price: Decimal,
+) {
     let wasm = Wasm::new(app);
     let bank = Bank::new(app);
-    
+
     // withdraw the rest of the shares
     let res = wasm
-            .execute(
-                contract_address,
-                &ExecuteMsg::Redeem {
-                    recipient: None,
-                    amount: user_shares,
-                },
-                &[],
-                user.acc(),
-            )
-            .unwrap();
-    
+        .execute(
+            contract_address,
+            &ExecuteMsg::Redeem {
+                recipient: None,
+                amount: user_shares,
+            },
+            &[],
+            user.acc(),
+        )
+        .unwrap();
+
     let tx_fee: Coin = get_event_attributes_by_ty_and_key(&res, "tx", vec!["fee"])[0]
-            .value
-            .parse()
-            .unwrap();
-        user.add_fee(tx_fee);
-    
+        .value
+        .parse()
+        .unwrap();
+    user.add_fee(tx_fee);
+
     let user_shares = get_user_shares(&wasm, contract_address, user.acc().address()).unwrap();
     let share_value = get_share_value(&wasm, contract_address, user_shares).unwrap();
     let current_balance = bank
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: user.acc().address(),
-                pagination: None,
-            })
-            .unwrap()
-            .balances;
-    
+        .query_all_balances(&QueryAllBalancesRequest {
+            address: user.acc().address(),
+            pagination: None,
+        })
+        .unwrap()
+        .balances;
+
     let total_value = CoinList::from_coins(share_value)
-            .add(CoinList::from_coins(
-                osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
-            ))
-            .unwrap()
-            .add(user.fees().clone())
-            .unwrap();
-    
+        .add(CoinList::from_coins(
+            osmosis_std::try_proto_to_cosmwasm_coins(current_balance).unwrap(),
+        ))
+        .unwrap()
+        .add(user.fees().clone())
+        .unwrap();
+
     assert_approx_eq!(
-            get_asset0_value(
-                init_balance.find_coin("uatom".into()).amount,
-                init_balance.find_coin("uosmo".into()).amount,
-                spot_price
-            )
-            .unwrap(),
-            get_asset0_value(
-                total_value.find_coin("uatom".into()).amount,
-                total_value.find_coin("uosmo".into()).amount,
-                spot_price
-            )
-            .unwrap(),
-            "0.00000001",
-        );
+        get_asset0_value(
+            init_balance.find_coin("uatom".into()).amount,
+            init_balance.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        get_asset0_value(
+            total_value.find_coin("uatom".into()).amount,
+            total_value.find_coin("uosmo".into()).amount,
+            spot_price
+        )
+        .unwrap(),
+        "0.00000001",
+    );
 }
 
 #[derive(Clone)]
 struct User<'a> {
     account: &'a SigningAccount,
-    paid_fees: CoinList
+    paid_fees: CoinList,
 }
 
 impl User<'_> {
     pub fn new(account: &SigningAccount) -> User {
-        User { account, paid_fees: CoinList::default() }
+        User {
+            account,
+            paid_fees: CoinList::default(),
+        }
     }
 
     pub fn add_fees(&mut self, fees: Vec<Coin>) {
