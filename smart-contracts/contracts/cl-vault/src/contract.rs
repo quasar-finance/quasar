@@ -13,6 +13,7 @@ use crate::rewards::{
     execute_callback_distribute_rewards, execute_distribute_rewards,
     handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
+use crate::state::{Position, POSITIONS};
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{
@@ -30,10 +31,14 @@ use crate::vault::range::move_position::{
 };
 use crate::vault::range::update_range::execute_update_range;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
+use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
+};
 use cw2::set_contract_version;
+use cw_storage_plus::Item;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -120,11 +125,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             Ok(to_json_binary(&query_total_vault_token_supply(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount } => {
-            Ok(to_json_binary(&query_convert_to_assets(deps, env, amount)?)?)
-        }
+        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount } => Ok(
+            to_json_binary(&query_convert_to_assets(deps, env, amount)?)?,
+        ),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_json_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::Metadata {} => {
+                Ok(to_json_binary(&query_metadata(deps)?)?)
+            }
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_json_binary(&query_user_balance(deps, user)?)?)
@@ -135,7 +142,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Positions {} => Ok(to_json_binary(&query_positions(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => {
+                    Ok(to_json_binary(&query_positions(deps)?)?)
+                }
                 crate::msg::ClQueryMsg::RangeAdmin {} => todo!(),
                 crate::msg::ClQueryMsg::FullPositions {} => {
                     Ok(to_json_binary(&query_full_positions(deps)?)?)
@@ -176,9 +185,62 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    // inline our previous state items
+    #[cw_serde]
+    pub struct OldPosition {
+        pub position_id: u64,
+    }
+
+    pub const POSITION: Item<OldPosition> = Item::new("position");
+
+    let position = POSITION.load(deps.storage)?;
+
+    POSITIONS.save(
+        deps.storage,
+        position.position_id,
+        &Position {
+            position_id: position.position_id,
+            ratio: Uint128::one(),
+        },
+    )?;
+
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+
+    use super::*;
+
+    #[test]
+    fn migrate_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // inline the old state items
+        #[cw_serde]
+        pub struct OldPosition {
+            pub position_id: u64,
+        }
+
+        pub const POSITION: Item<OldPosition> = Item::new("position");
+        let old = OldPosition { position_id: 1 };
+        POSITION.save(deps.as_mut().storage, &old).unwrap();
+
+        let migrate_msg = MigrateMsg {};
+
+        migrate(deps.as_mut(), env, migrate_msg).unwrap();
+
+        assert_eq!(
+            POSITIONS
+                .load(deps.as_ref().storage, old.position_id)
+                .unwrap(),
+            Position {
+                position_id: old.position_id,
+                ratio: Uint128::one()
+            }
+        );
+    }
+}
