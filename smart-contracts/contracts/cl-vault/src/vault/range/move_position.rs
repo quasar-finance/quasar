@@ -2,8 +2,8 @@ use cosmwasm_schema::cw_serde;
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128,
+    to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
+    SubMsg, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::osmosis::{
@@ -510,10 +510,7 @@ pub fn handle_iteration_create_position_reply(
 }
 
 // store new position id and exit
-pub fn handle_merge_response(
-    deps: DepsMut,
-    data: SubMsgResult,
-) -> Result<Response, ContractError> {
+pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     let _: MergeResponse = data.try_into()?;
 
     MODIFY_RANGE_STATE.remove(deps.storage);

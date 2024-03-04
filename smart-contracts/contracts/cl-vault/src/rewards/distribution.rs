@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_json_binary, Addr, Attribute, CosmosMsg, Decimal, Deps, DepsMut, Env, Order, Response, StdError,
-    SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_json_binary, Addr, Attribute, CosmosMsg, Decimal, Deps, DepsMut, Env, Order, Response,
+    StdError, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use crate::{

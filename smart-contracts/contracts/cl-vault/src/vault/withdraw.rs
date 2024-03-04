@@ -143,7 +143,7 @@ fn withdraw(
         })
         .collect();
 
-        withdraws
+    withdraws
 }
 
 pub fn handle_withdraw_user_reply(

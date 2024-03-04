@@ -116,8 +116,8 @@ pub fn assert_total_assets_impl<'a, R>(
     wasm: &Wasm<'a, R>,
     contract_address: &str,
     expected_total_assets: &(Coin, Coin),
-)
-where R: Runner<'a>
+) where
+    R: Runner<'a>,
 {
     let current_assets = get_total_assets(wasm, contract_address).unwrap();
     assert_eq_with_diff!(
@@ -150,8 +150,8 @@ pub fn assert_unused_funds_impl<'a, R>(
     wasm: &Wasm<'a, R>,
     contract_address: &str,
     (actual0, actual1): (Uint128, Uint128),
-) 
-where R: Runner<'a>
+) where
+    R: Runner<'a>,
 {
     let (expected0, expected1) = get_unused_funds(wasm, contract_address).unwrap();
     assert_eq_with_diff!(

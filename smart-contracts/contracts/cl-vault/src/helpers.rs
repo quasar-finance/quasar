@@ -411,11 +411,13 @@ fn get_min_ratio_per_position(
 
 /// get the final ratio of a set of positions by multiplying the internal ratio of a position with the external ratio
 /// that that position has in the total set of positions
-fn get_final_ratio(positions: Vec<(Position, PositionRatio)>) -> Result<Vec<(Position, PositionRatio)>, ContractError> {
+fn get_final_ratio(
+    positions: Vec<(Position, PositionRatio)>,
+) -> Result<Vec<(Position, PositionRatio)>, ContractError> {
     let total_ratio = positions
-    .iter()
-    .fold(Uint128::zero(), |acc, (p, _)| acc + p.ratio);
-    
+        .iter()
+        .fold(Uint128::zero(), |acc, (p, _)| acc + p.ratio);
+
     let positions: Result<Vec<(Position, PositionRatio)>, ContractError> = positions
         .into_iter()
         .map(|(p, internal_ratio)| {
@@ -765,7 +767,7 @@ mod tests {
     #[test]
     fn test_get_final_ratio_two_positions() {
         let token0 = 150_000;
-        let token1 = 300_000;        
+        let token1 = 300_000;
 
         let positions = vec![
             (create_position(0, 100), create_ratio(token0, token1)),
@@ -792,7 +794,7 @@ mod tests {
     #[test]
     fn test_get_final_ratio_three_positions() {
         let token0 = 150_000;
-        let token1 = 300_000;        
+        let token1 = 300_000;
 
         let positions = vec![
             (create_position(0, 100), create_ratio(token0, token1)),
@@ -815,7 +817,7 @@ mod tests {
         // position 1 should have 2/5 of token0 and token1
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
-        
+
         // position 1 should have 2/5 of token0 and token1
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
