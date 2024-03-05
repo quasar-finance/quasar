@@ -38,8 +38,8 @@ pub fn execute_claim_strategist_rewards(
     deps: DepsMut,
     info: MessageInfo,
 ) -> ContractResult<Response> {
-    let range_admin = RANGE_ADMIN.load(deps.storage)?;
-    if info.sender != range_admin {
+    let allowed_claimer = VAULT_CONFIG.load(deps.storage)?.treasury;
+    if info.sender != allowed_claimer {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -51,7 +51,7 @@ pub fn execute_claim_strategist_rewards(
     Ok(Response::new()
         .add_attribute("rewards", format!("{:?}", rewards.coins()))
         .add_message(BankMsg::Send {
-            to_address: range_admin.to_string(),
+            to_address: allowed_claimer.to_string(),
             amount: sort_tokens(rewards.coins()),
         }))
 }
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_execute_claim_strategist_rewards_success() {
-        let range_admin = Addr::unchecked("bob");
+        let treasury = Addr::unchecked("bob");
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
@@ -181,16 +181,23 @@ mod tests {
             )
             .unwrap();
 
-        RANGE_ADMIN
-            .save(deps.as_mut().storage, &range_admin)
+        VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &VaultConfig {
+                    performance_fee: Decimal::percent(20),
+                    treasury: treasury.clone(),
+                    swap_max_slippage: Decimal::percent(10),
+                },
+            )
             .unwrap();
 
         let response =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info(range_admin.as_str(), &[]))
+            execute_claim_strategist_rewards(deps.as_mut(), mock_info(treasury.as_str(), &[]))
                 .unwrap();
         assert_eq!(
             CosmosMsg::Bank(BankMsg::Send {
-                to_address: range_admin.to_string(),
+                to_address: treasury.to_string(),
                 amount: sort_tokens(rewards)
             }),
             response.messages[0].msg
@@ -199,15 +206,22 @@ mod tests {
 
     #[test]
     fn test_execute_claim_strategist_rewards_not_admin() {
-        let range_admin = Addr::unchecked("bob");
+        let treasury = Addr::unchecked("bob");
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
             .unwrap();
 
-        RANGE_ADMIN
-            .save(deps.as_mut().storage, &range_admin)
+        VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &VaultConfig {
+                    performance_fee: Decimal::percent(20),
+                    treasury,
+                    swap_max_slippage: Decimal::percent(10),
+                },
+            )
             .unwrap();
 
         let err =
