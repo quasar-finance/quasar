@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
 ## v1.0.1-rc-testnet Update Wasm
 * [#568](https://github.com/quasar-finance/quasar/pull/568) Adding the was capability support on chain for x/wasm osmosis,cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_4. and bump the wasm version
 
@@ -73,6 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [#503](https://github.com/quasar-finance/quasar/pull/503) Set max slippage per rerange operation instead of in the vault config
 * [#501](https://github.com/quasar-finance/quasar/pull/501) Use any free balance of the CL vault in reranging
 * [#505](https://github.com/quasar-finance/quasar/pull/505) Add empty migrate entrypoint
+
+## 1.0.3-cl [YANKED]
 
 ## 1.0.2-cl
 * [#498](https://github.com/quasar-finance/quasar/pull/498) Add proptests, asserts and token sorting to the CL vault
