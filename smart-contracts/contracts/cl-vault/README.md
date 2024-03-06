@@ -273,3 +273,26 @@ Deleting a position means all
 ### Rebalancing over all positions
 
 TODO
+
+## Deposits into multi-range vaults
+
+### Step 1: get_min_ratio_per_position
+
+first we call the get_min_ratio_per_position function with the positions we have and the spot price.
+
+This function will take an arbitrary liquidity amount and get the ratio that each position would give given that current spot price. we then do one last step which normalizes the rations against each other.
+
+we then return a vec of potitions and their respective ratios.
+
+[notes for improvement]
+We currently use an arbitrary liquidity amount, which could concievably lead to low-liquidity or narrow-tick edge cases.
+
+It would be better to outline the formulas for amount_0 and amount_1 in the three possible scenarios:
+
+when the current price is above the range
+when the current price is below the range
+when the current price is within the range
+
+and then we will _ideally_ be able to divide the two equations by each other, this would cancel out the liquidity amount and leave us directly with a ratio that we can return.
+
+It is not a huge improvement, but it may avoid some issues in the future.
