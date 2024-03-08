@@ -3,10 +3,8 @@ use crate::helpers::{assert_admin, sort_tokens};
 use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::{
-    VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
-};
-use crate::state::{
-    Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
+    Metadata, VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, METADATA, RANGE_ADMIN, STRATEGIST_REWARDS,
+    VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
@@ -24,6 +22,9 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::UpdateConfig { updates } => {
             execute_update_config(deps, info, updates)
         }
+        AdminExtensionExecuteMsg::UpdateMetadata { updates } => {
+            execute_update_metadata(deps, info, updates)
+        }
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
         }
@@ -33,6 +34,7 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
             execute_claim_strategist_rewards(deps, info)
         }
+        AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
     }
 }
 

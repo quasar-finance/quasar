@@ -2,12 +2,11 @@ use std::str::FromStr;
 
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_binary, to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage,
-    Uint128, WasmMsg, WasmQuery,
+    to_binary, Addr, Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage, Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg, QueryMsg},
-    operations::{SwapOperationsList, SwapOperationsListUnchecked},
+    operations::SwapOperationsListUnchecked,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::poolmanager::v1beta1::SwapAmountInRoute,
@@ -89,13 +88,6 @@ pub fn swap(
         });
     }
 
-    // get token_out_denom
-    let token_out_denom = if *token_in_denom == pool_config.token0 {
-        pool_config.token1
-    } else {
-        pool_config.token0
-    };
-
     // we will only ever have a route length of one, this will likely change once we start selecting different routes
     let pool_route = SwapAmountInRoute {
         pool_id: pool_config.pool_id,
@@ -151,7 +143,7 @@ pub fn swap(
                     token_in_denom,
                     token_out_min_amount,
                 ))
-            } else if (best_out.ge(&recommended_out)) {
+            } else if best_out.ge(&recommended_out) {
                 execute_swap_operations(
                     dex_router_address,
                     best_path.unwrap().operations.into(),
@@ -210,7 +202,7 @@ fn execute_swap_operations(
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_json_binary(&ExecuteMsg::ExecuteSwapOperations {
+        msg: to_binary(&ExecuteMsg::ExecuteSwapOperations {
             operations: operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,
