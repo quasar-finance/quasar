@@ -5,6 +5,9 @@ use crate::rewards::CoinList;
 use crate::state::{
     VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
 };
+use crate::state::{
+    Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
+};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
@@ -37,8 +40,8 @@ pub fn execute_claim_strategist_rewards(
     deps: DepsMut,
     info: MessageInfo,
 ) -> ContractResult<Response> {
-    let range_admin = RANGE_ADMIN.load(deps.storage)?;
-    if info.sender != range_admin {
+    let allowed_claimer = VAULT_CONFIG.load(deps.storage)?.treasury;
+    if info.sender != allowed_claimer {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -50,7 +53,7 @@ pub fn execute_claim_strategist_rewards(
     Ok(Response::new()
         .add_attribute("rewards", format!("{:?}", rewards.coins()))
         .add_message(BankMsg::Send {
-            to_address: range_admin.to_string(),
+            to_address: allowed_claimer.to_string(),
             amount: sort_tokens(rewards.coins()),
         }))
 }
@@ -146,7 +149,22 @@ pub fn execute_update_config(
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
-// Rebuild and verify the tick exponent cache
+pub fn execute_update_metadata(
+    deps: DepsMut,
+    info: MessageInfo,
+    updates: Metadata,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    METADATA.save(deps.storage, &updates)?;
+
+    Ok(Response::default()
+        .add_attribute("action", "execute_update_metadata")
+        .add_attribute("updates", format!("{:?}", updates)))
+}
+
+// Rebuild the tick exponent cache as admin
 pub fn execute_build_tick_exp_cache(
     deps: DepsMut,
     info: MessageInfo,
@@ -161,8 +179,9 @@ pub fn execute_build_tick_exp_cache(
 
 #[cfg(test)]
 mod tests {
+    use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
+
     use super::*;
-    use crate::math::tick::verify_tick_exp_cache;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
@@ -180,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_execute_claim_strategist_rewards_success() {
-        let range_admin = Addr::unchecked("bob");
+        let treasury = Addr::unchecked("bob");
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
@@ -190,16 +209,23 @@ mod tests {
             )
             .unwrap();
 
-        RANGE_ADMIN
-            .save(deps.as_mut().storage, &range_admin)
+        VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &VaultConfig {
+                    performance_fee: Decimal::percent(20),
+                    treasury: treasury.clone(),
+                    swap_max_slippage: Decimal::percent(10),
+                },
+            )
             .unwrap();
 
         let response =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info(range_admin.as_str(), &[]))
+            execute_claim_strategist_rewards(deps.as_mut(), mock_info(treasury.as_str(), &[]))
                 .unwrap();
         assert_eq!(
             CosmosMsg::Bank(BankMsg::Send {
-                to_address: range_admin.to_string(),
+                to_address: treasury.to_string(),
                 amount: sort_tokens(rewards)
             }),
             response.messages[0].msg
@@ -208,15 +234,22 @@ mod tests {
 
     #[test]
     fn test_execute_claim_strategist_rewards_not_admin() {
-        let range_admin = Addr::unchecked("bob");
+        let treasury = Addr::unchecked("bob");
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
             .unwrap();
 
-        RANGE_ADMIN
-            .save(deps.as_mut().storage, &range_admin)
+        VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &VaultConfig {
+                    performance_fee: Decimal::percent(20),
+                    treasury,
+                    swap_max_slippage: Decimal::percent(10),
+                },
+            )
             .unwrap();
 
         let err =
@@ -467,6 +500,88 @@ mod tests {
             VAULT_CONFIG.load(deps.as_mut().storage).unwrap(),
             old_config
         );
+    }
+
+    #[test]
+    fn test_execute_update_metadata_success() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        assert!(execute_update_metadata(deps.as_mut(), info_admin, new_metadata.clone()).is_ok());
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), new_metadata);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_not_admin() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+        let info_not_admin = mock_info("not_admin", &[]);
+
+        assert!(execute_update_metadata(deps.as_mut(), info_not_admin, new_metadata).is_err());
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), old_metadata);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_with_funds() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+
+        let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
+
+        let result = execute_update_metadata(deps.as_mut(), info_admin_with_funds, new_metadata);
+        assert!(result.is_err(), "Expected Err, but got: {:?}", result);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_same_metadata() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        let res = execute_update_metadata(deps.as_mut(), info_admin, old_metadata.clone());
+        assert!(res.is_ok());
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), old_metadata);
     }
 
     #[test]

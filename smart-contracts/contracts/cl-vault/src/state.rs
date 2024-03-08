@@ -83,10 +83,26 @@ pub struct CurrentDeposit {
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
+#[cw_serde]
+pub enum RewardsStatus {
+    Ready,
+    Collecting,
+    Distributing,
+}
+
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
+/// Collection related states
+pub const REWARDS_STATUS: Item<RewardsStatus> = Item::new("rewards_status");
+pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+pub const LAST_ADDRESS_COLLECTED: Item<Addr> = Item::new("last_address_collect");
+/// Distribution related states
+pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
+pub const DISTRIBUTED_REWARDS: Item<CoinList> = Item::new("distributed_rewards");
+/// Shared collection+distribution states
+pub const CURRENT_TOTAL_SUPPLY: Item<Uint128> = Item::new("current_total_supply");
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+pub const DISTRIBUTION_SNAPSHOT: Deque<(Addr, Uint128)> = Deque::new("distribution_snapshot");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
