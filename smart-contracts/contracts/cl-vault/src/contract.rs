@@ -10,12 +10,11 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_distribute_rewards, handle_collect_incentives_reply,
+    execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
     handle_collect_spread_rewards_reply,
 };
 
-use crate::state::{DEX_ROUTER, VAULT_CONFIG};
-use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
+use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
 use crate::vault::merge::{
@@ -92,14 +91,14 @@ pub fn execute(
                     recommended_swap_route,
                     force_swap_route,
                 ),
-                crate::msg::ExtensionExecuteMsg::DistributeRewards {} => {
-                    execute_distribute_rewards(deps, env)
+                crate::msg::ExtensionExecuteMsg::CollectRewards { amount_of_users } => {
+                    execute_collect_rewards(deps, env, amount_of_users)
+                }
+                crate::msg::ExtensionExecuteMsg::DistributeRewards { amount_of_users } => {
+                    execute_distribute_rewards(deps, env, amount_of_users)
                 }
                 crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
                     execute_claim_user_rewards(deps, info.sender.as_str())
-                }
-                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
-                    execute_build_tick_exp_cache(deps, info)
                 }
             }
         }
