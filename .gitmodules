@@ -1,3 +1,6 @@
 [submodule "smart-contracts/external_deps/dao-contracts"]
 	path = smart-contracts/external_deps/dao-contracts
 	url = https://github.com/quasar-finance/dao-contracts
+[submodule "smart-contracts/external_deps/cw-dex-router.git"]
+	path = smart-contracts/external_deps/cw-dex-router
+	url = git@github.com:quasar-finance/cw-dex-router.git
