@@ -35,8 +35,8 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 
 [dependencies]
 cl-vault = {path = "../cl-vault", features = ["library"]}
-cosmwasm-schema = "1.2.1"
-cosmwasm-std = "1.2.1"
+cosmwasm-schema = "1.5.3"
+cosmwasm-std = "1.5.3"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", feature = ["library"]}
 cw-storage-plus = "1.1.0"
 cw2 = "1.1.1"
