@@ -126,16 +126,20 @@ pub fn swap(
             // if we need to force the route
             if force_swap_route {
                 match recommended_swap_route {
-                    Some(recommended_swap_route) => execute_swap_operations(
-                        dex_router_address,
-                        recommended_swap_route,
-                        token_out_min_amount,
-                        token_in_denom,
-                        token_in_amount,
-                    ),
+                    Some(recommended_swap_route) => {
+                        deps.api.debug("using execute_swap_operations");
+                        execute_swap_operations(
+                            dex_router_address,
+                            recommended_swap_route,
+                            token_out_min_amount,
+                            token_in_denom,
+                            token_in_amount,
+                        )
+                    }
                     None => Err(ContractError::TryForceRouteWithoutRecommendedSwapRoute {}),
                 }
             } else if best_out.is_zero() && recommended_out.is_zero() {
+                deps.api.debug("using swap_exact_amount_in");
                 Ok(swap_exact_amount_in(
                     &env,
                     pool_route,
@@ -144,6 +148,7 @@ pub fn swap(
                     token_out_min_amount,
                 ))
             } else if best_out.ge(&recommended_out) {
+                deps.api.debug("using execute_swap_operations");
                 execute_swap_operations(
                     dex_router_address,
                     best_path.unwrap().operations.into(),
@@ -152,6 +157,7 @@ pub fn swap(
                     token_in_amount,
                 )
             } else {
+                deps.api.debug("using execute_swap_operations");
                 // recommended_out > best_out
                 execute_swap_operations(
                     dex_router_address,
@@ -162,13 +168,16 @@ pub fn swap(
                 )
             }
         }
-        None => Ok(swap_exact_amount_in(
-            &env,
-            pool_route,
-            token_in_amount,
-            token_in_denom,
-            token_out_min_amount,
-        )),
+        None => {
+            deps.api.debug("using swap_exact_amount_in");
+            Ok(swap_exact_amount_in(
+                &env,
+                pool_route,
+                token_in_amount,
+                token_in_denom,
+                token_out_min_amount,
+            ))
+        }
     };
 
     Ok(swap_msg?)

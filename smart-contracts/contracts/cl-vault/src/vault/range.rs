@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use cosmwasm_std::{
     to_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
+    Response, Storage, SubMsg, SubMsgResponse, SubMsgResult, Uint128,
 };
 
 use osmosis_std::types::osmosis::{
@@ -15,20 +15,19 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::get_twap_price,
-    helpers::get_unused_balances,
+    helpers::{extract_attribute_value_by_ty_and_key, get_twap_price, get_unused_balances},
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::CURRENT_SWAP,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
+        POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
-    vault::concentrated_liquidity::create_position,
-    vault::concentrated_liquidity::get_position,
-    vault::merge::MergeResponse,
-    vault::swap::swap,
+    vault::{
+        concentrated_liquidity::{create_position, get_position},
+        merge::MergeResponse,
+        swap::swap,
+    },
     ContractError,
 };
 use crate::{
@@ -65,6 +64,7 @@ pub fn execute_update_range(
     recommended_swap_route: Option<SwapOperationsListUnchecked>,
     force_swap_route: Option<bool>,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("HERE1");
     let lower_tick: i64 = price_to_tick(deps.storage, Decimal256::from(lower_price))?
         .try_into()
         .expect("Overflow when converting lower price to tick");
@@ -105,6 +105,7 @@ pub fn execute_update_range_ticks(
     info: MessageInfo,
     modify_range_config: ModifyRangeState,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("HERE2");
     assert_range_admin(deps.storage, &info.sender)?;
 
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
@@ -144,6 +145,7 @@ pub fn handle_withdraw_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("HERE3");
     let msg: MsgWithdrawPositionResponse = data.try_into()?;
 
     // let msg: MsgWithdrawPositionResponse = data.into_result().unwrap().data.unwrap().try_into()?;
@@ -240,6 +242,7 @@ pub fn handle_initial_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("HERE4");
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
@@ -287,6 +290,7 @@ pub fn do_swap_deposit_merge(
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("HERE5");
     if SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
@@ -421,9 +425,37 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    deps.api.debug(format!("HERE6 {:?}", data).as_str());
     // TODO: Remove handling of data. if we keep reply_on_success in the caller function
     match data.clone() {
-        SubMsgResult::Ok(_msg) => handle_swap_success(deps, env, data.try_into()?),
+        SubMsgResult::Ok(msg) => {
+            let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
+            let tokens_out: Result<String, ContractError> = match resp {
+                Ok(msg) => Ok(msg.token_out_amount),
+                Err(_) => {
+                    let tokens_out_opt = extract_attribute_value_by_ty_and_key(
+                        msg.events,
+                        "token_swapped",
+                        "tokens_out",
+                    );
+
+                    match tokens_out_opt {
+                        Some(tokens_out) => {
+                            let token_out_coin = Coin::from_str(&tokens_out);
+                            Ok(token_out_coin?.amount.to_string())
+                        }
+                        None => {
+                            return Err(ContractError::SwapFailed {
+                                message: "No tokens_out attribute found in swap response"
+                                    .to_string(),
+                            })
+                        }
+                    }
+                }
+            };
+
+            handle_swap_success(deps, env, tokens_out?)
+        }
         SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
     }
 }
@@ -431,8 +463,9 @@ pub fn handle_swap_reply(
 fn handle_swap_success(
     deps: DepsMut,
     env: Env,
-    resp: MsgSwapExactAmountInResponse,
+    tokens_out: String,
 ) -> Result<Response, ContractError> {
+    deps.api.debug(format!("HERE7 {:?}", tokens_out).as_str());
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,
         None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
@@ -444,14 +477,8 @@ fn handle_swap_success(
 
     // get post swap balances to create positions with
     let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            left_over_amount,
-            Uint128::new(resp.token_out_amount.parse()?),
-        ),
-        SwapDirection::OneToZero => (
-            Uint128::new(resp.token_out_amount.parse()?),
-            left_over_amount,
-        ),
+        SwapDirection::ZeroToOne => (left_over_amount, Uint128::new(tokens_out.parse()?)),
+        SwapDirection::OneToZero => (Uint128::new(tokens_out.parse()?), left_over_amount),
     };
     // Create the position after swapped the leftovers based on swap direction
     let mut coins_to_send = vec![];
@@ -502,6 +529,7 @@ pub fn handle_iteration_create_position_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    deps.api.debug("HERE8");
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
     let mut swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
