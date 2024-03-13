@@ -85,8 +85,6 @@ pub fn query_claimed_incentives(deps: Deps, address: String) -> StdResult<Binary
         CLAIMED_INCENTIVES.may_load(deps.storage, deps.api.addr_validate(&address)?)?;
 
     let incentives_to_return = claimed_incentives.unwrap_or_else(CoinVec::new);
-    deps.api
-        .debug(format!("{:?}", incentives_to_return).as_str());
 
     to_json_binary(incentives_to_return.coins())
 }
