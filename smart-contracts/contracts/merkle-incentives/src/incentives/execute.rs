@@ -1,7 +1,9 @@
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{DepsMut, Response};
-
 use crate::{state::CLAIMED_INCENTIVES, ContractError};
+use cosmwasm_schema::{
+    cw_serde,
+    serde::{self, Deserialize, Deserializer, Serializer},
+};
+use cosmwasm_std::{DepsMut, Response};
 
 use super::{helpers::is_valid_claim, CoinVec};
 
@@ -9,11 +11,45 @@ use super::{helpers::is_valid_claim, CoinVec};
 pub enum IncentivesExecuteMsg {
     Claim {
         coins: CoinVec,
+        #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
         proof_hashes: Vec<[u8; 32]>,
         leaf_index: usize,
         total_leaves_count: usize,
         address: String,
     },
+}
+
+fn as_base64<S>(array_of_bytes: &[[u8; 32]], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let base64_strings: Vec<String> = array_of_bytes
+        .iter()
+        .map(|bytes| base64::encode(bytes))
+        .collect();
+
+    serializer.serialize_some(&base64_strings)
+}
+
+fn from_base64<'de, D>(deserializer: D) -> Result<Vec<[u8; 32]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let vec_of_strings = Vec::<String>::deserialize(deserializer)?;
+    let mut bytes_vec = Vec::new();
+
+    for s in vec_of_strings {
+        let decoded = base64::decode(&s).map_err(serde::de::Error::custom)?;
+        let mut array = [0u8; 32];
+        // Ensure the decoded bytes fit into the 32-byte array.
+        if decoded.len() != array.len() {
+            return Err(serde::de::Error::custom("Invalid byte length"));
+        }
+        array.copy_from_slice(&decoded);
+        bytes_vec.push(array);
+    }
+
+    Ok(bytes_vec)
 }
 
 pub fn handle_execute_incentives(

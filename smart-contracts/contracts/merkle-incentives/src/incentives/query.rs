@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{to_json_binary, Binary, Deps, Env, StdResult};
 
-use crate::state::MERKLE_ROOT;
+use crate::state::{CLAIMED_INCENTIVES, MERKLE_ROOT};
 
 use super::{helpers::is_valid_claim, CoinVec};
 
@@ -10,7 +10,7 @@ use super::{helpers::is_valid_claim, CoinVec};
 pub enum IncentivesQueryMsg {
     // Get the pending ranges
     #[returns(Option<String>)]
-    GetMerkleRoot {},
+    MerkleRoot {},
     // Get the pending ranges for a specific contract
     #[returns(bool)]
     IsValidClaim {
@@ -20,6 +20,9 @@ pub enum IncentivesQueryMsg {
         leaf_index: usize,
         total_leaves_count: usize,
     },
+    // Get the already claimed incentives by address
+    #[returns(Option<CoinVec>)]
+    ClaimedIncentives { address: String },
 }
 
 pub fn handle_query_incentives(
@@ -28,7 +31,7 @@ pub fn handle_query_incentives(
     query_msg: IncentivesQueryMsg,
 ) -> StdResult<Binary> {
     match query_msg {
-        IncentivesQueryMsg::GetMerkleRoot {} => query_merkle_root(deps),
+        IncentivesQueryMsg::MerkleRoot {} => query_merkle_root(deps),
         IncentivesQueryMsg::IsValidClaim {
             address,
             coins,
@@ -43,6 +46,9 @@ pub fn handle_query_incentives(
             leaf_index,
             total_leaves_count,
         ),
+        IncentivesQueryMsg::ClaimedIncentives { address } => {
+            query_claimed_incentives(deps, address)
+        }
     }
 }
 
@@ -72,6 +78,17 @@ pub fn query_is_valid_claim(
         Ok(_coins) => to_json_binary(&true),
         Err(_err) => to_json_binary(&false),
     }
+}
+
+pub fn query_claimed_incentives(deps: Deps, address: String) -> StdResult<Binary> {
+    let claimed_incentives: Option<CoinVec> =
+        CLAIMED_INCENTIVES.may_load(deps.storage, deps.api.addr_validate(&address)?)?;
+
+    let incentives_to_return = claimed_incentives.unwrap_or_else(CoinVec::new);
+    deps.api
+        .debug(format!("{:?}", incentives_to_return).as_str());
+
+    to_json_binary(incentives_to_return.coins())
 }
 
 #[cfg(test)]
@@ -107,5 +124,8 @@ mod tests {
             .unwrap();
 
         let merkle_root = query_merkle_root(deps.as_ref()).unwrap();
+        // TODO: Assert
     }
+
+    // TODO: Test query claimed incentives
 }

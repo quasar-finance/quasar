@@ -3,11 +3,11 @@ mod tests {
     use crate::{
         admin::execute::AdminExecuteMsg,
         incentives::{execute::IncentivesExecuteMsg, CoinVec},
-        msg::ExecuteMsg,
+        msg::{ExecuteMsg, QueryMsg},
         state::ClaimAccount,
         test_tube::initialize::initialize::default_init,
     };
-    use cosmwasm_std::{Addr, Coin};
+    use cosmwasm_std::Coin;
     use cw_storage_plus::KeyDeserialize;
     use osmosis_test_tube::osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceRequest;
     use osmosis_test_tube::{
@@ -238,6 +238,18 @@ mod tests {
                 )
                 .unwrap();
 
+            // TODO: Assert this
+            let _: Option<CoinVec> = wasm
+                .query(
+                    contract.as_str(),
+                    &QueryMsg::IncentivesQuery(
+                        crate::incentives::query::IncentivesQueryMsg::ClaimedIncentives {
+                            address: accounts.get(index).unwrap().address().to_string(),
+                        },
+                    ),
+                )
+                .unwrap();
+
             // Assert bank send occurred
             let address_balance = bank
                 .query_balance(&QueryBalanceRequest {
@@ -271,6 +283,7 @@ mod tests {
             "999999000100000000".to_string()
         );
     }
+
     #[test]
     fn merkle_complete_cycle_works_with_construction() {
         let (app, contract, admin) = default_init(1000000000000000000u128);
