@@ -55,8 +55,8 @@ cosmwasm-storage = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
+serde-json-wasm = { workspace = true }
 
-serde-json-wasm = "0.5"
 anyhow = "1"
 proptest = "1.0.0"
 derivative = "2.2.0"

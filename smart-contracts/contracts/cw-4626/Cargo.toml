@@ -35,5 +35,6 @@ cw20-base = { workspace = true }
 quasar-traits = { path = "../../packages/quasar-traits" }
 quasar-types = { path = "../../packages/quasar-types"}
 strategy = { path = "../strategy", features = ["library"]}
+
 [dev-dependencies]
-cosmwasm-schema = { version = "1.0.0" }
+cosmwasm-schema = { workspace = true }

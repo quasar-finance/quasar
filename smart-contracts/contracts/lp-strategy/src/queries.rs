@@ -298,8 +298,7 @@ mod tests {
 
         let q = QueryMsg::TrappedErrors {};
 
-        let res: TrappedErrorsResponse =
-            from_json(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+        let res: TrappedErrorsResponse = from_json(&query(deps.as_ref(), env, q).unwrap()).unwrap();
 
         assert!(res.errors.is_empty());
     }

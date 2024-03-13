@@ -26,11 +26,11 @@ use cosmwasm_std::entry_point;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
-    QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse, QuerySpotPriceResponse,
+    QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+    QuerySpotPriceResponse,
 };
-use prost::Message;
-use std::str::FromStr;
 use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
+use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState};
@@ -39,6 +39,7 @@ use quasar_types::ica::packet::{ica_send, AckBody};
 use quasar_types::ica::traits::Unpack;
 use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
+use std::str::FromStr;
 
 use cosmwasm_std::{
     from_json, to_json_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
@@ -364,7 +365,8 @@ pub fn handle_icq_ack(
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
-    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref()).unwrap()
+    let raw_balance = QueryBalanceResponse::decode(resp.responses[0].value.as_ref())
+        .unwrap()
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
@@ -384,14 +386,16 @@ pub fn handle_icq_ack(
     USABLE_COMPOUND_BALANCE.save(storage, &usable_base_token_compound_balance)?;
 
     // TODO the quote balance should be able to be compounded aswell
-    let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref()).unwrap()
+    let _quote_balance = QueryBalanceResponse::decode(resp.responses[1].value.as_ref())
+        .unwrap()
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
 
     // TODO we can make the LP_SHARES cache less error prone here by using the actual state of lp shares
     //  We then need to query locked shares aswell, since they are not part of balance
-    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref()).unwrap()
+    let _lp_balance = QueryBalanceResponse::decode(resp.responses[2].value.as_ref())
+        .unwrap()
         .balance
         .ok_or(ContractError::BaseDenomNotFound)?
         .amount;
@@ -399,7 +403,9 @@ pub fn handle_icq_ack(
     let exit_total_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
-    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref()).unwrap().spot_price;
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())
+        .unwrap()
+        .spot_price;
 
     let mut response_idx = 4;
     let join_pool = if SIMULATED_JOIN_AMOUNT_IN

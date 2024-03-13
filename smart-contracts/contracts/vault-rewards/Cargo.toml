@@ -58,4 +58,4 @@ cw2 = { workspace = true }
 cw20 = { workspace = true }
 
 cw-asset = "3"
-itertools = "0.10"
+itertools = "0.12.1"

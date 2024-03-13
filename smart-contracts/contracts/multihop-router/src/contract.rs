@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
 };
 // use cw2::set_contract_version;
 
@@ -180,7 +180,10 @@ fn handle_list_routes(deps: Deps) -> ContractResult<ListRoutesResponse> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{from_json, testing::{mock_dependencies, mock_env}};
+    use cosmwasm_std::{
+        from_json,
+        testing::{mock_dependencies, mock_env},
+    };
 
     use crate::route::{Destination, Hop};
 
