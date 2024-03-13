@@ -55,5 +55,6 @@ serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
+cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm", features = ["osmosis"]}
 osmosis-test-tube = "21.0.0"
 proptest = "1.2.0"

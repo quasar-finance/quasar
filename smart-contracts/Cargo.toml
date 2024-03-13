@@ -9,6 +9,7 @@ members = [
   "contracts/cl-vault",
   "contracts/range-middleware",
   "packages/quasar-types",
+  "test_tube",
 ]
 
 [workspace.dependencies]

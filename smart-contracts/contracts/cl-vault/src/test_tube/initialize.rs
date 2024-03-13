@@ -2,11 +2,15 @@
 pub mod initialize {
     use std::str::FromStr;
 
+    use apollo_cw_asset::AssetInfoUnchecked;
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+    use cw_dex::implementations::pool::Pool;
+    use cw_dex::osmosis::OsmosisPool;
+    use cw_dex_router::operations::{SwapOperationUnchecked, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-        CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
+        CreateConcentratedLiquidityPoolsProposal, Pool as OsmosisStdPool, PoolRecord, PoolsRequest,
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
@@ -91,6 +95,14 @@ pub mod initialize {
             .data
             .code_id;
 
+        let dex_router_wasm_byte_code = std::fs::read("./cw_dex_router.wasm").unwrap();
+
+        let dex_router_code_id = wasm
+            .store_code(&dex_router_wasm_byte_code, None, &admin)
+            .unwrap()
+            .data
+            .code_id;
+
         // Setup a dummy CL pool to work with
         let gov = GovWithAppAccess::new(&app);
         gov.propose_and_execute(
@@ -112,7 +124,7 @@ pub mod initialize {
 
         // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let pool: OsmosisStdPool = OsmosisStdPool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
@@ -166,10 +178,54 @@ pub mod initialize {
                 },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
+                sort_tokens(vec![
+                    coin(1000, pool.clone().token0),
+                    coin(1000, pool.token1.clone()),
+                ])
+                .as_ref(),
                 &admin,
             )
             .unwrap();
+
+        let dex_router_contract = wasm
+            .instantiate(
+                dex_router_code_id,
+                &cw_dex_router::msg::InstantiateMsg {},
+                Some(admin.address().as_str()),
+                Some("cw-dex-router"),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        // add the relevant pool to the dex router
+        wasm.execute(
+            dex_router_contract.data.address.as_str(),
+            &cw_dex_router::msg::ExecuteMsg::SetPath {
+                offer_asset: AssetInfoUnchecked::Native(pool.token0.clone()),
+                ask_asset: AssetInfoUnchecked::Native(pool.token1.clone()),
+                path: SwapOperationsListUnchecked::new(vec![SwapOperationUnchecked::new(
+                    Pool::Osmosis(OsmosisPool::unchecked(pool.id)),
+                    AssetInfoUnchecked::Native(pool.token0.clone()),
+                    AssetInfoUnchecked::Native(pool.token1.clone()),
+                )]),
+                bidirectional: true,
+            },
+            &[],
+            &admin,
+        );
+
+        // set the dex router contract in the vault
+        wasm.execute(
+            contract.data.address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Admin(
+                crate::msg::AdminExtensionExecuteMsg::UpdateDexRouter {
+                    address: Some(dex_router_contract.data.address),
+                },
+            )),
+            &[],
+            &admin,
+        );
 
         (app, Addr::unchecked(contract.data.address), pool.id, admin)
     }
@@ -184,7 +240,7 @@ pub mod initialize {
         let pm = PoolManager::new(&app);
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let pool = OsmosisStdPool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let resp = wasm
             .query::<QueryMsg, PoolResponse>(
@@ -203,7 +259,7 @@ pub mod initialize {
             .query::<QueryMsg, VaultInfoResponse>(contract_address.as_str(), &QueryMsg::Info {})
             .unwrap();
 
-        assert_eq!(resp.tokens, vec![pool.token0, pool.token1]);
+        assert_eq!(resp.tokens, vec![pool.token0.clone(), pool.token1.clone()]);
         assert_eq!(
             resp.vault_token,
             tf.query_denoms_from_creator(&QueryDenomsFromCreatorRequest {
@@ -252,8 +308,14 @@ pub mod initialize {
                     max_slippage: Decimal::bps(9500),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
-                    recommended_swap_route: None,
-                    force_swap_route: None,
+                    recommended_swap_route: Some(SwapOperationsListUnchecked::new(vec![
+                        SwapOperationUnchecked::new(
+                            Pool::Osmosis(OsmosisPool::unchecked(pool.id)),
+                            AssetInfoUnchecked::Native(pool.token0.clone()),
+                            AssetInfoUnchecked::Native(pool.token1.clone()),
+                        ),
+                    ])),
+                    force_swap_route: Some(true),
                 },
             )),
             &[],

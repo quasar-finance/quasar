@@ -395,6 +395,7 @@ dependencies = [
  "apollo-cw-asset",
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-dex",
  "cw-dex-router",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.2",
@@ -2234,6 +2235,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "quasar-test-tube"
+version = "0.1.0"
+dependencies = [
+ "apollo-cw-asset",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-dex-router",
+ "cw-storage-plus 1.1.0",
+ "cw-utils 1.0.2",
+ "cw-vault-multi-standard",
+ "cw2 1.1.1",
+ "num_enum",
+ "osmosis-std 0.21.0",
+ "osmosis-test-tube",
+ "proptest",
+ "prost 0.12.3",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
