@@ -4,17 +4,16 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
-    query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
+    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
     execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply, CoinList,
+    handle_collect_spread_rewards_reply,
 };
 
-use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS};
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -29,7 +28,7 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -78,6 +77,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                 }) => execute_update_range(
                     deps,
                     env,
@@ -87,6 +88,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                 ),
                 crate::msg::ExtensionExecuteMsg::CollectRewards { amount_of_users } => {
                     execute_collect_rewards(deps, env, amount_of_users)
@@ -126,6 +129,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
             crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::DexRouter {} => Ok(to_binary(&query_dex_router(deps)?)?),
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_binary(&query_user_balance(deps, user)?)?)
@@ -184,8 +188,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
-    CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     Ok(Response::new().add_attribute("migrate", "successful"))
 }

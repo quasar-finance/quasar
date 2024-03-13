@@ -238,7 +238,7 @@ impl QuasarVaultSuite {
                     ],
                     deposit_denom: LOCAL_DENOM.to_string(),
                 }),
-                &funds.unwrap_or(vec![]),
+                &funds.unwrap_or_default(),
                 "vault_contract",
                 Some(deployer.to_string()), // admin: Option<String>, will need this for upgrading
             )
