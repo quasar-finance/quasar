@@ -1,16 +1,16 @@
 [workspace]
 
 members = [
-  "contracts/airdrop",
-  "contracts/lp-strategy",
-  "contracts/basic-vault",
-  "contracts/vault-rewards",
-  "contracts/multihop-router",
-  "contracts/cl-vault",
+  #"contracts/airdrop",
+  #"contracts/lp-strategy",
+  #"contracts/basic-vault",
+  #"contracts/vault-rewards",
+  #"contracts/multihop-router",
+  #"contracts/cl-vault",
   "contracts/merkle-incentives",
-  "packages/quasar-types",
-  "packages/merkle",
-  "packages/merkle-cli",
+  #"packages/quasar-types",
+  #"packages/merkle",
+  #"packages/merkle-cli",
 ]
 
 [workspace.dependencies]

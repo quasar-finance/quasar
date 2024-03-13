@@ -8,7 +8,7 @@ use crate::admin::query::handle_query_admin;
 use crate::error::ContractError;
 use crate::incentives::execute::handle_execute_incentives;
 use crate::incentives::query::handle_query_incentives;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::INCENTIVES_ADMIN;
 
 // version info for migration info
@@ -50,6 +50,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::IncentivesQuery(range_query) => handle_query_incentives(deps, env, range_query),
         QueryMsg::AdminQuery(admin_query) => handle_query_admin(deps, env, admin_query),
     }
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
 #[cfg(test)]

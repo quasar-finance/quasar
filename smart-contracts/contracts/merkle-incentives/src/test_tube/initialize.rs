@@ -5,28 +5,29 @@ pub mod initialize {
 
     use crate::msg::InstantiateMsg;
 
-    pub fn default_init(ugauge_amount: u128) -> (OsmosisTestApp, Addr, SigningAccount) {
+    pub fn default_init(gauge_coins: Vec<Coin>) -> (OsmosisTestApp, Addr, SigningAccount) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/merkle_incentives.wasm",
-            ugauge_amount,
+            gauge_coins,
         )
     }
 
     pub fn init_test_contract(
         filename: &str,
-        ugauge_amount: u128,
+        gauge_coins: Vec<Coin>,
     ) -> (OsmosisTestApp, Addr, SigningAccount) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let wasm = Wasm::new(&app);
 
+        // Ensure uosmo is always included by checking and adding if necessary
+        let mut coins_with_uosmo = gauge_coins.clone();
+        if !gauge_coins.iter().any(|coin| coin.denom == "uosmo") {
+            coins_with_uosmo.push(Coin::new(100_000_000_000_000_000_000, "uosmo"));
+        }
+
         // Create new account with initial funds
-        let admin = app
-            .init_account(&vec![
-                Coin::new(100_000_000_000_000_000_000, "uosmo"),
-                Coin::new(ugauge_amount, "ugauge"),
-            ])
-            .unwrap();
+        let admin = app.init_account(&coins_with_uosmo).unwrap();
 
         // Load compiled wasm bytecode
         let wasm_byte_code = std::fs::read(filename).unwrap();
