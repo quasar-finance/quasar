@@ -48,7 +48,7 @@ dependencies = [
  "cw2 1.1.2",
  "cw20 1.1.2",
  "cw20-base 1.1.2",
- "itertools 0.11.0",
+ "itertools 0.12.1",
  "num_enum",
  "osmosis-std",
  "osmosis-std-derive",

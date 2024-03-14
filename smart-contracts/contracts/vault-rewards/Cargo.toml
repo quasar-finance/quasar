@@ -56,6 +56,5 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 cw2 = { workspace = true }
 cw20 = { workspace = true }
-
-cw-asset = "3"
-itertools = "0.12.1"
+cw-asset = { workspace = true }
+itertools = { workspace = true }

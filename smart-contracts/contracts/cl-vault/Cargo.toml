@@ -52,9 +52,9 @@ osmosis-test-tube = { workspace = true }
 prost = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
+num_enum = { workspace = true }
 
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-num_enum = "0.7.0"
 
 [dev-dependencies]
 osmosis-test-tube = { workspace = true }
