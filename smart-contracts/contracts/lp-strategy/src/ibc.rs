@@ -24,10 +24,12 @@ use cosmos_sdk_proto::prost::Message as ProstMessage;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+#[allow(deprecated)]
+use osmosis_std::types::osmosis::gamm::v1beta1::QuerySpotPriceResponse;
+
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
     QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
-    QuerySpotPriceResponse,
 };
 use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
 use quasar_types::callback::{BondResponse, Callback};
@@ -360,7 +362,7 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let ack: InterchainQueryPacketAck = from_json(&ack_bin)?;
+    let ack: InterchainQueryPacketAck = from_json(ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
@@ -402,6 +404,7 @@ pub fn handle_icq_ack(
     let exit_total_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
+    #[allow(deprecated)]
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())
         .unwrap()
         .spot_price;

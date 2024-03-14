@@ -2,13 +2,13 @@ use cosmwasm_std::{
     to_json_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
     Uint128,
 };
+#[allow(deprecated)]
+use osmosis_std::types::osmosis::gamm::v1beta1::QuerySpotPriceRequest;
 use osmosis_std::types::{
-    cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
+    cosmos::bank::v1beta1::QueryBalanceRequest,
+    cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
-        gamm::{
-            v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
-            v2::QuerySpotPriceRequest,
-        },
+        gamm::v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
         lockup::LockedRequest,
     },
 };
@@ -173,6 +173,7 @@ pub fn prepare_full_query(
         share_in_amount: shares_out.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
+    #[allow(deprecated)]
     let spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,

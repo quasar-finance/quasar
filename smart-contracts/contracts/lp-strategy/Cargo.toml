@@ -34,5 +34,5 @@ uuid = {version = "1.1.2", default-features = false, features = ["v4", "js"]}
 quasar-types = {path = "../../packages/quasar-types"}
 
 [dev-dependencies]
-cw-multi-test = {workspace = true}
+cw-multi-test = { workspace = true }
 proptest = "1.0.0"

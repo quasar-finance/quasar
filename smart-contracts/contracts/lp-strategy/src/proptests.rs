@@ -24,14 +24,13 @@ mod tests {
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
     };
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::{
         cosmos::bank::v1beta1::QueryBalanceResponse,
         osmosis::gamm::v1beta1::{
             QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+            QuerySpotPriceResponse,
         },
-    };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v2::QuerySpotPriceResponse,
     };
     use proptest::collection::vec;
 

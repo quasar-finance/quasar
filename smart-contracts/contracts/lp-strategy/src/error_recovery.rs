@@ -168,7 +168,7 @@ fn _handle_last_failed_ica_recovery(
 fn de_succcesful_join(
     ack_bin: IbcAcknowledgement,
 ) -> Result<MsgJoinSwapExternAmountInResponse, ContractError> {
-    let ack: IcsAck = from_json(&ack_bin.data)?;
+    let ack: IcsAck = from_json(ack_bin.data)?;
     if let IcsAck::Result(val) = ack {
         let ack_body = AckBody::from_bytes(val.0.as_ref())?.to_any()?;
         let ack = MsgJoinSwapExternAmountInResponse::unpack(ack_body)?;
