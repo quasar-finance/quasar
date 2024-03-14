@@ -29,23 +29,38 @@ mod tests {
         let bank = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
-        // This test has been generated using those proofs.
+        // Create accounts
+        let accounts = app
+            .init_accounts(&[Coin::new(100_000_000_000, "uosmo")], 10)
+            .unwrap();
 
         // get all eligible claimers
         let leaves_str = vec![
-            "osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt900000000ugauge".to_string(),
-            "osmo1dplhdl5uch280hlcy3mdt207yf4vz3hkzpsysf9000000000ugauge".to_string(),
-            "osmo1htv3nrpc69w5hnnxhh9pdpmfa7w5zvh3cst7cy90000000000ugauge".to_string(),
-            "osmo1hr5u2ak5k6dydhpu5q348w5mw8fk69sj24x47l900000000000ugauge".to_string(),
-            "osmo149pjhcf2sgwpmwqyknkkav4w2ywjjfc58egh6m9000000000000ugauge".to_string(),
-            "osmo1n65qu2feqk8g0fcte2wtph3k3x55qsu720qyvx90000000000000ugauge".to_string(),
-            "osmo18aduztzax34vtyhdqcarc455kn7xpldtdxn75s900000000000000ugauge".to_string(),
-            "osmo1uctm0pn6fdwdlt48c6x9h29nwhg6jsr409q35m9000000000900000ugauge".to_string(),
-            "osmo16xetz07p6v2laa7fqxfvtq2jx99g4yphaugp4490000000009000000ugauge".to_string(),
-            "osmo1aemevl2sxymzmjxkaal4u8959qmxgpek4r7u6w900000000090000000ugauge".to_string(),
+            format!("{}900000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}9000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}90000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}900000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}9000000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}90000000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}900000000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!(
+                "{}9000000000900000ugauge",
+                accounts[0].address().to_string()
+            )
+            .to_string(),
+            format!(
+                "{}90000000009000000ugauge",
+                accounts[0].address().to_string()
+            )
+            .to_string(),
+            format!(
+                "{}900000000090000000ugauge",
+                accounts[0].address().to_string()
+            )
+            .to_string(),
         ];
 
-        // which seems to generate this root: 0hGvbH+l9pdPgOmJY6wZuwjsrvtPsuslgTURavrUP6I=
+        // , accounts[0].address().to_string()which seems to generate this root: 0hGvbH+l9pdPgOmJY6wZuwjsrvtPsuslgTURavrUP6I=
 
         // create leave hashes from above strings
         let leaves = leaves_str
@@ -80,24 +95,14 @@ mod tests {
         ));
 
         // ClaimAccounts related to above ToVerifies
-        let claim_accounts: Vec<ClaimAccount> = vec![
-            // osmo1cn2t4zha4ukq42u2q8x0zgyp60hp5gy54a2wxt
-            ClaimAccount {
-                proof: merkle_proof
-                    .proof_hashes()
-                    .iter()
-                    .map(|x| Vec::from_slice(x).unwrap())
-                    .collect(),
-                coins: CoinVec::from(vec![Coin::new(900000000, "ugauge")]),
-            },
-        ];
-        // Create as many acocunt from mnemonic as ClaimAccounts
-        let accounts = app
-            .init_accounts(
-                &[Coin::new(100_000_000_000, "uosmo")],
-                claim_accounts.len() as u64,
-            )
-            .unwrap();
+        let claim_accounts: Vec<ClaimAccount> = vec![ClaimAccount {
+            proof: merkle_proof
+                .proof_hashes()
+                .iter()
+                .map(|x| Vec::from_slice(x).unwrap())
+                .collect(),
+            coins: CoinVec::from(vec![Coin::new(900000000, "ugauge")]),
+        }];
 
         // Fund the incentives contract as admin
         let _ = bank.send(
