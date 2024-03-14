@@ -7,6 +7,7 @@ mod tests {
         state::ClaimAccount,
         test_tube::initialize::initialize::default_init,
     };
+    use base64::{engine::general_purpose::STANDARD, Engine};
     use cosmwasm_std::{Coin, Uint128};
     use cw_storage_plus::KeyDeserialize;
     use osmosis_test_tube::osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceRequest;
@@ -144,7 +145,7 @@ mod tests {
         // TODO: Assert admin changed and queriable
 
         // AdminMsg::UpdateMerkleRoot
-        let binding = base64::encode(merkle_tree.root().unwrap());
+        let binding = STANDARD.encode(merkle_tree.root().unwrap());
         let merkle_root: &str = binding.as_str();
         let _ = wasm
             .execute(
@@ -314,8 +315,12 @@ mod tests {
                     ),
                 ]),
                 vec![
-                    base64::decode("j3zyEtaQ88vnMBN4Wbb2vssWy3LEGJerxlz2xyHcWEY=").unwrap(),
-                    base64::decode("L7EOyHK/x+/x/Pc0osavxYd8qqb6bg9W5E2ppXOxHKc=").unwrap(),
+                    STANDARD
+                        .decode("j3zyEtaQ88vnMBN4Wbb2vssWy3LEGJerxlz2xyHcWEY=")
+                        .unwrap(),
+                    STANDARD
+                        .decode("L7EOyHK/x+/x/Pc0osavxYd8qqb6bg9W5E2ppXOxHKc=")
+                        .unwrap(),
                 ],
             ),
             (
@@ -331,8 +336,12 @@ mod tests {
                     ),
                 ]),
                 vec![
-                    base64::decode("VJEFLHCJcLsip2zZf/C/VYZCz8x8ioqLOSiZHCizpj4=").unwrap(),
-                    base64::decode("L7EOyHK/x+/x/Pc0osavxYd8qqb6bg9W5E2ppXOxHKc=").unwrap(),
+                    STANDARD
+                        .decode("VJEFLHCJcLsip2zZf/C/VYZCz8x8ioqLOSiZHCizpj4=")
+                        .unwrap(),
+                    STANDARD
+                        .decode("L7EOyHK/x+/x/Pc0osavxYd8qqb6bg9W5E2ppXOxHKc=")
+                        .unwrap(),
                 ],
             ),
             (
@@ -348,8 +357,12 @@ mod tests {
                     ),
                 ]),
                 vec![
-                    base64::decode("bXHudyZ1T8GL1JwCp7m2pWiNfA8ixD8S9POOelU0qZI=").unwrap(),
-                    base64::decode("DZuG8wjPum3sMPU98Ld4WvSXcHOMz8v32twL1/OOLyQ=").unwrap(),
+                    STANDARD
+                        .decode("bXHudyZ1T8GL1JwCp7m2pWiNfA8ixD8S9POOelU0qZI=")
+                        .unwrap(),
+                    STANDARD
+                        .decode("DZuG8wjPum3sMPU98Ld4WvSXcHOMz8v32twL1/OOLyQ=")
+                        .unwrap(),
                 ],
             ),
             (
@@ -365,8 +378,12 @@ mod tests {
                     ),
                 ]),
                 vec![
-                    base64::decode("MnF8oGUkUxO9Z1J+E9CnOe0fPEzzQZ85X0W77btlINo=").unwrap(),
-                    base64::decode("DZuG8wjPum3sMPU98Ld4WvSXcHOMz8v32twL1/OOLyQ=").unwrap(),
+                    STANDARD
+                        .decode("MnF8oGUkUxO9Z1J+E9CnOe0fPEzzQZ85X0W77btlINo=")
+                        .unwrap(),
+                    STANDARD
+                        .decode("DZuG8wjPum3sMPU98Ld4WvSXcHOMz8v32twL1/OOLyQ=")
+                        .unwrap(),
                 ],
             ),
         ];

@@ -71,6 +71,7 @@ pub fn verify_proof(
 
 #[cfg(test)]
 mod tests {
+    use base64::{engine::general_purpose::STANDARD, Engine};
     use cosmwasm_std::{testing::mock_dependencies, Addr, Coin, Uint128};
 
     use crate::{
@@ -98,10 +99,18 @@ mod tests {
     // Utils functions
     fn get_proof_hashes() -> Vec<[u8; 32]> {
         let proof = vec![
-            base64::decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=").unwrap(),
-            base64::decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=").unwrap(),
-            base64::decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=").unwrap(),
-            base64::decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=").unwrap(),
+            STANDARD
+                .decode("R6J/QIhrqN4KxMa7ZhaCm/6J7ibT7HHcw9KKRV4ML0k=")
+                .unwrap(),
+            STANDARD
+                .decode("B2Tu7/SQT48JJTAv+8KncPIgSVMSx08IhNN3Fxm2iBo=")
+                .unwrap(),
+            STANDARD
+                .decode("rWczQYIqxQMn6Kuglth0Z2gq8YysvEUqwt5VO8iYkZI=")
+                .unwrap(),
+            STANDARD
+                .decode("0ykV7dikL6TIBXAzwDZ21InNZdTIvT9S9sxgtZtA4gw=")
+                .unwrap(),
         ];
         let mut proof_hashes: Vec<[u8; 32]> = Vec::new();
         for proof in &proof {

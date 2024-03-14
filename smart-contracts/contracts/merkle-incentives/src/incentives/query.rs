@@ -121,7 +121,7 @@ mod tests {
         execute_update_merkle_root(deps.as_mut(), env, info, MERKLE_ROOT_STRING.to_string())
             .unwrap();
 
-        let merkle_root = query_merkle_root(deps.as_ref()).unwrap();
+        let _merkle_root = query_merkle_root(deps.as_ref()).unwrap();
         // TODO: Assert
     }
 
