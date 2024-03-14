@@ -12,6 +12,12 @@ pub mod query;
 #[cw_serde]
 pub struct CoinVec(Vec<Coin>);
 
+impl Default for CoinVec {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoinVec {
     pub fn new() -> Self {
         Self(vec![])
@@ -94,7 +100,7 @@ impl PartialOrd for CoinVec {
         // if there is an additional non-zero coin on the right hand side (that is not on self), then we return less
         if other.0.iter().any(|coin| {
             // if we don't find this other coin in self
-            if self.0.iter().find(|c| c.denom == coin.denom).is_none() {
+            if !self.0.iter().any(|c| c.denom == coin.denom) {
                 coin.amount.gt(&Uint128::zero()) // return true if > 0 amount
             } else {
                 false

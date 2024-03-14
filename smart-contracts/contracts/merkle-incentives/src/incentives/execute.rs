@@ -1,4 +1,5 @@
 use crate::{state::CLAIMED_INCENTIVES, ContractError};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use cosmwasm_schema::{
     cw_serde,
     serde::{self, Deserialize, Deserializer, Serializer},
@@ -25,7 +26,7 @@ where
 {
     let base64_strings: Vec<String> = array_of_bytes
         .iter()
-        .map(|bytes| base64::encode(bytes))
+        .map(|bytes| STANDARD.encode(bytes))
         .collect();
 
     serializer.serialize_some(&base64_strings)
@@ -39,7 +40,7 @@ where
     let mut bytes_vec = Vec::new();
 
     for s in vec_of_strings {
-        let decoded = base64::decode(&s).map_err(serde::de::Error::custom)?;
+        let decoded = STANDARD.decode(&s).map_err(serde::de::Error::custom)?;
         let mut array = [0u8; 32];
         // Ensure the decoded bytes fit into the 32-byte array.
         if decoded.len() != array.len() {

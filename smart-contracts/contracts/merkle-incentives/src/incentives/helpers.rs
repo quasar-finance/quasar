@@ -1,11 +1,12 @@
-use cosmwasm_std::{Addr, Deps};
-use rs_merkle::algorithms::Sha256;
-use rs_merkle::{Hasher, MerkleProof};
-
 use crate::{
     error::ContractError,
     state::{CLAIMED_INCENTIVES, MERKLE_ROOT},
 };
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
+use cosmwasm_std::{Addr, Deps};
+use rs_merkle::algorithms::Sha256;
+use rs_merkle::{Hasher, MerkleProof};
 
 use super::CoinVec;
 
@@ -20,7 +21,7 @@ pub fn is_valid_claim(
     let merkle_root = MERKLE_ROOT.load(deps.storage)?;
 
     // the format of this will look like "addr1000utokena2000utokenb"
-    let claim_string = format!("{}{}", address.as_str(), coins.to_string());
+    let claim_string = format!("{}{}", address.as_str(), coins);
 
     verify_proof(
         &merkle_root,
@@ -51,7 +52,7 @@ pub fn verify_proof(
     total_leaves_count: usize,
     to_verify: &str,
 ) -> Result<(), ContractError> {
-    let root_hash = base64::decode(merkle_root).unwrap();
+    let root_hash = STANDARD.decode(merkle_root).unwrap();
     let to_verify_hash = Sha256::hash(to_verify.as_bytes());
 
     let proof = MerkleProof::<Sha256>::new(proof_hashes);

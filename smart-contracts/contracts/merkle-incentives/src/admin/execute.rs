@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD, Engine};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 
@@ -55,7 +56,7 @@ pub fn execute_update_merkle_root(
     is_incentives_admin(deps.as_ref(), &info.sender)?;
 
     // Validate new merkle_root
-    match base64::decode(new_root.clone()) {
+    match STANDARD.decode(new_root.clone()) {
         Ok(f) => f,
         Err(e) => {
             return Err(ContractError::FailedToDecodeRoot {

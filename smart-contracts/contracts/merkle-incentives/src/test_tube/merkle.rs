@@ -9,10 +9,7 @@ mod tests {
     };
     use cosmwasm_std::{Coin, Uint128};
     use cw_storage_plus::KeyDeserialize;
-    use osmosis_test_tube::{
-        cosmrs::proto::ics23::ProofSpec,
-        osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceRequest,
-    };
+    use osmosis_test_tube::osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceRequest;
     use osmosis_test_tube::{
         osmosis_std::types::cosmos::{bank::v1beta1::MsgSend, base::v1beta1::Coin as OsmoCoin},
         Account, Bank, Module, Wasm,
@@ -23,7 +20,7 @@ mod tests {
     };
 
     const MNEMONIC: &str = "market inquiry reward way sting diet double beef accuse help crisp circle leaf connect elder bench wrong dust push essence wise flip devote about";
-        
+
     #[test]
     fn merkle_complete_cycle_works() {
         let (app, contract, admin) = default_init(vec![Coin {
