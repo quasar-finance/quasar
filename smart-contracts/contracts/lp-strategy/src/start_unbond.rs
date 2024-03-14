@@ -765,7 +765,7 @@ mod tests {
         assert_eq!(
             res,
             ContractError::Std(StdError::NotFound {
-                kind: "cosmwasm_std::math::uint128::Uint128".to_string()
+                kind: "type: cosmwasm_std::math::uint128::Uint128; key: [00, 06, 73, 68, 61, 72, 65, 73, 62, 6F, 62]".to_string()
             })
         )
     }
