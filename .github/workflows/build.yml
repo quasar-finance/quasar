@@ -70,8 +70,8 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
-      - name: Install just
-        run: sudo apt-get install just -y
+      - name: Install just via cargo
+        run: cargo install just
       - name: Build smart contracts
         if: env.GIT_DIFF
         run: cd smart-contracts && just workspace-optimize

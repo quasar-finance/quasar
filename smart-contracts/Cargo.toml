@@ -38,5 +38,5 @@ cosmos-sdk-proto = {version = "0.20.0", default-features = false}
 serde-json-wasm = {version = "1.0.1", default-features = false} # TODO: Move to workspace
 
 # Testing
-cw-multi-test = "0.20.0" #cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}
+cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}
 osmosis-test-tube = "22.1.0"
