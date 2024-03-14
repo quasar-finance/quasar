@@ -17,7 +17,7 @@ fn try_bond() {
     assert_eq!(
         err,
         VaultContractError::Std(cosmwasm_std::StdError::GenericErr {
-            msg: "alloc::string::String not found".to_string()
+            msg: "type: alloc::string::String; key: [69, 63, 71, 5F, 63, 68, 61, 6E, 6E, 65, 6C] not found".to_string()
         })
     );
 }
