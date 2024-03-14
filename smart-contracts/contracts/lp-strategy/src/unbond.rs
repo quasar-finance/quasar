@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Coin, CosmosMsg, Env, IbcTimeout, Order, QuerierWrapper, Storage,
-    SubMsg, Timestamp, Uint128, WasmMsg,
+    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, Env, IbcTimeout, Order, QuerierWrapper,
+    Storage, SubMsg, Timestamp, Uint128, WasmMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v1beta1::MsgExitSwapShareAmountIn,
@@ -236,7 +236,7 @@ pub fn finish_unbond(
     {
         CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: unbond.owner.to_string(),
-            msg: to_binary(&Callback::UnbondResponse(UnbondResponse {
+            msg: to_json_binary(&Callback::UnbondResponse(UnbondResponse {
                 unbond_id: unbond.id.clone(),
             }))?,
             funds: vec![Coin {

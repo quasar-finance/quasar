@@ -12,7 +12,7 @@ use quasar_types::icq::ICQ_ORDERING;
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    entry_point, from_binary, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
+    entry_point, from_json, Binary, DepsMut, Env, IbcBasicResponse, IbcChannel,
     IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg, IbcPacket, IbcPacketAckMsg,
     IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, StdError,
 };
@@ -168,7 +168,7 @@ pub fn ibc_packet_ack(
     msg: IbcPacketAckMsg,
 ) -> Result<IbcBasicResponse, ContractError> {
     // TODO: trap error like in receive?
-    let ack: IcsAck = from_binary(&msg.acknowledgement.data)?;
+    let ack: IcsAck = from_json(&msg.acknowledgement.data)?;
     match ack {
         IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
         IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),
@@ -186,7 +186,7 @@ pub fn handle_succesful_ack(
         crate::helpers::IbcMsgKind::Transfer => confirm_transfer(deps),
         crate::helpers::IbcMsgKind::Ica(ica_kind) => match ica_kind {
             crate::helpers::IcaMessages::JoinSwapExternAmountIn => {
-                let response: MsgJoinSwapExternAmountInResponse = from_binary(&ack_bin)?;
+                let response: MsgJoinSwapExternAmountInResponse = from_json(&ack_bin)?;
                 let msg = do_ibc_lock_tokens(deps.storage, response.share_out_amount)?;
                 let msg_kind = MsgKind::Ibc(IbcMsgKind::Ica(IcaMessages::LockTokens));
                 Ok(IbcBasicResponse::new().add_submessage(create_submsg(

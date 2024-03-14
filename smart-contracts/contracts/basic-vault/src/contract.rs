@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
+    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
     StdError, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
@@ -105,7 +105,7 @@ pub fn instantiate(
         WasmMsg::Instantiate {
             admin: Some(info.sender.to_string()),
             code_id: msg.vault_rewards_code_id,
-            msg: to_binary(&VaultRewardsInstantiateMsg {
+            msg: to_json_binary(&VaultRewardsInstantiateMsg {
                 vault_token: env.contract.address.to_string(),
                 reward_token: msg.reward_token,
                 distribution_schedules: msg.reward_distribution_schedules,
@@ -143,7 +143,7 @@ pub fn execute(
                     let clear_cache_msg = WasmMsg::Execute {
                         contract_addr: pc.address.to_string(),
                         funds: vec![],
-                        msg: to_binary(&try_icq_msg)?,
+                        msg: to_json_binary(&try_icq_msg)?,
                     };
                     msgs.push(clear_cache_msg);
                     Ok(())
@@ -305,26 +305,28 @@ fn update_rewards_contract(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Claims { address } => {
-            to_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
+            to_json_binary(&CLAIMS.query_claims(deps, &deps.api.addr_validate(&address)?)?)
         }
-        QueryMsg::Investment {} => to_binary(&query_investment(deps)?),
-        QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
-        QueryMsg::AdditionalTokenInfo {} => to_binary(&query_vault_token_info(deps)?),
-        QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
+        QueryMsg::Investment {} => to_json_binary(&query_investment(deps)?),
+        QueryMsg::TokenInfo {} => to_json_binary(&query_token_info(deps)?),
+        QueryMsg::AdditionalTokenInfo {} => to_json_binary(&query_vault_token_info(deps)?),
+        QueryMsg::Balance { address } => to_json_binary(&query_balance(deps, address)?),
         QueryMsg::Allowance { owner, spender } => {
-            to_binary(&query_allowance(deps, owner, spender)?)
+            to_json_binary(&query_allowance(deps, owner, spender)?)
         }
-        QueryMsg::DepositRatio { funds } => to_binary(&query_deposit_ratio(deps, funds)?),
-        QueryMsg::PendingBonds { address } => to_binary(&query_pending_bonds(deps, address)?),
-        QueryMsg::GetDebug {} => to_binary(&query_debug_string(deps)?),
-        QueryMsg::GetTvlInfo {} => to_binary(&query_tvl_info(deps)?),
-        QueryMsg::PendingUnbonds { address } => to_binary(&query_pending_unbonds(deps, address)?),
-        QueryMsg::GetCap {} => to_binary(&query_cap(deps)?),
+        QueryMsg::DepositRatio { funds } => to_json_binary(&query_deposit_ratio(deps, funds)?),
+        QueryMsg::PendingBonds { address } => to_json_binary(&query_pending_bonds(deps, address)?),
+        QueryMsg::GetDebug {} => to_json_binary(&query_debug_string(deps)?),
+        QueryMsg::GetTvlInfo {} => to_json_binary(&query_tvl_info(deps)?),
+        QueryMsg::PendingUnbonds { address } => {
+            to_json_binary(&query_pending_unbonds(deps, address)?)
+        }
+        QueryMsg::GetCap {} => to_json_binary(&query_cap(deps)?),
         QueryMsg::PendingBondsById { bond_id } => {
-            to_binary(&query_pending_bonds_by_id(deps, bond_id)?)
+            to_json_binary(&query_pending_bonds_by_id(deps, bond_id)?)
         }
         QueryMsg::PendingUnbondsById { bond_id } => {
-            to_binary(&query_pending_unbonds_by_id(deps, bond_id)?)
+            to_json_binary(&query_pending_unbonds_by_id(deps, bond_id)?)
         }
     }
 }
@@ -470,7 +472,7 @@ mod test {
             } => {
                 if contract_addr == "prim1" {
                     QuerierResult::Ok(ContractResult::Ok(
-                        to_binary(&lp_strategy::msg::ConfigResponse {
+                        to_json_binary(&lp_strategy::msg::ConfigResponse {
                             config: lp_strategy::state::Config {
                                 lock_period: 300,
                                 pool_id: 1,
@@ -487,7 +489,7 @@ mod test {
                     ))
                 } else if contract_addr == "prim2" {
                     QuerierResult::Ok(ContractResult::Ok(
-                        to_binary(&lp_strategy::msg::ConfigResponse {
+                        to_json_binary(&lp_strategy::msg::ConfigResponse {
                             config: lp_strategy::state::Config {
                                 lock_period: 300,
                                 pool_id: 1,
@@ -504,7 +506,7 @@ mod test {
                     ))
                 } else if contract_addr == "prim3" {
                     QuerierResult::Ok(ContractResult::Ok(
-                        to_binary(&lp_strategy::msg::ConfigResponse {
+                        to_json_binary(&lp_strategy::msg::ConfigResponse {
                             config: lp_strategy::state::Config {
                                 lock_period: 300,
                                 pool_id: 1,
@@ -597,7 +599,7 @@ mod test {
             SubMsg::new(WasmMsg::Execute {
                 contract_addr: "prim1".to_string(),
                 funds: vec![],
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
             })
         );
         assert_eq!(
@@ -605,7 +607,7 @@ mod test {
             SubMsg::new(WasmMsg::Execute {
                 contract_addr: "prim2".to_string(),
                 funds: vec![],
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::TryIcq {}).unwrap(),
             })
         );
     }

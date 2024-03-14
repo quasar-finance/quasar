@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, to_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError,
-    Uint128, WasmMsg,
+    coin, to_json_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;
@@ -286,7 +286,7 @@ pub fn bond(
 
             Ok(WasmMsg::Execute {
                 contract_addr: prim_addr,
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::Bond {
                     id: bond_seq.to_string(),
                 })?,
                 funds: vec![coin],
@@ -312,7 +312,7 @@ pub fn bond(
 
     //         Ok(WasmMsg::Execute {
     //             contract_addr: pc.address.clone(),
-    //             msg: to_binary(&lp_strategy::msg::ExecuteMsg::Bond {
+    //             msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::Bond {
     //                 id: bond_seq.to_string(),
     //             })?,
     //             funds: vec![funds],
@@ -430,7 +430,7 @@ pub fn do_start_unbond(
 
             Ok(WasmMsg::Execute {
                 contract_addr: pc.address.clone(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
                     share_amount: primitive_share_amount,
                 })?,
@@ -549,7 +549,7 @@ pub fn find_and_return_unbondable_msgs(
         if can_unbond {
             unbond_msgs.push(WasmMsg::Execute {
                 contract_addr: stub.address.clone(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::Unbond {
                     id: unbond_id.to_string(),
                 })?,
                 funds: vec![],
@@ -806,7 +806,7 @@ mod tests {
             msg1.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: "contract1".to_string(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
                     share_amount: Uint128::new(500),
                 })
@@ -818,7 +818,7 @@ mod tests {
             msg2.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: "contract2".to_string(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
                     share_amount: Uint128::new(500),
                 })
@@ -1013,7 +1013,7 @@ mod tests {
             msg1.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: "contract1".to_string(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
                     share_amount: Uint128::new(900),
                 })
@@ -1025,7 +1025,7 @@ mod tests {
             msg2.msg,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: "contract2".to_string(),
-                msg: to_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
+                msg: to_json_binary(&lp_strategy::msg::ExecuteMsg::StartUnbond {
                     id: bond_seq.to_string(),
                     share_amount: Uint128::new(100),
                 })

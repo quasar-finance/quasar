@@ -42,18 +42,21 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
-cosmwasm-schema = "1.1.3"
-cosmwasm-std = "1.1.3"
-cosmwasm-storage = "1.1.3"
-cw-storage-plus = "1.0.1"
-cw2 = "1.0.1"
-schemars = "0.8.10"
-serde = { version = "1.0.145", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.31" }
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+cw2 = { workspace = true }
+cosmwasm-storage = { workspace = true }
 
 [dev-dependencies]
-serde-json-wasm = "0.5"
+cw-multi-test = { workspace = true }
+serde-json-wasm = { workspace = true }
+
 anyhow = "1"
-cw-multi-test = "0.16.2"
 proptest = "1.0.0"
 derivative = "2.2.0"

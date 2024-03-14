@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
+    entry_point, to_json_binary, Binary, Coin, Deps, DepsMut, Env, IbcMsg, IbcTimeout, MessageInfo,
     Order, Reply, Response, StdError, StdResult, Uint64,
 };
 use cw2::set_contract_version;
@@ -300,8 +300,8 @@ pub fn execute_deposit(info: MessageInfo) -> Result<Response<IntergammMsg>, Cont
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Acks {} => to_binary(&query_acks(deps)?),
-        QueryMsg::PendingAcks {} => to_binary(&query_pending_acks(deps)?),
+        QueryMsg::Acks {} => to_json_binary(&query_acks(deps)?),
+        QueryMsg::PendingAcks {} => to_json_binary(&query_pending_acks(deps)?),
     }
 }
 
