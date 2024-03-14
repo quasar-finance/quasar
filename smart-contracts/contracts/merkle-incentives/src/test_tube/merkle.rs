@@ -20,8 +20,6 @@ mod tests {
         Hasher, MerkleProof, MerkleTree,
     };
 
-    const MNEMONIC: &str = "market inquiry reward way sting diet double beef accuse help crisp circle leaf connect elder bench wrong dust push essence wise flip devote about";
-
     #[test]
     fn merkle_complete_cycle_works() {
         let (app, contract, admin) = default_init(vec![Coin {
@@ -95,9 +93,8 @@ mod tests {
         ];
         // Create as many acocunt from mnemonic as ClaimAccounts
         let accounts = app
-            .init_accounts_from_mnemonic(
+            .init_accounts(
                 &[Coin::new(100_000_000_000, "uosmo")],
-                MNEMONIC,
                 claim_accounts.len() as u64,
             )
             .unwrap();

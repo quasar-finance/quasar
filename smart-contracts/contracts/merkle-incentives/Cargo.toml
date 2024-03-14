@@ -46,4 +46,4 @@ serde-json-wasm = "1.0.1"
 thiserror = {version = "1.0.49"}
 
 [dev-dependencies]
-osmosis-test-tube = { git = "https://github.com/magiodev/test-tube.git", rev = "5cbde355e101070a5ff2fed9d9e5a76fc02c161d" } # v22.1.0-fork
+osmosis-test-tube = "22.1.0"
