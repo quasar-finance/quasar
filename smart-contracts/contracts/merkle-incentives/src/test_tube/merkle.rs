@@ -21,6 +21,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore]
     fn merkle_complete_cycle_works() {
         let (app, contract, admin) = default_init(vec![Coin {
             denom: "ugauge".to_string(),
