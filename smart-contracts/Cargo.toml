@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 
 members = [
   # "contracts/icq",
@@ -47,4 +48,4 @@ num_enum = "0.7.2"
 
 # Testing
 cw-multi-test = "0.20.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}
-osmosis-test-tube = "22.1.0"
+osmosis-test-tube = "21.0.0"
