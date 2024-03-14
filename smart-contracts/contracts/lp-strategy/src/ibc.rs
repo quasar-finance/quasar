@@ -30,7 +30,6 @@ use osmosis_std::types::osmosis::gamm::v1beta1::{
     QuerySpotPriceResponse,
 };
 use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
-use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
 use quasar_types::error::Error as QError;
 use quasar_types::ibc::{enforce_order_and_version, ChannelInfo, ChannelType, HandshakeState};

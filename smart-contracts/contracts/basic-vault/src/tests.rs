@@ -65,7 +65,7 @@ impl QuasarQuerier {
         new_states
             .into_iter()
             .for_each(|(address, shares, balance)| {
-                let mut val = self
+                let val = self
                     .primitive_states
                     .iter_mut()
                     .find(|(prim_addr, _, _, _)| prim_addr == address)

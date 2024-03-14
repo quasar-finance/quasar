@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
+use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -286,6 +286,10 @@ pub fn get_unused_balances(
     let strategist_rewards = STRATEGIST_REWARDS.load(storage)?;
 
     balances.sub(&strategist_rewards)?;
+
+    for user_reward in USER_REWARDS.range(storage, None, None, cosmwasm_std::Order::Ascending) {
+        balances.sub(&user_reward?.1)?;
+    }
 
     Ok(balances)
 }

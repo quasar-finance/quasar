@@ -5,7 +5,10 @@ use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use crate::{
     error::ContractResult,
-    state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
+    state::{
+        PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, USER_REWARDS,
+        VAULT_DENOM,
+    },
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
@@ -49,6 +52,11 @@ pub struct UserSharesBalanceResponse {
 }
 
 #[cw_serde]
+pub struct UserRewardsResponse {
+    pub rewards: Vec<Coin>,
+}
+
+#[cw_serde]
 pub struct TotalAssetsResponse {
     pub token0: Coin,
     pub token1: Coin,
@@ -67,11 +75,6 @@ pub struct TotalVaultTokenSupplyResponse {
 #[cw_serde]
 pub struct VerifyTickCacheResponse {
     pub result: Result<(), i64>,
-}
-
-#[cw_serde]
-pub struct SharePriceResponse {
-    pub balances: Vec<Coin>,
 }
 
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
@@ -166,6 +169,13 @@ pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserShares
     Ok(UserSharesBalanceResponse { balance })
 }
 
+pub fn query_user_rewards(deps: Deps, user: String) -> ContractResult<UserRewardsResponse> {
+    let rewards = USER_REWARDS
+        .load(deps.storage, deps.api.addr_validate(&user)?)?
+        .coins();
+    Ok(UserRewardsResponse { rewards })
+}
+
 /// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users
 pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
     let position = get_position(deps.storage, &deps.querier)?;
@@ -211,20 +221,4 @@ pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTo
         .parse::<u128>()?
         .into();
     Ok(TotalVaultTokenSupplyResponse { total })
-}
-
-/// Share price is total assets in vault vs total supply
-/// Number of shares is added here as there might be times when the number corresponding to 1 share
-/// might be zero, so in order to get a more precise price, multiple of shares can be in 10s, 100s,
-/// 1000s to get an accurate price
-pub fn query_share_price(
-    deps: Deps,
-    env: Env,
-    shares: Uint128,
-) -> ContractResult<SharePriceResponse> {
-    let user_assets = query_assets_from_shares(deps, env, shares)?.balances;
-
-    Ok(SharePriceResponse {
-        balances: user_assets,
-    })
 }

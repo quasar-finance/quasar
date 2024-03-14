@@ -18,7 +18,6 @@ impl Unpack for MsgJoinSwapExternAmountIn {
                 actual: msg.type_url,
             });
         }
-        let val: Self = Message::decode(msg.value.as_ref())?;
         let val: MsgJoinSwapExternAmountIn = prost::Message::decode(msg.value.as_slice()).unwrap();
         Ok(val)
     }

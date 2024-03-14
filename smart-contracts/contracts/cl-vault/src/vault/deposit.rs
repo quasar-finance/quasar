@@ -91,7 +91,7 @@ pub(crate) fn execute_exact_deposit(
             create_position_msg,
             Replies::DepositCreatePosition as u64,
         ))
-        .add_attribute("method", "execute")
+        .add_attribute("method", "exact_deposit")
         .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", token0.amount)
         .add_attribute("amount1", token1.amount))
@@ -231,8 +231,8 @@ pub fn handle_deposit_create_position_reply(
         )
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_deposit_create_position");
+        .add_attribute("method", "create_position_reply")
+        .add_attribute("action", "exact_deposit");
 
     // if we have any funds to refund, refund them
     if let Some((msg, attr)) = bank_msg {
@@ -535,7 +535,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 

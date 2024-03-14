@@ -2,7 +2,7 @@
 authors = ["LaurensKubat <32776056+LaurensKubat@users.noreply.github.com>"]
 edition = "2021"
 name = "cl-vault"
-version = "0.3.0"
+version = "0.1.0"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -53,12 +53,9 @@ prost = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
 
-apollo-cw-asset = "0.1.0"
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", features = ["library", "osmosis"]}
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 num_enum = "0.7.0"
 
 [dev-dependencies]
-## todo : change this once branch is merges.
-cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
+osmosis-test-tube = { workspace = true }
 proptest = "1.2.0"

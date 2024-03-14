@@ -1,8 +1,8 @@
-use crate::{error::ContractResult, helpers::sort_tokens};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
+use crate::{error::ContractResult, helpers::sort_tokens};
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 #[cw_serde]
 #[derive(Default)]
 pub struct CoinList(Vec<Coin>);
@@ -10,17 +10,6 @@ pub struct CoinList(Vec<Coin>);
 impl CoinList {
     pub fn new() -> CoinList {
         CoinList::default()
-    }
-
-    pub fn osmo_coin_from_coin_list(&self) -> Vec<OsmoCoin> {
-        let mut temp_coins = vec![];
-        for coin in self.coins() {
-            temp_coins.push(OsmoCoin {
-                amount: coin.amount.to_string(),
-                denom: coin.denom,
-            })
-        }
-        temp_coins
     }
 
     /// calculates the ratio of the current rewards
@@ -56,23 +45,10 @@ impl CoinList {
         Ok(())
     }
 
-    // TODO: Cant we get Coins from a coinlist and use above function?
-    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
-        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
-            .coins()
-            .into_iter()
-            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
-            .collect();
-
-        // Append and merge to
-        self.merge(parsed_rewards?)?;
-        Ok(())
-    }
-
     /// add rewards to self and mutate self
-    pub fn add(&mut self, rewards: CoinList) -> ContractResult<()> {
+    pub fn add(mut self, rewards: CoinList) -> ContractResult<Self> {
         self.merge(rewards.coins())?;
-        Ok(())
+        Ok(self)
     }
 
     pub fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
@@ -316,7 +292,7 @@ mod tests {
                 },
             ])
             .unwrap();
-        rewards
+        rewards = rewards
             .add(CoinList::from_coins(vec![
                 coin(2000, "uosmo"),
                 coin(2000, "uatom"),

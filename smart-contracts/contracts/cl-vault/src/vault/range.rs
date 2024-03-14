@@ -1,4 +1,18 @@
-use super::concentrated_liquidity::get_cl_pool_info;
+use cosmwasm_schema::cw_serde;
+use std::str::FromStr;
+
+use cosmwasm_std::{
+    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
+};
+
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{
+        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
+    },
+    gamm::v1beta1::MsgSwapExactAmountInResponse,
+};
+
 use crate::{
     helpers::get_twap_price,
     helpers::get_unused_balances,
@@ -22,18 +36,8 @@ use crate::{
     },
     state::CURRENT_BALANCE,
 };
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
-};
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{
-        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
-    },
-    gamm::v1beta1::MsgSwapExactAmountInResponse,
-};
-use std::str::FromStr;
+
+use super::concentrated_liquidity::get_cl_pool_info;
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -130,8 +134,8 @@ pub fn execute_update_range_ticks(
             withdraw_msg,
             Replies::WithdrawPosition.into(),
         ))
-        .add_attribute("method", "execute")
-        .add_attribute("action", "update_range_ticks")
+        .add_attribute("action", "modify_range")
+        .add_attribute("method", "withdraw_position")
         .add_attribute("position_id", position.position_id.to_string())
         .add_attribute("liquidity_amount", position.liquidity))
 }
@@ -223,8 +227,8 @@ pub fn handle_withdraw_position_reply(
                 create_position_msg,
                 Replies::RangeInitialCreatePosition.into(),
             ))
-            .add_attribute("method", "reply")
-            .add_attribute("action", "handle_withdraw_position")
+            .add_attribute("action", "modify_range")
+            .add_attribute("method", "create_position")
             .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
             .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
             .add_attribute("token0", format!("{}{}", amount0, pool_config.token0))
@@ -363,8 +367,8 @@ pub fn do_swap_deposit_merge(
         SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
         return Ok(Response::new()
-            .add_attribute("method", "reply")
-            .add_attribute("action", "do_swap_deposit_merge")
+            .add_attribute("action", "swap_deposit_merge")
+            .add_attribute("method", "no_swap")
             .add_attribute("new_position", position_id.unwrap().to_string()));
     };
 
@@ -399,8 +403,8 @@ pub fn do_swap_deposit_merge(
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
-        .add_attribute("method", "reply")
-        .add_attribute("action", "do_swap_deposit_merge")
+        .add_attribute("action", "swap_deposit_merge")
+        .add_attribute("method", "swap")
         .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
         .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
@@ -472,8 +476,8 @@ fn handle_swap_success(
             create_position_msg,
             Replies::RangeIterationCreatePosition.into(),
         ))
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_swap_success")
+        .add_attribute("action", "swap_deposit_merge")
+        .add_attribute("method", "create_position2")
         .add_attribute(
             "lower_tick",
             format!("{:?}", swap_deposit_merge_state.target_lower_tick),
@@ -524,8 +528,8 @@ pub fn handle_iteration_create_position_reply(
 
     Ok(Response::new()
         .add_submessage(merge_submsg)
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_iteration_create_position")
+        .add_attribute("action", "swap_deposit_merge")
+        .add_attribute("method", "fungify_positions")
         .add_attribute(
             "position_ids",
             format!("{:?}", swap_deposit_merge_state.target_range_position_ids),
@@ -544,8 +548,8 @@ pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Respon
     )?;
 
     Ok(Response::new()
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_merge_response")
+        .add_attribute("action", "swap_deposit_merge")
+        .add_attribute("method", "fungify_positions_success")
         .add_attribute("swap_deposit_merge_status", "success")
         .add_attribute("status", "success"))
 }

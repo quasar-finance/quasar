@@ -10,7 +10,7 @@ use cosmwasm_std::{
     MemoryStorage, StdError,
 };
 use cw_multi_test::{
-    ibc::Ibc, App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Module,
+    App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Ibc, Module,
     StakeKeeper, WasmKeeper,
 };
 use vault_rewards::state::DistributionSchedule;
