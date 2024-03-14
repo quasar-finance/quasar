@@ -1,7 +1,0 @@
-{
-    "hash": "some_hash_to_test",
-    "time": 12345,
-    "amount": 0.01,
-    "to": "to_address",
-    "from": "from_address"
-}

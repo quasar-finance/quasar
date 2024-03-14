@@ -8,9 +8,7 @@ members = [
   "contracts/multihop-router",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
-  "packages/quasar-types",
-  "packages/merkle",
-  "packages/merkle-cli",
+  "packages/quasar-types"
 ]
 
 [workspace.dependencies]
