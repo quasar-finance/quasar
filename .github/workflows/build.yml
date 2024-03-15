@@ -59,7 +59,7 @@ jobs:
     strategy:
       matrix:
         arch: [ amd64, arm64 ]
-        targetos: [linux ]
+        targetos: [ linux ]
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -107,11 +107,7 @@ jobs:
         if: env.GIT_DIFF
         run: |
           cd smart-contracts
-          for file in artifacts/*.wasm; do
-            contract_name=$(basename "$file" .wasm)
-            mkdir -p "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"
-            mv "$file" "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"
-          done
+          find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); mkdir -p "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
       - name: Run test-tube tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test -- --include-ignored --test-threads=1
