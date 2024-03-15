@@ -106,10 +106,11 @@ jobs:
       - name: Move smart contracts
         if: env.GIT_DIFF
         run: |
-          for file in *.wasm; do
-            contract_name=$(echo "$file" | cut -f 1 -d '.')
-            mkdir -p "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"
-            mv "$file" "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$file"
+          cd smart-contracts
+          for file in artifacts/*.wasm; do
+            contract_name=$(basename "$file" .wasm)
+            mkdir -p "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"
+            mv "$file" "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"
           done
       - name: Run test-tube tests
         if: env.GIT_DIFF
