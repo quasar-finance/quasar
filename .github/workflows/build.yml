@@ -103,11 +103,13 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
+
+      # This is the new one
       - name: Move smart contracts
         if: env.GIT_DIFF
         run: |
-          cd smart-contracts
-          find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); mkdir -p "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
+          find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); mkdir -p "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
+
       - name: Run test-tube tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test -- --include-ignored --test-threads=1
