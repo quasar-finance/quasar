@@ -108,7 +108,7 @@ jobs:
       - name: Move smart contracts
         if: env.GIT_DIFF
         run: |
-          find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm | sed "s/-/_/g"); mkdir -p "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
+          find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); dir_name=$(echo "$contract_name" | sed "s/_/-/g"); mkdir -p "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
 
       - name: Run test-tube tests
         if: env.GIT_DIFF
