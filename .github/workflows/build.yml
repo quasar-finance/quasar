@@ -103,9 +103,14 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
-      - name: Move the cl-vault
+      - name: Move smart contracts
         if: env.GIT_DIFF
-        run: mkdir -p smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release && mv ./cl_vault.wasm  smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm
+        run: |
+          for file in *.wasm; do
+            contract_name=$(echo "$file" | cut -f 1 -d '.')
+            mkdir -p "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release"
+            mv "$file" "smart-contracts/contracts/$contract_name/test-tube-build/wasm32-unknown-unknown/release/$file"
+          done
       - name: Run test-tube tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test -- --include-ignored --test-threads=1
