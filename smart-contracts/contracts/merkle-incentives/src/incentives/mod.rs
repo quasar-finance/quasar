@@ -84,21 +84,23 @@ impl From<Vec<Coin>> for CoinVec {
 }
 
 impl PartialOrd for CoinVec {
-    // This function compares two CoinVec instances (`self` and `other`) based on their coins.
-    // It constructs HashMaps mapping denominations to amounts for both instances.
-    // Then, it iterates over the HashMap of `self` and checks against the HashMap of `other`.
-    // - If a coin in `self` has a corresponding coin in `other`, it compares their amounts.
-    //   - If the amount of the coin in `self` is less than the amount of the corresponding coin in `other`,
-    //     it sets `self_less` to true.
-    //   - If the amount of the coin in `self` is greater than the amount of the corresponding coin in `other`,
-    //     it sets `self_greater` to true.
-    // - If a denomination exists in `other` but not in `self` and the amount is greater than zero, it sets `self_less` to true.
-    // Finally, based on the flags `self_less` and `self_greater`, it returns the ordering:
-    // - If `self_less` is true and `self_greater` is false, it returns `Less`.
-    // - If `self_less` is false and `self_greater` is true, it returns `Greater`.
-    // - If both flags are false, it returns `Equal`.
-    // - If both flags are true, it returns `None`, indicating incomparability
+    /// This function compares two CoinVec instances (`self` and `other`) based on their coins.
+    /// It constructs HashMaps mapping denominations to amounts for both instances.
+    /// Then, it iterates over the HashMap of `self` and checks against the HashMap of `other`.
+    /// - If a coin in `self` has a corresponding coin in `other`, it compares their amounts.
+    ///   - If the amount of the coin in `self` is less than the amount of the corresponding coin in `other`,
+    ///     it sets `self_less` to true.
+    ///   - If the amount of the coin in `self` is greater than the amount of the corresponding coin in `other`,
+    ///     it sets `self_greater` to true.
+    /// - If a denomination exists in `other` but not in `self` and the amount is greater than zero, it sets `self_less` to true.
+    /// Finally, based on the flags `self_less` and `self_greater`, it returns the ordering:
+    /// - If `self_less` is true and `self_greater` is false, it returns `Less`.
+    /// - If `self_less` is false and `self_greater` is true, it returns `Greater`.
+    /// - If both flags are false, it returns `Equal`.
+    /// - If both flags are true, it returns `None`, indicating incomparability
+    /// nit: This approach needs to be deprecated in future versions
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        // TODO for later : use vec instead of HashMap till the item lists are small.
         let self_map: std::collections::HashMap<_, _> = self
             .0
             .iter()
