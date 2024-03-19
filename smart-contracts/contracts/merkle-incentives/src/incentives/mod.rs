@@ -117,13 +117,11 @@ impl PartialOrd for CoinVec {
 
         for (denom, amount) in &self_map {
             match other_map.get(denom) {
-                Some(&other_amount) => {
-                    if amount < &other_amount {
-                        self_less = true;
-                    } else if amount > &other_amount {
-                        self_greater = true;
-                    }
-                }
+                Some(&other_amount) => match amount.cmp(&other_amount) {
+                    std::cmp::Ordering::Less => self_less = true,
+                    std::cmp::Ordering::Greater => self_greater = true,
+                    _ => (),
+                },
                 None => self_greater = true,
             }
         }
