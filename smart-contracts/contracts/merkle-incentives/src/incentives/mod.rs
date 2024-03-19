@@ -84,44 +84,62 @@ impl From<Vec<Coin>> for CoinVec {
 }
 
 impl PartialOrd for CoinVec {
-    // todo: test this
+    /// This function compares two CoinVec instances (`self` and `other`) based on their coins.
+    /// It constructs HashMaps mapping denominations to amounts for both instances.
+    /// Then, it iterates over the HashMap of `self` and checks against the HashMap of `other`.
+    /// - If a coin in `self` has a corresponding coin in `other`, it compares their amounts.
+    ///   - If the amount of the coin in `self` is less than the amount of the corresponding coin in `other`,
+    ///     it sets `self_less` to true.
+    ///   - If the amount of the coin in `self` is greater than the amount of the corresponding coin in `other`,
+    ///     it sets `self_greater` to true.
+    /// - If a denomination exists in `other` but not in `self` and the amount is greater than zero, it sets `self_less` to true.
+    /// Finally, based on the flags `self_less` and `self_greater`, it returns the ordering:
+    /// - If `self_less` is true and `self_greater` is false, it returns `Less`.
+    /// - If `self_less` is false and `self_greater` is true, it returns `Greater`.
+    /// - If both flags are false, it returns `Equal`.
+    /// - If both flags are true, it returns `None`, indicating incomparability
+    /// nit: This approach needs to be deprecated in future versions
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        // if even one in self is greater than other, this should return greater
-        for coin in &self.0 {
-            if let Some(other_coin) = other.0.iter().find(|c| c.denom == coin.denom) {
-                if coin.amount > other_coin.amount {
-                    return Some(std::cmp::Ordering::Greater);
+        // TODO for later : use vec instead of HashMap till the item lists are small.
+        let self_map: std::collections::HashMap<_, _> = self
+            .0
+            .iter()
+            .map(|coin| (&coin.denom, &coin.amount))
+            .collect();
+        let other_map: std::collections::HashMap<_, _> = other
+            .0
+            .iter()
+            .map(|coin| (&coin.denom, &coin.amount))
+            .collect();
+
+        let mut self_less = false;
+        let mut self_greater = false;
+
+        for (denom, amount) in &self_map {
+            match other_map.get(denom) {
+                Some(&other_amount) => {
+                    if amount < &other_amount {
+                        self_less = true;
+                    } else if amount > &other_amount {
+                        self_greater = true;
+                    }
                 }
-            } else {
-                return Some(std::cmp::Ordering::Greater);
+                None => self_greater = true,
             }
         }
 
-        // if there is an additional non-zero coin on the right hand side (that is not on self), then we return less
-        if other.0.iter().any(|coin| {
-            // if we don't find this other coin in self
-            if !self.0.iter().any(|c| c.denom == coin.denom) {
-                coin.amount.gt(&Uint128::zero()) // return true if > 0 amount
-            } else {
-                false
+        for (denom, amount) in &other_map {
+            if self_map.get(denom).is_none() && *amount > &Uint128::zero() {
+                self_less = true;
             }
-        }) {
-            return Some(std::cmp::Ordering::Less);
         }
 
-        // if all coin amounts are equal this should be equal
-        if self.0.iter().all(|coin| {
-            if let Some(other_coin) = other.0.iter().find(|c| c.denom == coin.denom) {
-                coin.amount == other_coin.amount
-            } else {
-                false
-            }
-        }) {
-            return Some(std::cmp::Ordering::Equal);
+        match (self_less, self_greater) {
+            (true, false) => Some(std::cmp::Ordering::Less),
+            (false, true) => Some(std::cmp::Ordering::Greater),
+            (false, false) => Some(std::cmp::Ordering::Equal),
+            (true, true) => None, // Incomparable if both are true.
         }
-
-        // if all coins are less than other, this should be less
-        Some(std::cmp::Ordering::Less)
     }
 }
 
@@ -144,6 +162,75 @@ mod tests {
     use cosmwasm_std::Uint128;
 
     use super::*;
+
+    #[test]
+    fn test_partial_order_failing() {
+        let coin_vec = CoinVec(vec![Coin {
+            denom: "uusd".to_string(),
+            amount: Uint128::from(50u128),
+        }]);
+
+        let coin_vec2 = CoinVec(vec![Coin {
+            denom: "uluna".to_string(),
+            amount: Uint128::from(100u128),
+        }]);
+
+        assert_eq!(false, coin_vec2.le(&coin_vec));
+        assert_eq!(false, coin_vec2.ge(&coin_vec));
+
+        let coin_vec = CoinVec(vec![Coin {
+            denom: "uusd".to_string(),
+            amount: Uint128::from(100u128),
+        }]);
+
+        let coin_vec2 = CoinVec(vec![
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(150u128),
+            },
+            Coin {
+                denom: "uluna".to_string(),
+                amount: Uint128::from(50u128),
+            },
+        ]);
+
+        assert!(coin_vec.le(&coin_vec2));
+
+        let coin_vec = CoinVec(vec![
+            Coin {
+                denom: "uusd".to_string(),
+                amount: Uint128::from(50u128),
+            },
+            Coin {
+                denom: "uluna".to_string(),
+                amount: Uint128::from(50u128),
+            },
+        ]);
+
+        let coin_vec2 = CoinVec(vec![Coin {
+            denom: "uluna".to_string(),
+            amount: Uint128::from(100u128),
+        }]);
+
+        // coin vec should not be gt or lt coin vec 2 as this case should not pass through
+        assert_eq!(false, coin_vec.lt(&coin_vec2));
+        assert_eq!(false, coin_vec.gt(&coin_vec2));
+    }
+
+    #[test]
+    fn test_partial_order() {
+        let coin_vec = CoinVec(vec![Coin {
+            denom: "uusd".to_string(),
+            amount: Uint128::from(100u128),
+        }]);
+
+        let coin_vec2 = CoinVec(vec![Coin {
+            denom: "uusd".to_string(),
+            amount: Uint128::from(150u128),
+        }]);
+
+        assert!(coin_vec.le(&coin_vec2));
+    }
 
     #[test]
     fn test_sort() {
@@ -356,13 +443,10 @@ mod tests {
             },
         ]);
 
-        assert_eq!(
-            coin_vec.partial_cmp(&coin_vec6),
-            Some(std::cmp::Ordering::Greater)
-        );
+        assert_eq!(coin_vec.partial_cmp(&coin_vec6), None);
         assert_eq!(
             coin_vec6.partial_cmp(&coin_vec),
-            Some(std::cmp::Ordering::Greater) // in this case both greater because we have to guard against attacks (It is not safe to switch the greter than check in helpers.rs)
+            None // in this case both greater because we have to guard against attacks (It is not safe to switch the greter than check in helpers.rs)
         );
     }
 

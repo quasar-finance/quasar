@@ -35,7 +35,7 @@ pub fn is_valid_claim(
         .load(deps.storage, address.clone())
         .unwrap_or(CoinVec::new());
 
-    if &claimed_amount >= coins {
+    if claimed_amount.ge(coins) {
         return Err(ContractError::IncentivesAlreadyClaimed {});
     }
 
