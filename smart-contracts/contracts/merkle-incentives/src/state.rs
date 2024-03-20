@@ -21,7 +21,7 @@ pub struct Config {
     pub end_block: u64,
     pub expiration_block: u64,
     pub fee: Option<Fee>,
-    pub total_incentives: Vec<Coin>
+    pub total_incentives: Vec<Coin>,
 }
 
 #[cw_serde]

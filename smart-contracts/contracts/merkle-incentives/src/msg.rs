@@ -9,7 +9,7 @@ use crate::{
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    config: Config,
+    pub config: Config,
 }
 
 #[cw_serde]
