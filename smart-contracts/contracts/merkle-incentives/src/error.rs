@@ -26,4 +26,7 @@ pub enum ContractError {
 
     #[error("Expiration block height is not yet reached")]
     ExpirationHeightNotReached {},
+
+    #[error("Expiration block height reached")]
+    ExpirationHeightReached,
 }
