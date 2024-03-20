@@ -23,4 +23,7 @@ pub enum ContractError {
 
     #[error("Valid claim submitted but contract does not have enough balance, did the admin forget to top it up?")]
     InsufficientBalanceForValidClaim {},
+
+    #[error("Expiration block height is not yet reached")]
+    ExpirationHeightNotReached {},
 }

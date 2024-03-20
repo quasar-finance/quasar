@@ -8,8 +8,8 @@ members = [
   "contracts/multihop-router",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
-  "packages/quasar-types"
-  "contracts/incentive-gauge-factory",
+  "packages/quasar-types",
+  "contracts/incentive-gauge-factory"
   # "packages/intergamm-bindings",
 ]
 

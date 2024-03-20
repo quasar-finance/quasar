@@ -1510,13 +1510,13 @@ dependencies = [
  "cosmwasm-std",
  "cosmwasm-storage",
  "cw-multi-test 0.16.5",
- "cw-storage-plus 1.1.0",
+ "cw-storage-plus 1.2.0",
  "cw2 1.1.1",
  "derivative",
  "proptest",
  "schemars",
  "serde",
- "serde-json-wasm 0.5.1",
+ "serde-json-wasm 0.5.2",
  "thiserror",
 ]
 

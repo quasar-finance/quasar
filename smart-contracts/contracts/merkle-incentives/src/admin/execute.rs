@@ -1,9 +1,9 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{BankMsg, Deps, DepsMut, Env, MessageInfo, Response};
 
 use crate::{
-    state::{INCENTIVES_ADMIN, MERKLE_ROOT},
+    state::{CONFIG, INCENTIVES_ADMIN, MERKLE_ROOT},
     ContractError,
 };
 
@@ -15,6 +15,10 @@ pub enum AdminExecuteMsg {
     UpdateAdmin { new_admin: String },
     /// Update the range submitter admin.
     UpdateMerkleRoot { new_root: String },
+    /// Clawback any remaining funds after expiration date
+    Clawback {},
+    /// Claim any already accumulates fees
+    ClaimFees {},
 }
 
 pub fn handle_execute_admin(
@@ -30,6 +34,8 @@ pub fn handle_execute_admin(
         AdminExecuteMsg::UpdateMerkleRoot { new_root } => {
             execute_update_merkle_root(deps, env, info, new_root)
         }
+        AdminExecuteMsg::Clawback {} => execute_clawback(deps.as_ref(), env),
+        AdminExecuteMsg::ClaimFees {} => execute_claim_fees(deps.as_ref(), env),
     }
 }
 
