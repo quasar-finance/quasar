@@ -121,8 +121,12 @@ pub fn execute_claim(
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, testing::{mock_dependencies_with_balance, mock_env}, Addr};
-    use rs_merkle::{ algorithms, Hasher };
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies_with_balance, mock_env},
+        Addr,
+    };
+    use rs_merkle::{algorithms, Hasher};
 
     use crate::state::Config;
 
@@ -151,7 +155,16 @@ mod tests {
 
         env.block.height = 1000;
 
-        let err = execute_claim(deps.as_mut(), env, CoinVec(vec![coin(1000, "ugauge")]), get_leaves(), 1, 1, "should_fail_doesn't_matter".to_string()).unwrap_err();
+        let err = execute_claim(
+            deps.as_mut(),
+            env,
+            CoinVec(vec![coin(1000, "ugauge")]),
+            get_leaves(),
+            1,
+            1,
+            "should_fail_doesn't_matter".to_string(),
+        )
+        .unwrap_err();
 
         assert_eq!(err, ContractError::ExpirationHeightReached)
     }
@@ -165,21 +178,9 @@ mod tests {
             format!("{}9000000000000ugauge", "e").to_string(),
             format!("{}90000000000000ugauge", "f").to_string(),
             format!("{}900000000000000ugauge", "g").to_string(),
-            format!(
-                "{}9000000000900000ugauge",
-                "h"
-            )
-            .to_string(),
-            format!(
-                "{}90000000009000000ugauge",
-                "i"
-            )
-            .to_string(),
-            format!(
-                "{}900000000090000000ugauge",
-                "j"
-            )
-            .to_string(),
+            format!("{}9000000000900000ugauge", "h").to_string(),
+            format!("{}90000000009000000ugauge", "i").to_string(),
+            format!("{}900000000090000000ugauge", "j").to_string(),
         ];
 
         // , accounts[0].address().to_string()which seems to generate this root: 0hGvbH+l9pdPgOmJY6wZuwjsrvtPsuslgTURavrUP6I=
