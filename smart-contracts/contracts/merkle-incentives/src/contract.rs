@@ -26,7 +26,7 @@ pub fn instantiate(
 
     INCENTIVES_ADMIN.save(deps.storage, &info.sender)?;
 
-    CONFIG.save(deps.storage, &msg.config)?;
+    CONFIG.save(deps.storage, &msg.config.try_into()?)?;
 
     Ok(Response::default().add_attribute("incentive_admin", info.sender))
 }

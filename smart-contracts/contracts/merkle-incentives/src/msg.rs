@@ -4,12 +4,12 @@ use cosmwasm_std::Empty;
 use crate::{
     admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
     incentives::{execute::IncentivesExecuteMsg, query::IncentivesQueryMsg},
-    state::Config,
+    state::InstantiateConfig,
 };
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub config: Config,
+    pub config: InstantiateConfig,
 }
 
 #[cw_serde]
