@@ -76,6 +76,26 @@ pub fn execute_update_merkle_root(
     Ok(Response::default())
 }
 
+pub fn execute_clawback(deps: Deps, env: Env) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if config.expiration_block < env.block.height {
+        return Err(ContractError::ExpirationHeightNotReached {});
+    }
+
+    let amount = deps.querier.query_all_balances(env.contract.address)?;
+
+    let amount_attr = amount.iter().map(|c| c.to_string()).collect::<Vec<String>>().join(",");
+    let bank_msg = BankMsg::Send {
+        to_address: config.clawback_address.to_string(),
+        amount,
+    };
+
+    Ok(Response::new()
+        .add_message(bank_msg)
+        .add_attribute("action", "clawback")
+        .add_attribute("amount", amount_attr)
+    )
+}
 #[cfg(test)]
 mod tests {
     use crate::{
