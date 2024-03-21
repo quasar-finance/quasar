@@ -73,6 +73,7 @@ pub fn verify_proof(
 mod tests {
     use base64::{engine::general_purpose::STANDARD, Engine};
     use cosmwasm_std::{testing::mock_dependencies, Addr, Coin, Uint128};
+    use serde::{Deserialize, Serialize};
 
     use crate::{
         incentives::{
@@ -310,5 +311,58 @@ mod tests {
         );
 
         assert_eq!(result.unwrap_err(), ContractError::FailedVerifyProof {})
+    }
+
+
+    use crate::incentives::execute::{as_base64, from_base64};
+
+    #[test]
+    fn failing_proofs() {
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct BlockProofs {
+            pub block: u64,
+            pub hash: String,
+            pub root: String,
+            pub proofs: Vec<Proof>,
+        }
+
+        #[derive(Serialize, Deserialize, Debug, Clone)]
+        struct Proof {
+            pub address: String,
+            pub coins: CoinVec,
+            pub leafIndex: u64,
+            #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
+            pub proof: Vec<[u8; 32]>,
+            pub totalLeavesCount: u64,
+        }
+
+        let json_string = r#"paste entire json file here
+        "#;
+
+        let block_proofs: BlockProofs = serde_json::from_str(json_string).unwrap();
+
+        let mut failing = vec![];
+
+        for p in block_proofs.proofs {
+
+            let p_str = format!("{:?}", p.clone());
+            let claim_string = format!("{}{}", p.address.as_str(), p.coins);
+
+            let result = verify_proof(
+                &block_proofs.root.clone(),
+                p.proof.clone(),
+                &[p.leafIndex.try_into().unwrap()],
+                p.totalLeavesCount.try_into().unwrap(),
+                &claim_string,
+            );
+            match result {
+                Ok(_) => (),
+                Err(_) => {
+                    failing.push(p_str);
+                    println!("proof: {:?}", p_str)
+                },
+            }
+        }
+        assert_eq!(failing, vec![]);
     }
 }
