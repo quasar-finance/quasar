@@ -4,7 +4,7 @@ use cosmwasm_std::Empty;
 use crate::{
     admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
     incentives::{execute::IncentivesExecuteMsg, query::IncentivesQueryMsg},
-    state::{Config},
+    state::Config,
 };
 
 #[cw_serde]

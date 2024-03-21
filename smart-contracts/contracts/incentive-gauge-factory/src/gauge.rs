@@ -5,19 +5,20 @@ use cosmwasm_std::{Addr, Coin, Decimal, Uint128, coin, Fraction};
 
 #[cw_serde]
 pub struct Gauge {
-    pub start_block: Uint128,
-    pub end_block: Uint128,
-    pub expiration_block: Uint128,
+    pub start_block: u64,
+    pub end_block: u64,
+    pub expiration_block: u64,
     pub total_incentives: Vec<Coin>,
+    // TODO remove the fee from the gauge and move it to a secondary map so we can effciently update the fee on claiming
     pub fee: Fee,
     pub r#type: GaugeType,
 }
 
 impl Gauge {
     pub fn new(
-        start_block: Uint128,
-        end_block: Uint128,
-        expiration_block: Uint128,
+        start_block: u64,
+        end_block: u64,
+        expiration_block: u64,
         total_incentives: Vec<Coin>,
         fee: Decimal,
         fee_address: Addr,

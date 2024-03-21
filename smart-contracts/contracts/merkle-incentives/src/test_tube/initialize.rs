@@ -3,10 +3,7 @@ pub mod initialize {
     use cosmwasm_std::{Addr, Coin, Decimal};
     use osmosis_test_tube::{Account, Module, OsmosisTestApp, SigningAccount, Wasm};
 
-    use crate::{
-        msg::InstantiateMsg,
-        state::Config,
-    };
+    use crate::{msg::InstantiateMsg, state::Config};
 
     pub fn default_init(gauge_coins: Vec<Coin>) -> (OsmosisTestApp, Addr, SigningAccount) {
         init_test_contract(

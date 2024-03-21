@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult
+    coin, to_binary, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo, Order, Response, StdResult
 };
 // use cw2::set_contract_version;
 
@@ -47,14 +47,29 @@ pub fn execute_create_incentive_gauge() -> Result<Response, ContractError> {
     todo!()
 }
 
-pub fn execute_claim_fees(deps: Deps, env: Env, gauge_addr: Addr) -> Result<Response, ContractError> {
+pub fn execute_claim_fees(deps: DepsMut, env: Env, gauge_addr: Addr) -> Result<Response, ContractError> {
     let current_block = env.block.height;
 
-    let gauge = GAUGES.load(deps.storage, gauge_addr)?;
+    let mut gauge = GAUGES.load(deps.storage, gauge_addr)?;
 
-    let fees = gauge.fee;
+    let mut fees = gauge.fee;
 
-    todo!()
+    let elapsed_blocks = env.block.height - gauge.start_block;
+    let total_blocks = gauge.end_block - gauge.start_block;
+    let elapsed_ratio = Decimal::from_ratio(elapsed_blocks, total_blocks);
+    let claimable_until_now: Vec<_> = fees.total_fees.into_iter().map(|c| coin(c.amount.multiply_ratio(elapsed_ratio.numerator(), elapsed_ratio.denominator()).u128(), c.denom)).collect();
+    let claimed = fees.total_fees - fees.remaining_fees;
+
+    let to_receive = claimable_until_now - claimed;
+    let new_remaining_fees = fees.total_fees - claimable_until_now;
+
+    fees.remaining_fees = new_remaining_fees;
+    gauge.fee = fees;
+    GAUGES.save(deps.storage, gauge_addr, &gauge)?;
+
+    let bank_msg = BankMsg::Send { to_address: fees.fee_address.to_string(), amount: to_receive };
+
+    Ok(Response::new().add_message(bank_msg))
 }
 
 
