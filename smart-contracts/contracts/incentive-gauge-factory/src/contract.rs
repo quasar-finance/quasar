@@ -42,7 +42,7 @@ pub fn execute_create_incentive_gauge() -> Result<Response, ContractError> {
     // instantiate an instance of the incentive gauge
 
     // save the instance in the Gauge overview
-
+    
     todo!()
 }
 

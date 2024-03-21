@@ -3,7 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{BankMsg, Deps, DepsMut, Env, MessageInfo, Response};
 
 use crate::{
-    state::{CONFIG, INCENTIVES_ADMIN, MERKLE_ROOT},
+    state::{CONFIG, FEE, INCENTIVES_ADMIN, MERKLE_ROOT},
     ContractError,
 };
 
@@ -100,6 +100,17 @@ pub fn execute_clawback(deps: Deps, env: Env) -> Result<Response, ContractError>
         .add_attribute("amount", amount_attr))
 }
 
+pub fn execute_claim_fees(deps: Deps, env: Env) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    let current_block = env.block.height;
+
+    let fees = FEE.load(deps.storage)?;
+
+    let allowed_fees = todo!();
+
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -109,7 +120,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info},
-        Addr, CosmosMsg, Decimal,
+        Addr, CosmosMsg,
     };
 
     use super::*;
@@ -132,7 +143,6 @@ mod tests {
                     start_block: 1,
                     end_block: 100,
                     expiration_block: 1000,
-                    fee: None,
                     total_incentives: vec![coin(10000, "ugauge")],
                 },
             )
@@ -166,7 +176,6 @@ mod tests {
                     start_block: 1,
                     end_block: 100,
                     expiration_block: 1000,
-                    fee: None,
                     total_incentives: vec![coin(10000, "ugauge")],
                 },
             )
@@ -176,10 +185,7 @@ mod tests {
 
         let err = execute_clawback(deps.as_ref(), env).unwrap_err();
 
-        assert_eq!(
-            err,
-            ContractError::ExpirationHeightNotReached {  }
-        )
+        assert_eq!(err, ContractError::ExpirationHeightNotReached {})
     }
 
     #[test]

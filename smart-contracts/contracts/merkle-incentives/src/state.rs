@@ -7,6 +7,7 @@ pub const CLAIMED_INCENTIVES: Map<Addr, CoinVec> = Map::new("claimed_incentives"
 pub const MERKLE_ROOT: Item<String> = Item::new("merkle_root");
 pub const INCENTIVES_ADMIN: Item<Addr> = Item::new("incentives_admin");
 pub const CONFIG: Item<Config> = Item::new("config");
+pub const FEE: Item<Fee> = Item::new("fee");
 
 #[cw_serde]
 pub struct ClaimAccount {
@@ -29,6 +30,20 @@ impl TryInto<Config> for InstantiateConfig {
     type Error = ContractError;
 
     fn try_into(self) -> Result<Config, Self::Error> {
+        Ok(Config {
+            clawback_address: self.clawback_address,
+            start_block: self.start_block,
+            end_block: self.end_block,
+            expiration_block: self.expiration_block,
+            total_incentives: self.total_incentives,
+        })
+    }
+}
+
+impl TryInto<Fee> for InstantiateConfig {
+    type Error = ContractError;
+
+    fn try_into(self) -> Result<Fee, Self::Error> {
         let effective_incentives = self
             .total_incentives
             .iter()
@@ -40,7 +55,7 @@ impl TryInto<Config> for InstantiateConfig {
             })
             .collect();
 
-        let effective_fees = self
+        let total_fees = self
             .total_incentives
             .iter()
             .map(|c| {
@@ -51,20 +66,11 @@ impl TryInto<Config> for InstantiateConfig {
             })
             .collect();
 
-        let fee = Fee {
+        Ok(Fee {
             fee_address: self.fee_address,
             fee: self.fee,
-            effective_fees,
+            remaining_fees: total_fees,
             effective_incentives,
-        };
-
-        Ok(Config {
-            clawback_address: self.clawback_address,
-            start_block: self.start_block,
-            end_block: self.end_block,
-            expiration_block: self.expiration_block,
-            fee: Some(fee),
-            total_incentives: self.total_incentives,
         })
     }
 }
@@ -76,13 +82,12 @@ pub struct Config {
     pub end_block: u64,
     pub expiration_block: u64,
     pub total_incentives: Vec<Coin>,
-    pub fee: Option<Fee>,
 }
 
 #[cw_serde]
 pub struct Fee {
     pub fee_address: Addr,
     pub fee: Decimal,
-    pub effective_fees: Vec<Coin>,
+    pub remaining_fees: Vec<Coin>,
     pub effective_incentives: Vec<Coin>,
 }

@@ -23,7 +23,7 @@ pub enum IncentivesExecuteMsg {
     },
 }
 
-fn as_base64<S>(array_of_bytes: &[[u8; 32]], serializer: S) -> Result<S::Ok, S::Error>
+pub(crate) fn as_base64<S>(array_of_bytes: &[[u8; 32]], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -35,7 +35,7 @@ where
     serializer.serialize_some(&base64_strings)
 }
 
-fn from_base64<'de, D>(deserializer: D) -> Result<Vec<[u8; 32]>, D::Error>
+pub(crate) fn from_base64<'de, D>(deserializer: D) -> Result<Vec<[u8; 32]>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -147,7 +147,6 @@ mod tests {
                     start_block: 1,
                     end_block: 100,
                     expiration_block: 1000,
-                    fee: None,
                     total_incentives: vec![coin(10000, "ugauge")],
                 },
             )
