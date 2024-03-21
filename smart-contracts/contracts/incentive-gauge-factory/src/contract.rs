@@ -1,13 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult
 };
 // use cw2::set_contract_version;
 
 use crate::error::{ContractError, ContractResult};
 use crate::helpers::is_contract_admin;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::GAUGES;
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:multihop-router";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -45,6 +46,17 @@ pub fn execute_create_incentive_gauge() -> Result<Response, ContractError> {
     
     todo!()
 }
+
+pub fn execute_claim_fees(deps: Deps, env: Env, gauge_addr: Addr) -> Result<Response, ContractError> {
+    let current_block = env.block.height;
+
+    let gauge = GAUGES.load(deps.storage, gauge_addr)?;
+
+    let fees = gauge.fee;
+
+    todo!()
+}
+
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {

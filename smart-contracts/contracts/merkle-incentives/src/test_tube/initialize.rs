@@ -5,7 +5,7 @@ pub mod initialize {
 
     use crate::{
         msg::InstantiateMsg,
-        state::{Config, Fee, InstantiateConfig},
+        state::Config,
     };
 
     pub fn default_init(gauge_coins: Vec<Coin>) -> (OsmosisTestApp, Addr, SigningAccount) {
@@ -45,14 +45,11 @@ pub mod initialize {
             .instantiate(
                 code_id,
                 &InstantiateMsg {
-                    config: InstantiateConfig {
+                    config: Config {
                         clawback_address: Addr::unchecked("bob"),
                         start_block: 1,
                         end_block: 100,
                         expiration_block: 10_000,
-                        fee: Decimal::one(),
-                        fee_address: Addr::unchecked(admin.address()),
-                        total_incentives: gauge_coins,
                     },
                 },
                 Some(admin.address().as_str()),

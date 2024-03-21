@@ -147,7 +147,6 @@ mod tests {
                     start_block: 1,
                     end_block: 100,
                     expiration_block: 1000,
-                    total_incentives: vec![coin(10000, "ugauge")],
                 },
             )
             .unwrap();

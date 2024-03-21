@@ -3,7 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{BankMsg, Deps, DepsMut, Env, MessageInfo, Response};
 
 use crate::{
-    state::{CONFIG, FEE, INCENTIVES_ADMIN, MERKLE_ROOT},
+    state::{CONFIG, INCENTIVES_ADMIN, MERKLE_ROOT},
     ContractError,
 };
 
@@ -17,8 +17,6 @@ pub enum AdminExecuteMsg {
     UpdateMerkleRoot { new_root: String },
     /// Clawback any remaining funds after expiration date
     Clawback {},
-    /// Claim any already accumulates fees
-    ClaimFees {},
 }
 
 pub fn handle_execute_admin(
@@ -35,7 +33,6 @@ pub fn handle_execute_admin(
             execute_update_merkle_root(deps, env, info, new_root)
         }
         AdminExecuteMsg::Clawback {} => execute_clawback(deps.as_ref(), env),
-        AdminExecuteMsg::ClaimFees {} => execute_claim_fees(deps.as_ref(), env),
     }
 }
 
@@ -100,17 +97,6 @@ pub fn execute_clawback(deps: Deps, env: Env) -> Result<Response, ContractError>
         .add_attribute("amount", amount_attr))
 }
 
-pub fn execute_claim_fees(deps: Deps, env: Env) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let current_block = env.block.height;
-
-    let fees = FEE.load(deps.storage)?;
-
-    let allowed_fees = todo!();
-
-    todo!()
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -143,7 +129,6 @@ mod tests {
                     start_block: 1,
                     end_block: 100,
                     expiration_block: 1000,
-                    total_incentives: vec![coin(10000, "ugauge")],
                 },
             )
             .unwrap();
@@ -176,7 +161,6 @@ mod tests {
                     start_block: 1,
                     end_block: 100,
                     expiration_block: 1000,
-                    total_incentives: vec![coin(10000, "ugauge")],
                 },
             )
             .unwrap();
