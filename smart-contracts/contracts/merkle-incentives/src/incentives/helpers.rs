@@ -321,13 +321,13 @@ mod tests {
         #[derive(Serialize, Deserialize, Debug)]
         pub struct BlockProofs {
             pub block: u64,
-            pub hash: String,
+            pub hash: Option<String>,
             pub root: String,
             pub proofs: Vec<Proof>,
         }
 
         #[derive(Serialize, Deserialize, Debug, Clone)]
-        struct Proof {
+        pub struct Proof {
             pub address: String,
             pub coins: CoinVec,
             pub leafIndex: u64,
@@ -336,7 +336,7 @@ mod tests {
             pub totalLeavesCount: u64,
         }
 
-        let json_string = r#"paste entire json file here
+        let json_string = r#"{
         "#;
 
         let block_proofs: BlockProofs = serde_json::from_str(json_string).unwrap();
@@ -358,11 +358,11 @@ mod tests {
             match result {
                 Ok(_) => (),
                 Err(_) => {
-                    failing.push(p_str);
+                    failing.push(p_str.clone());
                     println!("proof: {:?}", p_str)
                 },
             }
         }
-        assert_eq!(failing, vec![]);
+        assert!(failing.is_empty());
     }
 }
