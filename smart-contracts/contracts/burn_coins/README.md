@@ -63,6 +63,3 @@ This project is licensed under the [MIT License](LICENSE). Feel free to use, mod
 ## Disclaimer
 
 This software is provided as-is, without any express or implied warranty. Use it at your own risk. The authors and contributors of this project are not liable for any damages or losses arising from its use.
-
----
-By [Your Name/Team Name]
