@@ -4,6 +4,7 @@ members = [
   "contracts/airdrop",
   "contracts/lp-strategy",
   "contracts/basic-vault",
+  "contracts/burn_coins",
   "contracts/vault-rewards",
   "contracts/multihop-router",
   "contracts/cl-vault",
