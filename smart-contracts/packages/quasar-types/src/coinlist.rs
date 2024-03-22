@@ -100,15 +100,22 @@ impl CoinList {
     /// in to_sub
     /// thus [150uosmo, 100uatom] - [100uosmo, 200uqsr] = [50uosmo, 100uatom]
     pub fn checked_sub(&self, rhs: &CoinList) -> Result<CoinList, OverflowError> {
-        let result: Result<Vec<Coin>, OverflowError> = self.0.iter().map(|c| {
-            let coin = rhs.0.iter().find(|rc| c.denom == rc.denom);
-            // TODO these to clones are not the prettiest, see if we can make thos nicer
-            if let Some(rc) = coin {
-                Ok(Coin { denom: c.denom.clone(), amount: c.amount.checked_sub(rc.amount)?})
-            } else {
-                Ok(c.clone())
-            }
-        }).collect();
+        let result: Result<Vec<Coin>, OverflowError> = self
+            .0
+            .iter()
+            .map(|c| {
+                let coin = rhs.0.iter().find(|rc| c.denom == rc.denom);
+                // TODO these to clones are not the prettiest, see if we can make thos nicer
+                if let Some(rc) = coin {
+                    Ok(Coin {
+                        denom: c.denom.clone(),
+                        amount: c.amount.checked_sub(rc.amount)?,
+                    })
+                } else {
+                    Ok(c.clone())
+                }
+            })
+            .collect();
 
         result.map(CoinList::new)
     }
@@ -202,7 +209,7 @@ fn checked_mut_sub_works() {
         .append(vec![
             coin(1000, "uosmo"),
             coin(2000, "uatom"),
-            coin(3000, "uqsr")
+            coin(3000, "uqsr"),
         ])
         .unwrap();
 
@@ -232,7 +239,7 @@ fn checked_mut_sub_works() {
         .checked_mut_sub(&CoinList::from(vec![coin(2000, "uqsr")]))
         .unwrap_err();
 
-        coins
+    coins
         .checked_mut_sub(&CoinList::from(vec![coin(999, "uqsr"), coin(999, "uosmo")]))
         .unwrap();
 
