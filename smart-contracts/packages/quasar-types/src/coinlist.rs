@@ -181,6 +181,122 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_new_function() {
+        let coins = vec![coin(100, "uosmo"), coin(200, "uatom")];
+        let coin_list = CoinList::new(coins.clone());
+        assert_eq!(coin_list.0, coins);
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let empty_list = CoinList::new(vec![]);
+        assert!(empty_list.is_empty());
+
+        let non_empty_list = CoinList::new(vec![coin(100, "uosmo")]);
+        assert!(!non_empty_list.is_empty());
+    }
+
+    #[test]
+    fn test_push() {
+        let mut coin_list = CoinList::new(vec![coin(100, "uosmo")]);
+        let initial_len = coin_list.0.len();
+        coin_list.push(coin(200, "uatom"));
+
+        assert_eq!(coin_list.0.len(), initial_len + 1);
+        assert_eq!(coin_list.0.last().unwrap().denom, "uatom");
+        assert_eq!(coin_list.0.last().unwrap().amount, Uint128::new(200));
+    }
+
+    #[test]
+    fn test_merge() {
+        let mut list = CoinList::new(vec![coin(100, "uosmo"), coin(200, "uatom")]);
+        let result = list.merge(vec![
+            coin(300, "uosmo"),
+            coin(400, "uatom"),
+            coin(500, "uqsr"),
+        ]);
+        assert!(result.is_ok());
+        assert_eq!(
+            list.coins(),
+            vec![coin(600, "uatom"), coin(400, "uosmo"), coin(500, "uqsr")]
+        );
+    }
+
+    #[test]
+    fn test_mul_ratio() {
+        let list = CoinList::new(vec![coin(1000, "uosmo"), coin(2000, "uatom")]);
+        let ratio = Decimal::percent(50); // 0.5 or 50%
+        let result = list.mul_ratio(ratio);
+        assert_eq!(
+            result.coins(),
+            vec![coin(1000, "uatom"), coin(500, "uosmo")]
+        );
+    }
+
+    #[test]
+    fn test_sub_ratio() {
+        let mut list = CoinList::new(vec![coin(1000, "uosmo"), coin(2000, "uatom")]);
+        let ratio = Decimal::percent(25); // 25%
+        let subtracted = list.sub_ratio(ratio).unwrap();
+        assert_eq!(
+            subtracted.coins(),
+            vec![coin(500, "uatom"), coin(250, "uosmo")]
+        );
+        assert_eq!(list.coins(), vec![coin(1500, "uatom"), coin(750, "uosmo")]);
+    }
+
+    #[test]
+    fn test_checked_mut_sub_overflow() {
+        let mut list = CoinList::new(vec![coin(500, "uosmo")]);
+        let subtract = CoinList::new(vec![coin(1000, "uosmo")]);
+        let result = list.checked_mut_sub(&subtract);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_checked_sub() {
+        let list = CoinList::new(vec![coin(1000, "uosmo"), coin(2000, "uatom")]);
+        let subtract = CoinList::new(vec![coin(500, "uosmo")]);
+        let result = list.checked_sub(&subtract).unwrap();
+        assert_eq!(
+            result.coins(),
+            vec![coin(2000, "uatom"), coin(500, "uosmo")]
+        );
+    }
+
+    #[test]
+    fn test_into_attributes() {
+        let list = CoinList::new(vec![coin(1000, "uosmo"), coin(2000, "uatom")]);
+        let attributes = list.into_attributes();
+        assert_eq!(attributes.len(), 2);
+        assert!(attributes
+            .iter()
+            .any(|attr| attr.key == "uosmo" && attr.value == "1000"));
+        assert!(attributes
+            .iter()
+            .any(|attr| attr.key == "uatom" && attr.value == "2000"));
+    }
+
+    #[test]
+    fn test_coins() {
+        let list = CoinList::new(vec![coin(2000, "uatom"), coin(1000, "uosmo")]);
+        let coins = list.coins();
+        // Ensures coins are sorted by denom as per `sort_tokens` implementation
+        assert_eq!(coins, vec![coin(2000, "uatom"), coin(1000, "uosmo")]);
+    }
+
+    #[test]
+    fn test_find_coin() {
+        let list = CoinList::new(vec![coin(1000, "uosmo")]);
+        let found = list.find_coin("uosmo".to_string());
+        assert_eq!(found, coin(1000, "uosmo"));
+
+        let not_found = list.find_coin("uatom".to_string());
+        assert_eq!(not_found.denom, "uatom");
+        assert_eq!(not_found.amount, Uint128::zero());
+    }
+
+    #[test]
     fn test_sort_tokens() {
         let tokens = vec![
             coin(100, "uatom"),
@@ -306,9 +422,6 @@ fn sub_percentage_works() {
         ])
     )
 }
-
-#[test]
-fn merge_works() {}
 
 #[test]
 fn add_works() {
