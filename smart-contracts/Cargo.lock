@@ -392,6 +392,7 @@ dependencies = [
  "osmosis-test-tube 21.0.0",
  "proptest",
  "prost 0.12.3",
+ "quasar-types",
  "serde",
  "thiserror",
 ]
@@ -1514,6 +1515,7 @@ dependencies = [
  "cw2 1.1.1",
  "derivative",
  "proptest",
+ "quasar-types",
  "schemars",
  "serde",
  "serde-json-wasm 0.5.2",
@@ -2279,6 +2281,7 @@ name = "quasar-types"
 version = "0.1.0"
 dependencies = [
  "cosmos-sdk-proto 0.15.0",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.2.0",
  "cw20 0.13.4",

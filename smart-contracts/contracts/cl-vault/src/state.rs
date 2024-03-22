@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
+use quasar_types::coinlist::CoinList;
 
-use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
 

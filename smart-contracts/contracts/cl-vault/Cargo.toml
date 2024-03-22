@@ -51,6 +51,7 @@ osmosis-std = "0.21.0"
 prost = {version = "0.12.3", default-features = false}
 serde = {version = "1.0.145", default-features = false, features = ["derive"]}
 thiserror = {version = "1.0.31"}
+quasar-types = { path = "../../packages/quasar-types"}
 
 [dev-dependencies]
 osmosis-test-tube = "21.0.0"

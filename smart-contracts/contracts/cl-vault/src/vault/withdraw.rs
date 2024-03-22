@@ -9,9 +9,10 @@ use osmosis_std::types::{
         tokenfactory::v1beta1::MsgBurn,
     },
 };
+use quasar_types::coinlist::CoinList;
 
 use crate::{
-    helpers::{get_unused_balances, sort_tokens},
+    helpers::get_unused_balances,
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
@@ -160,21 +161,20 @@ pub fn handle_withdraw_user_reply(
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
-        amount: sort_tokens(vec![coin0.clone(), coin1.clone()]),
+        amount: CoinList::new(vec![coin0.clone(), coin1.clone()]).coins(),
     };
     Ok(Response::new().add_message(msg).add_event(
         Event::new("withdraw_cl_position")
             .add_attribute("method", "withdraw_position_reply")
             .add_attribute("action", "withdraw")
-            .add_attribute("token0_amount", coin0.clone().amount)
-            .add_attribute("token1_amount", coin1.clone().amount),
+            .add_attribute("token0_amount", coin0.amount)
+            .add_attribute("token1_amount", coin1.amount),
     ))
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS, USER_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };
@@ -198,7 +198,7 @@ mod tests {
         let env = mock_env();
 
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::new())
+            .save(deps.as_mut().storage, &CoinList::default())
             .unwrap();
         VAULT_DENOM
             .save(deps.as_mut().storage, &"share_token".to_string())
@@ -233,7 +233,7 @@ mod tests {
         let env = mock_env();
 
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::new())
+            .save(deps.as_mut().storage, &CoinList::default())
             .unwrap();
         VAULT_DENOM
             .save(deps.as_mut().storage, &"share_token".to_string())
@@ -250,14 +250,14 @@ mod tests {
             .save(
                 deps.as_mut().storage,
                 Addr::unchecked("alice"),
-                &CoinList::from_coins(vec![coin(100, "token0"), coin(175, "token1")]),
+                &CoinList::from(vec![coin(100, "token0"), coin(175, "token1")]),
             )
             .unwrap();
         USER_REWARDS
             .save(
                 deps.as_mut().storage,
                 Addr::unchecked("bob"),
-                &CoinList::from_coins(vec![coin(50, "token0"), coin(125, "token1")]),
+                &CoinList::from(vec![coin(50, "token0"), coin(125, "token1")]),
             )
             .unwrap();
 
@@ -285,7 +285,7 @@ mod tests {
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
-                &CoinList::from_coins(vec![coin(50, "token0"), coin(50, "token1")]),
+                &CoinList::from(vec![coin(50, "token0"), coin(50, "token1")]),
             )
             .unwrap();
         VAULT_DENOM
@@ -303,14 +303,14 @@ mod tests {
             .save(
                 deps.as_mut().storage,
                 Addr::unchecked("alice"),
-                &CoinList::from_coins(vec![coin(200, "token0"), coin(300, "token1")]),
+                &CoinList::from(vec![coin(200, "token0"), coin(300, "token1")]),
             )
             .unwrap();
         USER_REWARDS
             .save(
                 deps.as_mut().storage,
                 Addr::unchecked("bob"),
-                &CoinList::from_coins(vec![coin(400, "token0"), coin(100, "token1")]),
+                &CoinList::from(vec![coin(400, "token0"), coin(100, "token1")]),
             )
             .unwrap();
 
@@ -370,7 +370,7 @@ mod tests {
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: to_address.to_string(),
-                amount: sort_tokens(vec![coin(1123, "uosmo"), coin(1234, "uatom")])
+                amount: CoinList::new(vec![coin(1123, "uosmo"), coin(1234, "uatom")]).coins()
             })
         )
     }

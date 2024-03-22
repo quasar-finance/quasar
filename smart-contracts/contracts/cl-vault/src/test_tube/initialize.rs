@@ -20,8 +20,8 @@ pub mod initialize {
         Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, PoolManager,
         SigningAccount, TokenFactory, Wasm,
     };
+    use quasar_types::coinlist::CoinList;
 
-    use crate::helpers::sort_tokens;
     use crate::msg::{
         ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
     };
@@ -166,7 +166,7 @@ pub mod initialize {
                 },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                sort_tokens(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).as_ref(),
+                CoinList::new(vec![coin(1000, pool.token0), coin(1000, pool.token1)]).coins().as_ref(),
                 &admin,
             )
             .unwrap();

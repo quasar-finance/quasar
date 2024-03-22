@@ -1,7 +1,6 @@
-use std::ops::Add;
-
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128, coin, Fraction};
+use cosmwasm_std::{coin, Addr, Coin, Decimal, Fraction, Uint128};
+use quasar_types::coinlist::CoinList;
 
 #[cw_serde]
 pub struct Gauge {
@@ -24,7 +23,7 @@ impl Gauge {
         fee_address: Addr,
         r#type: GaugeType,
     ) -> Gauge {
-        let fee =  Fee::new(fee_address, fee, &total_incentives);
+        let fee = Fee::new(fee_address, fee, CoinList::new(total_incentives.clone()));
 
         Gauge {
             start_block,
@@ -41,26 +40,22 @@ impl Gauge {
 pub struct Fee {
     pub fee_address: Addr,
     pub fee_ratio: Decimal,
-    pub total_fees: Vec<Coin>,
-    pub remaining_fees: Vec<Coin>,
+    pub total_fees: CoinList,
+    pub remaining_fees: CoinList,
 }
 
 impl Fee {
-    pub fn new(fee_address: Addr, fee_ratio: Decimal, total_incentives: &[Coin]) -> Fee {
-        let total_fees: Vec<Coin> = total_incentives
-        .iter()
-        .map(|c| {
-            let amount = c
-                .amount
-                .multiply_ratio(fee_ratio.numerator(), fee_ratio.denominator());
-            coin(amount.u128(), c.denom.as_str())
-        })
-        .collect();
+    pub fn new(fee_address: Addr, fee_ratio: Decimal, total_incentives: CoinList) -> Fee {
+        let total_fees = total_incentives.mul_ratio(fee_ratio);
 
-        Fee { fee_address, fee_ratio, total_fees: total_fees.clone(), remaining_fees: total_fees }
+        Fee {
+            fee_address,
+            fee_ratio,
+            total_fees: total_fees.clone(),
+            remaining_fees: total_fees,
+        }
     }
 }
-
 
 #[cw_serde]
 pub enum GaugeType {

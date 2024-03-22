@@ -13,11 +13,11 @@ mod tests {
         SigningAccount, Wasm,
     };
     use proptest::prelude::*;
+    use quasar_types::coinlist::CoinList;
 
     use crate::query::AssetsBalanceResponse;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::{
-        helpers::sort_tokens,
         math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PositionResponse, TotalVaultTokenSupplyResponse},
@@ -107,7 +107,7 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit.rs::execute_exact_deposit
+                &CoinList::new(coins_to_deposit).coins(), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit.rs::execute_exact_deposit
                 account,
             )
             .unwrap();

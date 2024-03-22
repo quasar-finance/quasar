@@ -12,10 +12,11 @@ use osmosis_std::types::{
         tokenfactory::v1beta1::MsgMint,
     },
 };
+use quasar_types::coinlist::CoinList;
 
 use crate::{
     error::ContractResult,
-    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
+    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two},
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
@@ -68,7 +69,7 @@ pub(crate) fn execute_exact_deposit(
     )?;
 
     // Create coins_to_send with no zero amounts
-    let mut coins_to_send = vec![];
+    let mut coins_to_send = CoinList::default();
     if !token0.amount.is_zero() {
         coins_to_send.push(token0.clone());
     }
@@ -81,7 +82,7 @@ pub(crate) fn execute_exact_deposit(
         &env,
         position.lower_tick,
         position.upper_tick,
-        sort_tokens(coins_to_send),
+        coins_to_send.coins(),
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -302,7 +303,6 @@ mod tests {
     };
 
     use crate::{
-        rewards::CoinList,
         state::{PoolConfig, Position, STRATEGIST_REWARDS},
         test_helpers::QuasarQuerier,
     };
@@ -322,7 +322,7 @@ mod tests {
             .unwrap();
 
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::new())
+            .save(deps.as_mut().storage, &CoinList::default())
             .unwrap();
         CURRENT_DEPOSIT
             .save(

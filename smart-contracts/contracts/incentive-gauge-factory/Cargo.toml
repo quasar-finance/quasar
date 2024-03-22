@@ -45,6 +45,7 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 cosmwasm-schema = "1.1.3"
 cosmwasm-std = "1.1.3"
 cosmwasm-storage = "1.1.3"
+quasar-types = { path = "../../packages/quasar-types" }
 cw-storage-plus = "1.0.1"
 cw2 = "1.0.1"
 schemars = "0.8.10"

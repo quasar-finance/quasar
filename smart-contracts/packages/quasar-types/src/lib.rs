@@ -1,4 +1,5 @@
 pub mod callback;
+pub mod coinlist;
 pub mod curve;
 pub mod error;
 pub mod ibc;

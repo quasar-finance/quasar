@@ -1,6 +1,5 @@
 use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
-use crate::rewards::CoinList;
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use crate::{
@@ -14,6 +13,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+use quasar_types::coinlist::CoinList;
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -141,7 +141,7 @@ pub fn query_assets_from_shares(
     let vault_supply = query_total_vault_token_supply(deps)?.total;
     let vault_assets = query_total_assets(deps, env)?;
 
-    let vault_balance = CoinList::from_coins(vec![vault_assets.token0, vault_assets.token1]);
+    let vault_balance = CoinList::from(vec![vault_assets.token0, vault_assets.token1]);
 
     let assets_from_shares = vault_balance.mul_ratio(Decimal::from_ratio(shares, vault_supply));
 

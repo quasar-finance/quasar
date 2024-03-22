@@ -9,12 +9,12 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
+use quasar_types::coinlist::CoinList;
 
 use crate::helpers::must_pay_one_or_two;
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
-use crate::rewards::CoinList;
 use crate::state::{
     Metadata, PoolConfig, Position, RewardsStatus, ADMIN_ADDRESS, CURRENT_TOTAL_SUPPLY,
     DISTRIBUTED_REWARDS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN, REWARDS_STATUS,
@@ -60,8 +60,8 @@ pub fn handle_instantiate(
     )?;
 
     REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
+    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::default())?;
+    STRATEGIST_REWARDS.save(deps.storage, &CoinList::default())?;
     CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
 
     METADATA.save(

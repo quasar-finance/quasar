@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, DepsMut, Response};
+use cosmwasm_std::{Addr, BankMsg, DepsMut, Response};
 
 use crate::{state::USER_REWARDS, ContractError};
 
@@ -17,8 +17,7 @@ pub fn execute_claim_user_rewards(
             }
         };
 
-    let send_rewards_msg = user_rewards.claim(recipient)?;
-
+    let send_rewards_msg = BankMsg::Send { to_address: recipient.to_string(), amount: user_rewards.coins() };
     // todo: check if user rewards are claimed correctly
     USER_REWARDS.save(deps.storage, Addr::unchecked(recipient), &user_rewards)?;
 
