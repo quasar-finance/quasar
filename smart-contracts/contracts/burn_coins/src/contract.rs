@@ -56,6 +56,10 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, 
 }
 
 pub fn execute_coins_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, BurnErrors> {
+    if info.funds.is_empty() {
+        return Err(BurnErrors::ZeroAmount {});
+    }
+
     // Prepare the Burn message
     let burn_msg = CosmosMsg::Bank(BankMsg::Burn {
         amount: info.clone().funds,
