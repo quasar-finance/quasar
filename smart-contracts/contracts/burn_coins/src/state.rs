@@ -1,7 +1,7 @@
 use cosmwasm_std::Coin;
 use cw_storage_plus::Item;
 
-pub const AMOUNT_BURNT: Item<Vec<Coin>> = Item::new("airdrop_config");
+pub const AMOUNT_BURNT: Item<Vec<Coin>> = Item::new("burnt_coins");
 
 #[cfg(test)]
 mod tests {
