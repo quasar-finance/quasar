@@ -43,6 +43,8 @@ pub fn execute_create_incentive_gauge() -> Result<Response, ContractError> {
 
     // save the instance in the Gauge overview
 
+    // depending on the gauge type, execute verification, eg verify that a vault is a quasar cl vault
+
     todo!()
 }
 
@@ -51,22 +53,23 @@ pub fn execute_claim_fees(
     env: Env,
     gauge_addr: Addr,
 ) -> Result<Response, ContractError> {
-    let current_block = env.block.height;
-
     let mut gauge = GAUGES.load(deps.storage, gauge_addr.clone())?;
 
     let mut fees = gauge.fee;
 
     let elapsed_blocks = env.block.height - gauge.start_block;
     let total_blocks = gauge.end_block - gauge.start_block;
+
+    // calculate what % of the gauge has passed
     let elapsed_ratio = Decimal::from_ratio(elapsed_blocks, total_blocks);
     let claimable_until_now = fees
         .total_fees
         .mul_ratio(elapsed_ratio);
 
-    // TODO remove clones
+
     let claimed = fees.total_fees.checked_sub(&fees.remaining_fees).map_err(StdError::overflow)?;
 
+    // calculate the difference between what fees were already paid out and what is claimable
     let to_receive = claimable_until_now.clone() - claimed;
     let new_remaining_fees = fees.total_fees.checked_sub(&claimable_until_now).map_err(StdError::overflow)?;
 

@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Fraction, Uint128};
 use quasar_types::coinlist::CoinList;
@@ -57,14 +59,22 @@ impl Fee {
     }
 }
 
+/// The different kinds of incentive gauges supported by Quasar
+/// Each kind of gauge is created in the incentive gauge factory
+/// The offchain infrastructure picks up the settings from the onchain created gauge
 #[cw_serde]
 pub enum GaugeType {
-    Vault { address: Addr },
+    /// The gauge type to incentivize a Quasar vault. 
+    /// address is the contract address of the corresponding Quasar vault to incentivize
+    /// blacklist gives support to blacklist certain addresses, such as contracts that deposit into the vault but do not have the capability to claim any incentives
+    /// min_shares is an optional setting to define a minimum amount of shares needed to earn any incentives
+    /// max_shares is an optional setting to define a maximum amount of shares a user can earn any incentives over, any users over the max amount are given rewards according to the max_shares amount
+    Vault { address: Addr, blacklist: Option<Vec<Addr>>, min_shares: Option<Uint128>, max_shares: Option<Uint128> },
 }
 
 impl GaugeType {
-    pub fn new_vault_incentives(address: Addr) -> GaugeType {
-        return GaugeType::Vault { address };
+    pub fn new_vault_incentives(address: Addr, blacklist: Option<Vec<Addr>>, min_shares: Option<Uint128>, max_shares: Option<Uint128> ) -> GaugeType {
+        return GaugeType::Vault { address, blacklist, min_shares, max_shares };
     }
 }
 
