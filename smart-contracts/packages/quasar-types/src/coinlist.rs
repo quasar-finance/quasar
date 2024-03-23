@@ -1,7 +1,7 @@
 use std::ops::Sub;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, Coin, Decimal, Fraction, OverflowError, Uint128};
+use cosmwasm_std::{coin, Attribute, Coin, Decimal, Fraction, OverflowError};
 
 #[cw_serde]
 #[derive(Default)]
@@ -178,6 +178,8 @@ fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Uint128;
+
     use super::*;
 
     #[test]
@@ -316,168 +318,168 @@ mod tests {
 
         assert_eq!(sorted_tokens, expected);
     }
-}
 
-#[test]
-fn checked_mut_sub_works() {
-    let mut coins = CoinList::default();
-    coins
-        .append(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(3000, "uqsr"),
-        ])
-        .unwrap();
+    #[test]
+    fn checked_mut_sub_works() {
+        let mut coins = CoinList::default();
+        coins
+            .append(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr"),
+            ])
+            .unwrap();
 
-    assert_eq!(
-        coins,
-        CoinList(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(3000, "uqsr")
-        ])
-    );
+        assert_eq!(
+            coins,
+            CoinList(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr")
+            ])
+        );
 
-    coins
-        .checked_mut_sub(&CoinList::from(vec![coin(1500, "uqsr")]))
-        .unwrap();
+        coins
+            .checked_mut_sub(&CoinList::from(vec![coin(1500, "uqsr")]))
+            .unwrap();
 
-    assert_eq!(
-        coins,
-        CoinList(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(1500, "uqsr")
-        ])
-    );
+        assert_eq!(
+            coins,
+            CoinList(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(1500, "uqsr")
+            ])
+        );
 
-    coins
-        .checked_mut_sub(&CoinList::from(vec![coin(2000, "uqsr")]))
-        .unwrap_err();
+        coins
+            .checked_mut_sub(&CoinList::from(vec![coin(2000, "uqsr")]))
+            .unwrap_err();
 
-    coins
-        .checked_mut_sub(&CoinList::from(vec![coin(999, "uqsr"), coin(999, "uosmo")]))
-        .unwrap();
+        coins
+            .checked_mut_sub(&CoinList::from(vec![coin(999, "uqsr"), coin(999, "uosmo")]))
+            .unwrap();
 
-    assert_eq!(
-        coins,
-        CoinList(vec![
-            coin(1, "uosmo"),
-            coin(2000, "uatom"),
-            coin(501, "uqsr")
-        ])
-    );
-}
+        assert_eq!(
+            coins,
+            CoinList(vec![
+                coin(1, "uosmo"),
+                coin(2000, "uatom"),
+                coin(501, "uqsr")
+            ])
+        );
+    }
 
-#[test]
-fn percentage_works() {
-    let mut rewards = CoinList::default();
-    rewards
-        .append(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(3000, "uqsr"),
-        ])
-        .unwrap();
+    #[test]
+    fn percentage_works() {
+        let mut rewards = CoinList::default();
+        rewards
+            .append(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr"),
+            ])
+            .unwrap();
 
-    let ratio = rewards.mul_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
-    assert_eq!(
-        ratio,
-        CoinList(vec![
-            coin(100, "uosmo"),
-            coin(200, "uatom"),
-            coin(300, "uqsr")
-        ])
-    )
-}
+        let ratio = rewards.mul_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
+        assert_eq!(
+            ratio,
+            CoinList(vec![
+                coin(100, "uosmo"),
+                coin(200, "uatom"),
+                coin(300, "uqsr")
+            ])
+        )
+    }
 
-#[test]
-fn sub_percentage_works() {
-    let mut rewards = CoinList::default();
-    rewards
-        .append(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(3000, "uqsr"),
-        ])
-        .unwrap();
+    #[test]
+    fn sub_percentage_works() {
+        let mut rewards = CoinList::default();
+        rewards
+            .append(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr"),
+            ])
+            .unwrap();
 
-    let ratio = rewards
-        .sub_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)))
-        .unwrap();
-    assert_eq!(
-        ratio,
-        CoinList(vec![
-            coin(100, "uosmo"),
-            coin(200, "uatom"),
-            coin(300, "uqsr")
-        ])
-    );
-    assert_eq!(
-        rewards,
-        CoinList(vec![
-            coin(900, "uosmo"),
-            coin(1800, "uatom"),
-            coin(2700, "uqsr")
-        ])
-    )
-}
+        let ratio = rewards
+            .sub_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)))
+            .unwrap();
+        assert_eq!(
+            ratio,
+            CoinList(vec![
+                coin(100, "uosmo"),
+                coin(200, "uatom"),
+                coin(300, "uqsr")
+            ])
+        );
+        assert_eq!(
+            rewards,
+            CoinList(vec![
+                coin(900, "uosmo"),
+                coin(1800, "uatom"),
+                coin(2700, "uqsr")
+            ])
+        )
+    }
 
-#[test]
-fn add_works() {
-    let mut rewards = CoinList::default();
-    rewards
-        .append(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(3000, "uqsr"),
-        ])
-        .unwrap();
-    rewards = rewards
-        .add(CoinList::from(vec![
-            coin(2000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(6000, "uqsr"),
-            coin(1234, "umars"),
-        ]))
-        .unwrap();
-    assert_eq!(
-        rewards,
-        CoinList::from(vec![
-            coin(3000, "uosmo"),
-            coin(4000, "uatom"),
-            coin(9000, "uqsr"),
-            coin(1234, "umars")
-        ])
-    )
-}
+    #[test]
+    fn add_works() {
+        let mut rewards = CoinList::default();
+        rewards
+            .append(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr"),
+            ])
+            .unwrap();
+        rewards = rewards
+            .add(CoinList::from(vec![
+                coin(2000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(6000, "uqsr"),
+                coin(1234, "umars"),
+            ]))
+            .unwrap();
+        assert_eq!(
+            rewards,
+            CoinList::from(vec![
+                coin(3000, "uosmo"),
+                coin(4000, "uatom"),
+                coin(9000, "uqsr"),
+                coin(1234, "umars")
+            ])
+        )
+    }
 
-#[test]
-fn update_rewards_works() {
-    let mut rewards = CoinList::default();
-    rewards
-        .append(vec![
-            coin(1000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(3000, "uqsr"),
-        ])
-        .unwrap();
+    #[test]
+    fn update_rewards_works() {
+        let mut rewards = CoinList::default();
+        rewards
+            .append(vec![
+                coin(1000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(3000, "uqsr"),
+            ])
+            .unwrap();
 
-    rewards
-        .append(vec![
-            coin(1000, "uosmo"),
-            coin(1234, "umars"),
-            coin(3000, "uqsr"),
-        ])
-        .unwrap();
+        rewards
+            .append(vec![
+                coin(1000, "uosmo"),
+                coin(1234, "umars"),
+                coin(3000, "uqsr"),
+            ])
+            .unwrap();
 
-    assert_eq!(
-        rewards,
-        CoinList::from(vec![
-            coin(2000, "uosmo"),
-            coin(2000, "uatom"),
-            coin(6000, "uqsr"),
-            coin(1234, "umars")
-        ])
-    );
+        assert_eq!(
+            rewards,
+            CoinList::from(vec![
+                coin(2000, "uosmo"),
+                coin(2000, "uatom"),
+                coin(6000, "uqsr"),
+                coin(1234, "umars")
+            ])
+        );
+    }
 }
