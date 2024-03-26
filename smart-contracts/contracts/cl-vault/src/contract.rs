@@ -5,21 +5,26 @@ use crate::instantiate::{
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
     query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
-    query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
+    query_share_price, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
-    execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply, CoinList,
+    execute_auto_compound_swap, execute_collect_rewards, execute_migration_step,
+    handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
-use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS};
-use crate::vault::admin::execute_admin;
+use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS
+    MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
+    VAULT_CONFIG,
+};
 use crate::vault::claim::execute_claim_user_rewards;
-use crate::vault::deposit::execute_exact_deposit;
+use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
+use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
+
 use crate::vault::merge::{
-    execute_merge, handle_merge_create_position_reply, handle_merge_withdraw_reply,
+    execute_merge_position, handle_merge_create_position_reply,
+    handle_merge_withdraw_position_reply,
 };
 use crate::vault::range::{
     execute_update_range, get_range_admin, handle_initial_create_position_reply,
@@ -71,7 +76,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Merge(msg) => execute_merge(deps, env, info, msg),
+                crate::msg::ExtensionExecuteMsg::Merge(msg) => {
+                    execute_merge_position(deps, env, info, msg)
+                }
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
@@ -88,14 +95,18 @@ pub fn execute(
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
                 ),
-                crate::msg::ExtensionExecuteMsg::CollectRewards { amount_of_users } => {
-                    execute_collect_rewards(deps, env, amount_of_users)
+                crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
+                    execute_collect_rewards(deps, env)
                 }
-                crate::msg::ExtensionExecuteMsg::DistributeRewards { amount_of_users } => {
-                    execute_distribute_rewards(deps, env, amount_of_users)
+                crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+                    force_swap_route,
+                    swap_routes,
+                } => execute_auto_compound_swap(deps, env, info, force_swap_route, swap_routes),
+                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
+                    execute_build_tick_exp_cache(deps, info)
                 }
-                crate::msg::ExtensionExecuteMsg::ClaimRewards {} => {
-                    execute_claim_user_rewards(deps, info.sender.as_str())
+                crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
+                    execute_migration_step(deps, env, amount_of_users)
                 }
             }
         }
@@ -121,17 +132,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             Ok(to_json_binary(&query_total_vault_token_supply(deps)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: shares } => {
-            Ok(to_json_binary(&query_assets_from_shares(deps, env, shares)?)?)
-        }
+        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: shares } => Ok(
+            to_json_binary(&query_assets_from_shares(deps, env, shares)?)?,
+        ),
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Metadata {} => Ok(to_json_binary(&query_metadata(deps)?)?),
+            crate::msg::ExtensionQueryMsg::Metadata {} => {
+                Ok(to_json_binary(&query_metadata(deps)?)?)
+            }
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_json_binary(&query_user_balance(deps, user)?)?)
-                }
-                crate::msg::UserBalanceQueryMsg::UserRewards { user } => {
-                    Ok(to_json_binary(&query_user_rewards(deps, user)?)?)
                 }
                 crate::msg::UserBalanceQueryMsg::UserAssetsBalance { user } => {
                     Ok(to_json_binary(&query_user_assets(deps, env, user)?)?)
@@ -148,6 +158,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                 }
                 crate::msg::ClQueryMsg::VerifyTickCache => {
                     Ok(to_json_binary(&query_verify_tick_cache(deps)?)?)
+                }
+                crate::msg::ClQueryMsg::SharePrice { shares } => {
+                    Ok(to_json_binary(&query_share_price(deps, env, shares)?)?)
                 }
             },
         },
@@ -173,16 +186,91 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::Merge => handle_merge_response(deps, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
-        Replies::WithdrawMerge => handle_merge_withdraw_reply(deps, env, msg.result),
+        Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
-    CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
+    let new_vault_config = VaultConfig {
+        performance_fee: old_vault_config.performance_fee,
+        treasury: old_vault_config.treasury,
+        swap_max_slippage: old_vault_config.swap_max_slippage,
+        dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
+    };
+
+    OLD_VAULT_CONFIG.remove(deps.storage);
+    VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
+
+    AUTO_COMPOUND_ADMIN.save(
+        deps.storage,
+        &deps.api.addr_validate(msg.auto_compound_admin.as_ref())?,
+    )?;
+
+    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
+
     Ok(Response::new().add_attribute("migrate", "successful"))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Addr, Decimal,
+    };
+
+    use crate::state::OldVaultConfig;
+
+    use super::*;
+
+    #[test]
+    fn test_migrate() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Declare new items for states
+        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
+        let new_auto_compound_admin = Addr::unchecked("auto_compound_admin"); // completely new state item
+
+        // Mock a previous state item
+        OLD_VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &OldVaultConfig {
+                    performance_fee: Decimal::from_str("0.2").unwrap(),
+                    treasury: Addr::unchecked("treasury"),
+                    swap_max_slippage: Decimal::bps(5),
+                },
+            )
+            .unwrap();
+
+        let _ = migrate(
+            deps.as_mut(),
+            env,
+            MigrateMsg {
+                dex_router: new_dex_router.clone(),
+                auto_compound_admin: new_auto_compound_admin.clone(),
+            },
+        );
+
+        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
+        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
+
+        // Assert new VAULT_CONFIG.dex_router field have correct value
+        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
+        assert_eq!(vault_config.dex_router, new_dex_router);
+
+        // Assert new AUTO_COMPOUND_ADMIN state have correct value
+        let auto_compound_admin = AUTO_COMPOUND_ADMIN.load(deps.as_mut().storage).unwrap();
+        assert_eq!(auto_compound_admin, new_auto_compound_admin);
+
+        // Assert new MIGRATION_STATUS state have correct value
+        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
+        assert_eq!(migration_status, MigrationStatus::Open);
+    }
 }

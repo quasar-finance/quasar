@@ -1,11 +1,12 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+        SharePriceResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
 };
@@ -20,12 +21,24 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
-    /// Collect any rewards from Osmosis to the Vault
-    CollectRewards { amount_of_users: Uint128 },
     /// Distribute any rewards over all users
-    DistributeRewards { amount_of_users: Uint128 },
+    CollectRewards {},
     /// Claim rewards belonging to a single user
-    ClaimRewards {},
+    AutoCompoundRewards {
+        force_swap_route: bool,
+        swap_routes: Vec<AutoCompoundAsset>,
+    },
+    /// Build tick exponent cache
+    BuildTickCache {},
+    /// MigrationStep
+    MigrationStep { amount_of_users: Uint128 },
+}
+
+#[cw_serde]
+pub struct AutoCompoundAsset {
+    pub token_in_denom: String,
+    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
+    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -54,6 +67,11 @@ pub enum AdminExtensionExecuteMsg {
     ClaimStrategistRewards {},
     /// Build tick exponent cache
     BuildTickCache {},
+    /// Update the auto compound admin
+    UpdateAutoCompoundAdmin {
+        /// The new admin address.
+        address: String,
+    },
 }
 
 #[cw_serde]
@@ -94,8 +112,6 @@ pub enum UserBalanceQueryMsg {
     UserSharesBalance { user: String },
     #[returns(AssetsBalanceResponse)]
     UserAssetsBalance { user: String },
-    #[returns(UserRewardsResponse)]
-    UserRewards { user: String },
 }
 
 /// Extension query messages for related concentrated liquidity
@@ -111,6 +127,8 @@ pub enum ClQueryMsg {
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
+    #[returns(SharePriceResponse)]
+    SharePrice { shares: Uint128 },
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
@@ -129,6 +147,8 @@ pub struct InstantiateMsg {
     pub admin: String,
     /// Address that is allowed to update range.
     pub range_admin: String,
+    /// Address that is allowed to auto compound
+    pub auto_compound_admin: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
     /// Configurable parameters for the contract.
@@ -143,4 +163,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub dex_router: Addr,
+    pub auto_compound_admin: Addr,
+}

@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env, Fraction,
-    MessageInfo, QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128, Uint256,
+    attr, coin, to_json_binary, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
+    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
@@ -197,7 +197,7 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
+        to_json_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
     };
 
     use osmosis_std::types::{
@@ -411,7 +411,7 @@ mod tests {
         let denom0 = "uosmo".to_string();
         let denom1 = "uatom".to_string();
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
         assert!(response.is_none());
     }
 
