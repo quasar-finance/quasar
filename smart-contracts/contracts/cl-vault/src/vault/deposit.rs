@@ -1,14 +1,15 @@
 use std::str::FromStr;
 
 use cosmwasm_std::{
-    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
-    MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    attr, coin, to_binary, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env, Fraction,
+    MessageInfo, QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{
         concentratedliquidity::v1beta1::{ConcentratedliquidityQuerier, MsgCreatePositionResponse},
+        poolmanager::v2::PoolmanagerQuerier,
         tokenfactory::v1beta1::MsgMint,
     },
 };
@@ -17,6 +18,7 @@ use crate::{
     error::ContractResult,
     helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
+    query::query_total_assets,
     reply::Replies,
     state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{create_position, get_position},
@@ -47,81 +49,24 @@ pub(crate) fn execute_exact_deposit(
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
-    let position_id = (POSITION.load(deps.storage)?).position_id;
-    let position = ConcentratedliquidityQuerier::new(&deps.querier)
-        .position_by_id(position_id)?
-        .position
-        .ok_or(ContractError::PositionNotFound)?
-        .position
-        .ok_or(ContractError::PositionNotFound)?;
-
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    CURRENT_DEPOSIT.save(
+    let deposit_ratio: (Uint128, Uint128) = todo!();
+
+    // get the amount of funds we can deposit from this ratio
+    let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) = todo!();
+
+    // calculate the amount of shares we can mint for this
+    let total_assets = query_total_assets(deps.as_ref(), env)?;
+    let total_assets_value = get_asset0_value(
         deps.storage,
-        &CurrentDeposit {
-            token0_in: token0.amount,
-            token1_in: token1.amount,
-            sender: recipient,
-        },
+        &deps.querier,
+        total_assets.token0.amount,
+        total_assets.token1.amount,
     )?;
 
-    // Create coins_to_send with no zero amounts
-    let mut coins_to_send = vec![];
-    if !token0.amount.is_zero() {
-        coins_to_send.push(token0.clone());
-    }
-    if !token1.amount.is_zero() {
-        coins_to_send.push(token1.clone());
-    }
-
-    let create_position_msg = create_position(
-        deps,
-        &env,
-        position.lower_tick,
-        position.upper_tick,
-        sort_tokens(coins_to_send),
-        Uint128::zero(),
-        Uint128::zero(),
-    )?;
-
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(
-            create_position_msg,
-            Replies::DepositCreatePosition as u64,
-        ))
-        .add_attribute("method", "exact_deposit")
-        .add_attribute("action", "exact_deposit")
-        .add_attribute("amount0", token0.amount)
-        .add_attribute("amount1", token1.amount))
-}
-
-/// handles the reply to creating a position for a user deposit
-/// and calculates the refund for the user
-pub fn handle_deposit_create_position_reply(
-    mut deps: DepsMut,
-    env: Env,
-    data: SubMsgResult,
-) -> ContractResult<Response> {
-    let create_deposit_position_resp: MsgCreatePositionResponse = data.try_into()?;
-
-    let current_deposit = CURRENT_DEPOSIT.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-    // we mint shares according to the liquidity created in the position creation
-    // this return value is a uint128 with 18 decimals, eg: 101017752467168561172212170
-    let user_created_liquidity = Decimal256::new(Uint256::from_str(
-        create_deposit_position_resp.liquidity_created.as_str(),
-    )?);
-
-    let existing_position = get_position(deps.storage, &deps.querier)?
-        .position
-        .ok_or(ContractError::PositionNotFound)?;
-
-    // the total liquidity, an actual decimal, eg: 2020355.049343371223444243"
-    let existing_liquidity = Decimal256::from_str(existing_position.liquidity.as_str())?;
-
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
         .amount
@@ -130,33 +75,35 @@ pub fn handle_deposit_create_position_reply(
         .parse::<u128>()?
         .into();
 
-    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
-    let refunded = (
-        current_deposit.token0_in.saturating_sub(Uint128::new(
-            create_deposit_position_resp.amount0.parse::<u128>()?,
-        )),
-        current_deposit.token1_in.saturating_sub(Uint128::new(
-            create_deposit_position_resp.amount1.parse::<u128>()?,
-        )),
-    );
+    let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
-        existing_liquidity.to_uint_floor().try_into()?
+        total_assets_value
     } else {
-        let liquidity_amount_of_unused_funds: Decimal256 =
-            get_liquidity_amount_for_unused_funds(deps.branch(), &env, refunded)?;
-        let total_liquidity = existing_liquidity.checked_add(liquidity_amount_of_unused_funds)?;
-
-        // user_shares = total_vault_shares * user_liq / total_liq
         total_vault_shares
-            .multiply_ratio(
-                user_created_liquidity.numerator(),
-                user_created_liquidity.denominator(),
-            )
-            .multiply_ratio(total_liquidity.denominator(), total_liquidity.numerator())
+            .checked_mul(user_value.into())?
+            .checked_mul(total_assets_value.into())?
             .try_into()?
     };
+
+    // save the shares in the user map
+    SHARES.update(
+        deps.storage,
+        recipient,
+        |old| -> Result<Uint128, ContractError> {
+            if let Some(existing_user_shares) = old {
+                Ok(user_shares + existing_user_shares)
+            } else {
+                Ok(user_shares)
+            }
+        },
+    )?;
+
+    let mint_attrs = vec![
+        attr("mint_shares_amount", user_shares),
+        attr("receiver", recipient.as_str()),
+    ];
 
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
@@ -169,77 +116,36 @@ pub fn handle_deposit_create_position_reply(
         mint_to_address: env.contract.address.to_string(),
     };
 
-    // save the shares in the user map
-    SHARES.update(
-        deps.storage,
-        current_deposit.sender.clone(),
-        |old| -> Result<Uint128, ContractError> {
-            if let Some(existing_user_shares) = old {
-                Ok(user_shares + existing_user_shares)
-            } else {
-                Ok(user_shares)
-            }
-        },
-    )?;
-
-    // resp.amount0 and resp.amount1 are the amount of tokens used for the position, we want to refund any unused tokens
-    // thus we calculate which tokens are not used
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    let bank_msg = refund_bank_msg(
-        current_deposit.clone(),
-        &create_deposit_position_resp,
-        pool_config.token0,
-        pool_config.token1,
-    )?;
-
-    let position_ids = vec![
-        existing_position.position_id,
-        create_deposit_position_resp.position_id,
-    ];
-    let merge_msg =
-        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-            position_ids,
-        }));
-    // merge our position with the main position
-    let merge_submsg = SubMsg::reply_on_success(
-        cosmwasm_std::WasmMsg::Execute {
-            contract_addr: env.contract.address.to_string(),
-            msg: to_binary(&merge_msg)?,
-            funds: vec![],
-        },
-        Replies::Merge.into(),
-    );
-
-    let mint_attrs = vec![
-        attr("mint_shares_amount", user_shares),
-        attr("receiver", current_deposit.sender.as_str()),
-    ];
-
-    // clear out the current deposit since it is no longer needed
-    CURRENT_DEPOSIT.remove(deps.storage);
-
-    // Merge our positions together and mint the user shares to the cl-vault
-    let mut response = Response::new()
-        .add_submessage(merge_submsg)
-        .add_attribute(
-            "position_ids",
-            format!(
-                "{},{}",
-                existing_position.position_id, create_deposit_position_resp.position_id
-            ),
-        )
+    Ok(Response::new()
+        .add_attribute("method", "exact_deposit")
+        .add_attribute("action", "exact_deposit")
+        .add_attribute("amount0", token0.amount)
+        .add_attribute("amount1", token1.amount)
         .add_message(mint_msg)
         .add_attributes(mint_attrs)
         .add_attribute("method", "create_position_reply")
-        .add_attribute("action", "exact_deposit");
+        .add_attribute("action", "exact_deposit"))
+}
 
-    // if we have any funds to refund, refund them
-    if let Some((msg, attr)) = bank_msg {
-        response = response.add_message(msg).add_attributes(attr);
-    }
+/// Calculate the total value of two assets in asset0
+fn get_asset0_value(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token0: Uint128,
+    token1: Uint128,
+) -> Result<Uint128, ContractError> {
+    let pool_config = POOL_CONFIG.load(storage)?;
 
-    Ok(response)
+    let pm_querier = PoolmanagerQuerier::new(querier);
+    let spot_price: Decimal = pm_querier
+        .spot_price_v2(pool_config.pool_id, pool_config.token0, pool_config.token1)?
+        .spot_price
+        .parse()?;
+
+    let total = token0
+        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
+
+    Ok(total)
 }
 
 fn refund_bank_msg(
@@ -363,40 +269,10 @@ mod tests {
             ),
         });
 
-        let response =
-            handle_deposit_create_position_reply(deps.as_mut(), env.clone(), result).unwrap();
-        assert_eq!(response.messages.len(), 2);
-        assert_eq!(
-            response.messages[0],
-            SubMsg::reply_on_success(
-                WasmMsg::Execute {
-                    contract_addr: env.contract.address.to_string(),
-                    msg: to_binary(&ExecuteMsg::VaultExtension(
-                        crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-                            position_ids: vec![1, 2]
-                        })
-                    ))
-                    .unwrap(),
-                    funds: vec![]
-                },
-                Replies::Merge.into()
-            )
-        );
         // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
         assert_eq!(
             SHARES.load(deps.as_ref().storage, sender).unwrap(),
             Uint128::new(50000)
-        );
-        assert_eq!(
-            response.messages[1],
-            SubMsg::new(MsgMint {
-                sender: env.contract.address.to_string(),
-                amount: Some(OsmoCoin {
-                    denom: "money".to_string(),
-                    amount: 50000.to_string()
-                }),
-                mint_to_address: env.contract.address.to_string()
-            })
         );
     }
 
