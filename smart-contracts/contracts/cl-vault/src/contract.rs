@@ -11,7 +11,7 @@ use crate::query::{
 use crate::reply::Replies;
 use crate::rewards::{
     execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply, CoinList,
+    handle_collect_spread_rewards_reply,
 };
 
 use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS};
@@ -31,6 +31,7 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128};
 use cw2::set_contract_version;
+use quasar_types::coinlist::CoinList;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -185,7 +186,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
+    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::default())?;
     CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
     Ok(Response::new().add_attribute("migrate", "successful"))
 }

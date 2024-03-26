@@ -1,13 +1,13 @@
 use crate::error::ContractResult;
-use crate::helpers::{assert_admin, sort_tokens};
+use crate::helpers::{assert_admin};
 use crate::math::tick::build_tick_exp_cache;
-use crate::rewards::CoinList;
 use crate::state::{
     Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
 use cw_utils::nonpayable;
+use quasar_types::coinlist::CoinList;
 
 pub(crate) fn execute_admin(
     deps: DepsMut,
@@ -46,13 +46,13 @@ pub fn execute_claim_strategist_rewards(
     // get the currently attained rewards
     let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
     // empty the saved rewards
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
+    STRATEGIST_REWARDS.save(deps.storage, &CoinList::default())?;
 
     Ok(Response::new()
         .add_attribute("rewards", format!("{:?}", rewards.coins()))
         .add_message(BankMsg::Send {
             to_address: allowed_claimer.to_string(),
-            amount: sort_tokens(rewards.coins()),
+            amount: rewards.coins(),
         }))
 }
 
@@ -177,7 +177,7 @@ mod tests {
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
-                &CoinList::from_coins(rewards.clone()),
+                &CoinList::from(rewards.clone()),
             )
             .unwrap();
 
@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: treasury.to_string(),
-                amount: sort_tokens(rewards)
+                amount: CoinList::new(rewards).coins()
             }),
             response.messages[0].msg
         )
@@ -210,7 +210,7 @@ mod tests {
         let mut deps = mock_dependencies();
         let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
         STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
+            .save(deps.as_mut().storage, &CoinList::from(rewards))
             .unwrap();
 
         VAULT_CONFIG

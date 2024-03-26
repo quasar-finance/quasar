@@ -570,10 +570,10 @@ mod tests {
         Addr, Decimal, SubMsgResponse, SubMsgResult,
     };
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
+    use quasar_types::coinlist::CoinList;
 
     use crate::{
         math::tick::build_tick_exp_cache,
-        rewards::CoinList,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
     };
@@ -647,7 +647,7 @@ mod tests {
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
-                &CoinList::from_coins(vec![coin(1000, "token0"), coin(500, "token1")]),
+                &CoinList::from(vec![coin(1000, "token0"), coin(500, "token1")]),
             )
             .unwrap();
 
@@ -708,7 +708,7 @@ mod tests {
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
-                &CoinList::from_coins(vec![coin(1000, "token0"), coin(500, "token1")]),
+                &CoinList::from(vec![coin(1000, "token0"), coin(500, "token1")]),
             )
             .unwrap();
 

@@ -73,6 +73,7 @@ pub fn verify_proof(
 mod tests {
     use base64::{engine::general_purpose::STANDARD, Engine};
     use cosmwasm_std::{testing::mock_dependencies, Addr, Coin, Uint128};
+    use serde::{Deserialize, Serialize};
 
     use crate::{
         incentives::{

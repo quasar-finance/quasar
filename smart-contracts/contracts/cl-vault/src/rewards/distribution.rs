@@ -13,15 +13,18 @@ use crate::{
     },
     ContractError,
 };
-use osmosis_std::types::{
+use osmosis_std::{types::{
+    
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::concentratedliquidity::v1beta1::{
         MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
         MsgCollectSpreadRewardsResponse,
     },
+    },
+    try_proto_to_cosmwasm_coins
 };
 
-use super::helpers::CoinList;
+use quasar_types::coinlist::CoinList;
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(
@@ -36,7 +39,7 @@ pub fn execute_collect_rewards(
         RewardsStatus::Ready => {
             // Is the first iteration
             REWARDS_STATUS.save(deps.storage, &RewardsStatus::Collecting)?;
-            CURRENT_REWARDS.save(deps.storage, &CoinList::new())?;
+            CURRENT_REWARDS.save(deps.storage, &CoinList::default())?;
 
             // Prepare the bank querier and get the total shares
             let bq = BankQuerier::new(&deps.querier);
@@ -59,7 +62,7 @@ pub fn execute_collect_rewards(
                 .add_attribute("current_total_supply", total_supply.to_string()))
         }
         RewardsStatus::Collecting => {
-            // Get current rewards to distribute, if there are not clear the state and return
+            // Get current to distribute, if there are not clear the state and return
             let rewards = CURRENT_REWARDS.load(deps.storage)?;
             if rewards.is_empty() {
                 REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
@@ -135,7 +138,7 @@ pub fn handle_collect_incentives_reply(
     CURRENT_REWARDS.update(
         deps.storage,
         |mut rewards| -> Result<CoinList, ContractError> {
-            rewards.update_rewards(&response.collected_incentives)?;
+            rewards.append(try_proto_to_cosmwasm_coins(response.collected_incentives.clone())?)?;
             Ok(rewards)
         },
     )?;
@@ -170,12 +173,12 @@ pub fn handle_collect_spread_rewards_reply(
 
     let response: MsgCollectSpreadRewardsResponse = data?;
     let mut rewards = CURRENT_REWARDS.load(deps.storage)?;
-    rewards.update_rewards(&response.collected_spread_rewards)?;
+    rewards.append(try_proto_to_cosmwasm_coins(response.collected_spread_rewards.clone())?)?;
 
     // calculate and update the strategist fee
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = rewards.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee))?;
+    STRATEGIST_REWARDS.update(deps.storage, |old| old.add(strategist_fee).map_err(StdError::overflow))?;
 
     CURRENT_REWARDS.save(deps.storage, &rewards)?;
 
@@ -240,12 +243,12 @@ pub fn execute_distribute_rewards(
         CURRENT_REWARDS.update(
             deps.storage,
             |mut old_rewards| -> ContractResult<CoinList> {
-                old_rewards.sub(&distributed_rewards)?;
+                old_rewards.checked_mut_sub(&distributed_rewards)?;
                 Ok(old_rewards)
             },
         )?;
         // Clear distributed rewards state
-        DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
+        DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::default())?;
     } else {
         DISTRIBUTED_REWARDS.save(deps.storage, &distributed_rewards)?;
     }

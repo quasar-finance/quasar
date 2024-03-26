@@ -392,6 +392,7 @@ dependencies = [
  "osmosis-test-tube 21.0.0",
  "proptest",
  "prost 0.12.3",
+ "quasar-types",
  "serde",
  "thiserror",
 ]
@@ -1502,6 +1503,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "incentive-gauge-factory"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test 0.16.5",
+ "cw-storage-plus 1.2.0",
+ "cw2 1.1.1",
+ "derivative",
+ "proptest",
+ "quasar-types",
+ "schemars",
+ "serde",
+ "serde-json-wasm 0.5.2",
+ "thiserror",
+]
+
+[[package]]
 name = "indenter"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1682,6 +1703,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde_json",
  "thiserror",
 ]
 
@@ -2259,6 +2281,7 @@ name = "quasar-types"
 version = "0.1.0"
 dependencies = [
  "cosmos-sdk-proto 0.15.0",
+ "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 1.2.0",
  "cw20 0.13.4",

@@ -9,7 +9,7 @@ use crate::error::ContractError;
 use crate::incentives::execute::handle_execute_incentives;
 use crate::incentives::query::handle_query_incentives;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
-use crate::state::INCENTIVES_ADMIN;
+use crate::state::{CONFIG, INCENTIVES_ADMIN};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:merkle-incentives";
@@ -20,11 +20,13 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     INCENTIVES_ADMIN.save(deps.storage, &info.sender)?;
+
+    CONFIG.save(deps.storage, &msg.config)?;
 
     Ok(Response::default().add_attribute("incentive_admin", info.sender))
 }
@@ -38,7 +40,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::IncentivesMsg(incentives_msg) => {
-            handle_execute_incentives(deps, incentives_msg)
+            handle_execute_incentives(deps, env, incentives_msg)
         }
         ExecuteMsg::AdminMsg(admin_msg) => handle_execute_admin(deps, env, info, admin_msg),
     }

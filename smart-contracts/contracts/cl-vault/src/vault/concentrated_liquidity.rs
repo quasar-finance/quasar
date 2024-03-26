@@ -4,10 +4,12 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     Pool,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use osmosis_std::cosmwasm_to_proto_coins;
 use prost::Message;
+use quasar_types::coinlist::CoinList;
 
 use crate::{
-    helpers::{round_up_to_nearest_multiple, sort_tokens},
+    helpers::round_up_to_nearest_multiple,
     state::{POOL_CONFIG, POSITION},
     ContractError,
 };
@@ -24,7 +26,6 @@ pub fn create_position(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let sender = env.contract.address.to_string();
 
-    let sorted_tokens = sort_tokens(tokens_provided);
 
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
     let tick_spacing = pool_details
@@ -37,7 +38,7 @@ pub fn create_position(
         sender,
         lower_tick: round_up_to_nearest_multiple(lower_tick, tick_spacing),
         upper_tick: round_up_to_nearest_multiple(upper_tick, tick_spacing),
-        tokens_provided: sorted_tokens.into_iter().map(|c| c.into()).collect(),
+        tokens_provided: cosmwasm_to_proto_coins(CoinList::new(tokens_provided).coins()),
         // An sdk.Int in the Go code
         token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
@@ -183,7 +184,7 @@ mod tests {
                 sender: env.contract.address.into(),
                 lower_tick,
                 upper_tick,
-                tokens_provided: sort_tokens(tokens_provided)
+                tokens_provided: CoinList::new(tokens_provided).coins()
                     .into_iter()
                     .map(|c| c.into())
                     .collect(),

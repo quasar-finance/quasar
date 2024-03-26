@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use crate::math::tick::tick_to_price;
-use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
@@ -13,6 +12,7 @@ use cosmwasm_std::{
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
+use quasar_types::coinlist::CoinList;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
@@ -266,11 +266,7 @@ pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
     }
 }
 
-pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
-    let mut sorted_tokens = tokens;
-    sorted_tokens.sort_by(|a, b| a.denom.cmp(&b.denom));
-    sorted_tokens
-}
+
 
 /// this function subtracts out anything from the raw contract balance that isn't dedicated towards user or strategist rewards.
 /// this function is expensive.
@@ -280,15 +276,15 @@ pub fn get_unused_balances(
     env: &Env,
 ) -> Result<CoinList, ContractError> {
     let mut balances =
-        CoinList::from_coins(querier.query_all_balances(env.contract.address.to_string())?);
+        CoinList::from(querier.query_all_balances(env.contract.address.to_string())?);
 
     // subtract out strategist rewards and all user rewards
     let strategist_rewards = STRATEGIST_REWARDS.load(storage)?;
 
-    balances.sub(&strategist_rewards)?;
+    balances.checked_mut_sub(&strategist_rewards)?;
 
     for user_reward in USER_REWARDS.range(storage, None, None, cosmwasm_std::Order::Ascending) {
-        balances.sub(&user_reward?.1)?;
+        balances.checked_mut_sub(&user_reward?.1)?;
     }
 
     Ok(balances)
@@ -665,26 +661,5 @@ mod tests {
         assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
         assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
         assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
-    }
-
-    #[test]
-    fn test_sort_tokens() {
-        let tokens = vec![
-            coin(100, "uatom"),
-            coin(200, "uosmo"),
-            coin(300, "uqsr"),
-            coin(400, "ueth"),
-        ];
-
-        let expected = vec![
-            coin(100, "uatom"),
-            coin(400, "ueth"),
-            coin(200, "uosmo"),
-            coin(300, "uqsr"),
-        ];
-
-        let sorted_tokens = sort_tokens(tokens);
-
-        assert_eq!(sorted_tokens, expected);
     }
 }
