@@ -1,9 +1,9 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{BankMsg, Deps, DepsMut, Env, MessageInfo, Response};
+use cosmwasm_std::{Addr, BankMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128};
 
 use crate::{
-    state::{CONFIG, INCENTIVES_ADMIN, MERKLE_ROOT},
+    state::{CLAIMED_INCENTIVES, CONFIG, INCENTIVES_ADMIN, MERKLE_ROOT},
     ContractError,
 };
 
@@ -17,6 +17,9 @@ pub enum AdminExecuteMsg {
     UpdateMerkleRoot { new_root: String },
     /// Clawback any remaining funds after expiration date
     Clawback {},
+    /// Cleanup all state items in the contract after the expiration date
+    /// amount gives the max amount of state items to delete
+    Cleanup { amount: Uint128 }
 }
 
 pub fn handle_execute_admin(
@@ -33,6 +36,7 @@ pub fn handle_execute_admin(
             execute_update_merkle_root(deps, env, info, new_root)
         }
         AdminExecuteMsg::Clawback {} => execute_clawback(deps.as_ref(), env),
+        AdminExecuteMsg::Cleanup { amount  } => todo!(),
     }
 }
 
@@ -95,6 +99,24 @@ pub fn execute_clawback(deps: Deps, env: Env) -> Result<Response, ContractError>
         .add_message(bank_msg)
         .add_attribute("action", "clawback")
         .add_attribute("amount", amount_attr))
+}
+
+fn execute_cleanup(deps: DepsMut, env: Env, amount: u64) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    if env.block.height < config.expiration_block {
+        return Err(ContractError::ExpirationHeightNotReached {});
+    }
+
+    // delete items from claimed incentives
+    let to_delete: Result<Vec<(Addr, _)>, StdError> = CLAIMED_INCENTIVES.range(deps.storage, None, None, cosmwasm_std::Order::Descending).take(amount as usize).collect();
+    for item  in to_delete? {
+        CLAIMED_INCENTIVES.remove(deps.storage, item.0)
+    }
+
+    MERKLE_ROOT.remove(deps.storage);
+    INCENTIVES_ADMIN.remove(deps.storage);
+
+    todo!()
 }
 
 #[cfg(test)]
