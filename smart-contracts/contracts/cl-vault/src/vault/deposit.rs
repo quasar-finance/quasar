@@ -1,17 +1,22 @@
-use std::str::FromStr;
+use std::{collections::vec_deque, str::FromStr};
 
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env,
+    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env,
     Fraction, MessageInfo, QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
     Uint256,
 };
 
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier,
-    osmosis::{
-        concentratedliquidity::v1beta1::{ConcentratedliquidityQuerier, MsgCreatePositionResponse},
-        poolmanager::v2::PoolmanagerQuerier,
-        tokenfactory::v1beta1::MsgMint,
+use osmosis_std::{
+    try_proto_to_cosmwasm_coins,
+    types::{
+        cosmos::bank::v1beta1::BankQuerier,
+        osmosis::{
+            concentratedliquidity::v1beta1::{
+                ConcentratedliquidityQuerier, MsgCreatePositionResponse,
+            },
+            poolmanager::v2::PoolmanagerQuerier,
+            tokenfactory::v1beta1::MsgMint,
+        },
     },
 };
 
@@ -53,13 +58,12 @@ pub(crate) fn execute_exact_deposit(
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
-    let deposit_ratio: (Uint128, Uint128) = todo!();
-
     // get the amount of funds we can deposit from this ratio
-    let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) = todo!();
+    let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
+        get_depositable_tokens(deps.storage, &deps.querier, token0.clone(), token1.clone())?;
 
     // calculate the amount of shares we can mint for this
-    let total_assets = query_total_assets(deps.as_ref(), env)?;
+    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
     let total_assets_value = get_asset0_value(
         deps.storage,
         &deps.querier,
@@ -91,7 +95,7 @@ pub(crate) fn execute_exact_deposit(
     // save the shares in the user map
     SHARES.update(
         deps.storage,
-        recipient,
+        recipient.clone(),
         |old| -> Result<Uint128, ContractError> {
             if let Some(existing_user_shares) = old {
                 Ok(user_shares + existing_user_shares)
@@ -112,9 +116,9 @@ pub(crate) fn execute_exact_deposit(
     // we mint shares to the contract address here, so we can lock those shares for the user later in the same call
     // this is blocked by Osmosis v17 update
     let mint_msg = MsgMint {
-        sender: env.contract.address.to_string(),
+        sender: env.clone().contract.address.to_string(),
         amount: Some(coin(user_shares.into(), vault_denom).into()),
-        mint_to_address: env.contract.address.to_string(),
+        mint_to_address: env.clone().contract.address.to_string(),
     };
 
     Ok(Response::new()
@@ -149,39 +153,90 @@ fn get_asset0_value(
     Ok(total)
 }
 
-fn refund_bank_msg(
-    current_deposit: CurrentDeposit,
-    resp: &MsgCreatePositionResponse,
-    denom0: String,
-    denom1: String,
-) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
-    // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
-    let refund0 = current_deposit
-        .token0_in
-        .saturating_sub(Uint128::new(resp.amount0.parse::<u128>()?));
-    let refund1 = current_deposit
-        .token1_in
-        .saturating_sub(Uint128::new(resp.amount1.parse::<u128>()?));
+fn get_depositable_tokens(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token0: Coin,
+    token1: Coin,
+) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
+    let position = get_position(storage, querier)?;
+    match (position.asset0, position.asset1) {
+        (None, _) => Ok((
+            (Uint128::zero(), token1.amount),
+            (token0.amount, Uint128::zero()),
+        )),
+        (_, None) => Ok((
+            (token0.amount, Uint128::zero()),
+            (Uint128::zero(), token1.amount),
+        )),
+        /*
+           Figure out how many of the tokens we can use for a double sided position.
+           First we find whether token0 or token0 is the limiting factor for the token by
+           dividing token0 by the current amount of token0 in the position and do the same for token1
+           for calculating further amounts we start from:
+           token0 / token1 = ratio0 / ratio1, where ratio0 / ratio1 are the ratios from the position
 
+           if token0 is limiting, we calculate the token1 amount by
+           token1 = token0*ratio1/ratio0
+
+           if token1 is limiting, we calculate the token0 amount by
+           token0 = token1 * ratio0 / ratio1
+        */
+        (Some(asset0), Some(asset1)) => {
+            let token0 = token0.amount;
+            let token1 = token1.amount;
+            let tokens = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+            let ratio = Decimal::from_ratio(tokens[0].amount, tokens[1].amount);
+
+            println!("ratio {:?}", ratio);
+
+            // TODO make sure that this works correctly, also
+            println!("z{:?}", ratio.numerator());
+            println!("z{:?}", ratio.denominator());
+            println!("t0{:?}", token0); 
+            println!("t1{:?}", token1);
+
+            let zero_usage = (token0 * Uint128::new(1_000_000_000_000_000_000u128)) / ratio.numerator();
+            let one_usage = (token1 * Uint128::new(1_000_000_000_000_000_000u128)) / ratio.denominator();
+
+            println!("zero_usage {:?}", zero_usage);
+            println!("one_usage {:?}", one_usage);
+
+            if zero_usage < one_usage {
+                let t1 = (token0 * ratio.denominator()) / ratio.numerator();
+                Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
+            } else {
+                let t0 = (token1 * ratio.numerator()) / ratio.denominator();
+                Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
+            }
+        }
+    }
+}
+
+fn refund_bank_msg(
+    receiver: Addr,
+    refund0: Option<Coin>,
+    refund1: Option<Coin>,
+) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
     let mut attributes: Vec<Attribute> = vec![];
     let mut coins: Vec<Coin> = vec![];
 
-    if !refund0.is_zero() {
-        attributes.push(attr("refund0_amount", refund0));
-        attributes.push(attr("refund0_denom", denom0.as_str()));
+    if let Some(refund0) = refund0 {
+        attributes.push(attr("refund0_amount", refund0.amount));
+        attributes.push(attr("refund0_denom", refund0.denom.as_str()));
 
-        coins.push(coin(refund0.u128(), denom0))
+        coins.push(refund0)
     }
-    if !refund1.is_zero() {
-        attributes.push(attr("refund1_amount", refund1));
-        attributes.push(attr("refund1_denom", denom1.as_str()));
+    if let Some(refund1) = refund1 {
+        attributes.push(attr("refund1_amount", refund1.amount));
+        attributes.push(attr("refund1_denom", refund1.denom.as_str()));
 
-        coins.push(coin(refund1.u128(), denom1))
+        coins.push(refund1)
     }
     let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
         Some((
             BankMsg::Send {
-                to_address: current_deposit.sender.to_string(),
+                to_address: receiver.to_string(),
                 amount: coins,
             },
             attributes,
@@ -211,14 +266,129 @@ mod tests {
     use crate::{
         rewards::CoinList,
         state::{PoolConfig, Position, STRATEGIST_REWARDS},
-        test_helpers::QuasarQuerier,
+        test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
-
+ 
     use super::*;
 
     #[test]
+    fn test_position_in_asset1_only() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        let mut deps = mock_deps_with_position(None, Some(token1.clone()));
+        let mutdeps = deps.as_mut();
+
+        let result =
+            get_depositable_tokens(mutdeps.storage, &mutdeps.querier, token0, token1).unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::zero(), Uint128::new(100)),
+                (Uint128::new(50), Uint128::zero())
+            )
+        );
+    }
+
+    #[test]
+    fn test_position_in_asset0_only() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        let mut deps = mock_deps_with_position(Some(token0.clone()), None);
+        let mutdeps = deps.as_mut();
+
+        let result =
+            get_depositable_tokens(mutdeps.storage, &mutdeps.querier, token0, token1).unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::new(50), Uint128::zero()),
+                (Uint128::zero(), Uint128::new(100))
+            )
+        );
+    }
+
+    #[test]
+    fn test_both_assets_present_token0_limiting() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        // we use a ratio of 1/2
+        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mutdeps = deps.as_mut();
+
+        let result = get_depositable_tokens(
+            mutdeps.storage,
+            &mutdeps.querier,
+            coin(2000, "token0"),
+            coin(5000, "token1"),
+        )
+        .unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::new(2000), Uint128::new(4000)),
+                (Uint128::zero(), Uint128::new(1000))
+            )
+        );
+    }
+
+    #[test]
+    fn test_both_assets_present_token1_limiting() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        // we use a ratio of 1/2
+        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mutdeps = deps.as_mut();
+
+        let result = get_depositable_tokens(
+            mutdeps.storage,
+            &mutdeps.querier,
+            coin(2000, "token0"),
+            coin(3000, "token1"),
+        )
+        .unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::new(1500), Uint128::new(3000)),
+                (Uint128::new(500), Uint128::zero())
+            )
+        );
+    }
+
+    #[test]
     fn handle_deposit_create_position_works() {
-        let mut deps = mock_deps_with_querier();
+        let mut deps = mock_deps_with_querier(&MessageInfo {
+            sender: Addr::unchecked("alice"),
+            funds: vec![],
+        });
         let env = mock_env();
         let sender = Addr::unchecked("alice");
         VAULT_DENOM
@@ -300,28 +470,15 @@ mod tests {
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
-        let current_deposit = CurrentDeposit {
-            token0_in: Uint128::new(200),
-            token1_in: Uint128::new(400),
-            sender: user,
-        };
-        let resp = MsgCreatePositionResponse {
-            position_id: 1,
-            amount0: 150.to_string(),
-            amount1: 250.to_string(),
-            liquidity_created: "100000.000".to_string(),
-            lower_tick: 1,
-            upper_tick: 100,
-        };
-        let denom0 = "uosmo".to_string();
-        let denom1 = "uatom".to_string();
+        let refund0 = coin(150, "uosmo");
+        let refund1 = coin(250, "uatom");
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(user.clone(), Some(refund0), Some(refund1)).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
             BankMsg::Send {
-                to_address: current_deposit.sender.to_string(),
+                to_address: user.to_string(),
                 amount: vec![coin(50, "uosmo"), coin(150, "uatom")],
             }
         )
@@ -332,28 +489,15 @@ mod tests {
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
-        let current_deposit = CurrentDeposit {
-            token0_in: Uint128::new(200),
-            token1_in: Uint128::new(400),
-            sender: user,
-        };
-        let resp = MsgCreatePositionResponse {
-            position_id: 1,
-            amount0: 200.to_string(),
-            amount1: 250.to_string(),
-            liquidity_created: "100000.000".to_string(),
-            lower_tick: 1,
-            upper_tick: 100,
-        };
-        let denom0 = "uosmo".to_string();
-        let denom1 = "uatom".to_string();
+        let refund0 = coin(200, "uosmo");
+        let refund1 = coin(250, "uatom");
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(user.clone(), Some(refund0), Some(refund1)).unwrap();
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
             BankMsg::Send {
-                to_address: current_deposit.sender.to_string(),
+                to_address: user.to_string(),
                 amount: vec![coin(150, "uatom")]
             }
         )
@@ -364,66 +508,34 @@ mod tests {
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
-        let current_deposit = CurrentDeposit {
-            token0_in: Uint128::new(200),
-            token1_in: Uint128::new(400),
-            sender: user,
-        };
-        let resp = MsgCreatePositionResponse {
-            position_id: 1,
-            amount0: 150.to_string(),
-            amount1: 400.to_string(),
-            liquidity_created: "100000.000".to_string(),
-            lower_tick: 1,
-            upper_tick: 100,
-        };
-        let denom0 = "uosmo".to_string();
-        let denom1 = "uatom".to_string();
+        let refund0 = coin(150, "uosmo");
+        let refund1 = coin(400, "uatom");
 
-        let response = refund_bank_msg(current_deposit.clone(), &resp, denom0, denom1).unwrap();
+        let response = refund_bank_msg(user.clone(), Some(refund0), Some(refund1)).unwrap();
+
         assert!(response.is_some());
         assert_eq!(
             response.unwrap().0,
             BankMsg::Send {
-                to_address: current_deposit.sender.to_string(),
+                to_address: user.to_string(),
                 amount: vec![coin(50, "uosmo")]
             }
         )
     }
 
-    #[test]
-    fn refund_bank_msg_none_leftover() {
-        let _env = mock_env();
-        let user = Addr::unchecked("alice");
+    fn mock_deps_with_position(
+        token0: Option<Coin>,
+        token1: Option<Coin>,
+    ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+        let position_id = 2;
 
-        let current_deposit = CurrentDeposit {
-            token0_in: Uint128::new(200),
-            token1_in: Uint128::new(400),
-            sender: user,
-        };
-        let resp = MsgCreatePositionResponse {
-            position_id: 1,
-            amount0: 200.to_string(),
-            amount1: 400.to_string(),
-            liquidity_created: "100000.000".to_string(),
-            lower_tick: 1,
-            upper_tick: 100,
-        };
-        let denom0 = "uosmo".to_string();
-        let denom1 = "uatom".to_string();
-
-        let response = refund_bank_msg(current_deposit, &resp, denom0, denom1).unwrap();
-        assert!(response.is_none());
-    }
-
-    fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-        OwnedDeps {
+        let mut deps = OwnedDeps {
             storage: MockStorage::default(),
             api: MockApi::default(),
             querier: QuasarQuerier::new(
                 FullPositionBreakdown {
                     position: Some(OsmoPosition {
-                        position_id: 1,
+                        position_id,
                         address: MOCK_CONTRACT_ADDR.to_string(),
                         pool_id: 1,
                         lower_tick: 100,
@@ -431,14 +543,8 @@ mod tests {
                         join_time: None,
                         liquidity: "1000000.2".to_string(),
                     }),
-                    asset0: Some(OsmoCoin {
-                        denom: "token0".to_string(),
-                        amount: "1000000".to_string(),
-                    }),
-                    asset1: Some(OsmoCoin {
-                        denom: "token1".to_string(),
-                        amount: "1000000".to_string(),
-                    }),
+                    asset0: token0.map(|c| c.into()),
+                    asset1: token1.map(|c| c.into()),
                     claimable_spread_rewards: vec![
                         OsmoCoin {
                             denom: "token0".to_string(),
@@ -455,6 +561,10 @@ mod tests {
                 500,
             ),
             custom_query_type: PhantomData,
-        }
+        };
+        POSITION
+            .save(deps.as_mut().storage, &Position { position_id })
+            .unwrap();
+        deps
     }
 }
