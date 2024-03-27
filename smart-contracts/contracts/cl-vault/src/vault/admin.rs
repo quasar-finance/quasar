@@ -224,7 +224,7 @@ mod tests {
                     performance_fee: Decimal::percent(20),
                     treasury: treasury.clone(),
                     swap_max_slippage: Decimal::percent(10),
-                    dex_router: treasury.clone(),
+                    dex_router: Addr::unchecked("bob-router"),
                 },
             )
             .unwrap();
@@ -257,7 +257,7 @@ mod tests {
                     performance_fee: Decimal::percent(20),
                     treasury: treasury.clone(),
                     swap_max_slippage: Decimal::percent(10),
-                    dex_router: treasury.clone(),
+                    dex_router: Addr::unchecked("bob-router"),
                 },
             )
             .unwrap();

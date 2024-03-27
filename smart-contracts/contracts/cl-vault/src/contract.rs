@@ -15,8 +15,8 @@ use crate::rewards::{
 };
 
 use crate::state::{
-    MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
-    VAULT_CONFIG,
+    MigrationStatus, RewardsStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS,
+    OLD_VAULT_CONFIG, VAULT_CONFIG,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::deposit::execute_exact_deposit;
