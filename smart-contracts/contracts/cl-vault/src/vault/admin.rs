@@ -3,7 +3,8 @@ use crate::helpers::{assert_admin, sort_tokens};
 use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::{
-    VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, METADATA, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
+    Metadata, VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, METADATA, RANGE_ADMIN,
+    STRATEGIST_REWARDS, VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{BankMsg, Decimal, DepsMut, MessageInfo, Response, StdError};
@@ -223,6 +224,7 @@ mod tests {
                     performance_fee: Decimal::percent(20),
                     treasury: treasury.clone(),
                     swap_max_slippage: Decimal::percent(10),
+                    dex_router: treasury.clone(),
                 },
             )
             .unwrap();
@@ -253,8 +255,9 @@ mod tests {
                 deps.as_mut().storage,
                 &VaultConfig {
                     performance_fee: Decimal::percent(20),
-                    treasury,
+                    treasury: treasury.clone(),
                     swap_max_slippage: Decimal::percent(10),
+                    dex_router: treasury.clone(),
                 },
             )
             .unwrap();

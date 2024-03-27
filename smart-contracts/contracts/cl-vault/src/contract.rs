@@ -14,13 +14,12 @@ use crate::rewards::{
     handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
-use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS
+use crate::state::{
     MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
     VAULT_CONFIG,
 };
-use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
-use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
+use crate::vault::deposit::execute_exact_deposit;
 
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
@@ -34,7 +33,9 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128};
+use cosmwasm_std::{
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
+};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -122,9 +123,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: shares } => {
-            Ok(to_json_binary(&query_assets_from_shares(deps, env, shares)?)?)
-        }
+        cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: shares } => Ok(
+            to_json_binary(&query_assets_from_shares(deps, env, shares)?)?,
+        ),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
             Ok(to_json_binary(&query_total_assets(deps, env)?)?)
         }
