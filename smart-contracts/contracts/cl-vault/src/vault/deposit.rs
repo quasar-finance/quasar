@@ -21,14 +21,7 @@ use osmosis_std::{
 };
 
 use crate::{
-    error::ContractResult,
-    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
-    msg::{ExecuteMsg, MergePositionMsg},
-    query::query_total_assets,
-    reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{create_position, get_position},
-    ContractError,
+    debug, error::ContractResult, helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens}, msg::{ExecuteMsg, MergePositionMsg}, query::query_total_assets, reply::Replies, state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::{create_position, get_position}, ContractError
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -47,7 +40,7 @@ pub(crate) fn _execute_any_deposit(
 /// Try to deposit as much user funds as we can into the a position and
 /// refund the rest to the caller
 pub(crate) fn execute_exact_deposit(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     recipient: Option<String>,
@@ -58,9 +51,11 @@ pub(crate) fn execute_exact_deposit(
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0, pool.token1))?;
 
+
+
     // get the amount of funds we can deposit from this ratio
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
-        get_depositable_tokens(deps.storage, &deps.querier, token0.clone(), token1.clone())?;
+        get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
     println!("deposit: {:?}", deposit);
     // calculate the amount of shares we can mint for this
@@ -154,12 +149,11 @@ fn get_asset0_value(
 }
 
 fn get_depositable_tokens(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
+    deps: DepsMut,
     token0: Coin,
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
-    let position = get_position(storage, querier)?;
+    let position = get_position(deps.storage, &deps.querier)?;
     match (position.asset0, position.asset1) {
         (None, _) => Ok((
             (Uint128::zero(), token1.amount),
@@ -188,25 +182,16 @@ fn get_depositable_tokens(
             let tokens = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
             let ratio = Decimal::from_ratio(tokens[0].amount, tokens[1].amount);
 
-            println!("ratio {:?}", ratio);
 
             // TODO make sure that this works correctly, also
-            println!("z{:?}", ratio.numerator());
-            println!("z{:?}", ratio.denominator());
-            println!("t0{:?}", token0); 
-            println!("t1{:?}", token1);
-
-            let zero_usage = (token0 * Uint128::new(1_000_000_000_000_000_000u128)) / ratio.numerator();
-            let one_usage = (token1 * Uint128::new(1_000_000_000_000_000_000u128)) / ratio.denominator();
-
-            println!("zero_usage {:?}", zero_usage);
-            println!("one_usage {:?}", one_usage);
+            let zero_usage: Uint128 = ((Uint256::from(token0) * Uint256::from_u128(1_000_000_000_000_000_000u128)) / Uint256::from(ratio.numerator())).try_into()?;
+            let one_usage: Uint128 = ((Uint256::from(token1) * Uint256::from_u128(1_000_000_000_000_000_000u128)) / Uint256::from(ratio.denominator())).try_into()?;
 
             if zero_usage < one_usage {
-                let t1 = (token0 * ratio.denominator()) / ratio.numerator();
+                let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator())) / Uint256::from(ratio.numerator())).try_into()?;
                 Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
             } else {
-                let t0 = (token1 * ratio.numerator()) / ratio.denominator();
+                let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator())) / Uint256::from(ratio.denominator())).try_into()?;
                 Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
             }
         }
@@ -288,7 +273,7 @@ mod tests {
         let mutdeps = deps.as_mut();
 
         let result =
-            get_depositable_tokens(mutdeps.storage, &mutdeps.querier, token0, token1).unwrap();
+            get_depositable_tokens(mutdeps, token0, token1).unwrap();
         assert_eq!(
             result,
             (
@@ -313,7 +298,7 @@ mod tests {
         let mutdeps = deps.as_mut();
 
         let result =
-            get_depositable_tokens(mutdeps.storage, &mutdeps.querier, token0, token1).unwrap();
+            get_depositable_tokens(mutdeps, token0, token1).unwrap();
         assert_eq!(
             result,
             (
@@ -339,8 +324,7 @@ mod tests {
         let mutdeps = deps.as_mut();
 
         let result = get_depositable_tokens(
-            mutdeps.storage,
-            &mutdeps.querier,
+            mutdeps,
             coin(2000, "token0"),
             coin(5000, "token1"),
         )
@@ -370,8 +354,7 @@ mod tests {
         let mutdeps = deps.as_mut();
 
         let result = get_depositable_tokens(
-            mutdeps.storage,
-            &mutdeps.querier,
+            mutdeps,
             coin(2000, "token0"),
             coin(3000, "token1"),
         )
