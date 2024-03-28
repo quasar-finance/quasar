@@ -62,6 +62,7 @@ pub(crate) fn execute_exact_deposit(
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.storage, &deps.querier, token0.clone(), token1.clone())?;
 
+    println!("deposit: {:?}", deposit);
     // calculate the amount of shares we can mint for this
     let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
     let total_assets_value = get_asset0_value(
@@ -84,11 +85,11 @@ pub(crate) fn execute_exact_deposit(
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
-        total_assets_value
+        user_value
     } else {
         total_vault_shares
             .checked_mul(user_value.into())?
-            .checked_mul(total_assets_value.into())?
+            .checked_div(total_assets_value.into())?
             .try_into()?
     };
 
@@ -142,8 +143,7 @@ fn get_asset0_value(
     let pool_config = POOL_CONFIG.load(storage)?;
 
     let pm_querier = PoolmanagerQuerier::new(querier);
-    let spot_price: Decimal = pm_querier
-        .spot_price_v2(pool_config.pool_id, pool_config.token0, pool_config.token1)?
+    let spot_price: Decimal = pm_querier.spot_price_v2(pool_config.pool_id, pool_config.token0, pool_config.token1)?
         .spot_price
         .parse()?;
 
@@ -222,16 +222,18 @@ fn refund_bank_msg(
     let mut coins: Vec<Coin> = vec![];
 
     if let Some(refund0) = refund0 {
-        attributes.push(attr("refund0_amount", refund0.amount));
-        attributes.push(attr("refund0_denom", refund0.denom.as_str()));
-
-        coins.push(refund0)
+        if refund0.amount > Uint128::zero() {
+            attributes.push(attr("refund0_amount", refund0.amount));
+            attributes.push(attr("refund0_denom", refund0.denom.as_str()));
+            coins.push(refund0)
+        }
     }
     if let Some(refund1) = refund1 {
-        attributes.push(attr("refund1_amount", refund1.amount));
-        attributes.push(attr("refund1_denom", refund1.denom.as_str()));
-
-        coins.push(refund1)
+        if refund1.amount > Uint128::zero() {
+            attributes.push(attr("refund1_amount", refund1.amount));
+            attributes.push(attr("refund1_denom", refund1.denom.as_str()));
+            coins.push(refund1)
+        }
     }
     let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
         Some((
@@ -384,7 +386,7 @@ mod tests {
     }
 
     #[test]
-    fn handle_deposit_create_position_works() {
+    fn execute_exact_deposit_works() {
         let mut deps = mock_deps_with_querier(&MessageInfo {
             sender: Addr::unchecked("alice"),
             funds: vec![],
@@ -401,16 +403,6 @@ mod tests {
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::new())
             .unwrap();
-        CURRENT_DEPOSIT
-            .save(
-                deps.as_mut().storage,
-                &CurrentDeposit {
-                    token0_in: Uint128::new(100),
-                    token1_in: Uint128::new(100),
-                    sender: sender.clone(),
-                },
-            )
-            .unwrap();
         POOL_CONFIG
             .save(
                 deps.as_mut().storage,
@@ -422,28 +414,13 @@ mod tests {
             )
             .unwrap();
 
-        let result = SubMsgResult::Ok(SubMsgResponse {
-            events: vec![],
-            data: Some(
-                MsgCreatePositionResponse {
-                    position_id: 2,
-                    amount0: "100".to_string(),
-                    amount1: "100".to_string(),
-                    // MsgCreatePositionResponse returns a uint, which represents an 18 decimal in
-                    // for the liquidity created to be 500000.1, we expect this number to be 500000100000000000000000
-                    liquidity_created: "500000100000000000000000".to_string(),
-                    lower_tick: 1,
-                    upper_tick: 100,
-                }
-                .try_into()
-                .unwrap(),
-            ),
-        });
+        execute_exact_deposit(deps.as_mut(), env, MessageInfo { sender: sender.clone(), funds: vec![coin(100, "token0"), coin(100, "token1")] }, None).unwrap();
 
-        // the mint amount is dependent on the liquidity returned by MsgCreatePositionResponse, in this case 50% of current liquidty
+        // we currently have 100_000 total_vault_shares outstanding and the equivalent of 1999500token0, the user deposits the equivalent of 199token0, thus shares are
+        // 199 * 100000 / 1999500 = 9.95, which we round down. Thus we expect 9 shares in this example
         assert_eq!(
             SHARES.load(deps.as_ref().storage, sender).unwrap(),
-            Uint128::new(50000)
+            Uint128::new(9)
         );
     }
 
@@ -466,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn refund_bank_msg_2_leftover() {
+    fn refund_bank_msg_2_coins() {
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
@@ -479,17 +456,36 @@ mod tests {
             response.unwrap().0,
             BankMsg::Send {
                 to_address: user.to_string(),
-                amount: vec![coin(50, "uosmo"), coin(150, "uatom")],
+                amount: vec![coin(150, "uosmo"), coin(250, "uatom")],
             }
         )
     }
 
     #[test]
-    fn refund_bank_msg_token1_leftover() {
+    fn refund_bank_msg_token0() {
         let _env = mock_env();
         let user = Addr::unchecked("alice");
 
-        let refund0 = coin(200, "uosmo");
+        let refund0 = coin(150, "uosmo");
+        let refund1 = coin(0, "uatom");
+
+        let response = refund_bank_msg(user.clone(), Some(refund0), Some(refund1)).unwrap();
+        assert!(response.is_some());
+        assert_eq!(
+            response.unwrap().0,
+            BankMsg::Send {
+                to_address: user.to_string(),
+                amount: vec![coin(150, "uosmo")],
+            }
+        )
+    }
+
+    #[test]
+    fn refund_bank_msg_token1() {
+        let _env = mock_env();
+        let user = Addr::unchecked("alice");
+
+        let refund0 = coin(0, "uosmo");
         let refund1 = coin(250, "uatom");
 
         let response = refund_bank_msg(user.clone(), Some(refund0), Some(refund1)).unwrap();
@@ -498,27 +494,7 @@ mod tests {
             response.unwrap().0,
             BankMsg::Send {
                 to_address: user.to_string(),
-                amount: vec![coin(150, "uatom")]
-            }
-        )
-    }
-
-    #[test]
-    fn refund_bank_msg_token0_leftover() {
-        let _env = mock_env();
-        let user = Addr::unchecked("alice");
-
-        let refund0 = coin(150, "uosmo");
-        let refund1 = coin(400, "uatom");
-
-        let response = refund_bank_msg(user.clone(), Some(refund0), Some(refund1)).unwrap();
-
-        assert!(response.is_some());
-        assert_eq!(
-            response.unwrap().0,
-            BankMsg::Send {
-                to_address: user.to_string(),
-                amount: vec![coin(50, "uosmo")]
+                amount: vec![coin(250, "uatom")],
             }
         )
     }
