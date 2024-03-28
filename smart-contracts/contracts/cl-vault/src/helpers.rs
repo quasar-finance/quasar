@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
+use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -33,6 +33,29 @@ pub(crate) fn must_pay_one_or_two(
 
     let token1 = info
         .funds
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.1)
+        .unwrap_or(coin(0, denoms.1));
+
+    Ok((token0, token1))
+}
+
+pub(crate) fn must_pay_one_or_two_from_balance(
+    funds: Vec<Coin>,
+    denoms: (String, String),
+) -> ContractResult<(Coin, Coin)> {
+    if funds.len() < 2 {
+        return Err(ContractError::IncorrectAmountFunds);
+    }
+
+    let token0 = funds
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.0)
+        .unwrap_or(coin(0, denoms.0));
+
+    let token1 = funds
         .clone()
         .into_iter()
         .find(|coin| coin.denom == denoms.1)
@@ -286,10 +309,6 @@ pub fn get_unused_balances(
     let strategist_rewards = STRATEGIST_REWARDS.load(storage)?;
 
     balances.sub(&strategist_rewards)?;
-
-    for user_reward in USER_REWARDS.range(storage, None, None, cosmwasm_std::Order::Ascending) {
-        balances.sub(&user_reward?.1)?;
-    }
 
     Ok(balances)
 }

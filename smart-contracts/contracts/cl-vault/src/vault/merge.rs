@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_binary, to_binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
+    coin, from_json, to_json_binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
     StdError, SubMsg, SubMsgResult, Uint128,
 };
 use cw_utils::parse_execute_response_data;
@@ -25,7 +25,7 @@ pub struct MergeResponse {
     pub new_position_id: u64,
 }
 
-pub fn execute_merge(
+pub fn execute_merge_position(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -87,8 +87,8 @@ pub fn execute_merge(
             current.msg,
             Replies::WithdrawMerge as u64,
         ))
-        .add_attribute("method", "merge")
-        .add_attribute("action", "merge"))
+        .add_attribute("method", "execute")
+        .add_attribute("action", "merge_position"))
 }
 
 #[cw_serde]
@@ -103,7 +103,7 @@ pub struct WithdrawResponse {
     pub amount1: Uint128,
 }
 
-pub fn handle_merge_withdraw_reply(
+pub fn handle_merge_withdraw_position_reply(
     deps: DepsMut,
     env: Env,
     msg: SubMsgResult,
@@ -177,9 +177,9 @@ pub fn handle_merge_withdraw_reply(
         let msg: CosmosMsg = next.msg.into();
 
         Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64))
-            .add_attribute("method", "withdraw-position-reply")
-            .add_attribute("action", "merge"))
+            .add_attribute("method", "reply")
+            .add_attribute("action", "handle_merge_withdraw_position")
+            .add_submessage(SubMsg::reply_on_success(msg, Replies::WithdrawMerge as u64)))
     }
 }
 
@@ -192,13 +192,13 @@ pub fn handle_merge_create_position_reply(
     // TODO decide if we want any healthchecks here
     Ok(Response::new()
         .set_data(
-            to_binary(&MergeResponse {
+            to_json_binary(&MergeResponse {
                 new_position_id: response.position_id,
             })?
             .0,
         )
-        .add_attribute("method", "create-position-reply")
-        .add_attribute("action", "merge"))
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_merge_create_position"))
 }
 
 impl TryFrom<SubMsgResult> for MergeResponse {
@@ -213,7 +213,7 @@ impl TryFrom<SubMsgResult> for MergeResponse {
                 kind: "MergeResponse".to_string(),
             })?;
         let response = parse_execute_response_data(&data.0).unwrap();
-        from_binary(&response.data.unwrap())
+        from_json(response.data.unwrap())
     }
 }
 
@@ -228,9 +228,9 @@ pub mod tests {
     fn serde_merge_response_is_inverse() {
         let expected = MergeResponse { new_position_id: 5 };
 
-        let data = &to_binary(&expected).unwrap();
+        let data = &to_json_binary(&expected).unwrap();
 
-        let result = from_binary(data).unwrap();
+        let result = from_json(data).unwrap();
         assert_eq!(expected, result)
     }
 }
