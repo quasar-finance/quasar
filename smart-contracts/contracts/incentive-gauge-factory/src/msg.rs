@@ -14,4 +14,19 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    #[returns(GaugeResponse)]
+    Gauge {address: String},
+    #[returns(ListGaugesResponse)]
+    ListGauges {}
+}
+
+#[cw_serde]
+pub struct GaugeResponse {
+
+}
+
+#[cw_serde]
+pub struct ListGaugesResponse {
+
+}
