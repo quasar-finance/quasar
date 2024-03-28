@@ -14,7 +14,7 @@ use osmosis_std::{
             concentratedliquidity::v1beta1::{
                 ConcentratedliquidityQuerier, MsgCreatePositionResponse,
             },
-            poolmanager::v2::PoolmanagerQuerier,
+            poolmanager::v1beta1::PoolmanagerQuerier,
             tokenfactory::v1beta1::MsgMint,
         },
     },
@@ -143,7 +143,7 @@ fn get_asset0_value(
     let pool_config = POOL_CONFIG.load(storage)?;
 
     let pm_querier = PoolmanagerQuerier::new(querier);
-    let spot_price: Decimal = pm_querier.spot_price_v2(pool_config.pool_id, pool_config.token0, pool_config.token1)?
+    let spot_price: Decimal = pm_querier.spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?
         .spot_price
         .parse()?;
 
