@@ -415,7 +415,7 @@ dependencies = [
  "cw2 1.1.2",
  "num_enum 0.7.2",
  "osmosis-std 0.22.0",
- "osmosis-test-tube 22.0.0",
+ "osmosis-test-tube",
  "proptest",
  "prost 0.12.3",
  "serde",
@@ -1749,7 +1749,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-storage-plus 1.2.0",
  "cw2 1.1.2",
- "osmosis-test-tube 22.1.0",
+ "osmosis-test-tube",
  "rs_merkle",
  "schemars",
  "serde",
@@ -1998,23 +1998,6 @@ dependencies = [
 
 [[package]]
 name = "osmosis-test-tube"
-version = "22.0.0"
-source = "git+https://github.com/magiodev/test-tube/?branch=fix/v22_go_mod_tidy#d450b0108453b2c55a70e1738bdc0401145436ec"
-dependencies = [
- "base64 0.21.7",
- "bindgen",
- "cosmrs",
- "cosmwasm-std",
- "osmosis-std 0.22.0",
- "prost 0.12.3",
- "serde",
- "serde_json",
- "test-tube 0.4.0",
- "thiserror",
-]
-
-[[package]]
-name = "osmosis-test-tube"
 version = "22.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a082b97136d15470a37aa758f227c865594590b69d74721248ed5adf59bf1ca2"
@@ -2027,7 +2010,7 @@ dependencies = [
  "prost 0.12.3",
  "serde",
  "serde_json",
- "test-tube 0.5.0",
+ "test-tube",
  "thiserror",
 ]
 
@@ -3225,21 +3208,6 @@ dependencies = [
  "url",
  "uuid",
  "walkdir",
-]
-
-[[package]]
-name = "test-tube"
-version = "0.4.0"
-source = "git+https://github.com/magiodev/test-tube/?branch=fix/v22_go_mod_tidy#d450b0108453b2c55a70e1738bdc0401145436ec"
-dependencies = [
- "base64 0.21.7",
- "cosmrs",
- "cosmwasm-std",
- "osmosis-std 0.22.0",
- "prost 0.12.3",
- "serde",
- "serde_json",
- "thiserror",
 ]
 
 [[package]]

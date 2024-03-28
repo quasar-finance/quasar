@@ -56,6 +56,6 @@ thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
 ## todo : change this once branch is merges.
-osmosis-test-tube = { git="https://github.com/magiodev/test-tube/", branch="fix/v22_go_mod_tidy"}
+osmosis-test-tube = "22.1.0"
 cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
 proptest = "1.2.0"

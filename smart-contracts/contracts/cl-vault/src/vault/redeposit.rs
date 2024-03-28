@@ -51,7 +51,7 @@ pub fn execute_redeposit(
         &env,
         position.lower_tick,
         position.upper_tick,
-        vec![token0, token1],
+        vec![token0.clone(), token1.clone()],
         Uint128::zero(),
         Uint128::zero(),
     )?;

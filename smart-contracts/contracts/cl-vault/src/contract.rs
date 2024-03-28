@@ -81,7 +81,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Redeposit() => execute_redeposit(deps, env, info),
+                crate::msg::ExtensionExecuteMsg::Redeposit {} => execute_redeposit(deps, env, info),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
