@@ -32,6 +32,20 @@ mod tests {
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
+                // Get user_assets for Alice from vault contract and assert
+                let user_assets: AssetsBalanceResponse = wasm
+                .query(
+                    contract_address.as_str(),
+                    &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                        crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                            user: alice.address(),
+                        },
+                    )),
+                )
+                .unwrap();
+    
+            println!("user:assets: {:?}", user_assets);
+
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
         wasm.execute(
             contract_address.as_str(),
@@ -68,6 +82,8 @@ mod tests {
                 )),
             )
             .unwrap();
+
+        println!("user:assets: {:?}", user_assets);
 
         // Assert Alice has been refunded, so we only expect around 500 to deposit here
         assert_approx_eq!(

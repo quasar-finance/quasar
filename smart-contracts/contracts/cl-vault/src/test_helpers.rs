@@ -10,7 +10,7 @@ use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySuppl
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::{
     v1beta1::{PoolResponse, SpotPriceResponse},
-    v2::SpotPriceResponse as V2SpotPriceResponse
+    v2::SpotPriceResponse as V2SpotPriceResponse,
 };
 use osmosis_std::types::osmosis::twap::v1beta1::ArithmeticTwapToNowResponse;
 use osmosis_std::types::{
@@ -21,7 +21,9 @@ use osmosis_std::types::{
 };
 
 use crate::math::tick::tick_to_price;
-use crate::state::{PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
+use crate::state::{
+    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
+};
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,

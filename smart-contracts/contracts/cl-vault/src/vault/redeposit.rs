@@ -3,18 +3,13 @@ use crate::helpers::{get_unused_balances, must_pay_one_or_two_from_balance};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 use crate::state::{POOL_CONFIG, POSITION};
-use crate::vault::concentrated_liquidity::{create_position};
+use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
 use cosmwasm_std::{
-    to_json_binary, DepsMut, Env, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128,
+    to_json_binary, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{
-        MsgCreatePositionResponse,
-    },
-};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 pub fn execute_redeposit(
     deps: DepsMut,
