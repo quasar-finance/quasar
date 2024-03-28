@@ -21,6 +21,8 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// provides an entry point for redepositing funds to position
+    Redeposit {},
     /// Distribute any rewards over all users
     CollectRewards {},
     /// Claim rewards belonging to a single user

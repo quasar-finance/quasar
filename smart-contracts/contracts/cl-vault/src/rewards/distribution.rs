@@ -232,7 +232,9 @@ pub fn execute_auto_compound_swap(
                 .find_coin(current_swap_route.clone().token_in_denom)
                 .amount,
         );
-        if balance_remaining_for_swap <= Uint128::zero() {
+
+        // todo ask if this check is needed
+        if balance_remaining_for_swap == Uint128::zero() {
             return Err(ContractError::InsufficientFundsForSwap {
                 balance: balance_in_contract.amount,
                 needed: strategist_rewards

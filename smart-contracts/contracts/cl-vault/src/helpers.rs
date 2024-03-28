@@ -41,6 +41,29 @@ pub(crate) fn must_pay_one_or_two(
     Ok((token0, token1))
 }
 
+pub(crate) fn must_pay_one_or_two_from_balance(
+    funds: Vec<Coin>,
+    denoms: (String, String),
+) -> ContractResult<(Coin, Coin)> {
+    if funds.len() < 2 {
+        return Err(ContractError::IncorrectAmountFunds);
+    }
+
+    let token0 = funds
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.0)
+        .unwrap_or(coin(0, denoms.0));
+
+    let token1 = funds
+        .clone()
+        .into_iter()
+        .find(|coin| coin.denom == denoms.1)
+        .unwrap_or(coin(0, denoms.1));
+
+    Ok((token0, token1))
+}
+
 /// get_spot_price
 ///
 /// gets the spot price of the pool which this vault is managing funds in. This will always return token0 in terms of token1 (or would it be the other way around?)

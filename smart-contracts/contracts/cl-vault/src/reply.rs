@@ -29,6 +29,8 @@ pub enum Replies {
     WithdrawMerge,
     // create a new singular position in the merge, used internally for merging
     CreatePositionMerge,
+    /// reply for final swap success in auto compound
+    Redeposit,
     #[default]
     Unknown,
 }

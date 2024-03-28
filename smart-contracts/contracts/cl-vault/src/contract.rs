@@ -30,6 +30,7 @@ use crate::vault::range::{
     handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
     handle_withdraw_position_reply,
 };
+use crate::vault::redeposit::{execute_redeposit, handle_redeposit_reply};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -80,6 +81,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
                 }
+                crate::msg::ExtensionExecuteMsg::Redeposit() => execute_redeposit(deps, env, info),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
@@ -189,6 +191,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
+        Replies::Redeposit => handle_redeposit_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }
