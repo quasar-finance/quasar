@@ -9,14 +9,14 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
+use crate::rewards::autocompound::{execute_auto_compound_swap, execute_migration_step};
 use crate::rewards::{
-    execute_auto_compound_swap, execute_collect_rewards, execute_migration_step,
-    handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
 use crate::state::{
-    MigrationStatus, RewardsStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS,
-    OLD_VAULT_CONFIG, VAULT_CONFIG,
+    MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
+    VAULT_CONFIG,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::deposit::execute_exact_deposit;
@@ -34,9 +34,7 @@ use crate::vault::redeposit::{execute_redeposit, handle_redeposit_reply};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -98,6 +96,9 @@ pub fn execute(
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
                 ),
+                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
+                    execute_build_tick_exp_cache(deps, info)
+                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -105,9 +106,6 @@ pub fn execute(
                     force_swap_route,
                     swap_routes,
                 } => execute_auto_compound_swap(deps, env, info, force_swap_route, swap_routes),
-                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
-                    execute_build_tick_exp_cache(deps, info)
-                }
                 crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
                     execute_migration_step(deps, env, amount_of_users)
                 }

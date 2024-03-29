@@ -1,7 +1,34 @@
-use crate::{error::ContractResult, helpers::sort_tokens};
+use crate::{error::ContractResult, helpers::sort_tokens, state::POSITION, ContractError};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction};
+use osmosis_std::types::{
+    cosmos::base::v1beta1::Coin as OsmoCoin,
+    osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
+};
+
+pub fn get_collect_incentives_msg(
+    deps: Deps,
+    env: Env,
+) -> Result<MsgCollectIncentives, ContractError> {
+    let position = POSITION.load(deps.storage)?;
+    Ok(MsgCollectIncentives {
+        position_ids: vec![position.position_id],
+        sender: env.contract.address.into(),
+    })
+}
+
+pub fn get_collect_spread_rewards_msg(
+    deps: Deps,
+    env: Env,
+) -> Result<MsgCollectSpreadRewards, ContractError> {
+    let position = POSITION.load(deps.storage)?;
+    Ok(MsgCollectSpreadRewards {
+        position_ids: vec![position.position_id],
+        sender: env.contract.address.into(),
+    })
+}
+
+/// COIN LIST
 
 #[cw_serde]
 #[derive(Default)]

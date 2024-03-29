@@ -32,19 +32,19 @@ mod tests {
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
-                // Get user_assets for Alice from vault contract and assert
-                let user_assets: AssetsBalanceResponse = wasm
-                .query(
-                    contract_address.as_str(),
-                    &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
-                        crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
-                            user: alice.address(),
-                        },
-                    )),
-                )
-                .unwrap();
-    
-            println!("user:assets: {:?}", user_assets);
+        // Get user_assets for Alice from vault contract and assert
+        let user_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: alice.address(),
+                    },
+                )),
+            )
+            .unwrap();
+
+        println!("user:assets: {:?}", user_assets);
 
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
         wasm.execute(

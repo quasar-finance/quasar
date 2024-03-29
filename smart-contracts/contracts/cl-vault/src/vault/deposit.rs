@@ -1,34 +1,21 @@
-use std::{collections::vec_deque, str::FromStr};
-
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env,
-    Fraction, MessageInfo, QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
-    Uint256,
+    attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, Storage, Uint128, Uint256,
 };
 
 use osmosis_std::{
     try_proto_to_cosmwasm_coins,
     types::{
         cosmos::bank::v1beta1::BankQuerier,
-        osmosis::{
-            concentratedliquidity::v1beta1::{
-                ConcentratedliquidityQuerier, MsgCreatePositionResponse,
-            },
-            poolmanager::v1beta1::PoolmanagerQuerier,
-            tokenfactory::v1beta1::MsgMint,
-        },
+        osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, tokenfactory::v1beta1::MsgMint},
     },
 };
 
 use crate::{
-    debug,
-    error::ContractResult,
-    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
-    msg::{ExecuteMsg, MergePositionMsg},
+    helpers::must_pay_one_or_two,
     query::query_total_assets,
-    reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{create_position, get_position},
+    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::get_position,
     ContractError,
 };
 
@@ -260,11 +247,11 @@ fn refund_bank_msg(
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_json_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
+        Addr, Decimal256, Empty, OwnedDeps, Uint256,
     };
 
     use osmosis_std::types::{
@@ -276,7 +263,7 @@ mod tests {
 
     use crate::{
         rewards::CoinList,
-        state::{PoolConfig, Position, STRATEGIST_REWARDS},
+        state::{PoolConfig, Position, POSITION, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
 
