@@ -1,9 +1,9 @@
-use cosmwasm_std::{DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult};
+use cosmwasm_std::{DepsMut, Env, Event, PageRequest, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    ConcentratedliquidityQuerier, MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse
+    ConcentratedliquidityQuerier, MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
-use osmosis_std::types::osmosis::incentives::{Gauge, GaugeByIdResponse};
+use osmosis_std::types::osmosis::incentives::{Gauge, IncentivesQuerier};
 
 use crate::state::POSITION;
 use crate::{
@@ -76,9 +76,16 @@ pub fn handle_collect_spread_rewards_reply(
     // position.position.ok_or(ContractError::PositionNotFound);
 
     // Gather info
-    let join_time = position.clone().position.unwrap().position.unwrap().join_time.unwrap();
+    let join_time = position
+        .clone()
+        .position
+        .unwrap()
+        .position
+        .unwrap()
+        .join_time
+        .unwrap();
     let claimable_incentives = position.position.unwrap().claimable_incentives;
-    let ongoing_gauges = get_ongoing_gauges_by_pool_id().unwrap();
+    let ongoing_gauges = get_ongoing_gauges_by_pool_id(&deps).unwrap();
 
     // TODO: If any incentive inside Vec<Coin> && env.block.time.seconds() - joinTime HT the highest gauges.distribute_to.duration amount
     if true {
@@ -92,12 +99,24 @@ pub fn handle_collect_spread_rewards_reply(
     Ok(response)
 }
 
-fn get_ongoing_gauges_by_pool_id() -> Result<Vec<Gauge>, ContractError> {
+fn get_ongoing_gauges_by_pool_id(deps: &DepsMut) -> Result<Vec<Gauge>, ContractError> {
     let mut gauges = vec![];
 
     // TODO: Gather gauges infos by pool id, somehow
+    let inc_querier = IncentivesQuerier::new(&deps.querier);
+    let gauges = inc_querier
+        .active_gauges(PageRequest {
+            key: todo!(),
+            limit: todo!(),
+            reverse: todo!(),
+        })
+        .unwrap();
 
-    Ok(gauges)
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    // TODO: Filter by pool_id
+    // Take the max distribute_to.duration
+
+    Ok(gauges.data)
 }
 
 // TOOD: This should be chained after the spread rewards, and executed only if the current position's age is HT ongoing gauges' dsitribute_to.duration.
