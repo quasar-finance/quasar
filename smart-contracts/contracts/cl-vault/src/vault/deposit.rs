@@ -23,7 +23,7 @@ use osmosis_std::{
 use crate::{
     debug,
     error::ContractResult,
-    helpers::{get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
+    helpers::{get_asset0_value, get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
     msg::{ExecuteMsg, MergePositionMsg},
     query::query_total_assets,
     reply::Replies,
@@ -65,14 +65,6 @@ pub(crate) fn execute_exact_deposit(
 
     println!("deposit: {:?}", deposit);
     // calculate the amount of shares we can mint for this
-    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
-    let total_assets_value = get_asset0_value(
-        deps.storage,
-        &deps.querier,
-        total_assets.token0.amount,
-        total_assets.token1.amount,
-    )?;
-
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
@@ -84,6 +76,15 @@ pub(crate) fn execute_exact_deposit(
 
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
 
+    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        total_assets.token0.amount,
+        total_assets.token1.amount,
+    )?.checked_sub(user_value)?;
+
+
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         user_value
@@ -93,6 +94,10 @@ pub(crate) fn execute_exact_deposit(
             .checked_div(total_assets_value.into())?
             .try_into()?
     };
+    debug!(deps, "user_value", user_value);
+    debug!(deps, "user_shares", user_shares);
+    debug!(deps, "total_vault_shares", total_vault_shares);
+    debug!(deps, "total_assets_value", total_assets_value);
 
     // save the shares in the user map
     SHARES.update(
@@ -142,27 +147,6 @@ pub(crate) fn execute_exact_deposit(
     Ok(resp)
 }
 
-/// Calculate the total value of two assets in asset0
-fn get_asset0_value(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    token0: Uint128,
-    token1: Uint128,
-) -> Result<Uint128, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
-
-    let pm_querier = PoolmanagerQuerier::new(querier);
-    let spot_price: Decimal = pm_querier
-        .spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?
-        .spot_price
-        .parse()?;
-
-    let total = token0
-        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
-
-    Ok(total)
-}
-
 fn get_depositable_tokens(
     deps: DepsMut,
     token0: Coin,
@@ -195,6 +179,7 @@ fn get_depositable_tokens(
             let token0 = token0.amount;
             let token1 = token1.amount;
             let tokens = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+            debug!(deps, "ratio_tokens", tokens);
             let ratio = Decimal::from_ratio(tokens[0].amount, tokens[1].amount);
 
             // TODO make sure that this works correctly, also
@@ -211,11 +196,13 @@ fn get_depositable_tokens(
                 let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
                     / Uint256::from(ratio.numerator()))
                 .try_into()?;
+                
                 Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
             } else {
                 let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
                     / Uint256::from(ratio.denominator()))
                 .try_into()?;
+
                 Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
             }
         }

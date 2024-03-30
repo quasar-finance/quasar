@@ -41,6 +41,27 @@ pub(crate) fn must_pay_one_or_two(
     Ok((token0, token1))
 }
 
+/// Calculate the total value of two assets in asset0
+pub fn get_asset0_value(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token0: Uint128,
+    token1: Uint128,
+) -> Result<Uint128, ContractError> {
+    let pool_config = POOL_CONFIG.load(storage)?;
+
+    let pm_querier = PoolmanagerQuerier::new(querier);
+    let spot_price: Decimal = pm_querier
+        .spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?
+        .spot_price
+        .parse()?;
+
+    let total = token0
+        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
+
+    Ok(total)
+}
+
 pub(crate) fn must_pay_one_or_two_from_balance(
     funds: Vec<Coin>,
     denoms: (String, String),

@@ -47,7 +47,14 @@ mod tests {
             println!("user:assets: {:?}", user_assets);
 
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
-        wasm.execute(
+        /*
+        user:assets: AssetsBalanceResponse { balances: [Coin { 281243579389884 "uatom" }, Coin { 448554353093648 "uosmo" }] }
+        1_000_000_000_000_000
+        0_448_554_353_093_648
+        0_281_243_579_389_884
+        so these tokens could 2x easily
+         */
+        let response = wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::ExactDeposit { recipient: None },
             &[
@@ -57,6 +64,10 @@ mod tests {
             &alice,
         )
         .unwrap();
+
+        // manually inspect the response, we see a token0 refund of 373_000_000_000_000, so we'd expect the user assets to return 
+        // 1_000_000_000_000_000 - 373_000_000_000_000 = 627_000_000_000_000 of token0, or uosmo
+        println!("{:?}", response);
 
         // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
@@ -85,14 +96,16 @@ mod tests {
 
         println!("user:assets: {:?}", user_assets);
 
-        // Assert Alice has been refunded, so we only expect around 500 to deposit here
+        // assert the token0 deposited by alice by checking the balance of alice
+        // we expect sent - refunded here, or 627_000_000_000_000
+        // TODO, The UserAssetsBalance query here returns too little, so either we mint too little or the query works incorrect
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(600_000_000_000_000u128), // TODO: remove hardcoded
+            Uint128::from(627_000_000_000_000u128), // TODO: remove hardcoded
             "0.1"
         );
 
-        // Assert Alice as
+        // assert the token1 deposited by alice
         assert_approx_eq!(
             user_assets.balances[1].amount,
             Uint128::from(1_000_000_000_000_000u128), // TODO: remove hardcoded

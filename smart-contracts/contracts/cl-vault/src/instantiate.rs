@@ -2,6 +2,7 @@ use cosmwasm_std::{
     coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, SubMsgResult,
     Uint128,
 };
+use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, Pool,
 };
@@ -10,7 +11,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::must_pay_one_or_two;
+use crate::helpers::{get_asset0_value, must_pay_one_or_two};
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
@@ -20,7 +21,7 @@ use crate::state::{
     MIGRATION_STATUS, POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
     VAULT_DENOM,
 };
-use crate::vault::concentrated_liquidity::create_position;
+use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
 
 pub fn handle_instantiate(
@@ -134,15 +135,22 @@ pub fn handle_instantiate_create_position_reply(
         },
     )?;
 
+    let position_info = get_position(deps.storage, &deps.querier)?;
+    let assets = try_proto_to_cosmwasm_coins(vec![position_info.asset0.unwrap(), position_info.asset1.unwrap()])?;
+    let asset_value = get_asset0_value(deps.storage, &deps.querier, assets[0].amount, assets[1].amount)?;
+
     let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
+
+
 
     // todo do we want to mint the initial mint to the instantiater, or just not care?
     let mint_msg = MsgMint {
         sender: env.contract.address.to_string(),
-        amount: Some(coin(liquidity_amount.to_uint_floor().into(), vault_denom).into()),
+        amount: Some(coin(asset_value.u128(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
+
 
     Ok(Response::new()
         .add_message(mint_msg)
