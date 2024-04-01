@@ -1,11 +1,11 @@
-use cosmwasm_std::Coin;
-use cw_storage_plus::Item;
+use cosmwasm_std::Uint128;
+use cw_storage_plus::Map;
 
-pub const AMOUNT_BURNT: Item<Vec<Coin>> = Item::new("burnt_coins");
+pub const AMOUNT_BURNT: Map<String, Uint128> = Map::new("burnt_coins");
 
 #[cfg(test)]
 mod tests {
-    use crate::state::AMOUNT_BURNT;
+    use super::*;
     use cosmwasm_std::testing::mock_dependencies;
     use cosmwasm_std::Coin;
 
@@ -14,17 +14,45 @@ mod tests {
         let mut deps = mock_dependencies();
 
         // Check initial empty amount
-        assert_eq!(None, AMOUNT_BURNT.may_load(deps.as_mut().storage).unwrap());
+        assert_eq!(
+            None,
+            AMOUNT_BURNT
+                .may_load(deps.as_mut().storage, "any_key".to_string())
+                .unwrap()
+        );
 
         // Update amount and check
         let coins = vec![
             Coin::new(1_000_000, "denom1"),
             Coin::new(10_000_000, "denom2"),
         ];
-        AMOUNT_BURNT.save(deps.as_mut().storage, &coins).unwrap();
+        AMOUNT_BURNT
+            .save(
+                deps.as_mut().storage,
+                "denom1".to_string(),
+                &Uint128::new(1_000_000),
+            )
+            .unwrap();
+        AMOUNT_BURNT
+            .save(
+                deps.as_mut().storage,
+                "denom2".to_string(),
+                &Uint128::new(10_000_000),
+            )
+            .unwrap();
         assert_eq!(
-            Some(coins.clone()),
-            AMOUNT_BURNT.may_load(deps.as_mut().storage).unwrap()
+            Uint128::new(1_000_000),
+            AMOUNT_BURNT
+                .may_load(deps.as_mut().storage, "denom1".to_string())
+                .unwrap()
+                .unwrap()
+        );
+        assert_eq!(
+            Uint128::new(10_000_000),
+            AMOUNT_BURNT
+                .may_load(deps.as_mut().storage, "denom2".to_string())
+                .unwrap()
+                .unwrap()
         );
     }
 }

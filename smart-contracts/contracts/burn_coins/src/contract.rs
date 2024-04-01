@@ -24,9 +24,6 @@ pub fn instantiate(
     // Set the contract version in storage
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    // Initialize the AMOUNT_BURNT storage with an empty vector
-    AMOUNT_BURNT.save(deps.storage, &vec![])?;
-
     // Return a response
     Ok(Response::new())
 }
@@ -65,21 +62,16 @@ pub fn execute_coins_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, 
         amount: info.clone().funds,
     });
 
-    // Load the total burn amount from storage
-    let mut total_burn_amount = AMOUNT_BURNT.load(deps.storage)?;
-
-    // Iterate over the coins to update the total burn amount
-    for c in info.clone().funds {
-        if let Some(c2) = total_burn_amount.iter_mut().find(|c2| c.denom == c2.denom) {
-            c2.amount += c.amount;
+    for fund in info.funds {
+        if let Some(mut total_burn_amount) =
+            AMOUNT_BURNT.may_load(deps.storage, fund.clone().denom)?
+        {
+            total_burn_amount += fund.clone().amount;
+            AMOUNT_BURNT.save(deps.storage, fund.clone().denom, &total_burn_amount)?;
         } else {
-            // If the coin denom doesn't exist in total_burn_amount, add it
-            total_burn_amount.push(c.clone()); // Clone the Coin to avoid borrowing issues
+            AMOUNT_BURNT.save(deps.storage, fund.clone().denom, &fund.clone().amount)?;
         }
     }
-
-    // Save the updated total burn amount to storage
-    AMOUNT_BURNT.save(deps.storage, &total_burn_amount)?;
 
     // Return a response with the burn message
     Ok(Response::default().add_message(burn_msg))
@@ -89,15 +81,13 @@ pub fn execute_coins_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, 
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_info};
-    use cosmwasm_std::{coin, BankMsg, Coin, CosmosMsg, SubMsg};
+    use cosmwasm_std::{coin, BankMsg, Coin, CosmosMsg, SubMsg, Uint128};
 
     #[test]
     fn test_execute_coins_burn() {
         // Arrange
         let mut deps = mock_dependencies();
         let info = mock_info("sender", &[coin(100, "denom1"), coin(50, "denom2")]);
-
-        AMOUNT_BURNT.save(deps.as_mut().storage, &vec![]).unwrap();
 
         // Act
         let res = execute_coins_burn(deps.as_mut(), info.clone()).unwrap();
@@ -112,12 +102,14 @@ mod tests {
         );
 
         // Ensure the total burn amount is updated correctly in storage
-        let total_burn_amount: Vec<Coin> =
-            AMOUNT_BURNT.load(deps.as_ref().storage).unwrap_or_default();
-        assert_eq!(
-            total_burn_amount,
-            vec![coin(100, "denom1"), coin(50, "denom2")]
-        );
+        let total_burn_amount = AMOUNT_BURNT
+            .load(deps.as_ref().storage, "denom1".to_string())
+            .unwrap_or_default();
+        assert_eq!(total_burn_amount, Uint128::new(100),);
+        let total_burn_amount = AMOUNT_BURNT
+            .load(deps.as_ref().storage, "denom2".to_string())
+            .unwrap_or_default();
+        assert_eq!(total_burn_amount, Uint128::new(50),);
 
         // Additional test scenario: test when there's already existing burn amounts
         let info = mock_info("sender", &[coin(200, "denom1"), coin(30, "denom3")]);
@@ -130,15 +122,19 @@ mod tests {
         );
 
         // Ensure the total burn amount is updated correctly in storage
-        let total_burn_amount: Vec<Coin> =
-            AMOUNT_BURNT.load(deps.as_ref().storage).unwrap_or_default();
-        assert_eq!(
-            total_burn_amount,
-            vec![
-                coin(300, "denom1"), // 100 + 200
-                coin(50, "denom2"),
-                coin(30, "denom3"),
-            ]
-        );
+        let total_burn_amount = AMOUNT_BURNT
+            .load(deps.as_ref().storage, "denom1".to_string())
+            .unwrap_or_default();
+        assert_eq!(total_burn_amount, Uint128::new(300),);
+
+        let total_burn_amount = AMOUNT_BURNT
+            .load(deps.as_ref().storage, "denom2".to_string())
+            .unwrap_or_default();
+        assert_eq!(total_burn_amount, Uint128::new(50),);
+
+        let total_burn_amount = AMOUNT_BURNT
+            .load(deps.as_ref().storage, "denom3".to_string())
+            .unwrap_or_default();
+        assert_eq!(total_burn_amount, Uint128::new(30),);
     }
 }
