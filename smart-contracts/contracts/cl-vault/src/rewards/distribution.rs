@@ -1,9 +1,8 @@
-use cosmwasm_std::{DepsMut, Env, Event, PageRequest, Response, StdError, SubMsg, SubMsgResult};
+use cosmwasm_std::{DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
-use osmosis_std::types::osmosis::incentives::{Gauge, IncentivesQuerier};
 
 use crate::state::POSITION;
 use crate::{
@@ -59,7 +58,7 @@ pub fn handle_collect_spread_rewards_reply(
         Ok::<CoinList, ContractError>(old)
     })?;
 
-    let response = Response::new()
+    let mut response = Response::new()
         .add_event(Event::new("cl_collect_spread_rewards"))
         .add_attribute(
             "collected_spread_rewards",
@@ -68,14 +67,14 @@ pub fn handle_collect_spread_rewards_reply(
         .add_attribute("method", "reply")
         .add_attribute("action", "handle_collect_spread_rewards");
 
-    // collect the incentives rewards
-    // TOOD: This should be chained after the spread rewards, and executed only if the current position's age is HT ongoing gauges' dsitribute_to.duration.
-    let position = POSITION.load(deps.storage)?;
+    // Collect the incentives rewards optional workflow
+
+    // Gather position info (this could be avoided saving at state the joinTime)
+    let position_state = POSITION.load(deps.storage)?;
     let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
-    let position = cl_querier.position_by_id(position.position_id)?;
+    let position = cl_querier.position_by_id(position_state.position_id)?;
     // position.position.ok_or(ContractError::PositionNotFound);
 
-    // Gather info
     let join_time = position
         .clone()
         .position
@@ -85,12 +84,15 @@ pub fn handle_collect_spread_rewards_reply(
         .join_time
         .unwrap();
     let claimable_incentives = position.position.unwrap().claimable_incentives;
-    let ongoing_gauges = get_ongoing_gauges_by_pool_id(&deps).unwrap();
 
-    // TODO: If any incentive inside Vec<Coin> && env.block.time.seconds() - joinTime HT the highest gauges.distribute_to.duration amount
-    if true {
+    // If any incentive inside Vec<Coin> && claim_after period expired
+    if !claimable_incentives.is_empty()
+        && env.block.time.seconds()
+            > join_time.seconds as u64 + position_state.claim_after.unwrap_or_default()
+    {
         let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
-        response.clone().add_submessage(SubMsg::reply_on_success(
+        // Here, directly update the response without cloning it unnecessarily
+        response = response.add_submessage(SubMsg::reply_on_success(
             msg,
             Replies::CollectIncentives as u64,
         ));
@@ -99,27 +101,6 @@ pub fn handle_collect_spread_rewards_reply(
     Ok(response)
 }
 
-fn get_ongoing_gauges_by_pool_id(deps: &DepsMut) -> Result<Vec<Gauge>, ContractError> {
-    let mut gauges = vec![];
-
-    // TODO: Gather gauges infos by pool id, somehow
-    let inc_querier = IncentivesQuerier::new(&deps.querier);
-    let gauges = inc_querier
-        .active_gauges(PageRequest {
-            key: todo!(),
-            limit: todo!(),
-            reverse: todo!(),
-        })
-        .unwrap();
-
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
-    // TODO: Filter by pool_id
-    // Take the max distribute_to.duration
-
-    Ok(gauges.data)
-}
-
-// TOOD: This should be chained after the spread rewards, and executed only if the current position's age is HT ongoing gauges' dsitribute_to.duration.
 pub fn handle_collect_incentives_reply(
     deps: DepsMut,
     _env: Env,

@@ -27,7 +27,7 @@ use crate::vault::merge::{
 };
 use crate::vault::range::{
     execute_update_range, get_range_admin, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
+    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
     handle_withdraw_position_reply,
 };
 use crate::vault::redeposit::{execute_redeposit, handle_redeposit_reply};
@@ -86,6 +86,7 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    claim_after,
                 }) => execute_update_range(
                     deps,
                     env,
@@ -95,6 +96,7 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    claim_after,
                 ),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
@@ -184,7 +186,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
-        Replies::Merge => handle_merge_response(deps, msg.result),
+        Replies::Merge => handle_merge_reply(deps, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),

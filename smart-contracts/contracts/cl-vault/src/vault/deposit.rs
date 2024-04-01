@@ -381,7 +381,14 @@ mod tests {
             .save(deps.as_mut().storage, &"money".to_string())
             .unwrap();
         POSITION
-            .save(deps.as_mut().storage, &Position { position_id: 1 })
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id: 1,
+                    join_time: todo!(),
+                    claim_after: todo!(),
+                },
+            )
             .unwrap();
 
         STRATEGIST_REWARDS
@@ -532,7 +539,14 @@ mod tests {
             custom_query_type: PhantomData,
         };
         POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id,
+                    join_time: todo!(),
+                    claim_after: todo!(),
+                },
+            )
             .unwrap();
         deps
     }

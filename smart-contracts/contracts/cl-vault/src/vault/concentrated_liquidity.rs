@@ -201,7 +201,14 @@ mod tests {
 
         let position_id = 1;
         POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id,
+                    join_time: todo!(),
+                    claim_after: todo!(),
+                },
+            )
             .unwrap();
 
         let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
