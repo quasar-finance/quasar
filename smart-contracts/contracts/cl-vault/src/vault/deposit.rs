@@ -190,6 +190,7 @@ fn get_depositable_tokens(
                 ));
             }
 
+            // TODO make sure that this works correctly, also
             let zero_usage: Uint128 = ((Uint256::from(token0)
                 * Uint256::from_u128(1_000_000_000_000_000_000u128))
                 / Uint256::from(ratio.numerator()))
