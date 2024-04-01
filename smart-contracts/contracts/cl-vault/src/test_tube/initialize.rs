@@ -924,6 +924,7 @@ pub mod initialize {
                     max_slippage: Decimal::bps(9500),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
+                    claim_after: None,
                 },
             )),
             &[],

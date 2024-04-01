@@ -232,8 +232,8 @@ pub fn mock_deps_with_querier_with_balance(
             storage,
             &crate::state::Position {
                 position_id: 1,
-                join_time: todo!(),
-                claim_after: todo!(),
+                join_time: 0,
+                claim_after: None,
             },
         )
         .unwrap();
@@ -293,8 +293,8 @@ pub fn mock_deps_with_querier(
             storage,
             &Position {
                 position_id,
-                join_time: todo!(),
-                claim_after: todo!(),
+                join_time: 0,
+                claim_after: None,
             },
         )
         .unwrap();
@@ -326,8 +326,8 @@ pub fn mock_deps_with_querier(
             storage,
             &crate::state::Position {
                 position_id: 1,
-                join_time: todo!(),
-                claim_after: todo!(),
+                join_time: 0,
+                claim_after: None,
             },
         )
         .unwrap();

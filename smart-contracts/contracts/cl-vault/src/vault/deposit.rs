@@ -385,8 +385,8 @@ mod tests {
                 deps.as_mut().storage,
                 &Position {
                     position_id: 1,
-                    join_time: todo!(),
-                    claim_after: todo!(),
+                    join_time: 0,
+                    claim_after: None,
                 },
             )
             .unwrap();
@@ -543,8 +543,8 @@ mod tests {
                 deps.as_mut().storage,
                 &Position {
                     position_id,
-                    join_time: todo!(),
-                    claim_after: todo!(),
+                    join_time: 0,
+                    claim_after: None,
                 },
             )
             .unwrap();
