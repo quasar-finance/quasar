@@ -182,7 +182,14 @@ fn get_depositable_tokens(
             debug!(deps, "ratio_tokens", tokens);
             let ratio = Decimal::from_ratio(tokens[0].amount, tokens[1].amount);
 
-            // TODO make sure that this works correctly, also
+            // Refund token0 if ratio.numerator is zero
+            if ratio.numerator().is_zero() {
+                return Ok((
+                    (Uint128::zero(), token1),
+                    (token0, Uint128::zero()),
+                ));
+            }
+
             let zero_usage: Uint128 = ((Uint256::from(token0)
                 * Uint256::from_u128(1_000_000_000_000_000_000u128))
                 / Uint256::from(ratio.numerator()))
@@ -196,7 +203,7 @@ fn get_depositable_tokens(
                 let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
                     / Uint256::from(ratio.numerator()))
                 .try_into()?;
-                
+
                 Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
             } else {
                 let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
@@ -268,6 +275,30 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_position_in_both_asset() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(1_000_000_000u128),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
+        };
+
+        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mutdeps = deps.as_mut();
+
+        let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::zero(), Uint128::new(100_000_000_000_000_000_000_000_000_000u128)),
+                (Uint128::new(1_000_000_000u128), Uint128::zero())
+            )
+        );
+    }
 
     #[test]
     fn test_position_in_asset1_only() {
