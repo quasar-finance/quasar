@@ -132,7 +132,7 @@ pub fn handle_instantiate_create_position_reply(
         deps.storage,
         &Position {
             position_id: response.position_id,
-            join_time: env.block.time.seconds(), // TODO: check if this should be the position.join_time, which is not included in the previous response, additional queryById is needed
+            join_time: env.block.time.seconds(),
             claim_after: None,
         },
     )?;
