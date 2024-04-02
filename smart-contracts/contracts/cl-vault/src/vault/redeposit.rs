@@ -3,13 +3,18 @@ use crate::helpers::{get_unused_balances, must_pay_one_or_two_from_balance};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 use crate::state::{POOL_CONFIG, POSITION};
-use crate::vault::concentrated_liquidity::create_position;
+use crate::vault::concentrated_liquidity::{create_position};
 use crate::ContractError;
 use cosmwasm_std::{
-    to_json_binary, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+    to_json_binary, DepsMut, Env, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{
+        MsgCreatePositionResponse,
+    },
+};
 
 pub fn execute_redeposit(
     deps: DepsMut,
@@ -46,7 +51,7 @@ pub fn execute_redeposit(
         &env,
         position.lower_tick,
         position.upper_tick,
-        vec![token0.clone(), token1.clone()],
+        coins_to_send,
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -60,8 +65,8 @@ pub fn execute_redeposit(
         .add_attribute("action", "redeposit")
         .add_attribute("lower_tick", format!("{:?}", position.lower_tick))
         .add_attribute("upper_tick", format!("{:?}", position.upper_tick))
-        .add_attribute("token0", format!("{:?}", token0))
-        .add_attribute("token1", format!("{:?}", token1)))
+        .add_attribute("token0", format!("{:?}", token0.clone()))
+        .add_attribute("token1", format!("{:?}", token1.clone())))
 }
 
 pub fn handle_redeposit_reply(

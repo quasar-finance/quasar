@@ -4,4 +4,5 @@ mod helpers;
 mod initialize;
 mod proptest;
 mod range;
+mod redeposit;
 mod rewards;
