@@ -78,6 +78,8 @@ pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 #[cw_serde]
 pub struct Position {
     pub position_id: u64,
+    pub join_time: u64, // env block time at time of creation, or taken by osmosis protocol response
+    pub claim_after: Option<u64>, // this should be off chain computed and set in order to avoid forfeiting incentives
 }
 
 pub const POSITION: Item<Position> = Item::new("position");

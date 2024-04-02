@@ -9,14 +9,14 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
+use crate::rewards::autocompound::{execute_auto_compound_swap, execute_migration_step};
 use crate::rewards::{
-    execute_auto_compound_swap, execute_collect_rewards, execute_migration_step,
-    handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 
 use crate::state::{
-    MigrationStatus, RewardsStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS,
-    OLD_VAULT_CONFIG, VAULT_CONFIG,
+    MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
+    VAULT_CONFIG,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::deposit::execute_exact_deposit;
@@ -27,16 +27,14 @@ use crate::vault::merge::{
 };
 use crate::vault::range::{
     execute_update_range, get_range_admin, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_response, handle_swap_reply,
+    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
     handle_withdraw_position_reply,
 };
 use crate::vault::redeposit::{execute_redeposit, handle_redeposit_reply};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -88,6 +86,7 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    claim_after,
                 }) => execute_update_range(
                     deps,
                     env,
@@ -97,7 +96,11 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    claim_after,
                 ),
+                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
+                    execute_build_tick_exp_cache(deps, info)
+                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -105,9 +108,6 @@ pub fn execute(
                     force_swap_route,
                     swap_routes,
                 } => execute_auto_compound_swap(deps, env, info, force_swap_route, swap_routes),
-                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
-                    execute_build_tick_exp_cache(deps, info)
-                }
                 crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
                     execute_migration_step(deps, env, amount_of_users)
                 }
@@ -186,7 +186,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
-        Replies::Merge => handle_merge_response(deps, msg.result),
+        Replies::Merge => handle_merge_reply(deps, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),

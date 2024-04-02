@@ -42,8 +42,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_redeposit() {
-        let (app, contract_address, cl_pool_id, admin) =
-            default_init();
+        let (app, contract_address, cl_pool_id, admin) = default_init();
 
         let wasm = Wasm::new(&app);
         let bm = Bank::new(&app);
@@ -76,11 +75,9 @@ mod tests {
             let shares: UserSharesBalanceResponse = wasm
                 .query(
                     contract_address.as_str(),
-                    &VaultExtension(ExtensionQueryMsg::Balances(
-                        UserSharesBalance {
-                            user: account.address(),
-                        },
-                    )),
+                    &VaultExtension(ExtensionQueryMsg::Balances(UserSharesBalance {
+                        user: account.address(),
+                    })),
                 )
                 .unwrap();
             assert!(!shares.balance.is_zero());
@@ -120,25 +117,29 @@ mod tests {
         }
 
         // check for contract balance as it has not been redeposited yet
-        let balance_before = bm.query_all_balances(&QueryAllBalancesRequest{
-            address: contract_address.to_string(),
-            pagination: None,
-        }).unwrap();
+        let balance_before = bm
+            .query_all_balances(&QueryAllBalancesRequest {
+                address: contract_address.to_string(),
+                pagination: None,
+            })
+            .unwrap();
 
         let _result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Redeposit{}),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Redeposit {}),
                 &[],
                 &admin,
             )
             .unwrap();
 
         // check for contract balance as it has not been redeposited yet
-        let balance_after = bm.query_all_balances(&QueryAllBalancesRequest{
-            address: contract_address.to_string(),
-            pagination: None,
-        }).unwrap();
+        let balance_after = bm
+            .query_all_balances(&QueryAllBalancesRequest {
+                address: contract_address.to_string(),
+                pagination: None,
+            })
+            .unwrap();
 
         // todo add assert on the balance
         // assert!()

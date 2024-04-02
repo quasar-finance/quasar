@@ -228,7 +228,14 @@ pub fn mock_deps_with_querier_with_balance(
         )
         .unwrap();
     POSITION
-        .save(storage, &crate::state::Position { position_id: 1 })
+        .save(
+            storage,
+            &crate::state::Position {
+                position_id: 1,
+                join_time: 0,
+                claim_after: None,
+            },
+        )
         .unwrap();
 
     deps
@@ -281,7 +288,16 @@ pub fn mock_deps_with_querier(
 
     let storage = &mut deps.storage;
 
-    POSITION.save(storage, &Position { position_id }).unwrap();
+    POSITION
+        .save(
+            storage,
+            &Position {
+                position_id,
+                join_time: 0,
+                claim_after: None,
+            },
+        )
+        .unwrap();
 
     RANGE_ADMIN.save(storage, &info.sender).unwrap();
     POOL_CONFIG
@@ -306,7 +322,14 @@ pub fn mock_deps_with_querier(
         )
         .unwrap();
     POSITION
-        .save(storage, &crate::state::Position { position_id: 1 })
+        .save(
+            storage,
+            &crate::state::Position {
+                position_id: 1,
+                join_time: 0,
+                claim_after: None,
+            },
+        )
         .unwrap();
 
     deps

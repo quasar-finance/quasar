@@ -1,34 +1,21 @@
-use std::{collections::vec_deque, str::FromStr};
-
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, Decimal, Decimal256, DepsMut, Env,
-    Fraction, MessageInfo, QuerierWrapper, Response, Storage, SubMsg, SubMsgResult, Uint128,
-    Uint256,
+    attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Response, Storage, Uint128, Uint256,
 };
 
 use osmosis_std::{
     try_proto_to_cosmwasm_coins,
     types::{
         cosmos::bank::v1beta1::BankQuerier,
-        osmosis::{
-            concentratedliquidity::v1beta1::{
-                ConcentratedliquidityQuerier, MsgCreatePositionResponse,
-            },
-            poolmanager::v1beta1::PoolmanagerQuerier,
-            tokenfactory::v1beta1::MsgMint,
-        },
+        osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, tokenfactory::v1beta1::MsgMint},
     },
 };
 
 use crate::{
-    debug,
-    error::ContractResult,
-    helpers::{get_asset0_value, get_liquidity_amount_for_unused_funds, must_pay_one_or_two, sort_tokens},
-    msg::{ExecuteMsg, MergePositionMsg},
+    helpers::must_pay_one_or_two,
     query::query_total_assets,
-    reply::Replies,
-    state::{CurrentDeposit, CURRENT_DEPOSIT, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::{create_position, get_position},
+    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::get_position,
     ContractError,
 };
 
@@ -65,6 +52,14 @@ pub(crate) fn execute_exact_deposit(
 
     println!("deposit: {:?}", deposit);
     // calculate the amount of shares we can mint for this
+    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        total_assets.token0.amount,
+        total_assets.token1.amount,
+    )?;
+
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
         .supply_of(vault_denom.clone())?
@@ -76,15 +71,6 @@ pub(crate) fn execute_exact_deposit(
 
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
 
-    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
-    let total_assets_value = get_asset0_value(
-        deps.storage,
-        &deps.querier,
-        total_assets.token0.amount,
-        total_assets.token1.amount,
-    )?.checked_sub(user_value)?;
-
-
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         user_value
@@ -94,10 +80,6 @@ pub(crate) fn execute_exact_deposit(
             .checked_div(total_assets_value.into())?
             .try_into()?
     };
-    debug!(deps, "user_value", user_value);
-    debug!(deps, "user_shares", user_shares);
-    debug!(deps, "total_vault_shares", total_vault_shares);
-    debug!(deps, "total_assets_value", total_assets_value);
 
     // save the shares in the user map
     SHARES.update(
@@ -147,6 +129,27 @@ pub(crate) fn execute_exact_deposit(
     Ok(resp)
 }
 
+/// Calculate the total value of two assets in asset0
+fn get_asset0_value(
+    storage: &dyn Storage,
+    querier: &QuerierWrapper,
+    token0: Uint128,
+    token1: Uint128,
+) -> Result<Uint128, ContractError> {
+    let pool_config = POOL_CONFIG.load(storage)?;
+
+    let pm_querier = PoolmanagerQuerier::new(querier);
+    let spot_price: Decimal = pm_querier
+        .spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?
+        .spot_price
+        .parse()?;
+
+    let total = token0
+        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
+
+    Ok(total)
+}
+
 fn get_depositable_tokens(
     deps: DepsMut,
     token0: Coin,
@@ -179,16 +182,7 @@ fn get_depositable_tokens(
             let token0 = token0.amount;
             let token1 = token1.amount;
             let tokens = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
-            debug!(deps, "ratio_tokens", tokens);
             let ratio = Decimal::from_ratio(tokens[0].amount, tokens[1].amount);
-
-            // Refund token0 if ratio.numerator is zero
-            if ratio.numerator().is_zero() {
-                return Ok((
-                    (Uint128::zero(), token1),
-                    (token0, Uint128::zero()),
-                ));
-            }
 
             // TODO make sure that this works correctly, also
             let zero_usage: Uint128 = ((Uint256::from(token0)
@@ -204,13 +198,11 @@ fn get_depositable_tokens(
                 let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
                     / Uint256::from(ratio.numerator()))
                 .try_into()?;
-
                 Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
             } else {
                 let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
                     / Uint256::from(ratio.denominator()))
                 .try_into()?;
-
                 Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
             }
         }
@@ -255,11 +247,11 @@ fn refund_bank_msg(
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use std::{marker::PhantomData, str::FromStr};
 
     use cosmwasm_std::{
         testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        to_json_binary, Addr, Decimal256, Empty, OwnedDeps, SubMsgResponse, Uint256, WasmMsg,
+        Addr, Decimal256, Empty, OwnedDeps, Uint256,
     };
 
     use osmosis_std::types::{
@@ -271,35 +263,11 @@ mod tests {
 
     use crate::{
         rewards::CoinList,
-        state::{PoolConfig, Position, STRATEGIST_REWARDS},
+        state::{PoolConfig, Position, POSITION, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
 
     use super::*;
-
-    #[test]
-    fn test_position_in_both_asset() {
-        let token0 = Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(1_000_000_000u128),
-        };
-        let token1 = Coin {
-            denom: "token1".to_string(),
-            amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
-        };
-
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
-        let mutdeps = deps.as_mut();
-
-        let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
-        assert_eq!(
-            result,
-            (
-                (Uint128::zero(), Uint128::new(100_000_000_000_000_000_000_000_000_000u128)),
-                (Uint128::new(1_000_000_000u128), Uint128::zero())
-            )
-        );
-    }
 
     #[test]
     fn test_position_in_asset1_only() {
@@ -413,7 +381,14 @@ mod tests {
             .save(deps.as_mut().storage, &"money".to_string())
             .unwrap();
         POSITION
-            .save(deps.as_mut().storage, &Position { position_id: 1 })
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id: 1,
+                    join_time: 0,
+                    claim_after: None,
+                },
+            )
             .unwrap();
 
         STRATEGIST_REWARDS
@@ -564,7 +539,14 @@ mod tests {
             custom_query_type: PhantomData,
         };
         POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id,
+                    join_time: 0,
+                    claim_after: None,
+                },
+            )
             .unwrap();
         deps
     }

@@ -3,15 +3,12 @@
 #[cfg(test)]
 mod tests {
     use apollo_cw_asset::AssetInfoBase;
-    use cosmwasm_std::testing::mock_dependencies;
     use cosmwasm_std::Coin;
     use cosmwasm_std::{Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
-    use osmosis_std::types::cosmos::bank::v1beta1::{
-        MsgSend, QueryAllBalancesRequest, QueryBalanceRequest,
-    };
+    use osmosis_std::types::cosmos::bank::v1beta1::{MsgSend, QueryBalanceRequest};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -24,7 +21,6 @@ mod tests {
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
     use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
-    use crate::state::USER_REWARDS;
     use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
     use crate::test_tube::initialize::initialize::{
         default_init, dex_cl_init_cl_pools, dex_cl_init_lp_pools,
@@ -208,6 +204,7 @@ mod tests {
                         max_slippage: Decimal::bps(9500),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        claim_after: None,
                     },
                 )),
                 &[],
@@ -489,6 +486,7 @@ mod tests {
                         max_slippage: Decimal::bps(9500),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        claim_after: None,
                     },
                 )),
                 &[],
@@ -685,7 +683,7 @@ mod tests {
         // }
 
         // Collect init
-        for i in 0..(ACCOUNTS_NUM - 1) {
+        for _i in 0..(ACCOUNTS_NUM - 1) {
             let result = wasm
                 .execute(
                     contract_address.as_str(),

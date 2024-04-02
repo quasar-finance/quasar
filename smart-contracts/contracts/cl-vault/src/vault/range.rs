@@ -47,6 +47,11 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
+/// This function is the entrypoint into the dsm routine that will go through the following steps
+/// * how much liq do we have in current range
+/// * so how much of each asset given liq would we have at current price
+/// * how much of each asset do we need to move to get to new range
+/// * deposit up to max liq we can right now, then swap remaining over and deposit again
 #[allow(clippy::too_many_arguments)]
 pub fn execute_update_range(
     deps: DepsMut,
@@ -57,9 +62,9 @@ pub fn execute_update_range(
     max_slippage: Decimal,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
+    claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
-    let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
-    let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
+    assert_range_admin(deps.storage, &info.sender)?;
 
     // validate ratio of swappable funds to use
     if ratio_of_swappable_funds_to_use > Decimal::one()
@@ -67,38 +72,6 @@ pub fn execute_update_range(
     {
         return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
     }
-
-    execute_update_range_ticks(
-        deps,
-        env,
-        info,
-        lower_tick.try_into().unwrap(),
-        upper_tick.try_into().unwrap(),
-        max_slippage,
-        ratio_of_swappable_funds_to_use,
-        twap_window_seconds,
-    )
-}
-
-/// This function is the entrypoint into the dsm routine that will go through the following steps
-/// * how much liq do we have in current range
-/// * so how much of each asset given liq would we have at current price
-/// * how much of each asset do we need to move to get to new range
-/// * deposit up to max liq we can right now, then swap remaining over and deposit again
-#[allow(clippy::too_many_arguments)]
-pub fn execute_update_range_ticks(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    lower_tick: i64,
-    upper_tick: i64,
-    max_slippage: Decimal,
-    ratio_of_swappable_funds_to_use: Decimal,
-    twap_window_seconds: u64,
-) -> Result<Response, ContractError> {
-    assert_range_admin(deps.storage, &info.sender)?;
-
-    // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
@@ -112,17 +85,31 @@ pub fn execute_update_range_ticks(
             .to_string(),
     };
 
+    // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
+    let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
+    let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
     MODIFY_RANGE_STATE.save(
         deps.storage,
         // todo: should ModifyRangeState be an enum?
         &Some(ModifyRangeState {
-            lower_tick,
-            upper_tick,
+            lower_tick: lower_tick.try_into().unwrap(),
+            upper_tick: upper_tick.try_into().unwrap(),
             new_range_position_ids: vec![],
             max_slippage,
             ratio_of_swappable_funds_to_use,
             twap_window_seconds,
         }),
+    )?;
+
+    // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
+    let position_state = POSITION.load(deps.storage)?;
+    POSITION.save(
+        deps.storage,
+        &Position {
+            position_id: position_state.position_id,
+            join_time: env.block.time.seconds(),
+            claim_after,
+        },
     )?;
 
     Ok(Response::default()
@@ -350,6 +337,9 @@ pub fn do_swap_deposit_merge(
             SwapDirection::OneToZero,
         )
     } else {
+        // Load the current Position to extract join_time and claim_after which is unchangeable in this context
+        let position = POSITION.load(deps.storage)?;
+
         // if we have not tokens to swap, that means all tokens we correctly used in the create position
         // this means we can save the position id of the first create_position
         POSITION.save(
@@ -357,6 +347,8 @@ pub fn do_swap_deposit_merge(
             &Position {
                 // if position not found, then we should panic here anyway ?
                 position_id: position_id.expect("position id should be set if no swap is needed"),
+                join_time: position.join_time,
+                claim_after: position.claim_after,
             },
         )?;
 
@@ -533,19 +525,24 @@ pub fn handle_iteration_create_position_reply(
 }
 
 // store new position id and exit
-pub fn handle_merge_response(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
+pub fn handle_merge_reply(deps: DepsMut, data: SubMsgResult) -> Result<Response, ContractError> {
     let merge_response: MergeResponse = data.try_into()?;
+
+    // Load the current Position to extract join_time and claim_after which is unchangeable in this context
+    let position = POSITION.load(deps.storage)?;
 
     POSITION.save(
         deps.storage,
         &Position {
             position_id: merge_response.new_position_id,
+            join_time: position.join_time,
+            claim_after: position.claim_after,
         },
     )?;
 
     Ok(Response::new()
         .add_attribute("method", "reply")
-        .add_attribute("action", "handle_merge_response")
+        .add_attribute("action", "handle_merge_reply")
         .add_attribute("swap_deposit_merge_status", "success")
         .add_attribute("status", "success"))
 }
@@ -622,6 +619,7 @@ mod tests {
             max_slippage,
             Decimal::one(),
             45,
+            None,
         )
         .unwrap();
 

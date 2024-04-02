@@ -132,17 +132,25 @@ pub fn handle_instantiate_create_position_reply(
         deps.storage,
         &Position {
             position_id: response.position_id,
+            join_time: env.block.time.seconds(),
+            claim_after: None,
         },
     )?;
 
     let position_info = get_position(deps.storage, &deps.querier)?;
-    let assets = try_proto_to_cosmwasm_coins(vec![position_info.asset0.unwrap(), position_info.asset1.unwrap()])?;
-    let asset_value = get_asset0_value(deps.storage, &deps.querier, assets[0].amount, assets[1].amount)?;
+    let assets = try_proto_to_cosmwasm_coins(vec![
+        position_info.asset0.unwrap(),
+        position_info.asset1.unwrap(),
+    ])?;
+    let asset_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        assets[0].amount,
+        assets[1].amount,
+    )?;
 
     let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-
 
     // todo do we want to mint the initial mint to the instantiater, or just not care?
     let mint_msg = MsgMint {
@@ -150,7 +158,6 @@ pub fn handle_instantiate_create_position_reply(
         amount: Some(coin(asset_value.u128(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
-
 
     Ok(Response::new()
         .add_message(mint_msg)

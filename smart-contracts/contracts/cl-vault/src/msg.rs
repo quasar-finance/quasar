@@ -88,6 +88,8 @@ pub struct ModifyRangeMsg {
     pub ratio_of_swappable_funds_to_use: Decimal,
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
+    /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
+    pub claim_after: Option<u64>,
 }
 
 #[cw_serde]
