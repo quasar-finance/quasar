@@ -95,7 +95,6 @@ pub fn execute_migration_step(
     Ok(response)
 }
 
-// TODO: This swap logic should be separated to an helper function and streamlined. It is also out of context here in distribution.rs.
 pub fn execute_auto_compound_swap(
     deps: DepsMut,
     env: Env,

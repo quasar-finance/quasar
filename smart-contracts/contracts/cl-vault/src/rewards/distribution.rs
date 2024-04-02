@@ -1,7 +1,7 @@
 use cosmwasm_std::{DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    ConcentratedliquidityQuerier, MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
+    MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
 
 use crate::state::POSITION;
@@ -16,7 +16,6 @@ use super::{get_collect_incentives_msg, get_collect_spread_rewards_msg};
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    // claim the spread rewards
     let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
 
     Ok(Response::new()
@@ -33,8 +32,6 @@ pub fn handle_collect_spread_rewards_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // after we have collected both the spread rewards and the incentives, we can distribute them over the share holders
-    // we don't need to save the rewards here again, just pass it to update rewards
     let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data
         .into_result()
         .map_err(StdError::generic_err)?
@@ -68,28 +65,11 @@ pub fn handle_collect_spread_rewards_reply(
         .add_attribute("action", "handle_collect_spread_rewards");
 
     // Collect the incentives rewards optional workflow
-
-    // Gather position info (this could be avoided saving at state the joinTime)
     let position_state = POSITION.load(deps.storage)?;
-    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
-    let position = cl_querier.position_by_id(position_state.position_id)?;
-    // position.position.ok_or(ContractError::PositionNotFound);
+    let claim_timestamp = position_state.join_time + position_state.claim_after.unwrap_or_default();
 
-    let join_time = position
-        .clone()
-        .position
-        .unwrap()
-        .position
-        .unwrap()
-        .join_time
-        .unwrap();
-    let claimable_incentives = position.position.unwrap().claimable_incentives;
-
-    // If any incentive inside Vec<Coin> && claim_after period expired
-    if !claimable_incentives.is_empty()
-        && env.block.time.seconds()
-            > join_time.seconds as u64 + position_state.claim_after.unwrap_or_default()
-    {
+    // If claim_after period expired
+    if env.block.time.seconds() > claim_timestamp {
         let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
         // Here, directly update the response without cloning it unnecessarily
         response = response.add_submessage(SubMsg::reply_on_success(
@@ -106,8 +86,6 @@ pub fn handle_collect_incentives_reply(
     _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // save the response from the collect incentives
-    // If we do not have data here, we treat this as an empty MsgCollectIncentivesResponse, this seems to be a bug somewhere between cosmwasm and osmosis
     let data: Result<MsgCollectIncentivesResponse, ContractError> = data
         .into_result()
         .map_err(StdError::generic_err)?
