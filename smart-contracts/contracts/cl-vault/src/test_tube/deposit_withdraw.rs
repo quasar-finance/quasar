@@ -54,18 +54,19 @@ mod tests {
         0_281_243_579_389_884
         so these tokens could 2x easily
          */
-        let response = wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::ExactDeposit { recipient: None },
-            &[
-                Coin::new(1_000_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000_000, DENOM_QUOTE),
-            ],
-            &alice,
-        )
-        .unwrap();
+        let response = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(1_000_000_000_000_000, DENOM_BASE),
+                    Coin::new(1_000_000_000_000_000, DENOM_QUOTE),
+                ],
+                &alice,
+            )
+            .unwrap();
 
-        // manually inspect the response, we see a token0 refund of 373_000_000_000_000, so we'd expect the user assets to return 
+        // manually inspect the response, we see a token0 refund of 373_000_000_000_000, so we'd expect the user assets to return
         // 1_000_000_000_000_000 - 373_000_000_000_000 = 627_000_000_000_000 of token0, or uosmo
         println!("{:?}", response);
 
