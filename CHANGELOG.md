@@ -34,7 +34,6 @@ Ref: https://keepachangelog.com/en/1.1.0/
 -->
 # Changelog
 
-
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -42,10 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.0.8-merkle-incentives
+* [#567](https://github.com/quasar-finance/quasar/pull/567) Add new merkle-incentives smart contract for Vault Based Incentives.
 
 ## v1.0.1-rc-testnet Update Wasm
 * [#568](https://github.com/quasar-finance/quasar/pull/568) Adding the was capability support on chain for x/wasm osmosis,cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_4. and bump the wasm version
-
 
 ## v1.0.7-milktia-tia-patch
 * [#560](https://github.com/quasar-finance/quasar/pull/560) Change the cl vault withdraw events to exist under their own event

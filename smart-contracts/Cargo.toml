@@ -9,6 +9,8 @@ members = [
   "contracts/cl-vault",
   "contracts/range-middleware",
   "packages/quasar-types",
+  "contracts/merkle-incentives",
+  "packages/quasar-types"
 ]
 
 [workspace.dependencies]
