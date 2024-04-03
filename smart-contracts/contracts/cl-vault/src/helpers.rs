@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::str::FromStr;
 
-use crate::math::liquidity::{asset0, asset1};
+use crate::math::liquidity::{asset0, asset1, get_position_ratio};
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{Position, ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
@@ -381,8 +381,7 @@ fn get_min_ratio_per_position(
 ) -> Result<Vec<(Position, PositionRatio)>, ContractError> {
     // per position, calculate the ratio of asset1 and asset2 a position needs
 
-    // for each position, we take some set amount of liquidity and calculate how many asset0 and asset1 those would give us
-    let liquidity: Decimal256 = Decimal::new(100_000_000_000_000_000_000_000_u128.into()).into();
+    // for each position, we calculate the ratio between asset0 and asset1 that the position needs
     let ps: Result<Vec<(Position, PositionRatio)>, ContractError> = positions
         .into_iter()
         .map(|(p, fp)| {
@@ -391,11 +390,10 @@ fn get_min_ratio_per_position(
             let lower_price_sqrt = tick_to_price(pos.lower_tick)?.sqrt();
             let spot_price_sqrt: Decimal256 = spot_price.sqrt().into();
 
-            let amount0 =
-                asset0(liquidity, spot_price_sqrt, upper_price_sqrt).unwrap_or(Uint128::zero());
-            let amount1 =
-                asset1(liquidity, lower_price_sqrt, spot_price_sqrt).unwrap_or(Uint128::zero());
-            Ok((p, PositionRatio::new(amount0, amount1)))
+            Ok((
+                p,
+                get_position_ratio(lower_price_sqrt, spot_price_sqrt, upper_price_sqrt)?,
+            ))
         })
         .collect();
 
