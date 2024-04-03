@@ -14,6 +14,7 @@ use crate::rewards::{
     handle_collect_spread_rewards_reply,
 };
 
+use crate::state::{ModifyRangeState, DEX_ROUTER, MODIFY_RANGE_STATE, RANGE_ADMIN};
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -28,7 +29,7 @@ use crate::vault::range::{
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{to_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -187,8 +188,36 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let new_range_admin_addr = deps.api.addr_validate(&msg.range_admin)?;
+    RANGE_ADMIN.save(deps.storage, &new_range_admin_addr)?;
 
-    Ok(Response::new().add_attribute("migrate", "successful"))
+    let new_router_addr = deps.api.addr_validate(&msg.dex_router)?;
+    DEX_ROUTER.save(deps.storage, &new_router_addr)?;
+
+    let def_state = ModifyRangeState {
+        lower_tick: 0,
+        upper_tick: 0,
+        max_slippage: Decimal::zero(),
+        new_range_position_ids: vec![],
+        ratio_of_swappable_funds_to_use: Decimal::zero(),
+        twap_window_seconds: 0,
+        recommended_swap_route: None,
+        force_swap_route: Some(false),
+    };
+
+    let mut modify_range_state = MODIFY_RANGE_STATE
+        .load(deps.storage)
+        .unwrap_or(Some(def_state));
+
+    if let Some(ref mut state) = modify_range_state {
+        state.recommended_swap_route = None;
+        state.force_swap_route = Some(false);
+    }
+
+    MODIFY_RANGE_STATE.save(deps.storage, &modify_range_state)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "migrate")
+        .add_attribute("message", "migrated successfully"))
 }

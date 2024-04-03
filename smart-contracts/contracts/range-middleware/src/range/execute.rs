@@ -29,6 +29,15 @@ pub enum RangeExecuteMsg {
     },
 }
 
+pub struct RangeExecutionParams {
+    pub cl_vault_address: String,
+    pub max_slippage: Decimal,
+    pub ratio_of_swappable_funds_to_use: Decimal,
+    pub twap_window_seconds: u64,
+    pub recommended_swap_route: SwapOperationsListUnchecked,
+    pub force_swap_route: bool,
+}
+
 pub fn execute_range_msg(
     deps: DepsMut,
     env: Env,
@@ -50,12 +59,14 @@ pub fn execute_range_msg(
             deps,
             env,
             info,
-            cl_vault_address,
-            max_slippage,
-            ratio_of_swappable_funds_to_use,
-            twap_window_seconds,
-            recommended_swap_route,
-            force_swap_route,
+            RangeExecutionParams{
+                cl_vault_address,
+                max_slippage,
+                ratio_of_swappable_funds_to_use,
+                twap_window_seconds,
+                recommended_swap_route,
+                force_swap_route
+            }
         ),
     }
 }
@@ -108,42 +119,37 @@ pub fn execute_new_range(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    cl_vault_address: String,
-    max_slippage: Decimal,
-    ratio_of_swappable_funds_to_use: Decimal,
-    twap_window_seconds: u64,
-    recommended_swap_route: SwapOperationsListUnchecked,
-    force_swap_route: bool,
+    params: RangeExecutionParams,
 ) -> Result<Response, ContractError> {
     is_range_executor_admin(deps.storage, &info.sender)?;
 
-    let vault_address = deps.api.addr_validate(&cl_vault_address)?;
+    let vault_address = deps.api.addr_validate(&params.cl_vault_address)?;
 
     let new_range_result = PENDING_RANGES.load(deps.storage, vault_address.clone());
     if new_range_result.is_err() {
         return Err(ContractError::NoRangeExists {
-            address: cl_vault_address.clone(),
+            address: params.cl_vault_address.clone(),
         });
     }
     let new_range = new_range_result?;
 
     // if range was completed, delete from pending ranges
-    if ratio_of_swappable_funds_to_use == Decimal::one() {
+    if params.ratio_of_swappable_funds_to_use == Decimal::one() {
         PENDING_RANGES.remove(deps.storage, vault_address.clone());
     }
 
     // construct message to send to cl vault
     let msg = WasmMsg::Execute {
-        contract_addr: cl_vault_address.clone(),
+        contract_addr: params.cl_vault_address.clone(),
         msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
             cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                 lower_price: new_range.lower_price,
                 upper_price: new_range.upper_price,
-                max_slippage,
-                ratio_of_swappable_funds_to_use,
-                twap_window_seconds,
-                force_swap_route: Some(force_swap_route),
-                recommended_swap_route: Some(recommended_swap_route),
+                max_slippage: params.max_slippage,
+                ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
+                twap_window_seconds: params.twap_window_seconds,
+                force_swap_route: Some(params.force_swap_route),
+                recommended_swap_route: Some(params.recommended_swap_route),
             }),
         ))?,
 
@@ -155,5 +161,5 @@ pub fn execute_new_range(
         .add_attribute("action", "execute_new_range")
         .add_attribute("range_executed", "true")
         .add_attribute("range_executor", info.sender)
-        .add_attribute("range_underlying_contract", cl_vault_address))
+        .add_attribute("range_underlying_contract", params.cl_vault_address))
 }

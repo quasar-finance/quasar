@@ -17,6 +17,15 @@ use crate::{
     ContractError,
 };
 
+
+pub struct SwapParams {
+    pub token_in_amount: Uint128,
+    pub token_in_denom: String,
+    pub token_out_min_amount: Uint128,
+    pub token_out_denom: String,
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    pub force_swap_route: bool,
+}
 /// estimate_swap can be used to pass correct token_out_min_amount values into swap()
 /// for now this function can only be used for our pool
 /// this will likely be expanded once we allow arbitrary pool swaps
@@ -71,17 +80,14 @@ pub fn _estimate_swap(
 pub fn swap(
     deps: DepsMut,
     env: &Env,
-    token_in_amount: Uint128,
-    token_in_denom: &String,
-    token_out_min_amount: Uint128,
-    token_out_denom: &String,
-    recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    force_swap_route: bool,
+    params: SwapParams,
 ) -> Result<CosmosMsg, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
-    if !pool_config.pool_contains_token(token_in_denom) {
+    let token_in_denom = params.token_in_denom.clone();
+
+    if !pool_config.pool_contains_token(params.token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
             base_token: pool_config.token0,
             quote_token: pool_config.token1,
@@ -91,19 +97,19 @@ pub fn swap(
     // we will only ever have a route length of one, this will likely change once we start selecting different routes
     let pool_route = SwapAmountInRoute {
         pool_id: pool_config.pool_id,
-        token_out_denom: token_out_denom.to_string(),
+        token_out_denom: params.token_out_denom.to_string(),
     };
 
     let swap_msg: Result<CosmosMsg, _> = match dex_router {
         Some(dex_router_address) => {
-            let offer_asset = AssetInfo::Native(token_in_denom.to_string());
-            let ask_asset = AssetInfo::Native(token_out_denom.to_string());
+            let offer_asset = AssetInfo::Native(token_in_denom.clone().to_string());
+            let ask_asset = AssetInfo::Native(params.token_out_denom.to_string());
 
-            let recommended_out: Uint128 = match recommended_swap_route.clone() {
+            let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
                 Some(operations) => deps.querier.query_wasm_smart(
                     dex_router_address.to_string(),
                     &QueryMsg::SimulateSwapOperations {
-                        offer_amount: token_in_amount,
+                        offer_amount: params.token_in_amount,
                         operations,
                     },
                 )?,
@@ -115,7 +121,7 @@ pub fn swap(
                     offer_asset: offer_asset.into(),
                     ask_asset: ask_asset.into(),
                     exclude_paths: None,
-                    offer_amount: token_in_amount,
+                    offer_amount: params.token_in_amount,
                 },
             )?;
             let best_out = match best_path.clone() {
@@ -124,63 +130,57 @@ pub fn swap(
             };
 
             // if we need to force the route
-            if force_swap_route {
-                match recommended_swap_route {
+            if params.force_swap_route {
+                match params.recommended_swap_route {
                     Some(recommended_swap_route) => {
-                        deps.api.debug("using execute_swap_operations");
                         execute_swap_operations(
                             dex_router_address,
                             recommended_swap_route,
-                            token_out_min_amount,
-                            token_in_denom,
-                            token_in_amount,
+                            params.token_out_min_amount,
+                            &token_in_denom.clone(),
+                            params.token_in_amount,
                         )
                     }
                     None => Err(ContractError::TryForceRouteWithoutRecommendedSwapRoute {}),
                 }
             } else if best_out.is_zero() && recommended_out.is_zero() {
-                deps.api.debug("using swap_exact_amount_in");
                 Ok(swap_exact_amount_in(
-                    &env,
+                    env,
                     pool_route,
-                    token_in_amount,
-                    token_in_denom,
-                    token_out_min_amount,
+                    params.token_in_amount,
+                    &token_in_denom.clone(),
+                    params.token_out_min_amount,
                 ))
             } else if best_out.ge(&recommended_out) {
-                deps.api.debug("using execute_swap_operations");
                 execute_swap_operations(
                     dex_router_address,
                     best_path.unwrap().operations.into(),
-                    token_out_min_amount,
-                    token_in_denom,
-                    token_in_amount,
+                    params.token_out_min_amount,
+                    &token_in_denom.clone(),
+                    params.token_in_amount,
                 )
             } else {
-                deps.api.debug("using execute_swap_operations");
                 // recommended_out > best_out
                 execute_swap_operations(
                     dex_router_address,
-                    recommended_swap_route.unwrap(), // will be some here
-                    token_out_min_amount,
-                    token_in_denom,
-                    token_in_amount,
+                    params.recommended_swap_route.unwrap(), // will be some here
+                    params.token_out_min_amount,
+                    &token_in_denom.clone(),
+                    params.token_in_amount,
                 )
             }
         }
         None => {
-            deps.api.debug("using swap_exact_amount_in");
             Ok(swap_exact_amount_in(
-                &env,
+                env,
                 pool_route,
-                token_in_amount,
-                token_in_denom,
-                token_out_min_amount,
+                params.token_in_amount,
+                &token_in_denom.clone(),
+                params.token_out_min_amount,
             ))
         }
     };
-
-    Ok(swap_msg?)
+    swap_msg
 }
 
 fn swap_exact_amount_in(
@@ -212,7 +212,7 @@ fn execute_swap_operations(
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
         msg: to_binary(&ExecuteMsg::ExecuteSwapOperations {
-            operations: operations,
+            operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,
             offer_amount: None,
@@ -229,6 +229,7 @@ fn execute_swap_operations(
 
 #[cfg(test)]
 mod tests {
+    use crate::vault::swap::SwapParams;
     use cosmwasm_std::{
         testing::{mock_dependencies_with_balance, mock_env},
         Coin, CosmosMsg, Uint128,
@@ -253,6 +254,7 @@ mod tests {
         let deps_mut = deps.as_mut();
 
         let env = mock_env();
+        
 
         let token_in_amount = Uint128::new(100);
         let token_in_denom = "token0".to_string();
@@ -262,16 +264,20 @@ mod tests {
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
+        
+            let swap_params = SwapParams{
+                token_in_amount,
+                token_out_min_amount,
+                token_in_denom,
+                token_out_denom,
+                recommended_swap_route: None,
+                force_swap_route: false
+            };
 
         let result = super::swap(
             deps_mut,
             &env,
-            token_in_amount,
-            &token_in_denom,
-            token_out_min_amount,
-            &token_out_denom,
-            None,
-            false,
+            swap_params
         )
         .unwrap();
 
@@ -309,6 +315,15 @@ mod tests {
         let token_out_min_amount = Uint128::new(100);
         let token_out_denom = "token1".to_string();
 
+        let swap_params = SwapParams{
+            token_in_amount,
+            token_out_min_amount,
+            token_in_denom,
+            token_out_denom,
+            recommended_swap_route: None,
+            force_swap_route: false
+        };
+
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
@@ -316,12 +331,7 @@ mod tests {
         let err = super::swap(
             deps_mut,
             &env,
-            token_in_amount,
-            &token_in_denom,
-            token_out_min_amount,
-            &token_out_denom,
-            None,
-            false,
+            swap_params
         )
         .unwrap_err();
 
