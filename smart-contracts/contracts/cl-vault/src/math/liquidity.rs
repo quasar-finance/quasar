@@ -1,5 +1,7 @@
-use crate::ContractError;
+use crate::{helpers::PositionRatio, ContractError};
 use cosmwasm_std::{Decimal256, StdError, Uint128, Uint256, Uint512};
+
+use super::helpers::abs_diff;
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn _liquidity0(
@@ -97,6 +99,34 @@ pub fn asset1(
     let total = liquidity.checked_div(diff)?;
 
     Ok(total.try_into()?)
+}
+
+pub fn get_position_ratio(
+    sqrt_price_lower: Decimal256,
+    sqrt_price_current: Decimal256,
+    sqrt_price_upper: Decimal256,
+) -> Result<PositionRatio, ContractError> {
+    let sqrt_price_lower = sqrt_price_lower.atomics();
+    let sqrt_price_current = sqrt_price_current.atomics();
+    let sqrt_price_upper = sqrt_price_upper.atomics();
+
+    let diff_upper = abs_diff(sqrt_price_upper, sqrt_price_current);
+    let diff_lower = abs_diff(sqrt_price_lower, sqrt_price_current);
+
+    let prod_upper = sqrt_price_current.checked_mul(sqrt_price_upper)?;
+
+    if diff_upper.is_zero() || diff_lower.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "liquidity0 diff is zero",
+        )));
+    }
+
+    let numerator = diff_upper.checked_mul(diff_lower)?;
+
+    Ok(PositionRatio::new(
+        numerator.try_into()?,
+        prod_upper.try_into()?,
+    ))
 }
 
 // TODO figure out if liquidity1 need to be Uint512's aswell, currently I (Laurens) don't believe so since we should only need more precision if we multiply decimals
