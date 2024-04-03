@@ -59,14 +59,14 @@ pub fn execute_range_msg(
             deps,
             env,
             info,
-            RangeExecutionParams{
+            RangeExecutionParams {
                 cl_vault_address,
                 max_slippage,
                 ratio_of_swappable_funds_to_use,
                 twap_window_seconds,
                 recommended_swap_route,
-                force_swap_route
-            }
+                force_swap_route,
+            },
         ),
     }
 }

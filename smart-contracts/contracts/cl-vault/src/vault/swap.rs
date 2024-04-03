@@ -17,7 +17,6 @@ use crate::{
     ContractError,
 };
 
-
 pub struct SwapParams {
     pub token_in_amount: Uint128,
     pub token_in_denom: String,
@@ -77,11 +76,7 @@ pub fn _estimate_swap(
 
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
-pub fn swap(
-    deps: DepsMut,
-    env: &Env,
-    params: SwapParams,
-) -> Result<CosmosMsg, ContractError> {
+pub fn swap(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMsg, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
@@ -132,15 +127,13 @@ pub fn swap(
             // if we need to force the route
             if params.force_swap_route {
                 match params.recommended_swap_route {
-                    Some(recommended_swap_route) => {
-                        execute_swap_operations(
-                            dex_router_address,
-                            recommended_swap_route,
-                            params.token_out_min_amount,
-                            &token_in_denom.clone(),
-                            params.token_in_amount,
-                        )
-                    }
+                    Some(recommended_swap_route) => execute_swap_operations(
+                        dex_router_address,
+                        recommended_swap_route,
+                        params.token_out_min_amount,
+                        &token_in_denom.clone(),
+                        params.token_in_amount,
+                    ),
                     None => Err(ContractError::TryForceRouteWithoutRecommendedSwapRoute {}),
                 }
             } else if best_out.is_zero() && recommended_out.is_zero() {
@@ -170,15 +163,13 @@ pub fn swap(
                 )
             }
         }
-        None => {
-            Ok(swap_exact_amount_in(
-                env,
-                pool_route,
-                params.token_in_amount,
-                &token_in_denom.clone(),
-                params.token_out_min_amount,
-            ))
-        }
+        None => Ok(swap_exact_amount_in(
+            env,
+            pool_route,
+            params.token_in_amount,
+            &token_in_denom.clone(),
+            params.token_out_min_amount,
+        )),
     };
     swap_msg
 }
@@ -254,7 +245,6 @@ mod tests {
         let deps_mut = deps.as_mut();
 
         let env = mock_env();
-        
 
         let token_in_amount = Uint128::new(100);
         let token_in_denom = "token0".to_string();
@@ -264,22 +254,16 @@ mod tests {
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
-        
-            let swap_params = SwapParams{
-                token_in_amount,
-                token_out_min_amount,
-                token_in_denom,
-                token_out_denom,
-                recommended_swap_route: None,
-                force_swap_route: false
-            };
+        let swap_params = SwapParams {
+            token_in_amount,
+            token_out_min_amount,
+            token_in_denom,
+            token_out_denom,
+            recommended_swap_route: None,
+            force_swap_route: false,
+        };
 
-        let result = super::swap(
-            deps_mut,
-            &env,
-            swap_params
-        )
-        .unwrap();
+        let result = super::swap(deps_mut, &env, swap_params).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =
@@ -315,25 +299,20 @@ mod tests {
         let token_out_min_amount = Uint128::new(100);
         let token_out_denom = "token1".to_string();
 
-        let swap_params = SwapParams{
+        let swap_params = SwapParams {
             token_in_amount,
             token_out_min_amount,
             token_in_denom,
             token_out_denom,
             recommended_swap_route: None,
-            force_swap_route: false
+            force_swap_route: false,
         };
 
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
 
-        let err = super::swap(
-            deps_mut,
-            &env,
-            swap_params
-        )
-        .unwrap_err();
+        let err = super::swap(deps_mut, &env, swap_params).unwrap_err();
 
         assert_eq!(
             err.to_string(),

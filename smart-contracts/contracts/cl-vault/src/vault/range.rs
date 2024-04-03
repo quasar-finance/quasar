@@ -394,23 +394,18 @@ pub fn do_swap_deposit_merge(
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
-    
-    let swap_params = SwapParams{
-        token_in_amount:swap_amount,
+    let swap_params = SwapParams {
+        token_in_amount: swap_amount,
         token_out_min_amount,
         token_in_denom,
         token_out_denom,
         recommended_swap_route: mrs.recommended_swap_route,
-        force_swap_route: mrs.force_swap_route.unwrap_or(false)
+        force_swap_route: mrs.force_swap_route.unwrap_or(false),
     };
 
     let token_in_denom = swap_params.token_in_denom.clone();
 
-    let swap_msg = swap(
-        deps,
-        &env,
-        swap_params
-    )?;
+    let swap_msg = swap(deps, &env, swap_params)?;
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
