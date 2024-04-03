@@ -296,3 +296,23 @@ when the current price is within the range
 and then we will _ideally_ be able to divide the two equations by each other, this would cancel out the liquidity amount and leave us directly with a ratio that we can return.
 
 It is not a huge improvement, but it may avoid some issues in the future.
+
+## Getting the min ratio per position
+
+We start by looking at the formulas that would give amount_0 and amount_1 for a given position.
+
+asset0:
+$$asset_0 = \frac{L\cdot|\sqrt{P_u} - \sqrt{P_s}|} {\sqrt{P_s} \cdot \sqrt{P_u}}$$
+
+asset1:
+$$asset_1 = \frac{L} {|\sqrt{P_s} - \sqrt{P_l}|}$$
+
+where $P_s$ is the current price, $P_u$ is the upper price, and $P_l$ is the lower price.
+
+to get the position ratio, we can simply divide these two formulas by each other:
+
+$$\frac{asset_0}{asset_1} = \frac{\frac{L\cdot|\sqrt{P_u} - \sqrt{P_s}|} {\sqrt{P_s} \cdot \sqrt{P_u}}}{\frac{L} {|\sqrt{P_s} - \sqrt{P_l}|}}$$
+
+and after some simplification, we get:
+
+$$\frac{asset_0}{asset_1} = \frac{|\sqrt{P_s} - \sqrt{P_l}|\cdot|\sqrt{P_u} - \sqrt{P_s}|}{\sqrt{P_s} \cdot \sqrt{P_u}}$$
