@@ -12,11 +12,7 @@ use osmosis_std::{
 };
 
 use crate::{
-    helpers::must_pay_one_or_two,
-    query::query_total_assets,
-    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::get_position,
-    ContractError,
+    debug, helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -51,14 +47,17 @@ pub(crate) fn execute_exact_deposit(
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
     println!("deposit: {:?}", deposit);
-    // calculate the amount of shares we can mint for this
-    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
-    let total_assets_value = get_asset0_value(
-        deps.storage,
-        &deps.querier,
-        total_assets.token0.amount,
-        total_assets.token1.amount,
-    )?;
+
+    // ----- debug
+
+    let pm_querier = PoolmanagerQuerier::new(&deps.querier);
+    let spot_price: Decimal = pm_querier
+        .spot_price(pool.pool_id, pool.clone().token0, pool.clone().token1)?
+        .spot_price
+        .parse()?;
+    debug!(deps, "spot price", spot_price);
+    
+    // -----
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
@@ -70,6 +69,15 @@ pub(crate) fn execute_exact_deposit(
         .into();
 
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
+
+        // calculate the amount of shares we can mint for this
+        let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+        let total_assets_value = get_asset0_value(
+            deps.storage,
+            &deps.querier,
+            total_assets.token0.amount,
+            total_assets.token1.amount,
+        )?.checked_sub(user_value)?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
@@ -156,6 +164,9 @@ fn get_depositable_tokens(
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
+    debug!(deps, "position", position);
+
+
     match (position.asset0, position.asset1) {
         (None, _) => Ok((
             (Uint128::zero(), token1.amount),
@@ -181,8 +192,9 @@ fn get_depositable_tokens(
         (Some(asset0), Some(asset1)) => {
             let token0 = token0.amount;
             let token1 = token1.amount;
-            let tokens = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
-            let ratio = Decimal::from_ratio(tokens[0].amount, tokens[1].amount);
+            let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+            let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
+            println!("{:?}", ratio);
 
             // TODO make sure that this works correctly, also
             let zero_usage: Uint128 = ((Uint256::from(token0)
@@ -268,6 +280,30 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+fn test_position_in_both_asset() {
+    let token0 = Coin {
+        denom: "token0".to_string(),
+        amount: Uint128::new(1_000_000_000u128),
+    };
+    let token1 = Coin {
+        denom: "token1".to_string(),
+        amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
+    };
+
+    let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+    let mutdeps = deps.as_mut();
+
+    let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
+    assert_eq!(
+        result,
+        (
+            (Uint128::new(1_000_000_000u128), Uint128::new(100_000_000_000_000_000_000_000_000_000u128)),
+            (Uint128::zero(), Uint128::zero())
+        )
+    );
+}
 
     #[test]
     fn test_position_in_asset1_only() {
