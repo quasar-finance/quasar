@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_binary, Addr, Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage, Uint128, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, QuerierWrapper, Storage, Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg, QueryMsg},
@@ -202,7 +202,7 @@ fn execute_swap_operations(
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_binary(&ExecuteMsg::ExecuteSwapOperations {
+        msg: to_json_binary(&ExecuteMsg::ExecuteSwapOperations {
             operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,
