@@ -3,7 +3,8 @@ mod tests {
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, Binary, Coin, CosmosMsg, Empty, IbcMsg, MessageInfo, StdError, Uint128,
+        to_json_binary, Addr, Binary, Coin, CosmosMsg, Empty, IbcMsg, MessageInfo, StdError,
+        Uint128,
     };
     use proptest::prelude::*;
     use prost::Message;
@@ -245,7 +246,7 @@ mod tests {
             };
 
             // simulate that we received the ICQ ACK
-            let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+            let res = handle_icq_ack(deps.as_mut().storage, env, to_json_binary(&ibc_ack).unwrap()).unwrap();
 
             // get the pending bonds total amount
             let pending_total_amount = pending_bonds.iter().fold(Uint128::zero(), |acc, bond| {

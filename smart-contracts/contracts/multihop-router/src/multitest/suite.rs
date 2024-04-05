@@ -6,7 +6,7 @@ use crate::{
     multitest::common::*,
     route::{Route, RouteId},
 };
-use cosmwasm_std::{testing::MockApi, to_binary, Addr, CosmosMsg, MemoryStorage, WasmMsg};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, CosmosMsg, MemoryStorage, WasmMsg};
 use cw_multi_test::{
     App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, StakeKeeper, WasmKeeper,
 };
@@ -92,7 +92,7 @@ impl QuasarVaultSuite {
             sender,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: self.router.to_string(),
-                msg: to_binary(&msg)?,
+                msg: to_json_binary(&msg)?,
                 funds,
             }),
         )

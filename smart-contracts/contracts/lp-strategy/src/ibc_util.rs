@@ -81,7 +81,7 @@ pub fn parse_join_pool(
 
 pub fn consolidate_exit_pool_amount_into_local_denom(
     storage: &mut dyn Storage,
-    exit_pool_unbonds: &Vec<OsmoCoin>,
+    exit_pool_unbonds: &[OsmoCoin],
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
