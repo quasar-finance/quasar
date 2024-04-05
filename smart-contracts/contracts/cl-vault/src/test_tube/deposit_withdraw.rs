@@ -83,6 +83,15 @@ mod tests {
             .unwrap();
         assert!(!shares.balance.is_zero());
 
+        let user_value: AssetsBalanceResponse = wasm.query(contract_address.as_str(), &QueryMsg::ConvertToAssets { amount: shares.balance }).unwrap();
+        println!("{:?}", user_value);
+
+        assert_approx_eq!(
+            user_value.balances[0].amount,
+            Uint128::from(627_000_000_000_000u128), // TODO: remove hardcoded
+            "0.1"
+        );
+
         // Get user_assets for Alice from vault contract and assert
         let user_assets: AssetsBalanceResponse = wasm
             .query(

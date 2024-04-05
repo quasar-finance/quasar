@@ -83,11 +83,16 @@ pub(crate) fn execute_exact_deposit(
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         user_value
     } else {
+        debug!(deps, "else case");
+        debug!(deps, "user_value", user_value);
+        debug!(deps, "total_assets_value", total_assets_value);
+        debug!(deps, "total_vault_shares", total_vault_shares);
         total_vault_shares
             .checked_mul(user_value.into())?
             .checked_div(total_assets_value.into())?
             .try_into()?
     };
+    debug!(deps, "user_shares", user_shares);
 
     // save the shares in the user map
     SHARES.update(

@@ -23,4 +23,7 @@ macro_rules! debug {
     ($deps: ident, $tag:literal, $($arg:tt)*) => {
         $deps.api.debug(format!(concat!($tag, " :{:?}"), $($arg)*).as_str())
     };
+    ($deps: ident, $tag:literal) => {
+        $deps.api.debug($tag)
+    };
 }
