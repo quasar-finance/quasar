@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, IbcBasicResponse, IbcMsg,
+    entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, IbcBasicResponse, IbcMsg,
     IbcTimeout, MessageInfo, Reply, Response, StdError, StdResult, Storage,
 };
 
@@ -117,7 +117,7 @@ pub fn confirm_transfer(deps: DepsMut) -> Result<IbcBasicResponse, ContractError
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::State {} => to_binary(&query_state(deps)?),
+        QueryMsg::State {} => to_json_binary(&query_state(deps)?),
     }
 }
 

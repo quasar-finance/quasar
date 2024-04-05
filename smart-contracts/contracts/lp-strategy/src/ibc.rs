@@ -31,6 +31,7 @@ use osmosis_std::types::osmosis::gamm::v1beta1::{
 };
 use std::str::FromStr;
 
+#[allow(deprecated)]
 use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
 use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
 use prost::Message;
@@ -44,7 +45,7 @@ use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 
 use cosmwasm_std::{
-    from_binary, to_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    from_json, to_json_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
     IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg, IbcReceiveResponse, IbcTimeout,
     QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
@@ -363,7 +364,7 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let ack: InterchainQueryPacketAck = from_binary(&ack_bin)?;
+    let ack: InterchainQueryPacketAck = from_json(ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
@@ -402,6 +403,7 @@ pub fn handle_icq_ack(
     let exit_total_pool =
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].value.as_ref())?;
 
+    #[allow(deprecated)]
     let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
 
     let mut response_idx = 4;
@@ -681,7 +683,7 @@ fn handle_lock_tokens_ack(
         {
             let wasm_msg = WasmMsg::Execute {
                 contract_addr: claim.owner.to_string(),
-                msg: to_binary(&Callback::BondResponse(BondResponse {
+                msg: to_json_binary(&Callback::BondResponse(BondResponse {
                     share_amount,
                     bond_id: claim.bond_id.clone(),
                 }))?,
@@ -1099,7 +1101,7 @@ mod tests {
         let _res = handle_icq_ack(
             deps.as_mut().storage,
             env.clone(),
-            to_binary(&ibc_ack).unwrap(),
+            to_json_binary(&ibc_ack).unwrap(),
         )
         .unwrap();
 
@@ -1159,8 +1161,12 @@ mod tests {
         };
 
         // simulate that we received another ICQ ACK, shouldn't return any messages
-        let _res =
-            handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+        let _res = handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            to_json_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
 
         assert_eq!(
             SIMULATED_EXIT_RESULT

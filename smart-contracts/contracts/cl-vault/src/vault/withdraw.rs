@@ -40,10 +40,7 @@ pub fn execute_withdraw(
     // let shares = must_pay(&info, vault_denom.as_str())?;
 
     // get the amount from SHARES state
-    let user_shares: Uint256 = SHARES
-        .load(deps.storage, info.sender.clone())?
-        .try_into()
-        .unwrap();
+    let user_shares: Uint256 = SHARES.load(deps.storage, info.sender.clone())?.into();
 
     let left_over = user_shares
         .checked_sub(shares_to_withdraw)
@@ -64,13 +61,8 @@ pub fn execute_withdraw(
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
-        .try_into()
-        .unwrap();
-    let dust1: Uint256 = unused_balances
-        .find_coin(pool_config.token1)
-        .amount
-        .try_into()
-        .unwrap();
+        .into();
+    let dust1: Uint256 = unused_balances.find_coin(pool_config.token1).amount.into();
 
     let user_dust0: Uint128 = dust0
         .checked_mul(shares_to_withdraw)?
