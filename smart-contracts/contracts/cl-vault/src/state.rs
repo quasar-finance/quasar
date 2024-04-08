@@ -122,6 +122,7 @@ pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
+pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr)> = Item::new("current_swap_any_deposit");
 
 #[cw_serde]
 pub struct ModifyRangeState {

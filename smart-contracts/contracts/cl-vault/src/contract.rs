@@ -19,7 +19,7 @@ use crate::state::{
     VAULT_CONFIG,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
-use crate::vault::deposit::execute_exact_deposit;
+use crate::vault::deposit::{execute_exact_deposit};
 
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
@@ -36,6 +36,7 @@ use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
+use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -63,8 +64,10 @@ pub fn execute(
         cw_vault_multi_standard::VaultStandardExecuteMsg::AnyDeposit {
             amount: _,
             asset: _,
-            recipient: _,
-        } => unimplemented!(),
+            recipient,
+        } => {
+            execute_any_deposit(deps, env, info, recipient)
+        },
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
             execute_exact_deposit(deps, env, info, recipient)
         }
@@ -192,6 +195,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Redeposit => handle_redeposit_reply(deps, env, msg.result),
+        Replies::AnyDepositSwap => handle_any_deposit_swap_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }

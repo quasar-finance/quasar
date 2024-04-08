@@ -31,6 +31,8 @@ pub enum Replies {
     CreatePositionMerge,
     /// reply for final swap success in auto compound
     Redeposit,
+    /// handle exact deposit swap reply
+    AnyDepositSwap,
     #[default]
     Unknown,
 }

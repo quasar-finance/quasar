@@ -34,6 +34,7 @@ pub mod initialize {
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
     const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
+    const TOKENS_PROVIDED_AMOUNT_1: &str = "100000000000000000000";
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
     const DENOM_REWARD: &str = "ustride";
@@ -62,6 +63,37 @@ pub mod initialize {
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
                     amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+        )
+    }
+
+    pub fn default_init_for_less_slippage() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+        init_test_contract(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            &[
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: DENOM_BASE.to_string(),
+                denom1: DENOM_QUOTE.to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_1.to_string(),
+                },
+                v1beta1::Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_1.to_string(),
                 },
             ],
             Uint128::zero(),
