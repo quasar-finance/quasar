@@ -1,20 +1,27 @@
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+};
+use cw2::set_contract_version;
+
 use crate::error::{ContractError, ContractResult};
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
-    query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance,
-    query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
+    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_user_rewards, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
     execute_collect_rewards, execute_distribute_rewards, handle_collect_incentives_reply,
-    handle_collect_spread_rewards_reply, CoinList,
+    handle_collect_spread_rewards_reply,
 };
 
-use crate::state::{RewardsStatus, CURRENT_TOTAL_SUPPLY, DISTRIBUTED_REWARDS, REWARDS_STATUS};
+use crate::state::{ModifyRangeState, DEX_ROUTER, MODIFY_RANGE_STATE, RANGE_ADMIN, VAULT_CONFIG};
 use crate::vault::admin::execute_admin;
 use crate::vault::claim::execute_claim_user_rewards;
 use crate::vault::deposit::{execute_exact_deposit, handle_deposit_create_position_reply};
@@ -27,12 +34,6 @@ use crate::vault::range::{
     handle_withdraw_position_reply,
 };
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, Uint128,
-};
-use cw2::set_contract_version;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -80,6 +81,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                 }) => execute_update_range(
                     deps,
                     env,
@@ -89,6 +92,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                 ),
                 crate::msg::ExtensionExecuteMsg::CollectRewards { amount_of_users } => {
                     execute_collect_rewards(deps, env, amount_of_users)
@@ -129,6 +134,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
             crate::msg::ExtensionQueryMsg::Metadata {} => {
                 Ok(to_json_binary(&query_metadata(deps)?)?)
+            }
+            crate::msg::ExtensionQueryMsg::DexRouter {} => {
+                Ok(to_json_binary(&query_dex_router(deps)?)?)
             }
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
@@ -187,9 +195,42 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    REWARDS_STATUS.save(deps.storage, &RewardsStatus::Ready)?;
-    DISTRIBUTED_REWARDS.save(deps.storage, &CoinList::new())?;
-    CURRENT_TOTAL_SUPPLY.save(deps.storage, &Uint128::zero())?;
-    Ok(Response::new().add_attribute("migrate", "successful"))
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    // Update range admin address
+    let new_range_admin_addr = deps.api.addr_validate(&msg.range_admin)?;
+    RANGE_ADMIN.save(deps.storage, &new_range_admin_addr)?;
+
+    // Set dex router address
+    let new_router_addr = deps.api.addr_validate(&msg.dex_router)?;
+    DEX_ROUTER.save(deps.storage, &new_router_addr)?;
+
+    // Update modify range state
+    let mut modify_range_state =
+        MODIFY_RANGE_STATE
+            .load(deps.storage)
+            .unwrap_or(Some(ModifyRangeState {
+                lower_tick: 0,
+                upper_tick: 0,
+                max_slippage: Decimal::zero(),
+                new_range_position_ids: vec![],
+                ratio_of_swappable_funds_to_use: Decimal::zero(),
+                twap_window_seconds: 0,
+                recommended_swap_route: None,
+                force_swap_route: false,
+            }));
+    if let Some(ref mut state) = modify_range_state {
+        state.recommended_swap_route = None;
+        state.force_swap_route = false;
+    }
+    MODIFY_RANGE_STATE.save(deps.storage, &modify_range_state)?;
+
+    // Update treasury address
+    let new_treasury_addr = deps.api.addr_validate(&msg.treasury_address)?;
+    let mut config = VAULT_CONFIG.load(deps.storage)?;
+    config.treasury = new_treasury_addr;
+    VAULT_CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "migrate")
+        .add_attribute("message", "migrated successfully"))
 }

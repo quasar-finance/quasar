@@ -1,11 +1,11 @@
-use cosmwasm_schema::cw_serde;
 use std::str::FromStr;
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
-
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
         MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
@@ -14,30 +14,27 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::get_twap_price,
-    helpers::get_unused_balances,
-    math::tick::price_to_tick,
-    msg::{ExecuteMsg, MergePositionMsg},
-    reply::Replies,
-    state::CURRENT_SWAP,
-    state::{
-        ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
-    },
-    vault::concentrated_liquidity::create_position,
-    vault::concentrated_liquidity::get_position,
-    vault::merge::MergeResponse,
-    vault::swap::swap,
-    ContractError,
-};
-use crate::{
     helpers::{
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
     },
+    helpers::{get_twap_price, get_unused_balances},
+    math::tick::price_to_tick,
+    msg::{ExecuteMsg, MergePositionMsg},
+    reply::Replies,
     state::CURRENT_BALANCE,
+    state::{
+        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
+        POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+    },
+    vault::{
+        concentrated_liquidity::{create_position, get_position},
+        merge::MergeResponse,
+        swap::swap,
+    },
+    ContractError,
 };
 
-use super::concentrated_liquidity::get_cl_pool_info;
+use super::{concentrated_liquidity::get_cl_pool_info, swap::SwapParams};
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
@@ -61,9 +58,15 @@ pub fn execute_update_range(
     max_slippage: Decimal,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
+    recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    force_swap_route: bool,
 ) -> Result<Response, ContractError> {
-    let lower_tick = price_to_tick(deps.storage, Decimal256::from(lower_price))?;
-    let upper_tick = price_to_tick(deps.storage, Decimal256::from(upper_price))?;
+    let lower_tick: i64 = price_to_tick(deps.storage, Decimal256::from(lower_price))?
+        .try_into()
+        .expect("Overflow when converting lower price to tick");
+    let upper_tick: i64 = price_to_tick(deps.storage, Decimal256::from(upper_price))?
+        .try_into()
+        .expect("Overflow when converting upper price to tick");
 
     // validate ratio of swappable funds to use
     if ratio_of_swappable_funds_to_use > Decimal::one()
@@ -72,16 +75,18 @@ pub fn execute_update_range(
         return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
     }
 
-    execute_update_range_ticks(
-        deps,
-        env,
-        info,
-        lower_tick.try_into().unwrap(),
-        upper_tick.try_into().unwrap(),
+    let modify_range_config = ModifyRangeState {
+        lower_tick,
+        upper_tick,
         max_slippage,
+        new_range_position_ids: vec![],
         ratio_of_swappable_funds_to_use,
         twap_window_seconds,
-    )
+        recommended_swap_route,
+        force_swap_route,
+    };
+
+    execute_update_range_ticks(deps, env, info, modify_range_config)
 }
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
@@ -94,11 +99,7 @@ pub fn execute_update_range_ticks(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    lower_tick: i64,
-    upper_tick: i64,
-    max_slippage: Decimal,
-    ratio_of_swappable_funds_to_use: Decimal,
-    twap_window_seconds: u64,
+    modify_range_config: ModifyRangeState,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
@@ -119,14 +120,7 @@ pub fn execute_update_range_ticks(
     MODIFY_RANGE_STATE.save(
         deps.storage,
         // todo: should ModifyRangeState be an enum?
-        &Some(ModifyRangeState {
-            lower_tick,
-            upper_tick,
-            new_range_position_ids: vec![],
-            max_slippage,
-            ratio_of_swappable_funds_to_use,
-            twap_window_seconds,
-        }),
+        &Some(modify_range_config),
     )?;
 
     Ok(Response::default()
@@ -374,32 +368,41 @@ pub fn do_swap_deposit_merge(
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
-    let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            pool_config.token0,
-            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-            balance0.checked_sub(swap_amount)?,
-        ),
-        SwapDirection::OneToZero => (
-            pool_config.token1,
-            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-            balance1.checked_sub(swap_amount)?,
-        ),
-    };
+    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
+        match swap_direction {
+            SwapDirection::ZeroToOne => (
+                pool_config.token0,
+                pool_config.token1,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+                balance0.checked_sub(swap_amount)?,
+            ),
+            SwapDirection::OneToZero => (
+                pool_config.token1,
+                pool_config.token0,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+                balance1.checked_sub(swap_amount)?,
+            ),
+        };
 
     CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
-
-    let swap_msg = swap(
-        deps,
-        &env,
-        swap_amount,
-        &token_in_denom,
+    let swap_params = SwapParams {
+        token_in_amount: swap_amount,
         token_out_min_amount,
-    )?;
+        token_in_denom,
+        token_out_denom,
+        recommended_swap_route: mrs.recommended_swap_route,
+        force_swap_route: mrs.force_swap_route,
+    };
+
+    let token_in_denom = swap_params.token_in_denom.clone();
+
+    let swap_msg = swap(deps, &env, swap_params)?;
 
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
@@ -409,23 +412,32 @@ pub fn do_swap_deposit_merge(
         .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
 
-// do deposit
 pub fn handle_swap_reply(
     deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // TODO: Remove handling of data. if we keep reply_on_success in the caller function
-    match data.clone() {
-        SubMsgResult::Ok(_msg) => handle_swap_success(deps, env, data.try_into()?),
-        SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
+    // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
+    let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
+
+    match resp {
+        Ok(msg) => {
+            // Proceed with handling the successful swap using token_out_amount
+            handle_swap_success(deps, env, msg.token_out_amount)
+        }
+        Err(_) => {
+            // If the data could not be parsed to MsgSwapExactAmountInResponse, return an error
+            Err(ContractError::SwapFailed {
+                message: "No token_out_amount found in swap response.".to_string(),
+            })
+        }
     }
 }
 
 fn handle_swap_success(
     deps: DepsMut,
     env: Env,
-    resp: MsgSwapExactAmountInResponse,
+    tokens_out: String,
 ) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
         Some(swap_deposit_merge) => swap_deposit_merge,
@@ -438,14 +450,8 @@ fn handle_swap_success(
 
     // get post swap balances to create positions with
     let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            left_over_amount,
-            Uint128::new(resp.token_out_amount.parse()?),
-        ),
-        SwapDirection::OneToZero => (
-            Uint128::new(resp.token_out_amount.parse()?),
-            left_over_amount,
-        ),
+        SwapDirection::ZeroToOne => (left_over_amount, Uint128::new(tokens_out.parse()?)),
+        SwapDirection::OneToZero => (Uint128::new(tokens_out.parse()?), left_over_amount),
     };
     // Create the position after swapped the leftovers based on swap direction
     let mut coins_to_send = vec![];
@@ -626,6 +632,8 @@ mod tests {
             max_slippage,
             Decimal::one(),
             45,
+            None,
+            false,
         )
         .unwrap();
 
@@ -662,6 +670,8 @@ mod tests {
                     max_slippage: Decimal::zero(),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
+                    recommended_swap_route: None,
+                    force_swap_route: false,
                 }),
             )
             .unwrap();
@@ -723,6 +733,8 @@ mod tests {
                     max_slippage: Decimal::zero(),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
+                    recommended_swap_route: None,
+                    force_swap_route: false,
                 }),
             )
             .unwrap();

@@ -1,12 +1,12 @@
-use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
-    Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
-};
+use std::num::ParseIntError;
 
+use cosmwasm_std::{
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, CoinFromStrError,
+    ConversionOverflowError, Decimal256, Decimal256RangeExceeded, DivideByZeroError, OverflowError,
+    StdError, Uint128,
+};
 use cw_utils::PaymentError;
 use thiserror::Error;
-
-use std::num::ParseIntError;
 
 pub type ContractResult<T> = Result<T, ContractError>;
 
@@ -69,6 +69,9 @@ pub enum ContractError {
     DecodeError(#[from] prost::DecodeError),
 
     #[error("{0}")]
+    CoinFromStrError(#[from] CoinFromStrError),
+
+    #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
 
     #[error("This message does no accept funds")]
@@ -129,4 +132,7 @@ pub enum ContractError {
 
     #[error("Vault is not distributing rewards, claiming is needed first")]
     IsNotDistributing {},
+
+    #[error("Cannot force a recommended route if recommended route is passed in as None")]
+    TryForceRouteWithoutRecommendedSwapRoute {},
 }

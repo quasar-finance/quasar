@@ -235,7 +235,7 @@ pub fn prepare_full_query(
 pub fn calc_total_balance(
     storage: &mut dyn Storage,
     ica_balance: Uint128,
-    exit_pool: &Vec<OsmoCoin>,
+    exit_pool: &[OsmoCoin],
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;

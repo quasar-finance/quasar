@@ -4,7 +4,6 @@ use cosmwasm_std::{
     attr, coin, to_json_binary, Attribute, BankMsg, Coin, Decimal256, DepsMut, Env, Fraction,
     MessageInfo, Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
-
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
     osmosis::{

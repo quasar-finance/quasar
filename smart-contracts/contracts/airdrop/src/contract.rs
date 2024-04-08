@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult, Uint128,
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
+    Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::msg::MigrateMsg;
