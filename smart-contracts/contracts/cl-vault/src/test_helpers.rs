@@ -2,11 +2,10 @@ use std::marker::PhantomData;
 
 use cosmwasm_std::testing::{BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, BankQuery, Binary, Coin, ContractResult as CwContractResult,
+    from_json, to_json_binary, Addr, BankQuery, Binary, Coin, ContractResult as CwContractResult,
     Decimal, Empty, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
-
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceResponse};
 use osmosis_std::types::osmosis::twap::v1beta1::ArithmeticTwapToNowResponse;
@@ -19,6 +18,7 @@ use osmosis_std::types::{
 
 use crate::math::tick::tick_to_price;
 use crate::state::{PoolConfig, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
+
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
@@ -49,7 +49,7 @@ impl QuasarQuerier {
 
 impl Querier for QuasarQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
-        let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
+        let request: QueryRequest<Empty> = from_json(&Binary::from(bin_request)).unwrap();
         match request {
             QueryRequest::Stargate { path, data } => match path.as_str() {
                 "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
@@ -58,7 +58,7 @@ impl Querier for QuasarQuerier {
                     let position_id = position_by_id_request.position_id;
                     if position_id == self.position.position.clone().unwrap().position_id {
                         QuerierResult::Ok(CwContractResult::Ok(
-                            to_binary(&PositionByIdResponse {
+                            to_json_binary(&PositionByIdResponse {
                                 position: Some(self.position.clone()),
                             })
                             .unwrap(),
@@ -74,7 +74,7 @@ impl Querier for QuasarQuerier {
                         prost::Message::decode(data.as_slice()).unwrap();
                     let denom = query_supply_of_request.denom;
                     QuerierResult::Ok(CwContractResult::Ok(
-                        to_binary(&QuerySupplyOfResponse {
+                        to_json_binary(&QuerySupplyOfResponse {
                             amount: Some(OsmoCoin {
                                 denom,
                                 amount: 100000.to_string(),
@@ -84,16 +84,16 @@ impl Querier for QuasarQuerier {
                     ))
                 }
                 "/cosmos.bank.v1beta.Query/Balance" => {
-                    let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
+                    let query: BankQuery = from_json(&Binary::from(bin_request)).unwrap();
                     self.bank.query(&query)
                 }
                 "/cosmos.bank.v1beta.Query/AllBalances" => {
-                    let query: BankQuery = from_binary(&Binary::from(bin_request)).unwrap();
+                    let query: BankQuery = from_json(&Binary::from(bin_request)).unwrap();
                     self.bank.query(&query)
                 }
                 "/osmosis.poolmanager.v1beta1.Query/Pool" => {
                     QuerierResult::Ok(CwContractResult::Ok(
-                        to_binary(&PoolResponse {
+                        to_json_binary(&PoolResponse {
                             pool: Some(
                                 Pool {
                                     address: "idc".to_string(),
@@ -118,7 +118,7 @@ impl Querier for QuasarQuerier {
                 }
                 "/osmosis.poolmanager.v1beta1.Query/SpotPrice" => {
                     QuerierResult::Ok(CwContractResult::Ok(
-                        to_binary(&SpotPriceResponse {
+                        to_json_binary(&SpotPriceResponse {
                             spot_price: tick_to_price(self.current_tick).unwrap().to_string(),
                         })
                         .unwrap(),
@@ -126,7 +126,7 @@ impl Querier for QuasarQuerier {
                 }
                 "/osmosis.twap.v1beta1.Query/ArithmeticTwapToNow" => {
                     QuerierResult::Ok(CwContractResult::Ok(
-                        to_binary(&ArithmeticTwapToNowResponse {
+                        to_json_binary(&ArithmeticTwapToNowResponse {
                             arithmetic_twap: tick_to_price(self.current_tick).unwrap().to_string(),
                         })
                         .unwrap(),
@@ -141,7 +141,7 @@ impl Querier for QuasarQuerier {
                 kind: format!("Unmocked query type: {request:?}"),
             }),
         }
-        // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
+        // QuerierResult::Ok(ContractResult::Ok(to_json_binary(&"hello").unwrap()))
     }
 }
 

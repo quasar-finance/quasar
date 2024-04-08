@@ -1,12 +1,15 @@
 [workspace]
+resolver = "2"
 
 members = [
-  "contracts/airdrop",
+  # "contracts/airdrop",
   "contracts/lp-strategy",
   "contracts/basic-vault",
   "contracts/vault-rewards",
   "contracts/multihop-router",
   "contracts/cl-vault",
+  "contracts/range-middleware",
+  "packages/quasar-types",
   "contracts/merkle-incentives",
   "packages/quasar-types"
 ]

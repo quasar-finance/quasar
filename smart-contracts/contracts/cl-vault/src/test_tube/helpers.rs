@@ -24,3 +24,20 @@ pub fn get_event_value_amount_numeric(value: &String) -> u128 {
     // Try to parse the numeric string to u128
     numeric_part.parse::<u128>().unwrap()
 }
+
+pub fn _extract_attribute_value_by_ty_and_key(
+    events: Vec<cosmwasm_std::Event>,
+    ty: &str,
+    key: &str,
+) -> Option<String> {
+    events
+        .iter()
+        .find(|event| event.ty == ty)
+        .and_then(|event| {
+            event
+                .attributes
+                .iter()
+                .find(|attr| attr.key == key)
+                .map(|attr| attr.value.clone())
+        })
+}
