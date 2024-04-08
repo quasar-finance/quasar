@@ -1,3 +1,0 @@
-[alias]
-c = "check --tests"
-t = "test -- --ignored --test-threads 1"
