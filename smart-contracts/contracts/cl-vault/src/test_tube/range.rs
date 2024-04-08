@@ -14,14 +14,13 @@ mod test {
         },
     };
     use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
+    use prost::Message;
 
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
         test_tube::initialize::initialize::init_test_contract,
     };
-
-    use prost::Message;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
     const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
@@ -136,7 +135,7 @@ mod test {
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         recommended_swap_route: None,
-                        force_swap_route: None,
+                        force_swap_route: false,
                     },
                 )),
                 &[],
@@ -253,7 +252,7 @@ mod test {
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         recommended_swap_route: None,
-                        force_swap_route: None,
+                        force_swap_route: false,
                     },
                 )),
                 &[],

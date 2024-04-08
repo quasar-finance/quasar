@@ -77,7 +77,7 @@ pub struct ModifyRangeMsg {
     /// recommended swap route to take
     pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
     /// whether or not to force the swap route
-    pub force_swap_route: Option<bool>,
+    pub force_swap_route: bool,
 }
 
 #[cw_serde]
@@ -157,5 +157,6 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub struct MigrateMsg {
     pub range_admin: String,
+    pub treasury_address: String,
     pub dex_router: String,
 }

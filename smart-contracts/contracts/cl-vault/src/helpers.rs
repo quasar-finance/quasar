@@ -1,5 +1,9 @@
 use std::str::FromStr;
 
+use osmosis_std::shim::Timestamp as OsmoTimestamp;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
+
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS, USER_REWARDS};
@@ -9,10 +13,6 @@ use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     QuerierWrapper, Storage, Uint128, Uint256,
 };
-
-use osmosis_std::shim::Timestamp as OsmoTimestamp;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
@@ -471,7 +471,6 @@ pub fn extract_attribute_value_by_ty_and_key(
 
 #[cfg(test)]
 mod tests {
-
     use std::collections::HashMap;
 
     use cosmwasm_std::{coin, testing::mock_dependencies, Addr};

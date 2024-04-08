@@ -128,7 +128,7 @@ pub struct ModifyRangeState {
     // the recommended path to take for the swap
     pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
     // whether or not to force the swap route
-    pub force_swap_route: Option<bool>,
+    pub force_swap_route: bool,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

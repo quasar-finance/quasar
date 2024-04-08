@@ -148,7 +148,7 @@ pub fn execute_new_range(
                 max_slippage: params.max_slippage,
                 ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
                 twap_window_seconds: params.twap_window_seconds,
-                force_swap_route: Some(params.force_swap_route),
+                force_swap_route: params.force_swap_route,
                 recommended_swap_route: Some(params.recommended_swap_route),
             }),
         ))?,

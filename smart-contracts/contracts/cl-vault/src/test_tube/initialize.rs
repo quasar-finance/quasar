@@ -253,7 +253,7 @@ pub mod initialize {
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
                     recommended_swap_route: None,
-                    force_swap_route: None,
+                    force_swap_route: false,
                 },
             )),
             &[],

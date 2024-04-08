@@ -1,13 +1,12 @@
+use std::num::ParseIntError;
+
 use cosmwasm_std::{
     CheckedFromRatioError, CheckedMultiplyRatioError, Coin, CoinFromStrError,
     ConversionOverflowError, Decimal256, Decimal256RangeExceeded, DivideByZeroError, OverflowError,
     StdError, Uint128,
 };
-
 use cw_utils::PaymentError;
 use thiserror::Error;
-
-use std::num::ParseIntError;
 
 pub type ContractResult<T> = Result<T, ContractError>;
 

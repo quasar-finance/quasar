@@ -1,12 +1,11 @@
-use cosmwasm_schema::cw_serde;
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use std::str::FromStr;
 
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
-
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
         MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
@@ -16,9 +15,13 @@ use osmosis_std::types::osmosis::{
 
 use crate::{
     helpers::{extract_attribute_value_by_ty_and_key, get_twap_price, get_unused_balances},
+    helpers::{
+        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+    },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
+    state::CURRENT_BALANCE,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
         POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
@@ -29,12 +32,6 @@ use crate::{
         swap::swap,
     },
     ContractError,
-};
-use crate::{
-    helpers::{
-        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
-    },
-    state::CURRENT_BALANCE,
 };
 
 use super::{concentrated_liquidity::get_cl_pool_info, swap::SwapParams};
@@ -62,7 +59,7 @@ pub fn execute_update_range(
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
     recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    force_swap_route: Option<bool>,
+    force_swap_route: bool,
 ) -> Result<Response, ContractError> {
     let lower_tick: i64 = price_to_tick(deps.storage, Decimal256::from(lower_price))?
         .try_into()
@@ -400,7 +397,7 @@ pub fn do_swap_deposit_merge(
         token_in_denom,
         token_out_denom,
         recommended_swap_route: mrs.recommended_swap_route,
-        force_swap_route: mrs.force_swap_route.unwrap_or(false),
+        force_swap_route: mrs.force_swap_route,
     };
 
     let token_in_denom = swap_params.token_in_denom.clone();
@@ -654,7 +651,7 @@ mod tests {
             Decimal::one(),
             45,
             None,
-            None,
+            false,
         )
         .unwrap();
 
@@ -692,7 +689,7 @@ mod tests {
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
                     recommended_swap_route: None,
-                    force_swap_route: None,
+                    force_swap_route: false,
                 }),
             )
             .unwrap();
@@ -755,7 +752,7 @@ mod tests {
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
                     recommended_swap_route: None,
-                    force_swap_route: None,
+                    force_swap_route: false,
                 }),
             )
             .unwrap();
