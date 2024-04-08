@@ -78,6 +78,11 @@ pub struct VerifyTickCacheResponse {
     pub result: Result<(), i64>,
 }
 
+#[cw_serde]
+pub struct DexRouterResponse {
+    pub dex_router: String,
+}
+
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
     verify_tick_exp_cache(deps.storage)
         .err()
@@ -113,13 +118,12 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
     })
 }
 
-pub fn query_dex_router(deps: Deps) -> ContractResult<Option<String>> {
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+pub fn query_dex_router(deps: Deps) -> ContractResult<DexRouterResponse> {
+    let dex_router = DEX_ROUTER.load(deps.storage)?;
 
-    match dex_router {
-        Some(dex_router) => Ok(Some(dex_router.to_string())),
-        _ => Ok(None),
-    }
+    Ok(DexRouterResponse {
+        dex_router: dex_router.to_string(),
+    })
 }
 
 pub fn query_info(deps: Deps) -> ContractResult<VaultInfoResponse> {
