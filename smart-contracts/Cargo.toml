@@ -5,14 +5,16 @@ members = [
   # "contracts/icq",
   # "contracts/ibc-transfer",
   # "contracts/intergamm-bindings-test",
+  # "contracts/airdrop",
+  # "contracts/lp-strategy",
+  # "contracts/basic-vault",
+  # "contracts/vault-rewards",
+  # "contracts/multihop-router",
+  # "packages/quasar-types",
   # "packages/intergamm-bindings",
-  "contracts/airdrop",
-  "contracts/lp-strategy",
-  "contracts/basic-vault",
-  "contracts/vault-rewards",
-  "contracts/multihop-router",
   "contracts/cl-vault",
-  "packages/quasar-types",
+  "contracts/merkle-incentives",
+  "contracts/range-middleware",
 ]
 
 [workspace.dependencies]
@@ -46,6 +48,7 @@ prost = {version = "0.12.3", default-features = false, features = ["std"]}
 serde-json-wasm = {version = "1.0.1", default-features = false}
 itertools = "0.12.1"
 num_enum = "0.7.2"
+base64 = "0.22.0"
 
 # Testing
 cw-multi-test = "0.20.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}
