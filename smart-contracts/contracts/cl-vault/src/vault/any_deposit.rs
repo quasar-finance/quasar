@@ -1,13 +1,11 @@
-use cosmwasm_std::{attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Response, Storage, Uint128, Uint256, SubMsg, SubMsgResult};
+use cosmwasm_std::{attr, coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, Storage, Uint128, Uint256, SubMsg, SubMsgResult};
 
 use osmosis_std::{
-    try_proto_to_cosmwasm_coins,
     types::{
         cosmos::bank::v1beta1::BankQuerier,
-        osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, tokenfactory::v1beta1::MsgMint},
+        osmosis::tokenfactory::v1beta1::MsgMint,
     },
 };
-use osmosis_std::types::osmosis::gamm::v1beta1::MsgSwapExactAmountIn;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 
 use crate::{helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError, debug};
@@ -158,8 +156,9 @@ pub(crate) fn execute_any_deposit(
         ),
     };
 
-    CURRENT_SWAP_ANY_DEPOSIT.save(deps.storage, &(swap_direction, left_over_amount, recipient))?;
+    CURRENT_SWAP_ANY_DEPOSIT.save(deps.storage, &(swap_direction, left_over_amount, recipient, deposit_amount_in_ratio))?;
 
+    // todo : how do we give slippage here? hardcoded as of now
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
 
@@ -187,7 +186,7 @@ pub (crate) fn handle_any_deposit_swap_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let resp: MsgSwapExactAmountInResponse = data.try_into()?;
-    let (swap_direction, left_over_amount, recipient) = CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
+    let (swap_direction, left_over_amount, recipient, deposit_amount_in_ratio) = CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
@@ -203,17 +202,17 @@ pub (crate) fn handle_any_deposit_swap_reply(
         ),
     };
     // Create the position after swapped the leftovers based on swap direction
-    let mut coins_to_send = vec![];
-    if !balance0.is_zero() {
-        coins_to_send.push(Coin {
+    let mut coins_to_mint_for = vec![];
+    if !balance0.is_zero() || !deposit_amount_in_ratio.0.is_zero() {
+        coins_to_mint_for.push(Coin {
             denom: pool_config.token0.clone(),
-            amount: balance0,
+            amount: balance0 + deposit_amount_in_ratio.0,
         });
     }
-    if !balance1.is_zero() {
-        coins_to_send.push(Coin {
+    if !balance1.is_zero() || !deposit_amount_in_ratio.1.is_zero() {
+        coins_to_mint_for.push(Coin {
             denom: pool_config.token1.clone(),
-            amount: balance1,
+            amount: balance1 + deposit_amount_in_ratio.1,
         });
     }
 
@@ -235,7 +234,7 @@ pub (crate) fn handle_any_deposit_swap_reply(
         .parse::<u128>()?
         .into();
 
-    let user_value = get_asset0_value(deps.storage, &deps.querier, coins_to_send[0].amount, coins_to_send[1].amount)?;
+    let user_value = get_asset0_value(deps.storage, &deps.querier, coins_to_mint_for[0].amount, coins_to_mint_for[1].amount)?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
@@ -243,7 +242,7 @@ pub (crate) fn handle_any_deposit_swap_reply(
     } else {
         total_vault_shares
             .checked_mul(user_value.into())?
-            .checked_div(total_assets_value.into())?
+            .checked_div(total_assets_value.checked_sub(user_value)?.into())?
             .try_into()?
     };
 
@@ -275,6 +274,8 @@ pub (crate) fn handle_any_deposit_swap_reply(
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.clone().contract.address.to_string(),
     };
+
+    CURRENT_SWAP_ANY_DEPOSIT.remove(deps.storage);
 
     Ok(Response::new()
         .add_attribute("method", "reply")

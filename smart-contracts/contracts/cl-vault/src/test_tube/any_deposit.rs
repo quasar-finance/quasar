@@ -4,7 +4,7 @@
 mod tests {
     use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::testing::mock_dependencies;
-    use cosmwasm_std::Coin;
+    use cosmwasm_std::{assert_approx_eq, Coin, Fraction};
     use cosmwasm_std::{Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -19,11 +19,12 @@ mod tests {
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
     use std::str::FromStr;
+    use osmosis_std::types::cosmos::orm::query::v1alpha1::index_value::Value::Uint;
 
     use crate::msg::ClQueryMsg::SharePrice;
-    use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
+    use crate::msg::UserBalanceQueryMsg::{UserAssetsBalance, UserSharesBalance};
     use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg};
-    use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
+    use crate::query::{SharePriceResponse, UserSharesBalanceResponse, AssetsBalanceResponse};
     use crate::state::USER_REWARDS;
     use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
     use crate::test_tube::initialize::initialize::{default_init, default_init_for_less_slippage, dex_cl_init_cl_pools, dex_cl_init_lp_pools};
@@ -56,17 +57,21 @@ mod tests {
             )
             .unwrap();
 
-        let mut shares_prices_ratio: Vec<Decimal> = vec![];
-        let mut spot_prices: Vec<Decimal> = vec![];
         for account in &accounts {
-            // // check for contract balance as it has not been redeposited yet
-            // let balance = bm
-            //     .query_all_balances(&QueryAllBalancesRequest {
-            //         address: contract_address.to_string(),
-            //         pagination: None,
-            //     })
-            //     .unwrap();
-            // println!("contract balance before any deposit: {:?}", balance);
+            let pm = PoolManager::new(&app);
+            let spot_price : Decimal = pm
+                .query_spot_price(&SpotPriceRequest {
+                    base_asset_denom: DENOM_BASE.to_string(),
+                    quote_asset_denom: DENOM_QUOTE.to_string(),
+                    pool_id: cl_pool_id,
+                })
+                .unwrap()
+                .spot_price
+                .parse()
+                .unwrap();
+
+            let total0 = Uint128::new(DEPOSIT_AMOUNT)
+                .checked_add(Uint128::new(DEPOSIT_AMOUNT).multiply_ratio(spot_price.denominator(), spot_price.numerator())).unwrap();
 
             let _ = wasm
                 .execute(
@@ -84,14 +89,19 @@ mod tests {
                 )
                 .unwrap();
 
-            // // check for contract balance as it has not been redeposited yet
-            // let balance = bm
-            //     .query_all_balances(&QueryAllBalancesRequest {
-            //         address: contract_address.to_string(),
-            //         pagination: None,
-            //     })
+
+            // todo fix shares after redeposit
+            // app.increase_time(10);
+            // let _result = wasm
+            //     .execute(
+            //         contract_address.as_str(),
+            //         &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Redeposit {}),
+            //         &[],
+            //         &admin,
+            //     )
             //     .unwrap();
-            // println!("contract balance after any deposit: {:?}", balance);
+            // app.increase_time(10);
+
 
             // Get shares for Alice from vault contract and assert
             let shares: UserSharesBalanceResponse = wasm
@@ -105,91 +115,36 @@ mod tests {
             assert!(!shares.balance.is_zero());
 
             // Get shares for Alice from vault contract and assert
-            let share_price: SharePriceResponse = wasm
+            let asset_balance: AssetsBalanceResponse = wasm
                 .query(
                     contract_address.as_str(),
-                    &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
-                        shares: shares.balance,
+                    &VaultExtension(ExtensionQueryMsg::Balances(UserAssetsBalance {
+                        user: account.address(),
                     })),
                 )
                 .unwrap();
 
-            // Get and assert spot price is 1.0
-            let pm = PoolManager::new(&app);
-            let spot_price = pm
+            let spot_price: Decimal = pm
                 .query_spot_price(&SpotPriceRequest {
                     base_asset_denom: DENOM_BASE.to_string(),
                     quote_asset_denom: DENOM_QUOTE.to_string(),
                     pool_id: cl_pool_id,
                 })
+                .unwrap()
+                .spot_price
+                .parse()
                 .unwrap();
 
-            println!("share ratio : {:?}, spot price : {:?}, shares assigned to user : {:?}", Decimal::from_ratio(share_price.balances[0].amount, share_price.balances[1].amount), spot_price.spot_price, shares);
-            shares_prices_ratio.push(Decimal::from_ratio(share_price.balances[0].amount, share_price.balances[1].amount));
-            spot_prices.push(Decimal::from_str(spot_price.spot_price.as_str()).unwrap());
-        }
 
-        // todo fix percentage change issue
-        println!("{:?}", spot_prices);
-        for i in (0..shares_prices_ratio.len() - 1).rev() {
-            let current_price = spot_prices[i] * Decimal::new(Uint128::new(10000000000000000000000000000000000000));
-            let next_price = spot_prices[i + 1] * Decimal::new(Uint128::new(10000000000000000000000000000000000000));
-            println!("{:?}", current_price);
-            println!("{:?}", next_price);
+            let total1 = asset_balance.balances[0].amount
+                .checked_add(asset_balance.balances[1].amount.multiply_ratio(spot_price.denominator(), spot_price.numerator())).unwrap();
 
-            // Calculate the percentage change
-            let percentage_change = (next_price - current_price) / current_price;
-
-            println!("Percentage change between {} and {} is {}", current_price, next_price, percentage_change);
-            // let current_price = shares_prices_ratio[i].clone();
-            // let next_price = shares_prices_ratio[i + 1].clone();
-            //
-            // // Calculate the percentage change
-            // let percentage_change = ((next_price - current_price) / current_price) * Decimal::new(Uint128::new(100));
-            //
-            // println!("Percentage change between {:?}", percentage_change);
-            //
-            // let current_price_1 = spot_prices[i].clone();
-            // let next_price_1 = spot_prices[i + 1].clone();
-            //
-            // // Calculate the percentage change
-            // let percentage_change = ((next_price_1 - current_price_1) / current_price_1.clone()) * Decimal::new(Uint128::new(100));
-            //
-            // println!("Percentage change between {:?}%", percentage_change);
-        }
-
-        // Declare swapper and claimer accounts
-        let ops_accounts = app
-            .init_accounts(
-                &[
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ],
-                2,
-            )
-            .unwrap();
-        let swapper = &ops_accounts[0];
-
-        // Swaps to generate spread rewards on previously created user positions
-        for _ in 0..SWAPS_NUM {
-            PoolManager::new(&app)
-                .swap_exact_amount_in(
-                    MsgSwapExactAmountIn {
-                        sender: swapper.address(),
-                        routes: vec![SwapAmountInRoute {
-                            pool_id: cl_pool_id,
-                            token_out_denom: DENOM_BASE.to_string(),
-                        }],
-                        token_in: Some(OsmoCoin {
-                            denom: DENOM_QUOTE.to_string(),
-                            amount: SWAPS_AMOUNT.to_string(),
-                        }),
-                        token_out_min_amount: "1".to_string(),
-                    },
-                    &swapper,
-                )
-                .unwrap();
+            // assert the token1 deposited by alice
+            assert_approx_eq!(
+                total0,
+                total1,
+                "0.0011482"
+            );
         }
     }
 }
-
