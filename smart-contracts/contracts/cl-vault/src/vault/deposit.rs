@@ -12,7 +12,7 @@ use osmosis_std::{
 };
 
 use crate::{
-    debug, helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError
+    helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError
 };
 
 // execute_any_deposit is a nice to have feature for the cl vault.
@@ -50,12 +50,12 @@ pub(crate) fn execute_exact_deposit(
 
     // ----- debug
 
-    let pm_querier = PoolmanagerQuerier::new(&deps.querier);
-    let spot_price: Decimal = pm_querier
-        .spot_price(pool.pool_id, pool.clone().token0, pool.clone().token1)?
-        .spot_price
-        .parse()?;
-    debug!(deps, "spot price", spot_price);
+    // let pm_querier = PoolmanagerQuerier::new(&deps.querier);
+    // let spot_price: Decimal = pm_querier
+    //     .spot_price(pool.pool_id, pool.clone().token0, pool.clone().token1)?
+    //     .spot_price
+    //     .parse()?;
+    // debug!(deps, "spot price", spot_price);
 
     // -----
 
@@ -165,8 +165,6 @@ pub fn get_depositable_tokens(
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
-    debug!(deps, "position", position);
-
 
     match (position.asset0, position.asset1) {
         (None, _) => Ok((
