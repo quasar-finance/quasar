@@ -10,7 +10,7 @@ mod tests {
         test_tube::{helpers::get_event_attributes_by_ty_and_key, initialize::initialize::default_init},
     };
 
-    const INITIAL_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
+    const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
 
@@ -77,10 +77,10 @@ mod tests {
         let refund0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund0_amount"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
         let refund1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund1_amount"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
 
-        let amount0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
-        let amount1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+        let deposited0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+        let deposited1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
 
-        assert_eq!(deposit0 + deposit1, refund0 + refund1 + amount0 + amount1);
+        assert_eq!(deposit0 + deposit1, refund0 + refund1 + deposited0 + deposited1);
 
         // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
@@ -100,12 +100,12 @@ mod tests {
 
         assert_approx_eq!(
             user_value.balances[0].amount,
-            Uint128::from(amount0), // TODO: remove hardcoded
+            Uint128::from(deposited0),
             "0.000001"
         );
         assert_approx_eq!(
             user_value.balances[1].amount,
-            Uint128::from(amount1), // TODO: remove hardcoded
+            Uint128::from(deposited1), 
             "0.000001"
         );
 
@@ -126,14 +126,14 @@ mod tests {
         // TODO, The UserAssetsBalance query here returns too little, so either we mint too little or the query works incorrect
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(amount0), // TODO: remove hardcoded
+            Uint128::from(deposited0), 
             "0.000001"
         );
 
         // assert the token1 deposited by alice
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(amount1), // TODO: remove hardcoded
+            Uint128::from(deposited1), 
             "0.000001"
         );
 
@@ -146,7 +146,7 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(amount0)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(deposited0)) // TODO: remove hardcoded
                 .unwrap(),
             "0.000001"
         );
@@ -157,7 +157,7 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(amount1)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(deposited1)) // TODO: remove hardcoded
                 .unwrap(),
             "0.000001"
         );
