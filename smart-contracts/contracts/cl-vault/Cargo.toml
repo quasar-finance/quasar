@@ -40,20 +40,23 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
-apollo-cw-asset = "0.1.0"
-cosmwasm-schema = "1.5.3"
-cosmwasm-std = "1.5.3"
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+num_enum = { workspace = true }
+apollo-cw-asset = { workspace = true }
+
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", features = ["library", "osmosis"]}
-cw-storage-plus = "1.2.0"
-cw-utils = "1.0.3"
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-cw2 = "1.1.2"
-num_enum = "0.7.0"
-osmosis-std = "0.22.0"
-prost = {version = "0.12.3", default-features = false, features = ["std"]}
-serde = {version = "1.0.145", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0.31"}
 
 [dev-dependencies]
-osmosis-test-tube = "22.1.0"
-proptest = "1.2.0"
+osmosis-test-tube = { workspace = true }
+proptest = { workspace = true }

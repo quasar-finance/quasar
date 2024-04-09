@@ -6,6 +6,7 @@ use cosmwasm_std::{
     StdError, Uint128,
 };
 use cw_utils::PaymentError;
+use prost::DecodeError;
 use thiserror::Error;
 
 pub type ContractResult<T> = Result<T, ContractError>;
@@ -66,7 +67,7 @@ pub enum ContractError {
     ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
-    DecodeError(#[from] prost::DecodeError),
+    DecodeError(#[from] DecodeError),
 
     #[error("{0}")]
     CoinFromStrError(#[from] CoinFromStrError),

@@ -23,16 +23,14 @@ use cosmos_sdk_proto::cosmos::bank::v1beta1::QueryBalanceResponse;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+#[allow(deprecated)]
+use osmosis_std::types::osmosis::gamm::v1beta1::QuerySpotPriceResponse;
+
 use osmosis_std::types::osmosis::gamm::v1beta1::{
     MsgExitSwapShareAmountInResponse, MsgJoinSwapExternAmountInResponse,
     QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
 };
-use std::str::FromStr;
-
-#[allow(deprecated)]
-use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
 use osmosis_std::types::osmosis::lockup::{LockedResponse, MsgLockTokensResponse};
 use prost::Message;
 use quasar_types::callback::{BondResponse, Callback};
@@ -43,6 +41,7 @@ use quasar_types::ica::packet::{ica_send, AckBody};
 use quasar_types::ica::traits::Unpack;
 use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
+use std::str::FromStr;
 
 use cosmwasm_std::{
     from_json, to_json_binary, Attribute, Binary, Coin, CosmosMsg, Decimal, DepsMut, Env,

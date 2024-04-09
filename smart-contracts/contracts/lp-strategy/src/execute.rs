@@ -111,8 +111,7 @@ mod tests {
     use cosmwasm_std::{Binary, Coin, CosmosMsg, IbcMsg};
     use osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceResponse;
     use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v2::QuerySpotPriceResponse, lockup::LockedResponse},
+        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::lockup::LockedResponse,
     };
 
     use cosmwasm_std::{
@@ -122,6 +121,7 @@ mod tests {
     };
     use osmosis_std::types::osmosis::gamm::v1beta1::{
         QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+        QuerySpotPriceResponse,
     };
     use prost::Message;
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};

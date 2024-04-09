@@ -34,15 +34,16 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw2 ={ workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
 cl-vault = {path = "../cl-vault", features = ["library"]}
-cosmwasm-schema = "1.5.3"
-cosmwasm-std = "1.5.3"
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", feature = ["library"]}
-cw-storage-plus = "1.2.0"
-cw2 = "1.1.2"
-schemars = "0.8.15"
-serde = {version = "1.0.189", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0.49"}
 
 [dev-dependencies]
-cw-multi-test = "1.0.0"
+cw-multi-test = { workspace = true }
