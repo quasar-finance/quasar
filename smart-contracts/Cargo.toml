@@ -28,6 +28,7 @@ cw2 = "1.1.2"
 cw20 = "1.1.2"
 cw20-base = {version = "1.1.2", features = ["library"]}
 cw20-staking = "0.11.1"
+apollo-cw-asset = "0.1.2"
 
 # SDK
 cosmos-sdk-proto = {version = "0.20.0", default-features = false}
@@ -49,3 +50,4 @@ num_enum = "0.7.2"
 # Testing
 cw-multi-test = "0.20.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}
 osmosis-test-tube = "22.1.0"
+proptest = "1.2.0"

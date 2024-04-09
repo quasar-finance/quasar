@@ -32,18 +32,12 @@ backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
-# This is deprecated by the just workspace-optimize command on "justfile". Get rid of this commented block when sure.
-# [package.metadata.scripts]
-# optimize = """docker run --rm -v "$(pwd)":/code \
-#   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-#   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-#   cosmwasm/rust-optimizer:0.12.12
-# """
-# optimize-arm64 = """docker run --rm -v "$(pwd)":/code \
-# --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-# --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-# cosmwasm/rust-optimizer-arm64:0.12.12
-# """
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/optimizer:0.15.0
+"""
 
 [dependencies]
 cosmwasm-std = { workspace = true }
