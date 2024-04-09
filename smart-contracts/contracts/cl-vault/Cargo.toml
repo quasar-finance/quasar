@@ -48,7 +48,6 @@ cw-storage-plus ={ workspace = true }
 schemars ={ workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-osmosis-test-tube = { workspace = true }
 prost = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
