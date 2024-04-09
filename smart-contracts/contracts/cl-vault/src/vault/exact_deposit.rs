@@ -15,20 +15,7 @@ use crate::{
     helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError
 };
 
-// execute_any_deposit is a nice to have feature for the cl vault.
-// but left out of the current release.
-pub(crate) fn _execute_any_deposit(
-    _deps: DepsMut,
-    _env: Env,
-    _info: &MessageInfo,
-    _amount: Uint128,
-    _recipient: Option<String>,
-) -> Result<Response, ContractError> {
-    // Unwrap recipient or use caller's address
-    unimplemented!()
-}
-
-/// Try to deposit as much user funds as we can into the a position and
+/// Try to deposit as much user funds as we can in the current ratio of the vault and
 /// refund the rest to the caller
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
@@ -45,8 +32,6 @@ pub(crate) fn execute_exact_deposit(
     // get the amount of funds we can deposit from this ratio
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
-
-    println!("deposit: {:?}", deposit);
 
     // ----- debug
 

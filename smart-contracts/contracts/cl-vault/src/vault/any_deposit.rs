@@ -13,7 +13,7 @@ use crate::helpers::{get_single_sided_deposit_0_to_1_swap_amount, get_single_sid
 use crate::reply::Replies;
 use crate::state::CURRENT_SWAP_ANY_DEPOSIT;
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::deposit::{get_asset0_value, get_depositable_tokens};
+use crate::vault::exact_deposit::{get_asset0_value, get_depositable_tokens};
 use crate::vault::range::SwapDirection;
 use crate::vault::swap::swap;
 

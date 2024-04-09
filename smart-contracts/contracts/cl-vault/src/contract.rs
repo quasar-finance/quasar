@@ -19,7 +19,7 @@ use crate::state::{
     VAULT_CONFIG,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
-use crate::vault::deposit::{execute_exact_deposit};
+use crate::vault::exact_deposit::{execute_exact_deposit};
 
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
