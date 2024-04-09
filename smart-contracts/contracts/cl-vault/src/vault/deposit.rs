@@ -69,6 +69,7 @@ pub(crate) fn execute_exact_deposit(
         .into();
 
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
+    let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
 
         // calculate the amount of shares we can mint for this
         let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
@@ -77,22 +78,17 @@ pub(crate) fn execute_exact_deposit(
             &deps.querier,
             total_assets.token0.amount,
             total_assets.token1.amount,
-        )?.checked_sub(user_value)?;
+        )?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         user_value
     } else {
-        debug!(deps, "else case");
-        debug!(deps, "user_value", user_value);
-        debug!(deps, "total_assets_value", total_assets_value);
-        debug!(deps, "total_vault_shares", total_vault_shares);
         total_vault_shares
             .checked_mul(user_value.into())?
-            .checked_div(total_assets_value.into())?
+            .checked_div(total_assets_value.checked_sub(user_value)?.checked_sub(refund_value)?.into())?
             .try_into()?
     };
-    debug!(deps, "user_shares", user_shares);
 
     // save the shares in the user map
     SHARES.update(
@@ -126,8 +122,8 @@ pub(crate) fn execute_exact_deposit(
     let mut resp = Response::new()
         .add_attribute("method", "exact_deposit")
         .add_attribute("action", "exact_deposit")
-        .add_attribute("amount0", token0.amount)
-        .add_attribute("amount1", token1.amount)
+        .add_attribute("amount0", deposit.0)
+        .add_attribute("amount1", deposit.1)
         .add_message(mint_msg)
         .add_attributes(mint_attrs);
 
