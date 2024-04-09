@@ -7,7 +7,7 @@ mod tests {
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
-        test_tube::initialize::initialize::default_init,
+        test_tube::{helpers::get_event_attributes_by_ty_and_key, initialize::initialize::default_init},
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
@@ -44,8 +44,6 @@ mod tests {
             )
             .unwrap();
 
-        println!("user:assets: {:?}", user_assets);
-
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
         /*
         user:assets: AssetsBalanceResponse { balances: [Coin { 281243579389884 "uatom" }, Coin { 448554353093648 "uosmo" }] }
@@ -54,21 +52,35 @@ mod tests {
         0_281_243_579_389_884
         so these tokens could 2x easily
          */
+
+        let deposit0 = 1_000_000_000_000_000;
+        let deposit1 = 1_000_000_000_000_000;
+
+
         let response = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000, DENOM_BASE),
-                    Coin::new(1_000_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(deposit0, DENOM_BASE),
+                    Coin::new(deposit1, DENOM_QUOTE),
                 ],
                 &alice,
             )
             .unwrap();
 
-        // manually inspect the response, we see a token0 refund of 373_000_000_000_000, so we'd expect the user assets to return
-        // 1_000_000_000_000_000 - 373_000_000_000_000 = 627_000_000_000_000 of token0, or uosmo
-        println!("{:?}", response);
+            let vault_assets_after: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
+
+        // assert that the refund + used funds are equal to what we deposited
+        let refund0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund0_amount"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+        let refund1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund1_amount"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+
+        let amount0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+        let amount1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+
+        assert_eq!(deposit0 + deposit1, refund0 + refund1 + amount0 + amount1);
 
         // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
@@ -83,13 +95,18 @@ mod tests {
             .unwrap();
         assert!(!shares.balance.is_zero());
 
+        // TODO should we calc from shares or userAssetsBalance
         let user_value: AssetsBalanceResponse = wasm.query(contract_address.as_str(), &QueryMsg::ConvertToAssets { amount: shares.balance }).unwrap();
-        println!("{:?}", user_value);
 
         assert_approx_eq!(
             user_value.balances[0].amount,
-            Uint128::from(627_000_000_000_000u128), // TODO: remove hardcoded
-            "0.1"
+            Uint128::from(amount0), // TODO: remove hardcoded
+            "0.000001"
+        );
+        assert_approx_eq!(
+            user_value.balances[1].amount,
+            Uint128::from(amount1), // TODO: remove hardcoded
+            "0.000001"
         );
 
         // Get user_assets for Alice from vault contract and assert
@@ -104,22 +121,20 @@ mod tests {
             )
             .unwrap();
 
-        println!("user:assets: {:?}", user_assets);
-
         // assert the token0 deposited by alice by checking the balance of alice
         // we expect sent - refunded here, or 627_000_000_000_000
         // TODO, The UserAssetsBalance query here returns too little, so either we mint too little or the query works incorrect
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(627_000_000_000_000u128), // TODO: remove hardcoded
-            "0.1"
+            Uint128::from(amount0), // TODO: remove hardcoded
+            "0.000001"
         );
 
         // assert the token1 deposited by alice
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(1_000_000_000_000_000u128), // TODO: remove hardcoded
-            "0.001"
+            Uint128::from(amount1), // TODO: remove hardcoded
+            "0.000001"
         );
 
         // Get vault assets and assert
@@ -131,9 +146,9 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(600_000_000_000_000u128)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(amount0)) // TODO: remove hardcoded
                 .unwrap(),
-            "0.1"
+            "0.000001"
         );
 
         // Assert vault assets taking in account the refunded amount to Alice, so we only expect around 500 to deposit here
@@ -142,9 +157,9 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(1_000_000_000_000_000u128)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(amount1)) // TODO: remove hardcoded
                 .unwrap(),
-            "0.001"
+            "0.000001"
         );
 
         let _withdraw = wasm
