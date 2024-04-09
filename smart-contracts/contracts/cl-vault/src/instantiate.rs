@@ -11,7 +11,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::{get_asset0_value, must_pay_one_or_two};
+use crate::helpers::{get_asset0_value, get_unused_balances, must_pay_one_or_two};
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
@@ -142,14 +142,17 @@ pub fn handle_instantiate_create_position_reply(
         position_info.asset0.unwrap(),
         position_info.asset1.unwrap(),
     ])?;
+
+    let free_asset0 = deps.querier.query_balance(&env.contract.address, assets[0].denom.clone())?;
+    let free_asset1 = deps.querier.query_balance(&env.contract.address, assets[1].denom.clone())?;
+    
     let asset_value = get_asset0_value(
         deps.storage,
         &deps.querier,
-        assets[0].amount,
-        assets[1].amount,
+        assets[0].amount + free_asset0.amount,
+        assets[1].amount + free_asset1.amount,
     )?;
 
-    let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // todo do we want to mint the initial mint to the instantiater, or just not care?
