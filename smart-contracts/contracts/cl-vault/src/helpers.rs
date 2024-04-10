@@ -522,6 +522,7 @@ mod tests {
 
     use crate::math::tick::price_to_tick;
 
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Position as OsmoPosition;
 
     use super::*;
@@ -823,6 +824,13 @@ mod tests {
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
     }
 
+    fn osmocoin(amount: u128, denom: &str) -> OsmoCoin {
+        OsmoCoin {
+            denom: denom.to_string(),
+            amount: amount.to_string(),
+        }
+    }
+
     #[test]
     fn test_get_min_ratio_per_position() {
         // test edge cases such as tokens where one has 6 decimlas and the other 18:
@@ -841,11 +849,11 @@ mod tests {
                         pool_id: 0,
                         lower_tick: -1000,
                         upper_tick: 1000,
-                        join_time: 0,
-                        liquidity: 100000000,
+                        join_time: None,
+                        liquidity: "100000000".to_string(),
                     }),
-                    asset0: Uint128::new(100),
-                    asset1: Uint128::new(100),
+                    asset0: Some(osmocoin(100, "token0")),
+                    asset1: Some(osmocoin(100, "token1")),
                     claimable_spread_rewards: vec![],
                     claimable_incentives: vec![],
                     forfeited_incentives: vec![],
@@ -864,11 +872,12 @@ mod tests {
                         pool_id: 0,
                         lower_tick: -1000,
                         upper_tick: 1000,
-                        join_time: 0,
-                        liquidity: 100000000,
+                        join_time: None,
+                        liquidity: "100000000".to_string(),
                     }),
-                    asset0: Uint128::new(10_000_000_000_000_000_000_000), // cheap 18 decimal token
-                    asset1: Uint128::new(10_000_000), // super expensive 6 decimal token (think ION)
+
+                    asset0: Some(osmocoin(10_000_000_000_000_000_000_000, "token0")), // cheap 18 decimal token
+                    asset1: Some(osmocoin(10_000_000, "token1")), // super expensive 6 decimal token (think ION)
                     claimable_spread_rewards: vec![],
                     claimable_incentives: vec![],
                     forfeited_incentives: vec![],
@@ -876,7 +885,7 @@ mod tests {
             ),
         ];
 
-        let spot_price = Decimal::from_ratio(1, 1_000_000_000_000_000);
+        let spot_price = Decimal::from_ratio(1u128, 1_000_000_000_000_000u128);
 
         let result = get_min_ratio_per_position(positions, spot_price).unwrap();
 
