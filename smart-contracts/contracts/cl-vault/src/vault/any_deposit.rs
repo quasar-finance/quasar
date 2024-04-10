@@ -1,21 +1,30 @@
-use cosmwasm_std::{attr, coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, Storage, Uint128, Uint256, SubMsg, SubMsgResult};
-
-use osmosis_std::{
-    types::{
-        cosmos::bank::v1beta1::BankQuerier,
-        osmosis::tokenfactory::v1beta1::MsgMint,
-    },
+use cosmwasm_std::{
+    attr, coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+    Uint256,
 };
-use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 
-use crate::{helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError, debug};
-use crate::helpers::{get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount, get_twap_price};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
+};
+
+use crate::helpers::{
+    get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+    get_twap_price,
+};
 use crate::reply::Replies;
 use crate::state::CURRENT_SWAP_ANY_DEPOSIT;
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
 use crate::vault::exact_deposit::{get_asset0_value, get_depositable_tokens};
 use crate::vault::range::SwapDirection;
 use crate::vault::swap::swap;
+use crate::{
+    helpers::must_pay_one_or_two,
+    query::query_total_assets,
+    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::get_position,
+    ContractError,
+};
 
 // execute_any_deposit is a nice to have feature for the cl vault.
 // but left out of the current release.
@@ -90,7 +99,12 @@ pub(crate) fn execute_any_deposit(
             .parse::<u128>()?
             .into();
 
-        let user_value = get_asset0_value(deps.storage, &deps.querier, deposit_amount_in_ratio.0, deposit_amount_in_ratio.1)?;
+        let user_value = get_asset0_value(
+            deps.storage,
+            &deps.querier,
+            deposit_amount_in_ratio.0,
+            deposit_amount_in_ratio.1,
+        )?;
 
         // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
         let user_shares: Uint128 = if total_vault_shares.is_zero() {
@@ -137,7 +151,7 @@ pub(crate) fn execute_any_deposit(
             .add_attribute("amount0", deposit_amount_in_ratio.0)
             .add_attribute("amount1", deposit_amount_in_ratio.1)
             .add_message(mint_msg)
-            .add_attributes(mint_attrs))
+            .add_attributes(mint_attrs));
     };
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
@@ -156,11 +170,19 @@ pub(crate) fn execute_any_deposit(
         ),
     };
 
-    CURRENT_SWAP_ANY_DEPOSIT.save(deps.storage, &(swap_direction, left_over_amount, recipient, deposit_amount_in_ratio))?;
+    CURRENT_SWAP_ANY_DEPOSIT.save(
+        deps.storage,
+        &(
+            swap_direction,
+            left_over_amount,
+            recipient,
+            deposit_amount_in_ratio,
+        ),
+    )?;
 
     // todo : how do we give slippage here? hardcoded as of now
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
+    let token_out_min_amount =
+        token_out_ideal_amount?.checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
 
     // todo replace this swap with dex router logic
     let swap_msg = swap(
@@ -173,20 +195,24 @@ pub(crate) fn execute_any_deposit(
 
     // rest minting logic remains same
     Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::AnyDepositSwap.into()))
+        .add_submessage(SubMsg::reply_on_success(
+            swap_msg,
+            Replies::AnyDepositSwap.into(),
+        ))
         .add_attribute("method", "reply")
         .add_attribute("action", "any_deposit_swap")
         .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
         .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
 
-pub (crate) fn handle_any_deposit_swap_reply(
+pub(crate) fn handle_any_deposit_swap_reply(
     deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let resp: MsgSwapExactAmountInResponse = data.try_into()?;
-    let (swap_direction, left_over_amount, recipient, deposit_amount_in_ratio) = CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
+    let (swap_direction, left_over_amount, recipient, deposit_amount_in_ratio) =
+        CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
@@ -234,7 +260,12 @@ pub (crate) fn handle_any_deposit_swap_reply(
         .parse::<u128>()?
         .into();
 
-    let user_value = get_asset0_value(deps.storage, &deps.querier, coins_to_mint_for[0].amount, coins_to_mint_for[1].amount)?;
+    let user_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        coins_to_mint_for[0].amount,
+        coins_to_mint_for[1].amount,
+    )?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {

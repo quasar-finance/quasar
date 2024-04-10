@@ -20,6 +20,7 @@ use osmosis_std::types::{
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
+#[allow(clippy::unnecessary_fallible_conversions)]
 pub fn execute_withdraw(
     deps: DepsMut,
     env: Env,

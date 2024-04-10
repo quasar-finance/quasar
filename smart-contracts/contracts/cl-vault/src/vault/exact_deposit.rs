@@ -12,7 +12,11 @@ use osmosis_std::{
 };
 
 use crate::{
-    helpers::must_pay_one_or_two, query::query_total_assets, state::{POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::get_position, ContractError
+    helpers::must_pay_one_or_two,
+    query::query_total_assets,
+    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::get_position,
+    ContractError,
 };
 
 /// Try to deposit as much user funds as we can in the current ratio of the vault and
@@ -56,14 +60,14 @@ pub(crate) fn execute_exact_deposit(
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
     let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
 
-        // calculate the amount of shares we can mint for this
-        let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
-        let total_assets_value = get_asset0_value(
-            deps.storage,
-            &deps.querier,
-            total_assets.token0.amount,
-            total_assets.token1.amount,
-        )?;
+    // calculate the amount of shares we can mint for this
+    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        total_assets.token0.amount,
+        total_assets.token1.amount,
+    )?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
@@ -71,7 +75,12 @@ pub(crate) fn execute_exact_deposit(
     } else {
         total_vault_shares
             .checked_mul(user_value.into())?
-            .checked_div(total_assets_value.checked_sub(user_value)?.checked_sub(refund_value)?.into())?
+            .checked_div(
+                total_assets_value
+                    .checked_sub(user_value)?
+                    .checked_sub(refund_value)?
+                    .into(),
+            )?
             .try_into()?
     };
 
@@ -144,6 +153,7 @@ pub fn get_asset0_value(
     Ok(total)
 }
 
+#[allow(clippy::type_complexity)]
 pub fn get_depositable_tokens(
     deps: DepsMut,
     token0: Coin,
@@ -182,10 +192,7 @@ pub fn get_depositable_tokens(
 
             // Refund token0 if ratio.numerator is zero
             if ratio.numerator().is_zero() {
-                return Ok((
-                    (Uint128::zero(), token1),
-                    (token0, Uint128::zero()),
-                ));
+                return Ok(((Uint128::zero(), token1), (token0, Uint128::zero())));
             }
 
             let zero_usage: Uint128 = ((Uint256::from(token0)
@@ -290,7 +297,10 @@ mod tests {
         assert_eq!(
             result,
             (
-                (Uint128::zero(), Uint128::new(100_000_000_000_000_000_000_000_000_000u128)),
+                (
+                    Uint128::zero(),
+                    Uint128::new(100_000_000_000_000_000_000_000_000_000u128)
+                ),
                 (Uint128::new(1_000_000_000u128), Uint128::zero())
             )
         );

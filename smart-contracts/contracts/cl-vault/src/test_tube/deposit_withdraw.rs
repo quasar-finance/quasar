@@ -7,7 +7,9 @@ mod tests {
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
-        test_tube::{helpers::get_event_attributes_by_ty_and_key, initialize::initialize::default_init},
+        test_tube::{
+            helpers::get_event_attributes_by_ty_and_key, initialize::initialize::default_init,
+        },
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
@@ -56,7 +58,6 @@ mod tests {
         let deposit0 = 1_000_000_000_000_000;
         let deposit1 = 1_000_000_000_000_000;
 
-
         let response = wasm
             .execute(
                 contract_address.as_str(),
@@ -69,18 +70,37 @@ mod tests {
             )
             .unwrap();
 
-            let vault_assets_after: TotalAssetsResponse = wasm
+        let vault_assets_after: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
         // assert that the refund + used funds are equal to what we deposited
-        let refund0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund0_amount"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
-        let refund1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund1_amount"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+        let refund0: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund0_amount"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
+        let refund1: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund1_amount"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
 
-        let deposited0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
-        let deposited1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"]).get(0).map(|attr| attr.value.parse().unwrap()).unwrap_or(0);
+        let deposited0: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
+        let deposited1: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
 
-        assert_eq!(deposit0 + deposit1, refund0 + refund1 + deposited0 + deposited1);
+        assert_eq!(
+            deposit0 + deposit1,
+            refund0 + refund1 + deposited0 + deposited1
+        );
 
         // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
@@ -96,7 +116,14 @@ mod tests {
         assert!(!shares.balance.is_zero());
 
         // TODO should we calc from shares or userAssetsBalance
-        let user_value: AssetsBalanceResponse = wasm.query(contract_address.as_str(), &QueryMsg::ConvertToAssets { amount: shares.balance }).unwrap();
+        let user_value: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: shares.balance,
+                },
+            )
+            .unwrap();
 
         assert_approx_eq!(
             user_value.balances[0].amount,
@@ -105,7 +132,7 @@ mod tests {
         );
         assert_approx_eq!(
             user_value.balances[1].amount,
-            Uint128::from(deposited1), 
+            Uint128::from(deposited1),
             "0.000001"
         );
 
@@ -126,14 +153,14 @@ mod tests {
         // TODO, The UserAssetsBalance query here returns too little, so either we mint too little or the query works incorrect
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(deposited0), 
+            Uint128::from(deposited0),
             "0.000001"
         );
 
         // assert the token1 deposited by alice
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(deposited1), 
+            Uint128::from(deposited1),
             "0.000001"
         );
 

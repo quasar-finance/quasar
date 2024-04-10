@@ -65,16 +65,17 @@ pub fn execute_redeposit(
 }
 
 pub fn handle_redeposit_reply(
-    _deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> ContractResult<Response> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
+    let position_id = (POSITION.load(deps.storage)?).position_id;
     // call merge
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-            position_ids: vec![create_position_message.position_id],
+            position_ids: vec![position_id, create_position_message.position_id],
         }));
 
     Ok(Response::new()

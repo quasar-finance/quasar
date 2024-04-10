@@ -1,6 +1,3 @@
-use std::str::FromStr;
-
-use crate::debug;
 use crate::math::tick::tick_to_price;
 use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
@@ -10,6 +7,7 @@ use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     QuerierWrapper, Storage, Uint128, Uint256,
 };
+use std::str::FromStr;
 
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
