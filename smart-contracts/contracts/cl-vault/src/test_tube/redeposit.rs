@@ -4,7 +4,7 @@
 mod tests {
     use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::testing::mock_dependencies;
-    use cosmwasm_std::Coin;
+    use cosmwasm_std::{Coin, Uint256};
     use cosmwasm_std::{Decimal, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -33,7 +33,7 @@ mod tests {
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
     const DENOM_REWARD: &str = "ustride";
-    const ACCOUNTS_NUM: u64 = 10;
+    const ACCOUNTS_NUM: u64 = 100;
     const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     const DEPOSIT_AMOUNT: u128 = 5_000_000;
     const SWAPS_NUM: usize = 10;
@@ -58,18 +58,37 @@ mod tests {
             )
             .unwrap();
 
+        let mut i = 1;
         for account in &accounts {
-            let _ = wasm
-                .execute(
-                    contract_address.as_str(),
-                    &ExecuteMsg::ExactDeposit { recipient: None },
-                    &[
-                        Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-                        Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-                    ],
-                    account,
-                )
-                .unwrap();
+            if i %2 ==0 {
+                let _ = wasm
+                    .execute(
+                        contract_address.as_str(),
+                        &ExecuteMsg::ExactDeposit { recipient: None },
+                        &[
+                            Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                            Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                        ],
+                        account,
+                    )
+                    .unwrap();
+            } else {
+                let _ = wasm
+                    .execute(
+                        contract_address.as_str(),
+                        &ExecuteMsg::AnyDeposit {
+                            amount: Default::default(),
+                            asset: "".to_string(),
+                            recipient: None,
+                        },
+                        &[
+                            Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
+                            Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
+                        ],
+                        account,
+                    )
+                    .unwrap();
+            }
 
             // Get shares for Alice from vault contract and assert
             let shares: UserSharesBalanceResponse = wasm
@@ -81,67 +100,45 @@ mod tests {
                 )
                 .unwrap();
             assert!(!shares.balance.is_zero());
+
+            // redeposit on every 10th deposit into the vault
+            if i%10 == 0 {
+                // check for contract balance as it has not been redeposited yet
+                let balance_before = bm
+                    .query_all_balances(&QueryAllBalancesRequest {
+                        address: contract_address.to_string(),
+                        pagination: None,
+                    })
+                    .unwrap();
+                // assert 3 denom on balance before as it has not been redeposited yet
+                // 3 denom : vault shares, base denom, quote denom
+                assert_eq!(3usize, balance_before.balances.len());
+
+                let _result = wasm
+                    .execute(
+                        contract_address.as_str(),
+                        &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Redeposit {}),
+                        &[],
+                        &admin,
+                    )
+                    .unwrap();
+
+                // check for contract balance as it has been redeposited
+                let balance_after = bm
+                    .query_balance(&QueryBalanceRequest {
+                        address: contract_address.to_string(),
+                        denom: DENOM_QUOTE.to_string(),
+                    })
+                    .unwrap();
+
+
+                // assert quote denom balance to be lass than 1 as sometimes the balance for
+                // quote denom becomes more than zero in odd number cases
+                assert!(Uint128::from_str(&balance_after.balance.unwrap_or_default().amount).unwrap() <= Uint128::new(1));
+            }
+
+            // increment i with 1
+            i+=1;
         }
-
-        // Declare swapper and claimer accounts
-        let ops_accounts = app
-            .init_accounts(
-                &[
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ],
-                2,
-            )
-            .unwrap();
-        let swapper = &ops_accounts[0];
-
-        // Swaps to generate spread rewards on previously created user positions
-        for _ in 0..SWAPS_NUM {
-            PoolManager::new(&app)
-                .swap_exact_amount_in(
-                    MsgSwapExactAmountIn {
-                        sender: swapper.address(),
-                        routes: vec![SwapAmountInRoute {
-                            pool_id: cl_pool_id,
-                            token_out_denom: DENOM_BASE.to_string(),
-                        }],
-                        token_in: Some(OsmoCoin {
-                            denom: DENOM_QUOTE.to_string(),
-                            amount: SWAPS_AMOUNT.to_string(),
-                        }),
-                        token_out_min_amount: "1".to_string(),
-                    },
-                    &swapper,
-                )
-                .unwrap();
-        }
-
-        // check for contract balance as it has not been redeposited yet
-        let balance_before = bm
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-
-        let _result = wasm
-            .execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Redeposit {}),
-                &[],
-                &admin,
-            )
-            .unwrap();
-
-        // check for contract balance as it has not been redeposited yet
-        let balance_after = bm
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-
-        // todo add assert on the balance
-        // assert!()
     }
 }
