@@ -36,36 +36,27 @@ library = []
 optimize = """docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.10
+  cosmwasm/rust-optimizer:0.15.0
 """
 
 [dependencies]
-apollo-cw-asset = "0.1.0"
-cosmwasm-schema = "1.1.3"
-cosmwasm-std = "1.1.3"
-cosmwasm-storage = "1.1.3"
-cw-controllers = "1.0.1"
-cw-dex = "0.1.1"
-cw-dex-router = {version = "0.1.0", features = ["library"]}
-cw-storage-plus = "1.0.1"
-cw-utils = "0.16.0"
-cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"], branch = "feat/change-convert-assets-return-type"}
-cw-vault-token = "0.1.0"
-cw2 = "1.0.1"
-cw20 = "1.0.1"
-cw20-base = "1.0.1"
-derive_builder = "0.11.2"
-liquidity-helper = "0.1.0"
-num_enum = "0.6.1"
-osmosis-std = "0.22.0"
-prost = {version = "0.12.3", default-features = false}
-schemars = "0.8.10"
-semver = "1"
-serde = {version = "1.0.145", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0.31"}
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+num_enum = { workspace = true }
+apollo-cw-asset = { workspace = true }
+
+cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", features = ["library", "osmosis"]}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 
 [dev-dependencies]
-cw-multi-test = "0.16.2"
-osmosis-test-tube = { git="https://github.com/magiodev/test-tube/", branch="fix/v22_go_mod_tidy"}
-prost = {version = "0.11", default-features = false}
-proptest = "1.2.0"
+osmosis-test-tube = { workspace = true }
+proptest = { workspace = true }

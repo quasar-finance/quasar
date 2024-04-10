@@ -6,7 +6,7 @@ use crate::{
     multitest::common::*,
     route::{Route, RouteId},
 };
-use cosmwasm_std::{testing::MockApi, to_binary, Addr, CosmosMsg, MemoryStorage, WasmMsg};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, CosmosMsg, MemoryStorage, WasmMsg};
 use cw_multi_test::{
     App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, StakeKeeper, WasmKeeper,
 };
@@ -20,6 +20,8 @@ pub type QuasarMultiHopRouterApp = App<
     StakeKeeper,
     DistributionKeeper,
 >;
+
+type OnFailFunction<T> = fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T;
 
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 
@@ -90,7 +92,7 @@ impl QuasarVaultSuite {
             sender,
             CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: self.router.to_string(),
-                msg: to_binary(&msg)?,
+                msg: to_json_binary(&msg)?,
                 funds,
             }),
         )
@@ -236,7 +238,7 @@ impl QuasarVaultSuite {
     pub fn verify_list_routes<T>(
         &self,
         expected: &[(RouteId, Route)],
-        on_fail: fn(&[(RouteId, Route)], &[(RouteId, Route)]) -> T,
+        on_fail: OnFailFunction<T>,
         on_succes: T,
     ) -> AnyResult<T> {
         let res = self.query::<ListRoutesResponse>(QueryMsg::ListRoutes {})?;

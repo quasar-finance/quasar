@@ -4,6 +4,7 @@ use cosmwasm_std::{
 };
 
 use cw_utils::PaymentError;
+use prost::DecodeError;
 use thiserror::Error;
 
 use std::num::ParseIntError;
@@ -69,7 +70,7 @@ pub enum ContractError {
     ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
-    DecodeError(#[from] prost::DecodeError),
+    DecodeError(#[from] DecodeError),
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
