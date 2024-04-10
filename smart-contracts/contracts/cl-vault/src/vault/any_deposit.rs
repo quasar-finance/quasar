@@ -48,8 +48,6 @@ pub(crate) fn execute_any_deposit(
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
     // write swap logic here
-    //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
-    // to reduce the total number of non-deposited tokens that we will then need to refund
     let (swap_amount, swap_direction) = if !swappable_amount.0.is_zero() {
         (
             // range is above current tick
@@ -184,7 +182,7 @@ pub(crate) fn execute_any_deposit(
     let token_out_min_amount =
         token_out_ideal_amount?.checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
 
-    // todo replace this swap with dex router logic
+    // todo replace this swap with dex router logic?
     let swap_msg = swap(
         deps,
         &env,

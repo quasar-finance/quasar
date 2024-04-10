@@ -85,7 +85,6 @@ pub fn handle_redeposit_reply(
                 msg: to_json_binary(&merge_msg)?,
                 funds: vec![],
             },
-            // todo if this needs to be dealt with a different reply ID
             Replies::Merge.into(),
         ))
         .add_attribute("method", "reply")
