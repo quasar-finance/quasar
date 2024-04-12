@@ -1,0 +1,63 @@
+[package]
+authors = ["LaurensKubat <32776056+LaurensKubat@users.noreply.github.com>"]
+edition = "2021"
+name = "pro-vault"
+version = "0.1.0"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+codegen-units = 1
+debug = false
+debug-assertions = false
+incremental = false
+lto = true
+opt-level = 3
+overflow-checks = true
+panic = 'abort'
+rpath = false
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/rust-optimizer:0.15.0
+"""
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+num_enum = { workspace = true }
+apollo-cw-asset = { workspace = true }
+
+cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", features = ["library", "osmosis"]}
+cw-vault-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+vaultenator = "0.0.4"
+
+[dev-dependencies]
+osmosis-test-tube = { workspace = true }
+proptest = { workspace = true }
