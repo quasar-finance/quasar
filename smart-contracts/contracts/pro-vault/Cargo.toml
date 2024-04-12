@@ -56,6 +56,7 @@ apollo-cw-asset = { workspace = true }
 
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", features = ["library", "osmosis"]}
 cw-vault-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 vaultenator = "0.0.4"
 
 [dev-dependencies]

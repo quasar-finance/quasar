@@ -1589,6 +1589,7 @@ dependencies = [
  "cw-dex-router",
  "cw-storage-plus",
  "cw-utils",
+ "cw-vault-multi-standard",
  "cw-vault-standard 0.3.0",
  "cw2",
  "num_enum",
