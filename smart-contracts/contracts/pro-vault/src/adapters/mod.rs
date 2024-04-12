@@ -1,2 +1,2 @@
-mod r#trait;
-mod generic_vault;
+pub mod r#trait;
+pub mod generic_vault;

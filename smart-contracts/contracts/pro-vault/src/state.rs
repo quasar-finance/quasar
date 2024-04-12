@@ -1,8 +1,20 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cosmwasm_std::{Addr, Decimal, Decimal256, StdError, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_storage_plus::{Deque, Item, Map};
 use vaultenator::state::ManageState;
+
+use crate::adapters::r#trait::{Adapter, VaultAdapter};
+
+enum Adapters<T> 
+where T: Adapter
+{
+    Vault(VaultAdapter),
+    Debt(),
+    Swap(),
+}
+
+const ADAPTERS: Map<Addr, dyn Adapter> = Map::new("adapters");
 
 /// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
