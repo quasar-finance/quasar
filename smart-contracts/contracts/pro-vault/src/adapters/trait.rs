@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, CosmosMsg, QuerierWrapper, Response, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, CosmosMsg, Env, QuerierWrapper, Response, WasmMsg};
 use osmosis_std::types::cosmos::app::v1alpha1::Config;
 
 // TODO add some metadata to easily display multiple adapters and their destination/purpose
@@ -8,10 +8,10 @@ pub trait Adapter {
     const IDENTIFIER: &'static str;
 
     /// describes the effective balance of the vault in the adapter
-    fn assets_balance(&self, querier: &QuerierWrapper) -> Result<Vec<Coin>, Self::AdapterError>;
+    fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, Self::AdapterError>;
 
     /// descrives the base asset balance of the vault in the adapter
-    fn base_asset_balance(&self, querier: &QuerierWrapper) -> Result<Coin, Self::AdapterError>;
+    fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, Self::AdapterError>;
 }
 
 pub trait VaultAdapter<T: Adapter> {

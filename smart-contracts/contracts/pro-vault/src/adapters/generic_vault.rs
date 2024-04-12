@@ -1,5 +1,6 @@
-use cosmwasm_std::{to_json_binary, Addr, Coin, QuerierWrapper, Response, StdError};
+use cosmwasm_std::{to_json_binary, Addr, Coin, Env, QuerierWrapper, Response, StdError};
 use cw_utils::PaymentError;
+use cw_vault_multi_standard::VaultInfoResponse as MultiVaultInfoResponse;
 use cw_vault_standard::VaultInfoResponse;
 
 use super::r#trait::{Adapter, VaultAdapter};
@@ -45,15 +46,22 @@ impl VaultAdapter<SingeAssetVaultAdapterWrapper> for SingeAssetVaultAdapterWrapp
 impl Adapter for SingeAssetVaultAdapterWrapper {
     const IDENTIFIER: &'static str = "single_asset_vault_adapter";
 
-    fn assets_balance(&self, querier: &QuerierWrapper) -> Result<Vec<cosmwasm_std::Coin>, cosmwasm_std::StdError> {
-        let info: VaultInfoResponse = querier.query_wasm_smart(self.address, &to_json_binary(&cw_vault_standard::VaultStandardQueryMsg::Info {})?)?;
+    fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
+        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: VaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
         
-        let balance = querier.query_balance(self.address, info.base_token);
-        todo!()
+        let balance = querier.query_balance(env.contract.address, info.base_token)?;
+
+        Ok(vec![balance])
     }
 
-    fn base_asset_balance() -> () {
-        todo!()
+    fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError> {
+        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: VaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+        
+        let balance = querier.query_balance(env.contract.address, info.vault_token)?;
+
+        Ok(balance)
     }
     
     type AdapterError = StdError;
@@ -86,14 +94,30 @@ impl VaultAdapter<MultiAssetExactDepositVaultAdapterWrapper> for MultiAssetExact
 
 impl Adapter for MultiAssetExactDepositVaultAdapterWrapper {
     const IDENTIFIER: &'static str = "multi_asset_exact_depost_vault_adapter";
+    
+    type AdapterError = StdError;
+    
+    fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, Self::AdapterError> {
+        let query: cw_vault_multi_standard::VaultStandardQueryMsg  = cw_vault_multi_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+        
+        let balances: Result<Vec<Coin>, StdError> = info.tokens.iter().map(|token| {
+            querier.query_balance(&env.contract.address, token)
+        }).collect();
 
-    fn assets_balance() -> () {
-        todo!()
+        balances
+    }
+    
+    fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, Self::AdapterError> {
+        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+        
+        let balance = querier.query_balance(env.contract.address, info.vault_token)?;
+
+        Ok(balance)
     }
 
-    fn base_asset_balance() -> () {
-        todo!()
-    }
+  
 }
 
 struct MultiAssetAnyDepositVaultAdapterWrapper {
@@ -124,12 +148,26 @@ impl VaultAdapter<MultiAssetAnyDepositVaultAdapterWrapper> for MultiAssetAnyDepo
 
 impl Adapter for MultiAssetAnyDepositVaultAdapterWrapper {
     const IDENTIFIER: &'static str = "multi_asset_vault_any_deposit_adapter";
+    
+    type AdapterError = StdError;
+    
+    fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, Self::AdapterError> {
+        let query: cw_vault_multi_standard::VaultStandardQueryMsg  = cw_vault_multi_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+        
+        let balances: Result<Vec<Coin>, StdError> = info.tokens.iter().map(|token| {
+            querier.query_balance(&env.contract.address, token)
+        }).collect();
 
-    fn assets_balance() -> () {
-        todo!()
+        balances
     }
+    
+    fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, Self::AdapterError> {
+        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+        
+        let balance = querier.query_balance(env.contract.address, info.vault_token)?;
 
-    fn base_asset_balance() -> () {
-        todo!()
+        Ok(balance)
     }
 }
