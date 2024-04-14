@@ -1,7 +1,9 @@
 pub mod adapters;
 pub mod config;
 pub mod contract;
+mod describe;
 mod error;
+mod execute;
 pub mod handle;
 mod instantiate;
 pub mod msg;
@@ -9,8 +11,6 @@ pub mod query;
 mod reply;
 pub mod state;
 pub mod vault;
-mod describe;
-mod execute;
 
 pub use crate::error::ContractError;
 

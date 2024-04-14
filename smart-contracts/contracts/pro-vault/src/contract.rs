@@ -1,14 +1,11 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 
 use crate::error::{ContractError, ContractResult};
 use crate::instantiate::handle_instantiate;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::reply::Replies;
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(

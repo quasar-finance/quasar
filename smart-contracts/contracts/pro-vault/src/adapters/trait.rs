@@ -1,4 +1,6 @@
-use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, CosmosMsg, Env, QuerierWrapper, Response, StdError, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Coin, CosmosMsg, Env, QuerierWrapper, Response, StdError, WasmMsg,
+};
 use osmosis_std::types::cosmos::app::v1alpha1::Config;
 
 use crate::ContractError;
@@ -21,8 +23,18 @@ pub trait VaultAdapter: Adapter {
 
     fn claim_incentives(self) -> Result<Response, Self::AdapterError>;
 
-    fn call(contract_addr: Addr, msg: Binary, funds: Vec<Coin>) -> Result<Response, Self::AdapterError> {
-        Ok(Response::new().add_message(CosmosMsg::Wasm(WasmMsg::Execute { contract_addr: contract_addr.into(), msg, funds })))
+    fn call(
+        contract_addr: Addr,
+        msg: Binary,
+        funds: Vec<Coin>,
+    ) -> Result<Response, Self::AdapterError> {
+        Ok(
+            Response::new().add_message(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: contract_addr.into(),
+                msg,
+                funds,
+            })),
+        )
     }
 }
 

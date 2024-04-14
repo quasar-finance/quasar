@@ -4,16 +4,17 @@ use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_storage_plus::{Deque, Item, Map};
 use vaultenator::state::ManageState;
 
-use crate::adapters::generic_vault::{MultiAssetAnyDepositVaultAdapterWrapper, MultiAssetExactDepositVaultAdapterWrapper, SingeAssetVaultAdapterWrapper, VaultAdapters};
+use crate::adapters::generic_vault::{
+    MultiAssetAnyDepositVaultAdapterWrapper, MultiAssetExactDepositVaultAdapterWrapper,
+    SingeAssetVaultAdapterWrapper, VaultAdapters,
+};
 
 #[cw_serde]
-pub enum Adapters
-{
+pub enum Adapters {
     Vault(VaultAdapters),
     Debt(), // TODO add debt adapters
     Swap(), // TODO add swap adapters
 }
-
 
 pub const ADAPTERS: Map<Addr, Adapters> = Map::new("adapters");
 

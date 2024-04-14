@@ -5,17 +5,19 @@ use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use vaultenator::msg::{VaultenatorExtensionExecuteMsg, VaultenatorExtensionQueryMsg};
 
 use crate::{
-    adapters::generic_vault::{VaultAction, VaultAdapters}, query::{
+    adapters::generic_vault::{VaultAction, VaultAdapters},
+    query::{
         AssetsBalanceResponse, PositionResponse, RangeAdminResponse, UserRewardsResponse,
         UserSharesBalanceResponse, VerifyTickCacheResponse,
-    }, state::VaultConfig
+    },
+    state::VaultConfig,
 };
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionExecuteMsg {
     Vaultenator(VaultenatorExtensionExecuteMsg),
-    Adapter()
+    Adapter(),
 }
 
 #[cw_serde]

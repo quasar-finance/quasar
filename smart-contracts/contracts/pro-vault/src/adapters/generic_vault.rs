@@ -8,19 +8,14 @@ use crate::ContractError;
 
 use super::r#trait::{Adapter, VaultAdapter};
 
-
 #[cw_serde]
 pub enum VaultAction {
     /// Deposit in to the vault
-    Deposit {
-        assets: Vec<Coin>
-    },
+    Deposit { assets: Vec<Coin> },
     /// Withdraw from the vault
-    Withdraw {
-        shares: Coin,
-    },
+    Withdraw { shares: Coin },
     /// Claim any incentives from the vault
-    Claim {}
+    Claim {},
 }
 
 #[cw_serde]
@@ -49,15 +44,24 @@ impl VaultAdapter for SingeAssetVaultAdapterWrapper {
                 }
             }
             _ => Err(PaymentError::MultipleDenoms {}),
-        }.map_err(|e| StdError::generic_err(e.to_string()))?;
+        }
+        .map_err(|e| StdError::generic_err(e.to_string()))?;
 
-        let msg: cw_vault_standard::VaultStandardExecuteMsg = cw_vault_standard::VaultStandardExecuteMsg::Deposit { amount: coin.amount, recipient: None };
+        let msg: cw_vault_standard::VaultStandardExecuteMsg =
+            cw_vault_standard::VaultStandardExecuteMsg::Deposit {
+                amount: coin.amount,
+                recipient: None,
+            };
 
         Self::call(self.address, to_json_binary(&msg)?, assets)
     }
 
     fn withdraw(self, shares: Coin) -> Result<Response, Self::AdapterError> {
-        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg  = cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient: None, amount: shares.amount };
+        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
+            cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem {
+                recipient: None,
+                amount: shares.amount,
+            };
 
         Self::call(self.address, to_json_binary(&msg)?, vec![shares])
     }
@@ -67,21 +71,24 @@ impl VaultAdapter for SingeAssetVaultAdapterWrapper {
     }
 }
 
-
 impl Adapter for SingeAssetVaultAdapterWrapper {
     fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
-        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
-        let info: VaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
-        
+        let query: cw_vault_standard::VaultStandardQueryMsg =
+            cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: VaultInfoResponse =
+            querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+
         let balance = querier.query_balance(env.contract.address, info.base_token)?;
 
         Ok(vec![balance])
     }
 
     fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError> {
-        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
-        let info: VaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
-        
+        let query: cw_vault_standard::VaultStandardQueryMsg =
+            cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: VaultInfoResponse =
+            querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+
         let balance = querier.query_balance(env.contract.address, info.vault_token)?;
 
         Ok(balance)
@@ -96,13 +103,18 @@ impl VaultAdapter for MultiAssetExactDepositVaultAdapterWrapper {
     type AdapterError = ContractError;
 
     fn deposit(self, assets: Vec<Coin>) -> Result<Response, ContractError> {
-        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg  = cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: None };
+        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
+            cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: None };
 
         Self::call(self.address, to_json_binary(&msg)?, assets)
     }
 
     fn withdraw(self, shares: Coin) -> Result<Response, ContractError> {
-        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg = cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient: None, amount: shares.amount };
+        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
+            cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem {
+                recipient: None,
+                amount: shares.amount,
+            };
 
         Self::call(self.address, to_json_binary(&msg)?, vec![shares])
     }
@@ -114,26 +126,30 @@ impl VaultAdapter for MultiAssetExactDepositVaultAdapterWrapper {
 
 impl Adapter for MultiAssetExactDepositVaultAdapterWrapper {
     fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
-        let query: cw_vault_multi_standard::VaultStandardQueryMsg  = cw_vault_multi_standard::VaultStandardQueryMsg::Info {};
-        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
-        
-        let balances: Result<Vec<Coin>, StdError> = info.tokens.iter().map(|token| {
-            querier.query_balance(&env.contract.address, token)
-        }).collect();
+        let query: cw_vault_multi_standard::VaultStandardQueryMsg =
+            cw_vault_multi_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse =
+            querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+
+        let balances: Result<Vec<Coin>, StdError> = info
+            .tokens
+            .iter()
+            .map(|token| querier.query_balance(&env.contract.address, token))
+            .collect();
 
         balances
     }
-    
+
     fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError> {
-        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
-        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
-        
+        let query: cw_vault_standard::VaultStandardQueryMsg =
+            cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse =
+            querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+
         let balance = querier.query_balance(env.contract.address, info.vault_token)?;
 
         Ok(balance)
     }
-
-  
 }
 
 pub struct MultiAssetAnyDepositVaultAdapterWrapper {
@@ -144,13 +160,18 @@ impl VaultAdapter for MultiAssetAnyDepositVaultAdapterWrapper {
     type AdapterError = ContractError;
 
     fn deposit(self, assets: Vec<Coin>) -> Result<Response, ContractError> {
-        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg  = cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: None };
+        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
+            cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: None };
 
         Self::call(self.address, to_json_binary(&msg)?, assets)
     }
 
     fn withdraw(self, shares: Coin) -> Result<Response, ContractError> {
-        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg  = cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient: None, amount: shares.amount };
+        let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
+            cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem {
+                recipient: None,
+                amount: shares.amount,
+            };
 
         Self::call(self.address, to_json_binary(&msg)?, vec![shares])
     }
@@ -158,26 +179,30 @@ impl VaultAdapter for MultiAssetAnyDepositVaultAdapterWrapper {
     fn claim_incentives(self) -> Result<Response, ContractError> {
         todo!()
     }
-
- 
 }
 
-impl Adapter for MultiAssetAnyDepositVaultAdapterWrapper {    
+impl Adapter for MultiAssetAnyDepositVaultAdapterWrapper {
     fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
-        let query: cw_vault_multi_standard::VaultStandardQueryMsg  = cw_vault_multi_standard::VaultStandardQueryMsg::Info {};
-        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
-        
-        let balances: Result<Vec<Coin>, StdError> = info.tokens.iter().map(|token| {
-            querier.query_balance(&env.contract.address, token)
-        }).collect();
+        let query: cw_vault_multi_standard::VaultStandardQueryMsg =
+            cw_vault_multi_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse =
+            querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+
+        let balances: Result<Vec<Coin>, StdError> = info
+            .tokens
+            .iter()
+            .map(|token| querier.query_balance(&env.contract.address, token))
+            .collect();
 
         balances
     }
-    
+
     fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError> {
-        let query: cw_vault_standard::VaultStandardQueryMsg  = cw_vault_standard::VaultStandardQueryMsg::Info {};
-        let info: MultiVaultInfoResponse = querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
-        
+        let query: cw_vault_standard::VaultStandardQueryMsg =
+            cw_vault_standard::VaultStandardQueryMsg::Info {};
+        let info: MultiVaultInfoResponse =
+            querier.query_wasm_smart(self.address.clone(), &to_json_binary(&query)?)?;
+
         let balance = querier.query_balance(env.contract.address, info.vault_token)?;
 
         Ok(balance)
