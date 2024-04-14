@@ -10,6 +10,7 @@ mod reply;
 pub mod state;
 pub mod vault;
 mod describe;
+mod execute;
 
 pub use crate::error::ContractError;
 
