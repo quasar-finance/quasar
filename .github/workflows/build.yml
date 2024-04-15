@@ -70,9 +70,11 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
+      - name: Install just via cargo
+        run: cargo install just
       - name: Build smart contracts
         if: env.GIT_DIFF
-        run: make compile-wasm-artifacts
+        run: cd smart-contracts && just workspace-optimize
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:

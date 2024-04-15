@@ -3,6 +3,7 @@ use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_storage_plus::{Deque, Item, Map};
 
 /// metadata useful for display purposes
@@ -125,6 +126,9 @@ pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap
 pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
     Item::new("current_swap_any_deposit");
 
+/// DEX_ROUTER: The address of the dex router contract
+pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
+
 #[cw_serde]
 pub struct ModifyRangeState {
     // pre-withdraw state items
@@ -138,6 +142,10 @@ pub struct ModifyRangeState {
     pub ratio_of_swappable_funds_to_use: Decimal,
     // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
+    // the recommended path to take for the swap
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    // whether or not to force the swap route
+    pub force_swap_route: bool,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
@@ -163,15 +171,6 @@ pub struct TickExpIndexData {
 pub const TICK_EXP_CACHE: Map<i64, TickExpIndexData> = Map::new("tick_exp_cache");
 pub const CURRENT_WITHDRAWER: Item<Addr> = Item::new("current_withdrawer");
 pub const CURRENT_WITHDRAWER_DUST: Item<(Uint128, Uint128)> = Item::new("current_withdrawer_dust");
-
-#[cw_serde]
-pub struct MigrationData {
-    pub new_pool_id: u64,
-    pub lower_tick: i64,
-    pub upper_tick: i64,
-}
-
-pub const MIGRATION_DATA: Item<MigrationData> = Item::new("migration_data");
 
 #[cfg(test)]
 mod tests {

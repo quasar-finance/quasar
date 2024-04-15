@@ -1,6 +1,7 @@
 use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
+use crate::state::DEX_ROUTER;
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use crate::{
@@ -70,6 +71,11 @@ pub struct VerifyTickCacheResponse {
 }
 
 #[cw_serde]
+pub struct DexRouterResponse {
+    pub dex_router: String,
+}
+
+#[cw_serde]
 pub struct SharePriceResponse {
     pub balances: Vec<Coin>,
 }
@@ -106,6 +112,14 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
         symbol: vault_denom,
         decimals: 6,
         admin,
+    })
+}
+
+pub fn query_dex_router(deps: Deps) -> ContractResult<DexRouterResponse> {
+    let dex_router = DEX_ROUTER.load(deps.storage)?;
+
+    Ok(DexRouterResponse {
+        dex_router: dex_router.to_string(),
     })
 }
 

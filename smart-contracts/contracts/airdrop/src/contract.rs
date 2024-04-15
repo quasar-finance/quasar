@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    entry_point, to_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult,
-    Uint128,
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    StdResult, Uint128,
 };
 use cw2::set_contract_version;
 use cw20_base::msg::MigrateMsg;
@@ -143,11 +143,11 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::AirdropConfigQuery {} => to_binary(&query_config(deps)?),
-        QueryMsg::UserInfoQuery { user } => to_binary(&query_user(deps, user)?),
-        QueryMsg::ContractStateQuery {} => to_binary(&query_contract_state(deps)?),
-        QueryMsg::SanityCheckQuery {} => to_binary(&query_airdrop_readiness(deps, env)?),
-        QueryMsg::UsersStatsQuery {} => to_binary(&query_users_stats(deps)?),
+        QueryMsg::AirdropConfigQuery {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::UserInfoQuery { user } => to_json_binary(&query_user(deps, user)?),
+        QueryMsg::ContractStateQuery {} => to_json_binary(&query_contract_state(deps)?),
+        QueryMsg::SanityCheckQuery {} => to_json_binary(&query_airdrop_readiness(deps, env)?),
+        QueryMsg::UsersStatsQuery {} => to_json_binary(&query_users_stats(deps)?),
     }
 }
 

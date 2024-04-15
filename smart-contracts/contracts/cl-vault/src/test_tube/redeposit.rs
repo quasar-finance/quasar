@@ -60,7 +60,7 @@ mod tests {
 
         let mut i = 1;
         for account in &accounts {
-            if i %2 ==0 {
+            if i % 2 == 0 {
                 let _ = wasm
                     .execute(
                         contract_address.as_str(),
@@ -102,7 +102,7 @@ mod tests {
             assert!(!shares.balance.is_zero());
 
             // redeposit on every 10th deposit into the vault
-            if i%10 == 0 {
+            if i % 10 == 0 {
                 // check for contract balance as it has not been redeposited yet
                 let balance_before = bm
                     .query_all_balances(&QueryAllBalancesRequest {
@@ -131,14 +131,16 @@ mod tests {
                     })
                     .unwrap();
 
-
                 // assert quote denom balance to be lass than 1 as sometimes the balance for
                 // quote denom becomes more than zero in odd number cases
-                assert!(Uint128::from_str(&balance_after.balance.unwrap_or_default().amount).unwrap() <= Uint128::new(1));
+                assert!(
+                    Uint128::from_str(&balance_after.balance.unwrap_or_default().amount).unwrap()
+                        <= Uint128::new(1)
+                );
             }
 
             // increment i with 1
-            i+=1;
+            i += 1;
         }
     }
 }

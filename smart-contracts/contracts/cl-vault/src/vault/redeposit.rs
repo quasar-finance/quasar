@@ -16,9 +16,6 @@ pub fn execute_redeposit(
     env: Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    // todo check if any address check is needed or not?
-    // todo can add a check for balance if we need to prevent spamming
-
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
         .position_by_id(position_id)?
@@ -71,6 +68,7 @@ pub fn handle_redeposit_reply(
 ) -> ContractResult<Response> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
+    // set claim after
     let position_id = (POSITION.load(deps.storage)?).position_id;
     // call merge
     let merge_msg =

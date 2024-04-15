@@ -1,7 +1,10 @@
+use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
     attr, coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
     Uint256,
 };
+use cw_dex::osmosis::OsmosisPool;
+use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
 
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 use osmosis_std::types::{
@@ -17,7 +20,7 @@ use crate::state::CURRENT_SWAP_ANY_DEPOSIT;
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
 use crate::vault::exact_deposit::{get_asset0_value, get_depositable_tokens};
 use crate::vault::range::SwapDirection;
-use crate::vault::swap::swap;
+use crate::vault::swap::{swap, SwapParams};
 use crate::{
     helpers::must_pay_one_or_two,
     query::query_total_assets,
@@ -153,20 +156,25 @@ pub(crate) fn execute_any_deposit(
     };
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    // todo check on the twap_window_seconds (taking default for now
+    // todo check on the twap_window_seconds (taking hardcoded value for now)
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
-    let (token_in_denom, token_out_ideal_amount, left_over_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            pool.token0,
-            swap_amount.checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-            swappable_amount.0.checked_sub(swap_amount)?,
-        ),
-        SwapDirection::OneToZero => (
-            pool.token1,
-            swap_amount.checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-            swappable_amount.1.checked_sub(swap_amount)?,
-        ),
-    };
+    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
+        match swap_direction {
+            SwapDirection::ZeroToOne => (
+                pool.token0,
+                pool.token1,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+                swappable_amount.0.checked_sub(swap_amount)?,
+            ),
+            SwapDirection::OneToZero => (
+                pool.token1,
+                pool.token0,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+                swappable_amount.1.checked_sub(swap_amount)?,
+            ),
+        };
 
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
@@ -178,17 +186,29 @@ pub(crate) fn execute_any_deposit(
         ),
     )?;
 
-    // todo : how do we give slippage here? hardcoded as of now
+    // todo change this later as it hardcoded as of now
     let token_out_min_amount =
         token_out_ideal_amount?.checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
 
-    // todo replace this swap with dex router logic?
+    // generate a swap message with recommended path as the current
+    // pool on which the vault is running
     let swap_msg = swap(
         deps,
         &env,
-        swap_amount,
-        &token_in_denom,
-        token_out_min_amount,
+        SwapParams {
+            token_in_amount: swap_amount,
+            token_out_min_amount,
+            token_in_denom: token_in_denom.clone(),
+            token_out_denom: token_out_denom.clone(),
+            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
+                SwapOperationBase {
+                    pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool.pool_id)),
+                    offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
+                    ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
+                },
+            ])),
+            force_swap_route: false,
+        },
     )?;
 
     // rest minting logic remains same
@@ -208,7 +228,9 @@ pub(crate) fn handle_any_deposit_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
     let resp: MsgSwapExactAmountInResponse = data.try_into()?;
+
     let (swap_direction, left_over_amount, recipient, deposit_amount_in_ratio) =
         CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
 

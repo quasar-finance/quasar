@@ -3,7 +3,7 @@ use crate::helpers::{assert_admin, sort_tokens};
 use crate::math::tick::build_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, METADATA, RANGE_ADMIN,
+    Metadata, VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, DEX_ROUTER, METADATA, RANGE_ADMIN,
     STRATEGIST_REWARDS, VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
@@ -27,6 +27,9 @@ pub(crate) fn execute_admin(
         }
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
+        }
+        AdminExtensionExecuteMsg::UpdateDexRouter { address } => {
+            execute_update_dex_router(deps, info, address)
         }
         AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
             execute_claim_strategist_rewards(deps, info)
@@ -103,6 +106,32 @@ pub fn execute_update_range_admin(
         .add_attribute("action", "execute_update_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
+}
+
+/// Updates the dex router address
+pub fn execute_update_dex_router(
+    deps: DepsMut,
+    info: MessageInfo,
+    address: Option<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    let previous_router = RANGE_ADMIN.load(deps.storage)?;
+    match address.clone() {
+        Some(address) => {
+            let new_router = deps.api.addr_validate(&address)?;
+            DEX_ROUTER.save(deps.storage, &new_router.clone())?;
+        }
+        None => {
+            DEX_ROUTER.remove(deps.storage);
+        }
+    }
+
+    Ok(Response::new()
+        .add_attribute("action", "execute_update_dex_router")
+        .add_attribute("previous_router", previous_router)
+        .add_attribute("new_router", address.unwrap_or("none".to_owned())))
 }
 
 /// Updates the configuration of the contract.

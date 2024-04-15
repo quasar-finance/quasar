@@ -40,23 +40,27 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 """
 
 [dependencies]
-apollo-cw-asset = "0.1.0"
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", features = ["library", "osmosis"]}
-cosmwasm-schema = "1.1.3"
-cosmwasm-std = "1.5.2"
-cw-storage-plus = "1.0.1"
-cw-utils = "1.0.2"
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+num_enum = { workspace = true }
+apollo-cw-asset = { workspace = true }
+
+## todo update this in dex router code first as this has been deprecated
+cw-dex = { workspace = true }
+
+cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", features = ["library", "osmosis"]}
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-cw2 = "1.0.1"
-num_enum = "0.7.0"
-osmosis-std = "0.22.0"
-prost = {version = "0.12.3", default-features = false}
-serde = {version = "1.0.145", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0.31"}
-rand = "0.8.5"
 
 [dev-dependencies]
-## todo : change this once branch is merges.
-osmosis-test-tube = "22.1.0"
-cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
-proptest = "1.2.0"
+rand = "0.8.5"
+osmosis-test-tube = { workspace = true }
+proptest = { workspace = true }

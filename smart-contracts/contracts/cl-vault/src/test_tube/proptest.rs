@@ -107,7 +107,7 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit.rs::execute_exact_deposit
+                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit::execute_exact_deposit
                 account,
             )
             .unwrap();
@@ -316,6 +316,8 @@ mod tests {
                         max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        recommended_swap_route: None,
+                        force_swap_route: false,
                         claim_after: None,
                     },
                 )),

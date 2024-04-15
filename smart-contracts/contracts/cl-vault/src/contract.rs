@@ -4,24 +4,23 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_info, query_metadata, query_pool, query_position,
-    query_share_price, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
+    query_position, query_share_price, query_total_assets, query_total_vault_token_supply,
+    query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::autocompound::{execute_auto_compound_swap, execute_migration_step};
 use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
+use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 
 use crate::state::{
     MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
     VAULT_CONFIG,
 };
-use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
-use crate::vault::exact_deposit::execute_exact_deposit;
-
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
+use crate::vault::exact_deposit::execute_exact_deposit;
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
@@ -87,6 +86,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                     claim_after,
                 }) => execute_update_range(
                     deps,
@@ -97,6 +98,8 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
+                    recommended_swap_route,
+                    force_swap_route,
                     claim_after,
                 ),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
@@ -143,6 +146,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
             crate::msg::ExtensionQueryMsg::Metadata {} => {
                 Ok(to_json_binary(&query_metadata(deps)?)?)
             }
+            crate::msg::ExtensionQueryMsg::DexRouter {} => {
+                Ok(to_json_binary(&query_dex_router(deps)?)?)
+            }
             crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_json_binary(&query_user_balance(deps, user)?)?)
@@ -187,7 +193,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
-        Replies::Merge => handle_merge_reply(deps, msg.result),
+        Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),

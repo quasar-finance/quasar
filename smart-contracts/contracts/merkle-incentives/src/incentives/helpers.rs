@@ -33,7 +33,7 @@ pub fn is_valid_claim(
 
     let claimed_amount = CLAIMED_INCENTIVES
         .load(deps.storage, address.clone())
-        .unwrap_or(CoinVec::new());
+        .unwrap_or_default();
 
     if claimed_amount.ge(coins) {
         return Err(ContractError::IncentivesAlreadyClaimed {});

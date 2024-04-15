@@ -1,12 +1,13 @@
-use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
-    Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
-};
-
-use cw_utils::PaymentError;
-use thiserror::Error;
-
 use std::num::ParseIntError;
+
+use cosmwasm_std::{
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, CoinFromStrError,
+    ConversionOverflowError, Decimal256, Decimal256RangeExceeded, DivideByZeroError, OverflowError,
+    StdError, Uint128,
+};
+use cw_utils::PaymentError;
+use prost::DecodeError;
+use thiserror::Error;
 
 pub type ContractResult<T> = Result<T, ContractError>;
 
@@ -66,7 +67,10 @@ pub enum ContractError {
     ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
-    DecodeError(#[from] prost::DecodeError),
+    DecodeError(#[from] DecodeError),
+
+    #[error("{0}")]
+    CoinFromStrError(#[from] CoinFromStrError),
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
@@ -138,4 +142,10 @@ pub enum ContractError {
 
     #[error("Migration status is closed")]
     MigrationStatusClosed {},
+
+    #[error("Vault is not distributing rewards, claiming is needed first")]
+    IsNotDistributing {},
+
+    #[error("Vault is already distributing rewards")]
+    IsDistributing {},
 }

@@ -1,4 +1,10 @@
 use crate::math::tick::tick_to_price;
+use std::str::FromStr;
+
+use osmosis_std::shim::Timestamp as OsmoTimestamp;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
+
 use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
@@ -7,11 +13,6 @@ use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
     QuerierWrapper, Storage, Uint128, Uint256,
 };
-use std::str::FromStr;
-
-use osmosis_std::shim::Timestamp as OsmoTimestamp;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
@@ -493,7 +494,6 @@ pub fn get_liquidity_amount_for_unused_funds(
 
 #[cfg(test)]
 mod tests {
-
     use std::collections::HashMap;
 
     use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
