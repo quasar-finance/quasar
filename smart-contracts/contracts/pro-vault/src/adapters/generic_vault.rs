@@ -53,7 +53,7 @@ impl VaultAdapter for SingeAssetVaultAdapterWrapper {
                 recipient: None,
             };
 
-        Self::call(self.address, to_json_binary(&msg)?, assets)
+            Ok(Self::call(self.address, to_json_binary(&msg)?, assets)?)
     }
 
     fn withdraw(self, shares: Coin) -> Result<Response, Self::AdapterError> {
@@ -63,7 +63,7 @@ impl VaultAdapter for SingeAssetVaultAdapterWrapper {
                 amount: shares.amount,
             };
 
-        Self::call(self.address, to_json_binary(&msg)?, vec![shares])
+            Ok(Self::call(self.address, to_json_binary(&msg)?, vec![shares])?)
     }
 
     fn claim_incentives(self) -> Result<Response, Self::AdapterError> {
@@ -106,7 +106,7 @@ impl VaultAdapter for MultiAssetExactDepositVaultAdapterWrapper {
         let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
             cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: None };
 
-        Self::call(self.address, to_json_binary(&msg)?, assets)
+        Ok(Self::call(self.address, to_json_binary(&msg)?, assets)?)
     }
 
     fn withdraw(self, shares: Coin) -> Result<Response, ContractError> {
@@ -116,7 +116,7 @@ impl VaultAdapter for MultiAssetExactDepositVaultAdapterWrapper {
                 amount: shares.amount,
             };
 
-        Self::call(self.address, to_json_binary(&msg)?, vec![shares])
+            Ok(Self::call(self.address, to_json_binary(&msg)?, vec![shares])?)
     }
 
     fn claim_incentives(self) -> Result<Response, ContractError> {
@@ -163,7 +163,7 @@ impl VaultAdapter for MultiAssetAnyDepositVaultAdapterWrapper {
         let msg: cw_vault_multi_standard::VaultStandardExecuteMsg =
             cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient: None };
 
-        Self::call(self.address, to_json_binary(&msg)?, assets)
+            Ok(Self::call(self.address, to_json_binary(&msg)?, assets)?)
     }
 
     fn withdraw(self, shares: Coin) -> Result<Response, ContractError> {
@@ -173,7 +173,7 @@ impl VaultAdapter for MultiAssetAnyDepositVaultAdapterWrapper {
                 amount: shares.amount,
             };
 
-        Self::call(self.address, to_json_binary(&msg)?, vec![shares])
+            Ok(Self::call(self.address, to_json_binary(&msg)?, vec![shares])?)
     }
 
     fn claim_incentives(self) -> Result<Response, ContractError> {

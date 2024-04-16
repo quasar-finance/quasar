@@ -12,22 +12,12 @@ pub trait Adapter {
 
     /// descrives the base asset balance of the vault in the adapter
     fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError>;
-}
-
-pub trait VaultAdapter: Adapter {
-    type AdapterError;
-
-    fn deposit(self, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
-
-    fn withdraw(self, shares: Coin) -> Result<Response, Self::AdapterError>;
-
-    fn claim_incentives(self) -> Result<Response, Self::AdapterError>;
 
     fn call(
         contract_addr: Addr,
         msg: Binary,
         funds: Vec<Coin>,
-    ) -> Result<Response, Self::AdapterError> {
+    ) -> Result<Response, StdError> {
         Ok(
             Response::new().add_message(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: contract_addr.into(),
@@ -38,9 +28,18 @@ pub trait VaultAdapter: Adapter {
     }
 }
 
-pub trait DebtAdapter<T: Adapter> {
+pub trait VaultAdapter: Adapter {
     type AdapterError;
-    type Config;
+
+    fn deposit(self, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
+
+    fn withdraw(self, shares: Coin) -> Result<Response, Self::AdapterError>;
+
+    fn claim_incentives(self) -> Result<Response, Self::AdapterError>;
+}
+
+pub trait DebtAdapter: Adapter {
+    type AdapterError;
 
     fn deposit_collateral(self, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
 
@@ -51,7 +50,7 @@ pub trait DebtAdapter<T: Adapter> {
     fn repay(self, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
 }
 
-pub trait SwapAdapter<T: Adapter> {
+pub trait SwapAdapter: Adapter {
     type AdapterError;
     type SwapConfig;
 

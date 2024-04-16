@@ -13,7 +13,7 @@ use crate::{
     ContractError,
 };
 
-pub fn execute_call_Adapter(
+pub fn execute_call_adapter(
     deps: DepsMut,
     env: Env,
     msg: AdapterExtensionMsg,
@@ -62,3 +62,5 @@ where
         VaultAction::Claim {} => Ok(adapter.claim_incentives()?),
     }
 }
+
+pub fn execute_debt_adapter()
