@@ -4,6 +4,7 @@ use cl_vault::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
+use cosmwasm_std::VoteOption::No;
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
 use crate::{
@@ -150,6 +151,7 @@ pub fn execute_new_range(
                 twap_window_seconds: params.twap_window_seconds,
                 force_swap_route: params.force_swap_route,
                 recommended_swap_route: Some(params.recommended_swap_route),
+                claim_after: Option::from(1000u64),
             }),
         ))?,
 
