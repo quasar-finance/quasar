@@ -417,21 +417,9 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
-    let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
+    let resp: MsgSwapExactAmountInResponse = data.try_into()?;
 
-    match resp {
-        Ok(msg) => {
-            // Proceed with handling the successful swap using token_out_amount
-            handle_swap_success(deps, env, msg.token_out_amount)
-        }
-        Err(_) => {
-            // If the data could not be parsed to MsgSwapExactAmountInResponse, return an error
-            Err(ContractError::SwapFailed {
-                message: "No token_out_amount found in swap response.".to_string(),
-            })
-        }
-    }
+    handle_swap_success(deps, env, resp.token_out_amount)
 }
 
 fn handle_swap_success(
