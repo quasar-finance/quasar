@@ -452,6 +452,23 @@ pub fn get_liquidity_amount_for_unused_funds(
     Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
 }
 
+pub fn extract_attribute_value_by_ty_and_key(
+    events: Vec<cosmwasm_std::Event>,
+    ty: &str,
+    key: &str,
+) -> Option<String> {
+    events
+        .iter()
+        .find(|event| event.ty == ty)
+        .and_then(|event| {
+            event
+                .attributes
+                .iter()
+                .find(|attr| attr.key == key)
+                .map(|attr| attr.value.clone())
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;

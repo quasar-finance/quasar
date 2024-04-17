@@ -14,10 +14,10 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
+    helpers::{extract_attribute_value_by_ty_and_key, get_twap_price, get_unused_balances},
     helpers::{
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
     },
-    helpers::{get_twap_price, get_unused_balances},
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
@@ -412,25 +412,42 @@ pub fn do_swap_deposit_merge(
         .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
 
+// do deposit
 pub fn handle_swap_reply(
     deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
-    let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
+    // TODO: Remove handling of data. if we keep reply_on_success in the caller function
+    match data.clone() {
+        SubMsgResult::Ok(msg) => {
+            let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
+            let tokens_out: Result<String, ContractError> = match resp {
+                Ok(msg) => Ok(msg.token_out_amount),
+                Err(_) => {
+                    let tokens_out_opt = extract_attribute_value_by_ty_and_key(
+                        msg.events,
+                        "token_swapped",
+                        "tokens_out",
+                    );
 
-    match resp {
-        Ok(msg) => {
-            // Proceed with handling the successful swap using token_out_amount
-            handle_swap_success(deps, env, msg.token_out_amount)
+                    match tokens_out_opt {
+                        Some(tokens_out) => {
+                            let token_out_coin = Coin::from_str(&tokens_out);
+                            Ok(token_out_coin?.amount.to_string())
+                        }
+                        None => {
+                            return Err(ContractError::SwapFailed {
+                                message: "No tokens_out attribute found in swap response"
+                                    .to_string(),
+                            })
+                        }
+                    }
+                }
+            };
+            handle_swap_success(deps, env, tokens_out?)
         }
-        Err(_) => {
-            // If the data could not be parsed to MsgSwapExactAmountInResponse, return an error
-            Err(ContractError::SwapFailed {
-                message: "No token_out_amount found in swap response.".to_string(),
-            })
-        }
+        SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
     }
 }
 
