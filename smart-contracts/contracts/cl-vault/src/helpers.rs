@@ -174,11 +174,6 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    // TODO error here if this condition holds
-    // if current_tick < lower_tick {
-    //     return ;
-    // }
-
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
@@ -186,11 +181,6 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let cur_price_sqrt = current_price.sqrt();
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
-
-    // let pool_metadata_constant: Decimal256 = cur_price_sqrt
-    //     .checked_mul(lower_price_sqrt)?
-    //     .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
-    //     .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
 
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
@@ -524,6 +514,9 @@ mod tests {
 
     use crate::math::tick::price_to_tick;
 
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Position as OsmoPosition;
+
     use super::*;
 
     #[test]
@@ -822,4 +815,62 @@ mod tests {
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
         assert_approx_eq!(position_1.1.asset1, (token1 * 2 / 5).into(), "0.00002");
     }
+
+    fn osmocoin(amount: u128, denom: &str) -> OsmoCoin {
+        OsmoCoin {
+            denom: denom.to_string(),
+            amount: amount.to_string(),
+        }
+    }
+
+    #[test]
+    fn test_get_min_ratio_per_position_single() {
+        // test edge cases such as tokens where one has 6 decimlas and the other 18:
+        let deps = mock_dependencies();
+
+        let positions = vec![(
+            // one normal position
+            Position {
+                position_id: 0,
+                ratio: Uint128::new(50),
+            },
+            FullPositionBreakdown {
+                position: Some(OsmoPosition {
+                    position_id: 0,
+                    address: "smart contract address".to_string(),
+                    pool_id: 0,
+                    lower_tick: -100,
+                    upper_tick: 100,
+                    join_time: None,
+                    liquidity: "100000000".to_string(),
+                }),
+                asset0: Some(osmocoin(100, "token0")),
+                asset1: Some(osmocoin(100, "token1")),
+                claimable_spread_rewards: vec![],
+                claimable_incentives: vec![],
+                forfeited_incentives: vec![],
+            },
+        )];
+
+        let spot_price = Decimal::from_ratio(1u128, 1_000_000u128);
+
+        let mut result = get_min_ratio_per_position(positions, spot_price).unwrap();
+
+        println!("{:?}", tick_to_price(-100));
+        println!("{:?}", tick_to_price(100));
+
+        println!("{:?}", result);
+        result[0].1.simplify();
+        println!("{:?}", result);
+
+        assert!(result.len() == 2);
+    }
 }
+// [(Position { position_id: 0, ratio: Uint128(50) }, PositionRatio { asset0: Uint128(998045953488830495266994297546062752), asset1: Uint128(1000049998750062496000000000000000) })]
+// thread 'helpers::tests::test_get_min_ratio_per_position_single' panicked at 'assertion failed: result.len() == 2', contracts/cl-vault/src/helpers.rs:871:9
+// note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+// test helpers::tests::test_get_min_ratio_per_position_single ... FAILED
+// [(Position { position_id: 0, ratio: Uint128(50) }, PositionRatio { asset0: Uint128(99900004), asset1: Uint128(100100) })]
+// thread 'helpers::tests::test_get_min_ratio_per_position_single' panicked at 'assertion failed: result.len() == 2', contracts/cl-vault/src/helpers.rs:873:9
+// note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+// test helpers::tests::test_get_min_ratio_per_position_single ... FAILED
