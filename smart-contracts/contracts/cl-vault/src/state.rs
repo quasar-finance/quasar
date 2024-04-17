@@ -1,5 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_storage_plus::{Deque, Item, Map};
 
 use crate::rewards::CoinList;
@@ -46,7 +47,7 @@ pub struct PoolConfig {
 
 impl PoolConfig {
     pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        vec![&self.token0, &self.token1].contains(&&token.into())
+        [&self.token0, &self.token1].contains(&&token.into())
     }
 }
 
@@ -82,15 +83,34 @@ pub struct CurrentDeposit {
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
+#[cw_serde]
+pub enum RewardsStatus {
+    Ready,
+    Collecting,
+    Distributing,
+}
+
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
+/// Collection related states
+pub const REWARDS_STATUS: Item<RewardsStatus> = Item::new("rewards_status");
+pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+pub const LAST_ADDRESS_COLLECTED: Item<Addr> = Item::new("last_address_collect");
+/// Distribution related states
+pub const IS_DISTRIBUTING: Item<bool> = Item::new("is_distributing");
+pub const DISTRIBUTED_REWARDS: Item<CoinList> = Item::new("distributed_rewards");
+/// Shared collection+distribution states
+pub const CURRENT_TOTAL_SUPPLY: Item<Uint128> = Item::new("current_total_supply");
 pub const CURRENT_REWARDS: Item<CoinList> = Item::new("current_rewards");
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+pub const DISTRIBUTION_SNAPSHOT: Deque<(Addr, Uint128)> = Deque::new("distribution_snapshot");
 
 /// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
 pub const CURRENT_REMAINDERS: Item<(Uint128, Uint128)> = Item::new("current_remainders");
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
+
+/// DEX_ROUTER: The address of the dex router contract
+pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 #[cw_serde]
 pub struct ModifyRangeState {
@@ -105,6 +125,10 @@ pub struct ModifyRangeState {
     pub ratio_of_swappable_funds_to_use: Decimal,
     // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
+    // the recommended path to take for the swap
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    // whether or not to force the swap route
+    pub force_swap_route: bool,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

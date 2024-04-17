@@ -216,7 +216,7 @@ pub fn on_unbond(
     let mut unbond_stubs = UNBOND_STATE.load(deps.storage, unbond_id.clone())?;
 
     // edit and save the stub where the address is the same as message sender with the unbond response
-    let mut unbonding_stub = unbond_stubs
+    let unbonding_stub = unbond_stubs
         .stub
         .iter_mut()
         .find(|s| s.address == info.sender)

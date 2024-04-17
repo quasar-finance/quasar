@@ -1,12 +1,13 @@
-use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, ConversionOverflowError, Decimal256,
-    Decimal256RangeExceeded, DivideByZeroError, OverflowError, StdError, Uint128,
-};
-
-use cw_utils::PaymentError;
-use thiserror::Error;
-
 use std::num::ParseIntError;
+
+use cosmwasm_std::{
+    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, CoinFromStrError,
+    ConversionOverflowError, Decimal256, Decimal256RangeExceeded, DivideByZeroError, OverflowError,
+    StdError, Uint128,
+};
+use cw_utils::PaymentError;
+use prost::DecodeError;
+use thiserror::Error;
 
 pub type ContractResult<T> = Result<T, ContractError>;
 
@@ -66,7 +67,10 @@ pub enum ContractError {
     ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
-    DecodeError(#[from] prost::DecodeError),
+    DecodeError(#[from] DecodeError),
+
+    #[error("{0}")]
+    CoinFromStrError(#[from] CoinFromStrError),
 
     #[error("{0}")]
     MultiplyRatioError(#[from] CheckedFromRatioError),
@@ -123,4 +127,13 @@ pub enum ContractError {
 
     #[error("Tick not found in tick cache, tick: {tick}")]
     TickNotFound { tick: i64 },
+
+    #[error("Vault is already distributing rewards")]
+    IsDistributing {},
+
+    #[error("Vault is not distributing rewards, claiming is needed first")]
+    IsNotDistributing {},
+
+    #[error("Cannot force a recommended route if recommended route is passed in as None")]
+    TryForceRouteWithoutRecommendedSwapRoute {},
 }

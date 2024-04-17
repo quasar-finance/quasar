@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
+    from_json, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
     Reply, Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
@@ -282,7 +282,7 @@ pub fn execute_ack(
 
     // TODO: trap error like in receive?
     // pro's acks happen anyway, cons?
-    let ack: IcsAck = from_binary(&msg.acknowledgement.data)?;
+    let ack: IcsAck = from_json(&msg.acknowledgement.data)?;
     match ack {
         IcsAck::Result(val) => handle_succesful_ack(deps, env, msg, val),
         IcsAck::Error(err) => handle_failing_ack(deps, env, msg, err),
@@ -498,7 +498,8 @@ mod tests {
     use cosmwasm_std::{
         attr, coins,
         testing::{mock_dependencies, mock_env, mock_info, MockQuerier},
-        to_binary, Addr, ContractInfoResponse, ContractResult, QuerierResult, Timestamp, WasmQuery,
+        to_json_binary, Addr, ContractInfoResponse, ContractResult, QuerierResult, Timestamp,
+        WasmQuery,
     };
     use cw_utils::PaymentError;
 
@@ -910,7 +911,7 @@ mod tests {
         q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
             match q {
                 WasmQuery::ContractInfo { contract_addr: _ } => {
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(to_json_binary(&info).unwrap()))
                 }
                 _ => unreachable!(),
             }
@@ -949,7 +950,7 @@ mod tests {
         q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
             match q {
                 WasmQuery::ContractInfo { contract_addr: _ } => {
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(to_json_binary(&info).unwrap()))
                 }
                 _ => unreachable!(),
             }

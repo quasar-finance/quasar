@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    attr, coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
@@ -40,10 +40,7 @@ pub fn execute_withdraw(
     // let shares = must_pay(&info, vault_denom.as_str())?;
 
     // get the amount from SHARES state
-    let user_shares: Uint256 = SHARES
-        .load(deps.storage, info.sender.clone())?
-        .try_into()
-        .unwrap();
+    let user_shares: Uint256 = SHARES.load(deps.storage, info.sender.clone())?.into();
 
     let left_over = user_shares
         .checked_sub(shares_to_withdraw)
@@ -64,13 +61,8 @@ pub fn execute_withdraw(
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
-        .try_into()
-        .unwrap();
-    let dust1: Uint256 = unused_balances
-        .find_coin(pool_config.token1)
-        .amount
-        .try_into()
-        .unwrap();
+        .into();
+    let dust1: Uint256 = unused_balances.find_coin(pool_config.token1).amount.into();
 
     let user_dust0: Uint128 = dust0
         .checked_mul(shares_to_withdraw)?
@@ -157,21 +149,18 @@ pub fn handle_withdraw_user_reply(
     let coin0 = coin(amount0.u128(), pool_config.token0);
     let coin1 = coin(amount1.u128(), pool_config.token1);
 
-    let withdraw_attrs = vec![
-        attr("token0_amount", coin0.amount),
-        attr("token1_amount", coin1.amount),
-    ];
-
     // send the funds to the user
     let msg = BankMsg::Send {
         to_address: user.to_string(),
-        amount: sort_tokens(vec![coin0, coin1]),
+        amount: sort_tokens(vec![coin0.clone(), coin1.clone()]),
     };
-    Ok(Response::new()
-        .add_message(msg)
-        .add_attribute("method", "withdraw_position_reply")
-        .add_attribute("action", "withdraw")
-        .add_attributes(withdraw_attrs))
+    Ok(Response::new().add_message(msg).add_event(
+        Event::new("withdraw_cl_position")
+            .add_attribute("method", "withdraw_position_reply")
+            .add_attribute("action", "withdraw")
+            .add_attribute("token0_amount", coin0.clone().amount)
+            .add_attribute("token1_amount", coin1.clone().amount),
+    ))
 }
 
 #[cfg(test)]

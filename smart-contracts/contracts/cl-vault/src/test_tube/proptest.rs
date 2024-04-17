@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
@@ -15,6 +15,7 @@ mod tests {
     use proptest::prelude::*;
 
     use crate::query::AssetsBalanceResponse;
+    use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -315,6 +316,8 @@ mod tests {
                         max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        recommended_swap_route: None,
+                        force_swap_route: false,
                     },
                 )),
                 &[],
@@ -401,31 +404,6 @@ mod tests {
             Some(position) => (position.lower_tick, position.upper_tick),
             None => panic!("Position not found"),
         }
-    }
-
-    // HELPERS
-
-    fn get_event_attributes_by_ty_and_key(
-        response: &ExecuteResponse<MsgExecuteContractResponse>,
-        ty: &str,
-        keys: Vec<&str>,
-    ) -> Vec<Attribute> {
-        response
-            .events
-            .iter()
-            .filter(|event| event.ty == ty)
-            .flat_map(|event| event.attributes.clone())
-            .filter(|attribute| keys.contains(&attribute.key.as_str()))
-            .collect()
-    }
-
-    fn _get_event_value_amount_numeric(value: &String) -> u128 {
-        // Find the position where the non-numeric part starts
-        let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
-        // Extract the numeric part from the string
-        let numeric_part = &value[0..pos];
-        // Try to parse the numeric string to u128
-        numeric_part.parse::<u128>().unwrap()
     }
 
     // COMPOSE STRATEGY

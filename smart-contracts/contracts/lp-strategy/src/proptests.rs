@@ -3,7 +3,8 @@ mod tests {
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, Binary, Coin, CosmosMsg, Empty, IbcMsg, MessageInfo, StdError, Uint128,
+        to_json_binary, Addr, Binary, Coin, CosmosMsg, Empty, IbcMsg, MessageInfo, StdError,
+        Uint128,
     };
     use proptest::prelude::*;
     use prost::Message;
@@ -23,14 +24,13 @@ mod tests {
         },
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
     };
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::{
         cosmos::bank::v1beta1::QueryBalanceResponse,
         osmosis::gamm::v1beta1::{
             QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+            QuerySpotPriceResponse,
         },
-    };
-    use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::gamm::v2::QuerySpotPriceResponse,
     };
     use proptest::collection::vec;
 
@@ -243,7 +243,7 @@ mod tests {
             ));
 
             // simulate that we received the ICQ ACK
-            let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+            let res = handle_icq_ack(deps.as_mut().storage, env, to_json_binary(&ibc_ack).unwrap()).unwrap();
 
             // get the pending bonds total amount
             let pending_total_amount = pending_bonds.iter().fold(Uint128::zero(), |acc, bond| {

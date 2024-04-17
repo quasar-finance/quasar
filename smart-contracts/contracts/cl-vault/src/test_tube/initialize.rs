@@ -45,7 +45,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
@@ -106,7 +106,6 @@ pub mod initialize {
                 }],
             },
             admin.address(),
-            false,
             &admin,
         )
         .unwrap();
@@ -253,6 +252,8 @@ pub mod initialize {
                     max_slippage: Decimal::bps(9500),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
+                    recommended_swap_route: None,
+                    force_swap_route: false,
                 },
             )),
             &[],

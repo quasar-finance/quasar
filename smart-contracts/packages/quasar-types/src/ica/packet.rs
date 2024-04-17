@@ -1,7 +1,7 @@
 use std::fmt;
 
 use cosmos_sdk_proto::{ibc::applications::interchain_accounts::v1::CosmosTx, Any};
-use cosmwasm_std::{to_binary, IbcMsg, IbcTimeout};
+use cosmwasm_std::{to_json_binary, IbcMsg, IbcTimeout};
 use prost::{bytes::Buf, Message};
 use serde::{
     de::{self, Unexpected, Visitor},
@@ -20,7 +20,7 @@ where
 
     Ok(IbcMsg::SendPacket {
         channel_id,
-        data: to_binary(&packet)?,
+        data: to_json_binary(&packet)?,
         timeout,
     })
 }

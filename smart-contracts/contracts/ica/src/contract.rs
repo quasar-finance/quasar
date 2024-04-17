@@ -2,7 +2,7 @@ use cosmos_sdk_proto::ibc::applications::interchain_accounts::v1::InterchainAcco
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
+    to_json_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, IbcTimeout, MessageInfo, Order,
     PortIdResponse, Reply, Response, StdResult, SubMsg, Uint64,
 };
 use prost::Message;
@@ -89,7 +89,7 @@ fn execute_bank_send(
 
     let send_packet_msg = IbcMsg::SendPacket {
         channel_id: channel,
-        data: to_binary(&packet.encode_to_vec())?,
+        data: to_json_binary(&packet.encode_to_vec())?,
         timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(300)),
     };
 
@@ -116,10 +116,10 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Port {} => to_binary(&query_port(deps)?),
-        QueryMsg::ListChannels {} => to_binary(&query_list(deps)?),
-        QueryMsg::Channel { id } => to_binary(&query_channel(deps, id)?),
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::Port {} => to_json_binary(&query_port(deps)?),
+        QueryMsg::ListChannels {} => to_json_binary(&query_list(deps)?),
+        QueryMsg::Channel { id } => to_json_binary(&query_channel(deps, id)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
     }
 }
 
@@ -158,14 +158,14 @@ mod test {
     use crate::test_helpers::*;
 
     use cosmwasm_std::testing::mock_env;
-    use cosmwasm_std::{from_binary, StdError};
+    use cosmwasm_std::{from_json, StdError};
 
     #[test]
     fn setup_and_query() {
         let deps = setup(&["channel-3", "channel-7"]);
 
         let raw_list = query(deps.as_ref(), mock_env(), QueryMsg::ListChannels {}).unwrap();
-        let list_res: ListChannelsResponse = from_binary(&raw_list).unwrap();
+        let list_res: ListChannelsResponse = from_json(&raw_list).unwrap();
         assert_eq!(2, list_res.channels.len());
         assert_eq!(mock_channel_info("channel-3"), list_res.channels[0]);
         assert_eq!(mock_channel_info("channel-7"), list_res.channels[1]);
@@ -178,7 +178,7 @@ mod test {
             },
         )
         .unwrap();
-        let chan_res: ChannelResponse = from_binary(&raw_channel).unwrap();
+        let chan_res: ChannelResponse = from_json(&raw_channel).unwrap();
         assert_eq!(chan_res.info, mock_channel_info("channel-3"));
 
         let err = query(
