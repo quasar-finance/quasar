@@ -36,7 +36,7 @@ apollo-cw-asset = "0.1.2"
 cosmos-sdk-proto = {version = "0.20.0", default-features = false}
 
 # Osmosis
-osmosis-std = "0.22.0"
+osmosis-std = "0.24.0"
 osmosis-std-derive = "0.20.1"
 
 # Serialization & Tools
@@ -52,5 +52,5 @@ base64 = "0.22.0"
 
 # Testing
 cw-multi-test = "0.20.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}
-osmosis-test-tube = "22.1.0"
+osmosis-test-tube = "24.0.1"
 proptest = "1.2.0"
