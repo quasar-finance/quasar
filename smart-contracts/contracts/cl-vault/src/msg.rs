@@ -155,8 +155,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub range_admin: String,
-    pub treasury_address: String,
-    pub dex_router: String,
-}
+pub struct MigrateMsg {}
