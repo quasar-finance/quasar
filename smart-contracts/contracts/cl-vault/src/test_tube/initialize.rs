@@ -3,19 +3,22 @@ pub mod initialize {
     use std::str::FromStr;
 
     use apollo_cw_asset::AssetInfoUnchecked;
-    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{coin, Addr, BankMsg, Coin, Decimal, Uint128};
     use cw_dex::implementations::pool::Pool;
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationUnchecked, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultInfoResponse;
-    use osmosis_std::types::cosmos::base::v1beta1;
+    use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
+    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-        CreateConcentratedLiquidityPoolsProposal, Pool as OsmosisStdPool, PoolRecord, PoolsRequest, UserPositionsRequest, UserPositionsResponse
+        CreateConcentratedLiquidityPoolsProposal, Pool as OsmosisStdPool, PoolRecord, PoolsRequest,
+        UserPositionsRequest, UserPositionsResponse,
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
+    use osmosis_test_tube::Bank;
     use osmosis_test_tube::{
         cosmrs::proto::traits::Message,
         osmosis_std::types::osmosis::concentratedliquidity::{
@@ -54,11 +57,11 @@ pub mod initialize {
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
             vec![
-                v1beta1::Coin {
+                OsmoCoin {
                     denom: DENOM_BASE.to_string(),
                     amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
-                v1beta1::Coin {
+                OsmoCoin {
                     denom: DENOM_QUOTE.to_string(),
                     amount: TOKENS_PROVIDED_AMOUNT.to_string(),
                 },
@@ -74,7 +77,7 @@ pub mod initialize {
         pool: MsgCreateConcentratedPool,
         lower_tick: i64,
         upper_tick: i64,
-        mut tokens_provided: Vec<v1beta1::Coin>,
+        mut tokens_provided: Vec<OsmoCoin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
     ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
@@ -238,6 +241,7 @@ pub mod initialize {
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
         let pm = PoolManager::new(&app);
+        let bank = Bank::new(&app);
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let pool = OsmosisStdPool::decode(pools.pools[0].value.as_slice()).unwrap();
@@ -285,7 +289,7 @@ pub mod initialize {
                     pool_id: cl_pool_id,
                     token_out_denom: DENOM_BASE.to_string(),
                 }],
-                token_in: Some(v1beta1::Coin {
+                token_in: Some(OsmoCoin {
                     denom: DENOM_QUOTE.to_string(),
                     amount: "1000".to_string(),
                 }),
@@ -297,6 +301,22 @@ pub mod initialize {
 
         // Increment the app time for twaps to function
         app.increase_time(1000000);
+
+        // Put some dust to simulate idle funds on contract
+        let b_send = bank
+            .send(
+                MsgSend {
+                    to_address: contract_address.to_string(),
+                    amount: vec![OsmoCoin {
+                        denom: pool.token0.clone(),
+                        amount: "1000000000000000".to_string(),
+                    }],
+                    from_address: admin.account_id().to_string(),
+                },
+                &admin,
+            )
+            .unwrap();
+        print!("b_send {:?}", b_send);
 
         // Update range of vault as Admin
         wasm.execute(
@@ -323,14 +343,14 @@ pub mod initialize {
         )
         .unwrap();
 
-        let resp = cl.query_user_positions(&UserPositionsRequest{
+        let resp = cl.query_user_positions(&UserPositionsRequest {
             address: contract_address.into_string(),
             pool_id: pool.id,
-            pagination: None
+            pagination: None,
         });
-        
+
         print!("debss");
 
-        print!("{:?}",resp);
+        print!("{:?}", resp);
     }
 }
