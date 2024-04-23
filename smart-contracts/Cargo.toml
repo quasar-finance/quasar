@@ -6,11 +6,11 @@ members = [
   # "contracts/ibc-transfer",
   # "contracts/intergamm-bindings-test",
   # "contracts/airdrop",
-  # "contracts/lp-strategy",
-  # "contracts/basic-vault",
-  # "contracts/vault-rewards",
+   "contracts/lp-strategy",
+   "contracts/basic-vault",
+   "contracts/vault-rewards",
   # "contracts/multihop-router",
-  # "packages/quasar-types",
+   "packages/quasar-types",
   # "packages/intergamm-bindings",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
@@ -33,10 +33,10 @@ cw20-staking = "0.11.1"
 apollo-cw-asset = "0.1.2"
 
 # SDK
-cosmos-sdk-proto = {version = "0.20.0", default-features = false}
+cosmos-sdk-proto = {version = "0.21.1", default-features = false}
 
 # Osmosis
-osmosis-std = "0.22.0"
+osmosis-std = "0.24.0"
 osmosis-std-derive = "0.20.1"
 
 # Serialization & Tools

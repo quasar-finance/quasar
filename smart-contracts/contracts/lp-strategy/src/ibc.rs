@@ -368,8 +368,8 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let ack: InterchainQueryPacketAck = from_json(ack_bin)?;
-    let resp: CosmosResponse = CosmosResponse::decode(ack.data.0.as_ref())?;
+    let ack_json: InterchainQueryPacketAckData  = from_json(ack_bin)?;
+    let resp: CosmosResponse = CosmosResponse::decode(ack_json.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
     let raw_balance = QueryBalanceResponse::decode(resp.responses[0].key.as_ref())?
@@ -408,7 +408,7 @@ pub fn handle_icq_ack(
         QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[3].key.as_ref())?;
 
     #[allow(deprecated)]
-    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].value.as_ref())?.spot_price;
+    let spot_price = QuerySpotPriceResponse::decode(resp.responses[4].key.as_ref())?.spot_price;
 
     let mut response_idx = 4;
     let join_pool = if SIMULATED_JOIN_AMOUNT_IN
@@ -879,7 +879,7 @@ mod tests {
             .unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
-        let ack_bin = Binary::from_base64("eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMmMwZVVSQmIwdERaMVl4WWpOT2RHSjRTVUpOUVc5UFRXZDNTME5uYjBaak0xSm9ZVEpWVTBGVVFVdEdSRWxUUTJoQlMwTXlaR2hpVnpCMlkwYzVkbUpET0hoRlowVjNRMmxSZVVsbmIxQkRaMVo2WkVkR2NscFNTVWRQVkdzd1QxUnJkME5uT0V0Q1dGWjJZekl4ZGtWbldUVlBWRlYzVFZSQlMwZEVTVmREYUZGNFRHcEJkMDFFUVhkTlJFRjNUVVJCZDAxRVFYZE5SRUYzVFVGd05FMXVXVXRrUVdkRVJXbzVkbU15TVhaTlYxRXhXbGRrZUU0eVZtNWhibHAwVDBSV2EyTlhjR3hqTTBwb1lsaGFkMXA2VW1oT1NGSjRZVWRhTldNemJHeFpNbFkxVG5wYWNtSklaREZsVkZFeFdtMTRkR1J1UmpSUFdFWjVUVEp6WVVGblowZEpaM05KWjBwTE5IYzFhaXN2THk4dlFWTnZaVU5uZEc1WlZ6RjBURE5DZG1JeWQzWk5Va2xRVDFSck1VMUVRWGRPZWtVeFRVUlJlazFVWXpNaWZRPT0ifQ==").unwrap();
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2c0eURBb0tDZ1YxYjNOdGJ4SUJNQW9PTWd3S0Nnb0ZjM1JoYTJVU0FUQUtGRElTQ2hBS0MyZGhiVzB2Y0c5dmJDOHhFZ0V3Q2dBS0tUSW5DaVV4TURBd01EQXdNREF3TURBd01EQXdNREF3TURBd01EQXdNREF3TURBd01EQXdNREF3Q2ljeUpRb1NNVFkxT0RNek1EQXdNREF3TURBd01EQXdFZzhLQlhWdmMyMXZFZ1l6TXpNek16TT0ifQ==").unwrap();
         println!("{}", ack_bin);
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();

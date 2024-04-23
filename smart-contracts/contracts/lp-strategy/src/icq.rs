@@ -12,6 +12,7 @@ use osmosis_std::types::{
         lockup::LockedRequest,
     },
 };
+use osmosis_std::types::osmosis::poolmanager::v2::SpotPriceRequest;
 use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 
@@ -200,7 +201,7 @@ pub fn prepare_full_query(
         )
         .add_request(
             spot_price.encode_to_vec().into(),
-            "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
+            "/osmosis.gamm.v1beta1.Query/SpotPrice".to_string(),
         );
 
     if let Some(join_pool) = checked_join_pool {

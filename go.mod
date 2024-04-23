@@ -1,6 +1,6 @@
 module github.com/quasarlabs/quasarnode
 
-go 1.21
+go 1.20
 
 require (
 	github.com/CosmWasm/wasmd v0.31.0
