@@ -2302,7 +2302,7 @@ fn test_force_unbond() {
         address: "user1".to_string(),
     };
     let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
-    let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+    let balance: BalanceResponse = from_json(&balance_res).unwrap();
     assert_eq!(balance.balance, Uint128::from(300 - 3u128));
 
     // another user deposits
@@ -2360,7 +2360,7 @@ fn test_force_unbond() {
         address: "user2".to_string(),
     };
     let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
-    let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+    let balance: BalanceResponse = from_json(&balance_res).unwrap();
     assert_eq!(balance.balance, Uint128::from(149 - 3u128));
 
     // force unbond the user & some user that's not bounded

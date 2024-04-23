@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
-use cosmwasm_std::{Binary, Coin, Decimal, Timestamp, Uint128};
+use cosmwasm_std::{Addr, Binary, Coin, Decimal, Timestamp, Uint128};
 
 use cw20::{AllowanceResponse, BalanceResponse};
 use cw20::{Expiration, TokenInfoResponse};
@@ -204,6 +204,9 @@ pub enum QueryMsg {
     /// Returns how much spender can use from owner account, 0 if unset.
     #[returns(AllowanceResponse)]
     Allowance { owner: String, spender: String },
+
+    #[returns(ActiveUsersResponse)]
+    ActiveUsers {},
 }
 
 #[cw_serde]
@@ -273,6 +276,12 @@ pub struct GetDebugResponse {
 #[cw_serde]
 pub struct TvlInfoResponse {
     pub primitives: Vec<PrimitiveInfo>,
+}
+
+#[cw_serde]
+pub struct ActiveUsersResponse {
+    pub addresses: Vec<Addr>,
+    pub balances: Vec<Uint128>,
 }
 
 #[cw_serde]

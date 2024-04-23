@@ -12,7 +12,6 @@ use osmosis_std::types::{
         lockup::LockedRequest,
     },
 };
-use osmosis_std::types::osmosis::poolmanager::v2::SpotPriceRequest;
 use prost::Message;
 use quasar_types::icq::{InterchainQueryPacketData, Query};
 

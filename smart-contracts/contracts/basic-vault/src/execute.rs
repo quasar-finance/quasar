@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, coin, to_json_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, Uint128, WasmMsg,
+    attr, coin, to_json_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;

@@ -326,7 +326,6 @@ mod tests {
         let res = query(deps.as_ref(), env, q).unwrap();
         let claimable_funds: ListClaimableFundsResponse = from_json(&res).unwrap();
 
-        println!("{claimable_funds:?}");
         assert_eq!(claimable_funds.claimable_funds.len(), 1);
         assert_eq!(
             claimable_funds.claimable_funds["somedepositor-\u{1}\0channel-1-bond"],

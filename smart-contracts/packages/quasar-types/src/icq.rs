@@ -41,7 +41,7 @@ pub struct CosmosResponse {
 
 impl InterchainQueryPacketAck {
     pub fn new(data: Binary) -> Self {
-        InterchainQueryPacketAck { result: todo!() }
+        InterchainQueryPacketAck { result: data }
     }
 
     // pub fn data(&self) -> &Binary {
@@ -51,6 +51,20 @@ impl InterchainQueryPacketAck {
     // pub fn into_inner(self) -> Binary {
     //     self.result.data
     // }
+}
+
+impl InterchainQueryPacketAckData {
+    pub fn new(data: Binary) -> Self {
+        InterchainQueryPacketAckData { data }
+    }
+
+    pub fn data(&self) -> &Binary {
+        &self.data
+    }
+
+    pub fn into_inner(self) -> Binary {
+        self.data
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

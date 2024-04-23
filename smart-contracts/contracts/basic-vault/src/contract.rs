@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
-    StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
+    SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -27,8 +27,8 @@ use crate::msg::{
     PrimitiveInitMsg, QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
-    query_deposit_ratio, query_investment, query_pending_bonds, query_pending_bonds_by_id,
-    query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
+    query_active_users, query_deposit_ratio, query_investment, query_pending_bonds,
+    query_pending_bonds_by_id, query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP, CLAIMS,
@@ -330,6 +330,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PendingUnbondsById { bond_id } => {
             to_json_binary(&query_pending_unbonds_by_id(deps, bond_id)?)
         }
+        QueryMsg::ActiveUsers {} => to_json_binary(&query_active_users(deps)?),
     }
 }
 

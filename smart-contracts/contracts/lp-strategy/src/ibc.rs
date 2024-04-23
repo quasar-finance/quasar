@@ -39,9 +39,7 @@ use quasar_types::ibc::{enforce_order_and_version, ChannelInfo, ChannelType, Han
 use quasar_types::ica::handshake::enforce_ica_order_and_metadata;
 use quasar_types::ica::packet::{ica_send, AckBody};
 use quasar_types::ica::traits::Unpack;
-use quasar_types::icq::{
-    CosmosResponse, InterchainQueryPacketAck, InterchainQueryPacketAckData, ICQ_ORDERING,
-};
+use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAckData, ICQ_ORDERING};
 use quasar_types::{ibc, ica::handshake::IcaMetadata, icq::ICQ_VERSION};
 use std::str::FromStr;
 
@@ -300,7 +298,7 @@ pub fn handle_transfer_ack(
     storage: &mut dyn Storage,
     env: Env,
     ack_bin: Binary,
-    pkt: &IbcPacketAckMsg,
+    _pkt: &IbcPacketAckMsg,
     mut pending: PendingBond,
     transferred_amount: Uint128,
 ) -> Result<Response, ContractError> {
@@ -368,7 +366,7 @@ pub fn handle_icq_ack(
 ) -> Result<Response, ContractError> {
     // todo: query flows should be separated by which flowType we're doing (bond, unbond, startunbond)
 
-    let ack_json: InterchainQueryPacketAckData  = from_json(ack_bin)?;
+    let ack_json: InterchainQueryPacketAckData = from_json(ack_bin)?;
     let resp: CosmosResponse = CosmosResponse::decode(ack_json.data.0.as_ref())?;
 
     // we have only dispatched on query and a single kind at this point
@@ -879,8 +877,7 @@ mod tests {
             .unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2c0eURBb0tDZ1YxYjNOdGJ4SUJNQW9PTWd3S0Nnb0ZjM1JoYTJVU0FUQUtGRElTQ2hBS0MyZGhiVzB2Y0c5dmJDOHhFZ0V3Q2dBS0tUSW5DaVV4TURBd01EQXdNREF3TURBd01EQXdNREF3TURBd01EQXdNREF3TURBd01EQXdNREF3Q2ljeUpRb1NNVFkxT0RNek1EQXdNREF3TURBd01EQXdFZzhLQlhWdmMyMXZFZ1l6TXpNek16TT0ifQ==").unwrap();
-        println!("{}", ack_bin);
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2c0eURBb0tDZ1YxYjNOdGJ4SUJNQW9TTWhBS0Rnb0pabUZyWlhOMFlXdGxFZ0V3Q2hReUVnb1FDZ3RuWVcxdEwzQnZiMnd2TXhJQk1Bb0FDaGd5RmdvVU1TNHdNREF3TURBd01EQXdNREF3TURBd01EQUtKeklsQ2hJeE5qVTJPVFU0T1RFNE5UY3hNRGcwTURBU0R3b0ZkVzl6Ylc4U0JqTXpNek16TXc9PSJ9").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
@@ -990,7 +987,8 @@ mod tests {
                     amount: "100".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let quote_balance = create_query_response(
@@ -1000,7 +998,8 @@ mod tests {
                     amount: "100".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let lp_balance = create_query_response(
@@ -1010,7 +1009,8 @@ mod tests {
                     amount: "100".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let exit_pool = create_query_response(
@@ -1030,14 +1030,17 @@ mod tests {
                     .into(),
                 ],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
+        #[allow(deprecated)]
         let spot_price = create_query_response(
             QuerySpotPriceResponse {
                 spot_price: "1".to_string(),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let join_pool = create_query_response(
@@ -1049,7 +1052,8 @@ mod tests {
                 }
                 .into()],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let exit_pool_unbonds = create_query_response(
@@ -1067,10 +1071,11 @@ mod tests {
                     .into(),
                 ],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
-        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+        let ibc_ack = InterchainQueryPacketAckData::new(Binary::from(
             &CosmosResponse {
                 responses: vec![
                     raw_balance.clone(),
@@ -1114,11 +1119,13 @@ mod tests {
         );
 
         // changing some ICQ ACK params to create a different test scenario
+        #[allow(deprecated)]
         let spot_price = create_query_response(
             QuerySpotPriceResponse {
                 spot_price: "5".to_string(),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let exit_pool_unbonds = create_query_response(
@@ -1138,10 +1145,11 @@ mod tests {
                     .into(),
                 ],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
-        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+        let ibc_ack = InterchainQueryPacketAckData::new(Binary::from(
             &CosmosResponse {
                 responses: vec![
                     raw_balance,

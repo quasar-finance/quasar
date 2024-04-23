@@ -119,12 +119,13 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         to_json_binary, Addr, StdError, Timestamp, Uint128,
     };
+    #[allow(deprecated)]
     use osmosis_std::types::osmosis::gamm::v1beta1::{
         QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
         QuerySpotPriceResponse,
     };
     use prost::Message;
-    use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
+    use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAckData};
 
     use crate::ibc::handle_icq_ack;
     use crate::state::{PENDING_BOND_QUEUE, REJOIN_QUEUE, SIMULATED_JOIN_AMOUNT_IN};
@@ -673,7 +674,8 @@ mod tests {
                     amount: "1000".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let quote_balance = create_query_response(
@@ -683,7 +685,8 @@ mod tests {
                     amount: "1000".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let lp_balance = create_query_response(
@@ -693,7 +696,8 @@ mod tests {
                     amount: "1000".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let join_pool = create_query_response(
@@ -704,7 +708,8 @@ mod tests {
                     amount: "123".to_string(),
                 }],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let exit_pool = create_query_response(
@@ -722,19 +727,22 @@ mod tests {
                     },
                 ],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
+        #[allow(deprecated)]
         let spot_price = create_query_response(
             QuerySpotPriceResponse {
                 spot_price: "123".to_string(),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
-        let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
+        let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec().into());
 
-        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+        let ibc_ack = InterchainQueryPacketAckData::new(Binary::from(
             &CosmosResponse {
                 responses: vec![
                     raw_balance,
@@ -886,7 +894,8 @@ mod tests {
                     amount: "1000".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let quote_balance = create_query_response(
@@ -896,7 +905,8 @@ mod tests {
                     amount: "1000".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let lp_balance = create_query_response(
@@ -906,7 +916,8 @@ mod tests {
                     amount: "1000".to_string(),
                 }),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let join_pool = create_query_response(
@@ -917,7 +928,8 @@ mod tests {
                     amount: "123".to_string(),
                 }],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
         let exit_pool = create_query_response(
@@ -935,19 +947,22 @@ mod tests {
                     },
                 ],
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
+        #[allow(deprecated)]
         let spot_price = create_query_response(
             QuerySpotPriceResponse {
                 spot_price: "123".to_string(),
             }
-            .encode_to_vec(),
+            .encode_to_vec()
+            .into(),
         );
 
-        let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
+        let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec().into());
 
-        let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+        let ibc_ack = InterchainQueryPacketAckData::new(Binary::from(
             &CosmosResponse {
                 responses: vec![
                     raw_balance,

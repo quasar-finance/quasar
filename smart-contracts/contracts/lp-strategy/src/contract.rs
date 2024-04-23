@@ -11,7 +11,7 @@ use quasar_types::ibc::IcsAck;
 
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
-use crate::error::{ContractError, Trap};
+use crate::error::ContractError;
 use crate::execute::execute_retry;
 use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
@@ -22,9 +22,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, PendingBond, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
-    FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
-    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
+    UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -487,7 +487,7 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 // It's recommended to migrate either pending acks or traps, not both at the same time!
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true"))
@@ -505,9 +505,7 @@ mod tests {
 
     use crate::{
         bond::Bond,
-        error::Trap,
-        queries::handle_trapped_errors_query,
-        state::{PendingBond, Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
+        state::{Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
         test_helpers::default_setup,
     };
 

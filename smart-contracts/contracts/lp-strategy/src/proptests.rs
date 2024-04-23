@@ -8,7 +8,7 @@ mod tests {
     };
     use proptest::prelude::*;
     use prost::Message;
-    use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
+    use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAckData};
 
     use crate::{
         bond::Bond,
@@ -25,6 +25,7 @@ mod tests {
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
     };
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    #[allow(deprecated)]
     use osmosis_std::types::{
         cosmos::bank::v1beta1::QueryBalanceResponse,
         osmosis::gamm::v1beta1::{
@@ -206,6 +207,7 @@ mod tests {
                 .encode_to_vec(),
             );
 
+            #[allow(deprecated)]
             let spot_price = create_query_response(
                 QuerySpotPriceResponse {
                     spot_price: (spot_price_rq+1).to_string(),
@@ -227,7 +229,7 @@ mod tests {
             // LockResponse is fixed to None in this test for simplicity
             // let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
-            let ibc_ack = InterchainQueryPacketAck::new(Binary::from(
+            let ibc_ack = InterchainQueryPacketAckData::new(Binary::from(
                 &CosmosResponse {
                     responses: vec![
                         raw_balance,
