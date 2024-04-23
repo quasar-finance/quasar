@@ -1,11 +1,13 @@
-use cosmwasm_std::{Addr, Coin, Deps, StdResult};
+use cosmwasm_std::{Addr, Coin, Deps, Order, StdResult, Uint128};
+use cw20_base::state::BALANCES;
 use lp_strategy::msg::{ConfigResponse, IcaAddressResponse, LpSharesResponse, QueryMsg};
 
 use crate::{
     execute::may_pay_with_ratio,
     msg::{
-        DepositRatioResponse, InvestmentResponse, PendingBondsByIdResponse, PendingBondsResponse,
-        PendingUnbondsByIdResponse, PendingUnbondsResponse, PrimitiveInfo, TvlInfoResponse,
+        ActiveUsersResponse, DepositRatioResponse, InvestmentResponse, PendingBondsByIdResponse,
+        PendingBondsResponse, PendingUnbondsByIdResponse, PendingUnbondsResponse, PrimitiveInfo,
+        TvlInfoResponse,
     },
     state::{Unbond, BOND_STATE, INVESTMENT, PENDING_BOND_IDS, PENDING_UNBOND_IDS, UNBOND_STATE},
 };
@@ -117,4 +119,133 @@ pub fn query_pending_unbonds_by_id(
     Ok(PendingUnbondsByIdResponse {
         pending_unbonds: unbond_stubs,
     })
+}
+
+pub fn query_active_users(deps: Deps) -> StdResult<ActiveUsersResponse> {
+    let mut addresses: Vec<Addr> = vec![];
+    let mut balances: Vec<Uint128> = vec![];
+
+    for res in BALANCES.range(deps.storage, None, None, Order::Ascending) {
+        addresses.push(res.as_ref().unwrap().0.clone());
+        balances.push(res.as_ref().unwrap().1);
+    }
+
+    Ok(ActiveUsersResponse {
+        addresses,
+        balances,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::msg::ActiveUsersResponse;
+    use crate::query::query_active_users;
+    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{Addr, StdResult, Uint128};
+    use cw20_base::state::BALANCES;
+
+    #[test]
+    fn test_query_active_users_no_data() {
+        // Create a mock dependencies object
+        let deps = mock_dependencies();
+
+        // No data in the BALANCES map
+        let result: StdResult<ActiveUsersResponse> = query_active_users(deps.as_ref());
+
+        // Ensure the query executed successfully and the response is empty
+        assert!(result.is_ok(), "Query should return a successful result");
+
+        // Get the response
+        let response = result.unwrap();
+
+        // Check that the response is empty
+        assert_eq!(response.addresses.len(), 0, "Expected no addresses");
+        assert_eq!(response.balances.len(), 0, "Expected no balances");
+    }
+
+    #[test]
+    fn test_query_active_users_with_zero_balance() {
+        let mut deps = mock_dependencies();
+
+        // Add addresses with zero balance and non-zero balances
+        let addr1 = Addr::unchecked("address1");
+        let addr2 = Addr::unchecked("address2");
+        let addr3 = Addr::unchecked("address3");
+
+        BALANCES
+            .save(&mut deps.storage, &addr1, &Uint128::from(0u128))
+            .unwrap(); // Zero balance
+        BALANCES
+            .save(&mut deps.storage, &addr2, &Uint128::from(200u128))
+            .unwrap(); // Non-zero balance
+        BALANCES
+            .save(&mut deps.storage, &addr3, &Uint128::from(300u128))
+            .unwrap(); // Non-zero balance
+
+        // Query the active users
+        let result: StdResult<ActiveUsersResponse> = query_active_users(deps.as_ref());
+
+        assert!(result.is_ok(), "Query should return a successful result");
+
+        let response = result.unwrap();
+
+        // Ensure that zero balance is returned properly
+        assert_eq!(
+            response.addresses,
+            vec![addr1, addr2, addr3],
+            "Expected addresses did not match"
+        );
+        assert_eq!(
+            response.balances,
+            vec![
+                Uint128::from(0u128),
+                Uint128::from(200u128),
+                Uint128::from(300u128)
+            ],
+            "Expected balances did not match"
+        );
+    }
+
+    #[test]
+    fn test_query_active_users_disordered() {
+        let mut deps = mock_dependencies();
+
+        // Add addresses with disordered balances
+        let addr1 = Addr::unchecked("address3");
+        let addr2 = Addr::unchecked("address2");
+        let addr3 = Addr::unchecked("address1");
+
+        BALANCES
+            .save(&mut deps.storage, &addr1, &Uint128::from(300u128))
+            .unwrap(); // 300
+        BALANCES
+            .save(&mut deps.storage, &addr2, &Uint128::from(200u128))
+            .unwrap(); // 200
+        BALANCES
+            .save(&mut deps.storage, &addr3, &Uint128::from(100u128))
+            .unwrap(); // 100
+
+        // Query the active users
+        let result: StdResult<ActiveUsersResponse> = query_active_users(deps.as_ref());
+
+        assert!(result.is_ok(), "Query should return a successful result");
+
+        let response = result.unwrap();
+
+        // Even if the balances were inserted in disordered form, the query output should be sorted
+        assert_eq!(
+            response.addresses,
+            vec![addr3, addr2, addr1],
+            "Expected addresses to be in ascending order"
+        );
+        assert_eq!(
+            response.balances,
+            vec![
+                Uint128::from(100u128),
+                Uint128::from(200u128),
+                Uint128::from(300u128)
+            ],
+            "Expected balances to be in ascending order"
+        );
+    }
 }
