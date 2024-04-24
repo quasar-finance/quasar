@@ -154,11 +154,11 @@ pub fn handle_withdraw_position_reply(
     let unused_balance0 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
-        .checked_sub(amount0)?;
+        .saturating_sub(amount0);
     let unused_balance1 = unused_balances
         .find_coin(pool_config.token1.clone())
         .amount
-        .checked_sub(amount1)?;
+        .saturating_sub(amount1);
 
     amount0 = amount0.checked_add(unused_balance0)?;
     amount1 = amount1.checked_add(unused_balance1)?;
