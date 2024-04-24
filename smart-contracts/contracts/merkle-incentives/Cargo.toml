@@ -35,8 +35,8 @@ optimize = """docker run --rm -v "$(pwd)":/code \
 
 [dependencies]
 base64 = "0.22.0"
-cosmwasm-schema = "1.5.3"
-cosmwasm-std = "1.5.3"
+cosmwasm-schema = "1.5.4"
+cosmwasm-std = "1.5.4"
 cw-storage-plus = "1.1.0"
 cw2 = "1.1.1"
 rs_merkle = { version = "1.4.2", default-features = false }

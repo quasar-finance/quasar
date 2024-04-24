@@ -46,8 +46,8 @@ cosmwasm/rust-optimizer-arm64:0.12.12
 
 [dependencies]
 cw-asset = "3"
-cosmwasm-std = "1.2"
-cosmwasm-schema = "1.2"
+cosmwasm-std = "1.5.4"
+cosmwasm-schema = "1.5.4"
 cw-storage-plus = "1.0"
 cw2 = "1.0"
 cw20 = "1.0"
