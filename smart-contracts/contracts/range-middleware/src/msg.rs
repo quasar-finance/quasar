@@ -30,3 +30,6 @@ pub enum QueryMsg {
     #[returns(Empty)]
     AdminQuery(AdminQueryMsg),
 }
+
+#[cw_serde]
+pub struct MigrateMsg {}
