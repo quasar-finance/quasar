@@ -364,19 +364,6 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let old_invest = OLD_INVESTMENT.load(deps.storage)?;
-
-    // grab the local_denom from the first primitive (for our context this will always be same as what deposit denom should be)
-    let PrimitiveInitMsg::LP(lp_init) = old_invest.primitives.first().unwrap().init.clone();
-    let deposit_denom = lp_init.local_denom;
-    let new_invest = InvestmentInfo {
-        owner: old_invest.owner,
-        min_withdrawal: old_invest.min_withdrawal,
-        deposit_denom,
-        primitives: old_invest.primitives,
-    };
-    INVESTMENT.save(deps.storage, &new_invest)?;
-
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true"))
