@@ -19,8 +19,8 @@ members = [
 
 [workspace.dependencies]
 # CosmWasm
-cosmwasm-std = "1.5.3"
-cosmwasm-schema = "1.5.3"
+cosmwasm-std = "1.5.4"
+cosmwasm-schema = "1.5.4"
 cosmwasm-storage = "1.5.2"
 cw-storage-plus = "1.2.0"
 cw-controllers = "1.1.2"
