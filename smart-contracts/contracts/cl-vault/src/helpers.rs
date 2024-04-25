@@ -9,10 +9,8 @@ use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Storage, Uint128, Uint256,
-};
+use cosmwasm_std::{coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128, Uint256, BankMsg, Attribute, attr};
+use osmosis_std::try_proto_to_cosmwasm_coins;
 
 /// returns the Coin of the needed denoms in the order given in denoms
 
@@ -41,7 +39,23 @@ pub(crate) fn must_pay_one_or_two(
     Ok((token0, token1))
 }
 
-/// Calculate the total value of two assets in asset0
+
+/// Calculate the total value of two assets in asset0.
+///
+/// # Arguments
+///
+/// * `storage` - Storage instance for accessing contract data.
+/// * `querier` - QuerierWrapper instance for querying external data.
+/// * `token0` - Amount of the first token.
+/// * `token1` - Amount of the second token.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns the total value of the two assets in asset0.
 pub fn get_asset0_value(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
@@ -122,6 +136,138 @@ pub fn get_twap_price(
     )?;
 
     Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
+}
+
+/// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies for interacting with the contract.
+/// * `token0` - Coin representing the first token.
+/// * `token1` - Coin representing the second token.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns a tuple containing the depositable amounts of token0 and token1, and amounts that need to be refunded.
+#[allow(clippy::type_complexity)]
+pub fn get_depositable_tokens(
+    deps: DepsMut,
+    token0: Coin,
+    token1: Coin,
+) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
+    let position = get_position(deps.storage, &deps.querier)?;
+
+    match (position.asset0, position.asset1) {
+        (None, _) => Ok((
+            (Uint128::zero(), token1.amount),
+            (token0.amount, Uint128::zero()),
+        )),
+        (_, None) => Ok((
+            (token0.amount, Uint128::zero()),
+            (Uint128::zero(), token1.amount),
+        )),
+        /*
+           Figure out how many of the tokens we can use for a double sided position.
+           First we find whether token0 or token0 is the limiting factor for the token by
+           dividing token0 by the current amount of token0 in the position and do the same for token1
+           for calculating further amounts we start from:
+           token0 / token1 = ratio0 / ratio1, where ratio0 / ratio1 are the ratios from the position
+
+           if token0 is limiting, we calculate the token1 amount by
+           token1 = token0*ratio1/ratio0
+
+           if token1 is limiting, we calculate the token0 amount by
+           token0 = token1 * ratio0 / ratio1
+        */
+        (Some(asset0), Some(asset1)) => {
+            let token0 = token0.amount;
+            let token1 = token1.amount;
+            let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+            let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
+            println!("{:?}", ratio);
+
+            // Refund token0 if ratio.numerator is zero
+            if ratio.numerator().is_zero() {
+                return Ok(((Uint128::zero(), token1), (token0, Uint128::zero())));
+            }
+
+            let zero_usage: Uint128 = ((Uint256::from(token0)
+                * Uint256::from_u128(1_000_000_000_000_000_000u128))
+                / Uint256::from(ratio.numerator()))
+                .try_into()?;
+            let one_usage: Uint128 = ((Uint256::from(token1)
+                * Uint256::from_u128(1_000_000_000_000_000_000u128))
+                / Uint256::from(ratio.denominator()))
+                .try_into()?;
+
+            if zero_usage < one_usage {
+                let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
+                    / Uint256::from(ratio.numerator()))
+                    .try_into()?;
+                Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
+            } else {
+                let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
+                    / Uint256::from(ratio.denominator()))
+                    .try_into()?;
+                Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
+            }
+        }
+    }
+}
+
+/// Generate a bank message and attributes for refunding tokens to a recipient.
+///
+/// # Arguments
+///
+/// * `receiver` - Address of the recipient.
+/// * `refund0` - Optional coin for the first token refund.
+/// * `refund1` - Optional coin for the second token refund.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns an optional tuple containing the bank message and attributes if refunds are necessary.
+pub fn refund_bank_msg(
+    receiver: Addr,
+    refund0: Option<Coin>,
+    refund1: Option<Coin>,
+) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
+    let mut attributes: Vec<Attribute> = vec![];
+    let mut coins: Vec<Coin> = vec![];
+
+    if let Some(refund0) = refund0 {
+        if refund0.amount > Uint128::zero() {
+            attributes.push(attr("refund0_amount", refund0.amount));
+            attributes.push(attr("refund0_denom", refund0.denom.as_str()));
+            coins.push(refund0)
+        }
+    }
+    if let Some(refund1) = refund1 {
+        if refund1.amount > Uint128::zero() {
+            attributes.push(attr("refund1_amount", refund1.amount));
+            attributes.push(attr("refund1_denom", refund1.denom.as_str()));
+            coins.push(refund1)
+        }
+    }
+    let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
+        Some((
+            BankMsg::Send {
+                to_address: receiver.to_string(),
+                amount: coins,
+            },
+            attributes,
+        ))
+    } else {
+        None
+    };
+    Ok(result)
 }
 
 // /// get_liquidity_needed_for_tokens
@@ -490,23 +636,6 @@ pub fn get_liquidity_amount_for_unused_funds(
 
     // add together the liquidity from the initial deposit and the swap deposit and return that
     Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
-}
-
-pub fn extract_attribute_value_by_ty_and_key(
-    events: Vec<cosmwasm_std::Event>,
-    ty: &str,
-    key: &str,
-) -> Option<String> {
-    events
-        .iter()
-        .find(|event| event.ty == ty)
-        .and_then(|event| {
-            event
-                .attributes
-                .iter()
-                .find(|attr| attr.key == key)
-                .map(|attr| attr.value.clone())
-        })
 }
 
 #[cfg(test)]

@@ -11,6 +11,21 @@ use cosmwasm_std::{
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
+/// Execute the redeposit process, creating a new position with unused balances.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies for interacting with the contract.
+/// * `env` - Environment for fetching contract address.
+/// * `_info` - Message information (not used).
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns a `Response` containing the result of the redeposit operation.
 pub fn execute_redeposit(
     deps: DepsMut,
     env: Env,
@@ -61,6 +76,22 @@ pub fn execute_redeposit(
         .add_attribute("token1", format!("{:?}", token1.clone())))
 }
 
+/// Handle the reply from the redeposit operation and then calling merge position
+/// on the newly created position.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies for interacting with the contract.
+/// * `env` - Environment for fetching contract address.
+/// * `data` - Result of the redeposit operation.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns a `Response` containing the result of the merge operation.
 pub fn handle_redeposit_reply(
     deps: DepsMut,
     env: Env,

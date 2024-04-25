@@ -1,26 +1,38 @@
 use cosmwasm_std::{
     attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    QuerierWrapper, Response, Storage, Uint128, Uint256,
+    Response, Storage, Uint128, Uint256,
 };
 
-use osmosis_std::{
-    try_proto_to_cosmwasm_coins,
-    types::{
-        cosmos::bank::v1beta1::BankQuerier,
-        osmosis::{poolmanager::v1beta1::PoolmanagerQuerier, tokenfactory::v1beta1::MsgMint},
-    },
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::BankQuerier,
+    osmosis::tokenfactory::v1beta1::MsgMint,
 };
 
 use crate::{
     helpers::must_pay_one_or_two,
     query::query_total_assets,
     state::{POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::get_position,
     ContractError,
 };
+use crate::helpers::{get_asset0_value, get_depositable_tokens, refund_bank_msg};
 
 /// Try to deposit as much user funds as we can in the current ratio of the vault and
-/// refund the rest to the caller
+/// refund the rest to the caller.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies for interacting with the contract.
+/// * `env` - Environment for fetching contract address.
+/// * `info` - Message information including sender.
+/// * `recipient` - Optional recipient address; if `None`, uses sender's address.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns a `Response` containing the result of the deposit operation and any refunds.
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
     env: Env,
@@ -36,17 +48,6 @@ pub(crate) fn execute_exact_deposit(
     // get the amount of funds we can deposit from this ratio
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
-
-    // ----- debug
-
-    // let pm_querier = PoolmanagerQuerier::new(&deps.querier);
-    // let spot_price: Decimal = pm_querier
-    //     .spot_price(pool.pool_id, pool.clone().token0, pool.clone().token1)?
-    //     .spot_price
-    //     .parse()?;
-    // debug!(deps, "spot price", spot_price);
-
-    // -----
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
@@ -132,128 +133,6 @@ pub(crate) fn execute_exact_deposit(
     Ok(resp)
 }
 
-/// Calculate the total value of two assets in asset0
-pub fn get_asset0_value(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    token0: Uint128,
-    token1: Uint128,
-) -> Result<Uint128, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
-
-    let pm_querier = PoolmanagerQuerier::new(querier);
-    let spot_price: Decimal = pm_querier
-        .spot_price(pool_config.pool_id, pool_config.token0, pool_config.token1)?
-        .spot_price
-        .parse()?;
-
-    let total = token0
-        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
-
-    Ok(total)
-}
-
-#[allow(clippy::type_complexity)]
-pub fn get_depositable_tokens(
-    deps: DepsMut,
-    token0: Coin,
-    token1: Coin,
-) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
-    let position = get_position(deps.storage, &deps.querier)?;
-
-    match (position.asset0, position.asset1) {
-        (None, _) => Ok((
-            (Uint128::zero(), token1.amount),
-            (token0.amount, Uint128::zero()),
-        )),
-        (_, None) => Ok((
-            (token0.amount, Uint128::zero()),
-            (Uint128::zero(), token1.amount),
-        )),
-        /*
-           Figure out how many of the tokens we can use for a double sided position.
-           First we find whether token0 or token0 is the limiting factor for the token by
-           dividing token0 by the current amount of token0 in the position and do the same for token1
-           for calculating further amounts we start from:
-           token0 / token1 = ratio0 / ratio1, where ratio0 / ratio1 are the ratios from the position
-
-           if token0 is limiting, we calculate the token1 amount by
-           token1 = token0*ratio1/ratio0
-
-           if token1 is limiting, we calculate the token0 amount by
-           token0 = token1 * ratio0 / ratio1
-        */
-        (Some(asset0), Some(asset1)) => {
-            let token0 = token0.amount;
-            let token1 = token1.amount;
-            let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
-            let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
-            println!("{:?}", ratio);
-
-            // Refund token0 if ratio.numerator is zero
-            if ratio.numerator().is_zero() {
-                return Ok(((Uint128::zero(), token1), (token0, Uint128::zero())));
-            }
-
-            let zero_usage: Uint128 = ((Uint256::from(token0)
-                * Uint256::from_u128(1_000_000_000_000_000_000u128))
-                / Uint256::from(ratio.numerator()))
-            .try_into()?;
-            let one_usage: Uint128 = ((Uint256::from(token1)
-                * Uint256::from_u128(1_000_000_000_000_000_000u128))
-                / Uint256::from(ratio.denominator()))
-            .try_into()?;
-
-            if zero_usage < one_usage {
-                let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
-                    / Uint256::from(ratio.numerator()))
-                .try_into()?;
-                Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
-            } else {
-                let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
-                    / Uint256::from(ratio.denominator()))
-                .try_into()?;
-                Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
-            }
-        }
-    }
-}
-
-pub fn refund_bank_msg(
-    receiver: Addr,
-    refund0: Option<Coin>,
-    refund1: Option<Coin>,
-) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
-    let mut attributes: Vec<Attribute> = vec![];
-    let mut coins: Vec<Coin> = vec![];
-
-    if let Some(refund0) = refund0 {
-        if refund0.amount > Uint128::zero() {
-            attributes.push(attr("refund0_amount", refund0.amount));
-            attributes.push(attr("refund0_denom", refund0.denom.as_str()));
-            coins.push(refund0)
-        }
-    }
-    if let Some(refund1) = refund1 {
-        if refund1.amount > Uint128::zero() {
-            attributes.push(attr("refund1_amount", refund1.amount));
-            attributes.push(attr("refund1_denom", refund1.denom.as_str()));
-            coins.push(refund1)
-        }
-    }
-    let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
-        Some((
-            BankMsg::Send {
-                to_address: receiver.to_string(),
-                amount: coins,
-            },
-            attributes,
-        ))
-    } else {
-        None
-    };
-    Ok(result)
-}
 
 #[cfg(test)]
 mod tests {
@@ -276,6 +155,7 @@ mod tests {
         state::{PoolConfig, Position, POSITION, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
+    use crate::helpers::get_depositable_tokens;
 
     use super::*;
 

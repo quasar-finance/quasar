@@ -11,14 +11,10 @@ use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
 };
 
-use crate::helpers::{
-    get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
-    get_twap_price,
-};
+use crate::helpers::{get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount, get_twap_price};
 use crate::reply::Replies;
 use crate::state::CURRENT_SWAP_ANY_DEPOSIT;
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::exact_deposit::{get_asset0_value, get_depositable_tokens};
 use crate::vault::range::SwapDirection;
 use crate::vault::swap::{swap, SwapParams};
 use crate::{
@@ -29,8 +25,23 @@ use crate::{
     ContractError,
 };
 
-// execute_any_deposit is a nice to have feature for the cl vault.
-// but left out of the current release.
+/// Executes any deposit operation for the CL vault, facilitating swapping and minting of shares
+/// without refunds. This swaps the extra funds sent by the users.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies for interacting with the contract.
+/// * `env` - Environment for fetching contract address.
+/// * `info` - Message information including sender.
+/// * `recipient` - Optional recipient address; if `None`, uses sender's address.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns a `Response` containing the result of the deposit operation.
 pub(crate) fn execute_any_deposit(
     mut deps: DepsMut,
     env: Env,
@@ -223,6 +234,21 @@ pub(crate) fn execute_any_deposit(
         .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
 
+/// Handles the reply from a swap operation during any deposit.
+///
+/// # Arguments
+///
+/// * `deps` - Dependencies for interacting with the contract.
+/// * `env` - Environment for fetching contract address.
+/// * `data` - Result of the swap operation.
+///
+/// # Errors
+///
+/// Returns a `ContractError` if the operation fails.
+///
+/// # Returns
+///
+/// Returns a `Response` containing the result of the swap operation and minting of shares.
 pub(crate) fn handle_any_deposit_swap_reply(
     deps: DepsMut,
     env: Env,
