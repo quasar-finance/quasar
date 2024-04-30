@@ -4,9 +4,7 @@
 mod tests {
     use cosmwasm_std::{Coin, Uint128};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
-    use osmosis_std::types::cosmos::bank::v1beta1::{
-        QueryAllBalancesRequest, QueryBalanceRequest,
-    };
+    use osmosis_std::types::cosmos::bank::v1beta1::{QueryAllBalancesRequest, QueryBalanceRequest};
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
     use std::str::FromStr;
 

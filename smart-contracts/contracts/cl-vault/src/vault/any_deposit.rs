@@ -216,7 +216,9 @@ pub(crate) fn execute_any_deposit(
             token_out_denom: token_out_denom.clone(),
             recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
                 SwapOperationBase {
-                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(pool.pool_id)),
+                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(
+                        pool.pool_id,
+                    )),
                     offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
                     ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
                 },

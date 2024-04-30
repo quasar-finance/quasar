@@ -1,6 +1,4 @@
-use cosmwasm_std::{
-    attr, coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256,
-};
+use cosmwasm_std::{attr, coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
@@ -135,7 +133,10 @@ pub(crate) fn execute_exact_deposit(
 mod tests {
     use std::{marker::PhantomData, str::FromStr};
 
-    use cosmwasm_std::{testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR}, Addr, Decimal256, Empty, OwnedDeps, Uint256, Fraction, Coin, BankMsg};
+    use cosmwasm_std::{
+        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        Addr, BankMsg, Coin, Decimal256, Empty, Fraction, OwnedDeps, Uint256,
+    };
 
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
