@@ -2,47 +2,29 @@
 
 #[cfg(test)]
 mod tests {
-    use apollo_cw_asset::AssetInfoBase;
-    use cosmwasm_std::testing::mock_dependencies;
-    use cosmwasm_std::{Coin, Uint256};
-    use cosmwasm_std::{Decimal, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
-    use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
+    use cosmwasm_std::{Coin, Uint128};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::{
-        MsgSend, QueryAllBalancesRequest, QueryBalanceRequest,
+        QueryAllBalancesRequest, QueryBalanceRequest,
     };
-    use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
-    use osmosis_std::types::osmosis::poolmanager::v1beta1::{
-        MsgSwapExactAmountIn, SwapAmountInRoute,
-    };
-    use osmosis_test_tube::RunnerError::ExecuteError;
-    use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
+    use osmosis_test_tube::{Account, Bank, Module, Wasm};
     use std::str::FromStr;
 
-    use crate::msg::ClQueryMsg::SharePrice;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
-    use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg};
-    use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
-    use crate::state::USER_REWARDS;
-    use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
-    use crate::test_tube::initialize::initialize::{
-        default_init, dex_cl_init_cl_pools, dex_cl_init_lp_pools,
-    };
+    use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
+    use crate::query::UserSharesBalanceResponse;
+    use crate::test_tube::initialize::initialize::default_init;
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    const DENOM_REWARD: &str = "ustride";
     const ACCOUNTS_NUM: u64 = 100;
     const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     const DEPOSIT_AMOUNT: u128 = 5_000_000;
-    const SWAPS_NUM: usize = 10;
-    const SWAPS_AMOUNT: &str = "1000000000";
 
     #[test]
     #[ignore]
     fn test_redeposit() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
+        let (app, contract_address, _cl_pool_id, admin) = default_init();
 
         let wasm = Wasm::new(&app);
         let bm = Bank::new(&app);

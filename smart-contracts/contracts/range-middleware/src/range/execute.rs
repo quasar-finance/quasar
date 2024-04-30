@@ -4,7 +4,6 @@ use cl_vault::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
-use cosmwasm_std::VoteOption::No;
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
 use crate::{

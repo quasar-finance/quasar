@@ -10,17 +10,14 @@ mod tests {
     use cosmwasm_std::{Decimal, Uint128};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
-    use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
+    use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
     use rand::{thread_rng, Rng};
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    const DENOM_REWARD: &str = "ustride";
     const ACCOUNTS_NUM: u64 = 3000;
     const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     const DEPOSIT_AMOUNT_CAP: u128 = 5_000_000_000;
-    const SWAPS_NUM: usize = 10;
-    const SWAPS_AMOUNT: &str = "1000000000";
 
     #[test]
     #[ignore]
@@ -28,7 +25,6 @@ mod tests {
         let (app, contract_address, cl_pool_id, admin) = default_init_for_less_slippage();
 
         let wasm = Wasm::new(&app);
-        let bm = Bank::new(&app);
 
         // Initialize accounts
         let accounts = app

@@ -35,7 +35,7 @@ mod tests {
             .unwrap();
 
         // Get user_assets for Alice from vault contract and assert
-        let user_assets: AssetsBalanceResponse = wasm
+        let _user_assets: AssetsBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -70,7 +70,7 @@ mod tests {
             )
             .unwrap();
 
-        let vault_assets_after: TotalAssetsResponse = wasm
+        let _vault_assets_after: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 

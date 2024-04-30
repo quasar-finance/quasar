@@ -9,7 +9,10 @@ use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
-use cosmwasm_std::{coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128, Uint256, BankMsg, Attribute, attr};
+use cosmwasm_std::{
+    attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
+    MessageInfo, QuerierWrapper, Storage, Uint128, Uint256,
+};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
 /// returns the Coin of the needed denoms in the order given in denoms
@@ -38,7 +41,6 @@ pub(crate) fn must_pay_one_or_two(
 
     Ok((token0, token1))
 }
-
 
 /// Calculate the total value of two assets in asset0.
 ///
@@ -198,21 +200,21 @@ pub fn get_depositable_tokens(
             let zero_usage: Uint128 = ((Uint256::from(token0)
                 * Uint256::from_u128(1_000_000_000_000_000_000u128))
                 / Uint256::from(ratio.numerator()))
-                .try_into()?;
+            .try_into()?;
             let one_usage: Uint128 = ((Uint256::from(token1)
                 * Uint256::from_u128(1_000_000_000_000_000_000u128))
                 / Uint256::from(ratio.denominator()))
-                .try_into()?;
+            .try_into()?;
 
             if zero_usage < one_usage {
                 let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
                     / Uint256::from(ratio.numerator()))
-                    .try_into()?;
+                .try_into()?;
                 Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
             } else {
                 let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
                     / Uint256::from(ratio.denominator()))
-                    .try_into()?;
+                .try_into()?;
                 Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
             }
         }
@@ -636,6 +638,24 @@ pub fn get_liquidity_amount_for_unused_funds(
 
     // add together the liquidity from the initial deposit and the swap deposit and return that
     Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
+}
+
+// todo: added this back for making lint issue go away. Need to fix this before deposit math change merge
+pub fn extract_attribute_value_by_ty_and_key(
+    events: Vec<cosmwasm_std::Event>,
+    ty: &str,
+    key: &str,
+) -> Option<String> {
+    events
+        .iter()
+        .find(|event| event.ty == ty)
+        .and_then(|event| {
+            event
+                .attributes
+                .iter()
+                .find(|attr| attr.key == key)
+                .map(|attr| attr.value.clone())
+        })
 }
 
 #[cfg(test)]

@@ -1,20 +1,18 @@
 use cosmwasm_std::{
-    attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, Uint128, Uint256,
+    attr, coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256,
 };
 
 use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier,
-    osmosis::tokenfactory::v1beta1::MsgMint,
+    cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
 };
 
+use crate::helpers::{get_asset0_value, get_depositable_tokens, refund_bank_msg};
 use crate::{
     helpers::must_pay_one_or_two,
     query::query_total_assets,
     state::{POOL_CONFIG, SHARES, VAULT_DENOM},
     ContractError,
 };
-use crate::helpers::{get_asset0_value, get_depositable_tokens, refund_bank_msg};
 
 /// Try to deposit as much user funds as we can in the current ratio of the vault and
 /// refund the rest to the caller.
@@ -133,15 +131,11 @@ pub(crate) fn execute_exact_deposit(
     Ok(resp)
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::{marker::PhantomData, str::FromStr};
 
-    use cosmwasm_std::{
-        testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR},
-        Addr, Decimal256, Empty, OwnedDeps, Uint256,
-    };
+    use cosmwasm_std::{testing::{mock_env, MockApi, MockStorage, MOCK_CONTRACT_ADDR}, Addr, Decimal256, Empty, OwnedDeps, Uint256, Fraction, Coin, BankMsg};
 
     use osmosis_std::types::{
         cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -150,12 +144,12 @@ mod tests {
         },
     };
 
+    use crate::helpers::get_depositable_tokens;
     use crate::{
         rewards::CoinList,
         state::{PoolConfig, Position, POSITION, STRATEGIST_REWARDS},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
-    use crate::helpers::get_depositable_tokens;
 
     use super::*;
 

@@ -3,7 +3,7 @@ use cosmwasm_std::{
     attr, coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
     Uint256,
 };
-use cw_dex::osmosis::OsmosisPool;
+use cw_dex::Pool::Osmosis;
 use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
 
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
@@ -11,7 +11,10 @@ use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
 };
 
-use crate::helpers::{get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount, get_twap_price};
+use crate::helpers::{
+    get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
+    get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
+};
 use crate::reply::Replies;
 use crate::state::CURRENT_SWAP_ANY_DEPOSIT;
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
@@ -213,7 +216,7 @@ pub(crate) fn execute_any_deposit(
             token_out_denom: token_out_denom.clone(),
             recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
                 SwapOperationBase {
-                    pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool.pool_id)),
+                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(pool.pool_id)),
                     offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
                     ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
                 },
