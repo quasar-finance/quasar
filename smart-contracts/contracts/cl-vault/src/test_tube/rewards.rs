@@ -55,6 +55,7 @@ mod tests {
 
         let wasm = Wasm::new(&app);
 
+        // Foreach Account execute an exact_deposit with the same amount of tokens
         for account in &accounts {
             let _ = wasm
                 .execute(

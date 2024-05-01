@@ -1,15 +1,11 @@
-use cosmwasm_std::{DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult};
+use cosmwasm_std::{BankMsg, DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
 
 use crate::state::POSITION;
-use crate::{
-    reply::Replies,
-    state::{STRATEGIST_REWARDS, VAULT_CONFIG},
-    ContractError,
-};
+use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
 
 use super::helpers::CoinList;
 use super::{get_collect_incentives_msg, get_collect_spread_rewards_msg};
@@ -50,10 +46,6 @@ pub fn handle_collect_spread_rewards_reply(
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |mut old: CoinList| {
-        old.add(strategist_fee)?;
-        Ok::<CoinList, ContractError>(old)
-    })?;
 
     let mut response = Response::new()
         .add_event(Event::new("cl_collect_spread_rewards"))
@@ -63,6 +55,15 @@ pub fn handle_collect_spread_rewards_reply(
         )
         .add_attribute("method", "reply")
         .add_attribute("action", "handle_collect_spread_rewards");
+
+    // Conditionally add a bank send message if the strategist fee is not empty
+    if !strategist_fee.is_empty() {
+        let bank_send_msg = BankMsg::Send {
+            to_address: vault_config.treasury.to_string(),
+            amount: strategist_fee.coins(),
+        };
+        response = response.add_message(bank_send_msg);
+    }
 
     // Collect the incentives rewards optional workflow
     let position_state = POSITION.load(deps.storage)?;
@@ -105,19 +106,27 @@ pub fn handle_collect_incentives_reply(
     // calculate the strategist fee and remove the share at source
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let strategist_fee: CoinList = response_coin_list.sub_ratio(vault_config.performance_fee)?;
-    STRATEGIST_REWARDS.update(deps.storage, |mut old: CoinList| {
-        old.add(strategist_fee)?;
-        Ok::<CoinList, ContractError>(old)
-    })?;
 
-    Ok(Response::new()
+    // Create the base response object
+    let mut response = Response::new()
         .add_event(Event::new("cl_collect_incentive"))
         .add_attribute(
             "collected_incentives",
             format!("{:?}", response.clone().collected_incentives),
         )
         .add_attribute("method", "reply")
-        .add_attribute("action", "handle_collect_incentives"))
+        .add_attribute("action", "handle_collect_incentives");
+
+    // Conditionally add a bank send message if the strategist fee is not empty
+    if !strategist_fee.is_empty() {
+        let bank_send_msg = BankMsg::Send {
+            to_address: vault_config.treasury.to_string(),
+            amount: strategist_fee.coins(),
+        };
+        response = response.add_message(bank_send_msg);
+    }
+
+    Ok(response)
 }
 
 // #[cfg(test)]

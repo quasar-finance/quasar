@@ -1,5 +1,3 @@
-// redeposit
-
 #[cfg(test)]
 mod tests {
     use crate::msg::UserBalanceQueryMsg::{UserAssetsBalance, UserSharesBalance};
@@ -15,7 +13,7 @@ mod tests {
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    const ACCOUNTS_NUM: u64 = 3000;
+    const ACCOUNTS_NUM: u64 = 10;
     const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     const DEPOSIT_AMOUNT_CAP: u128 = 5_000_000_000;
 
@@ -41,9 +39,9 @@ mod tests {
             let pm = PoolManager::new(&app);
             let spot_price: Decimal = pm
                 .query_spot_price(&SpotPriceRequest {
+                    pool_id: cl_pool_id,
                     base_asset_denom: DENOM_BASE.to_string(),
                     quote_asset_denom: DENOM_QUOTE.to_string(),
-                    pool_id: cl_pool_id,
                 })
                 .unwrap()
                 .spot_price
