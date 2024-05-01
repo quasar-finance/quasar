@@ -115,6 +115,7 @@ pub enum RewardsStatus {
 }
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
+/// @deprecated: This wikll be deprecated after the migrate() entrypoint executes
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// Shared collection+distribution states

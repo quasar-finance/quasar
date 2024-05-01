@@ -168,7 +168,7 @@ pub fn handle_withdraw_position_reply(
     let mut amount0: Uint128 = msg.amount0.parse()?;
     let mut amount1: Uint128 = msg.amount1.parse()?;
 
-    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, &env)?;
     let unused_balance0 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount

@@ -1,4 +1,5 @@
 use crate::error::{ContractError, ContractResult};
+use crate::helpers::sort_tokens;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
@@ -17,7 +18,7 @@ use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 
 use crate::state::{
     MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
-    VAULT_CONFIG,
+    STRATEGIST_REWARDS, VAULT_CONFIG,
 };
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::exact_deposit::execute_exact_deposit;
@@ -34,7 +35,9 @@ use crate::vault::redeposit::{execute_redeposit, handle_redeposit_reply};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{
+    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+};
 use cw2::set_contract_version;
 
 // version info for migration info
@@ -224,7 +227,22 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
     MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
 
-    Ok(Response::new().add_attribute("migrate", "successful"))
+    // Declare response object as mut
+    let mut response = Response::new().add_attribute("migrate", "successful");
+
+    // Conditionally add a bank send message if the strategist rewards state is not empty
+    let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
+    if !strategist_rewards.is_empty() {
+        let bank_send_msg = BankMsg::Send {
+            to_address: new_vault_config.treasury.to_string(),
+            amount: sort_tokens(strategist_rewards.coins()),
+        };
+        response = response.add_message(bank_send_msg);
+    }
+    // Remove the state
+    STRATEGIST_REWARDS.remove(deps.storage);
+
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -284,5 +302,7 @@ mod tests {
         // Assert new MIGRATION_STATUS state have correct value
         let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
         assert_eq!(migration_status, MigrationStatus::Open);
+
+        // TODO: Add bankSend check in this test
     }
 }

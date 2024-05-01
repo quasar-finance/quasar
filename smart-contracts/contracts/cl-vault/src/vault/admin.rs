@@ -1,13 +1,11 @@
-use crate::error::ContractResult;
-use crate::helpers::{assert_admin, sort_tokens};
+use crate::helpers::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
-use crate::rewards::CoinList;
 use crate::state::{
     Metadata, VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, DEX_ROUTER, METADATA, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG,
+    VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{BankMsg, Decimal, DepsMut, MessageInfo, Response, StdError};
+use cosmwasm_std::{Decimal, DepsMut, MessageInfo, Response, StdError};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
@@ -31,36 +29,11 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::UpdateDexRouter { address } => {
             execute_update_dex_router(deps, info, address)
         }
-        AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
-            execute_claim_strategist_rewards(deps, info)
-        }
         AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
         AdminExtensionExecuteMsg::UpdateAutoCompoundAdmin { address } => {
             execute_update_auto_compound_admin(deps, info, address)
         }
     }
-}
-
-pub fn execute_claim_strategist_rewards(
-    deps: DepsMut,
-    info: MessageInfo,
-) -> ContractResult<Response> {
-    let allowed_claimer = VAULT_CONFIG.load(deps.storage)?.treasury;
-    if info.sender != allowed_claimer {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    // get the currently attained rewards
-    let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    // empty the saved rewards
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
-
-    Ok(Response::new()
-        .add_attribute("rewards", format!("{:?}", rewards.coins()))
-        .add_message(BankMsg::Send {
-            to_address: allowed_claimer.to_string(),
-            amount: sort_tokens(rewards.coins()),
-        }))
 }
 
 /// Updates the admin of the contract.
@@ -222,7 +195,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
-        Addr, CosmosMsg, Decimal, Uint128,
+        Addr, Decimal, Uint128,
     };
 
     #[test]
@@ -234,67 +207,67 @@ mod tests {
         assert_eq!((), verify_resp);
     }
 
-    #[test]
-    fn test_execute_claim_strategist_rewards_success() {
-        let treasury = Addr::unchecked("bob");
-        let mut deps = mock_dependencies();
-        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-        STRATEGIST_REWARDS
-            .save(
-                deps.as_mut().storage,
-                &CoinList::from_coins(rewards.clone()),
-            )
-            .unwrap();
+    // #[test]
+    // fn test_execute_claim_strategist_rewards_success() {
+    //     let treasury = Addr::unchecked("bob");
+    //     let mut deps = mock_dependencies();
+    //     let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
+    //     STRATEGIST_REWARDS
+    //         .save(
+    //             deps.as_mut().storage,
+    //             &CoinList::from_coins(rewards.clone()),
+    //         )
+    //         .unwrap();
 
-        VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &VaultConfig {
-                    performance_fee: Decimal::percent(20),
-                    treasury: treasury.clone(),
-                    swap_max_slippage: Decimal::percent(10),
-                    dex_router: Addr::unchecked("bob-router"),
-                },
-            )
-            .unwrap();
+    //     VAULT_CONFIG
+    //         .save(
+    //             deps.as_mut().storage,
+    //             &VaultConfig {
+    //                 performance_fee: Decimal::percent(20),
+    //                 treasury: treasury.clone(),
+    //                 swap_max_slippage: Decimal::percent(10),
+    //                 dex_router: Addr::unchecked("bob-router"),
+    //             },
+    //         )
+    //         .unwrap();
 
-        let response =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info(treasury.as_str(), &[]))
-                .unwrap();
-        assert_eq!(
-            CosmosMsg::Bank(BankMsg::Send {
-                to_address: treasury.to_string(),
-                amount: sort_tokens(rewards)
-            }),
-            response.messages[0].msg
-        )
-    }
+    //     let response =
+    //         execute_claim_strategist_rewards(deps.as_mut(), mock_info(treasury.as_str(), &[]))
+    //             .unwrap();
+    //     assert_eq!(
+    //         CosmosMsg::Bank(BankMsg::Send {
+    //             to_address: treasury.to_string(),
+    //             amount: sort_tokens(rewards)
+    //         }),
+    //         response.messages[0].msg
+    //     )
+    // }
 
-    #[test]
-    fn test_execute_claim_strategist_rewards_not_admin() {
-        let treasury = Addr::unchecked("bob");
-        let mut deps = mock_dependencies();
-        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-        STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
-            .unwrap();
+    // #[test]
+    // fn test_execute_claim_strategist_rewards_not_admin() {
+    //     let treasury = Addr::unchecked("bob");
+    //     let mut deps = mock_dependencies();
+    //     let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
+    //     STRATEGIST_REWARDS
+    //         .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
+    //         .unwrap();
 
-        VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &VaultConfig {
-                    performance_fee: Decimal::percent(20),
-                    treasury: treasury.clone(),
-                    swap_max_slippage: Decimal::percent(10),
-                    dex_router: Addr::unchecked("bob-router"),
-                },
-            )
-            .unwrap();
+    //     VAULT_CONFIG
+    //         .save(
+    //             deps.as_mut().storage,
+    //             &VaultConfig {
+    //                 performance_fee: Decimal::percent(20),
+    //                 treasury: treasury.clone(),
+    //                 swap_max_slippage: Decimal::percent(10),
+    //                 dex_router: Addr::unchecked("bob-router"),
+    //             },
+    //         )
+    //         .unwrap();
 
-        let err =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
-        assert_eq!(ContractError::Unauthorized {}, err)
-    }
+    //     let err =
+    //         execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
+    //     assert_eq!(ContractError::Unauthorized {}, err)
+    // }
 
     #[test]
     fn test_execute_update_admin_success() {

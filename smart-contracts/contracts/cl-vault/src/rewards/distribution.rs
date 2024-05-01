@@ -4,6 +4,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
 
+use crate::helpers::sort_tokens;
 use crate::state::POSITION;
 use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
 
@@ -60,7 +61,7 @@ pub fn handle_collect_spread_rewards_reply(
     if !strategist_fee.is_empty() {
         let bank_send_msg = BankMsg::Send {
             to_address: vault_config.treasury.to_string(),
-            amount: strategist_fee.coins(),
+            amount: sort_tokens(strategist_fee.coins()),
         };
         response = response.add_message(bank_send_msg);
     }
@@ -121,7 +122,7 @@ pub fn handle_collect_incentives_reply(
     if !strategist_fee.is_empty() {
         let bank_send_msg = BankMsg::Send {
             to_address: vault_config.treasury.to_string(),
-            amount: strategist_fee.coins(),
+            amount: sort_tokens(strategist_fee.coins()),
         };
         response = response.add_message(bank_send_msg);
     }

@@ -39,7 +39,7 @@ pub fn execute_redeposit(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let balance = get_unused_balances(deps.storage, &deps.querier, &env).unwrap();
+    let balance = get_unused_balances(&deps.querier, &env).unwrap();
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) =
         must_pay_one_or_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;

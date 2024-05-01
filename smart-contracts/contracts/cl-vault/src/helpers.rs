@@ -6,7 +6,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
+use crate::state::ADMIN_ADDRESS;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -465,21 +465,11 @@ pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
 }
 
 /// this function subtracts out anything from the raw contract balance that isn't dedicated towards user or strategist rewards.
-/// this function is expensive.
-pub fn get_unused_balances(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    env: &Env,
-) -> Result<CoinList, ContractError> {
-    let mut balances =
-        CoinList::from_coins(querier.query_all_balances(env.contract.address.to_string())?);
-
-    // subtract out strategist rewards and all user rewards
-    let strategist_rewards = STRATEGIST_REWARDS.load(storage)?;
-
-    balances.sub(&strategist_rewards)?;
-
-    Ok(balances)
+/// TODO: This could be now deprecated as its simply a bank query al balances against this same contract addy
+pub fn get_unused_balances(querier: &QuerierWrapper, env: &Env) -> Result<CoinList, ContractError> {
+    Ok(CoinList::from_coins(
+        querier.query_all_balances(env.contract.address.to_string())?,
+    ))
 }
 
 pub fn get_max_utilization_for_ratio(
@@ -530,7 +520,7 @@ pub fn get_liquidity_amount_for_unused_funds(
 
     // then figure out based on current unused balance, what the max initial deposit could be
     // (with the ratio, what is the max tokens we can deposit)
-    let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
+    let tokens = get_unused_balances(&deps.querier, env)?;
 
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let unused_t0: Uint256 = tokens

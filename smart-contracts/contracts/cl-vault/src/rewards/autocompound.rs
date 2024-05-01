@@ -1,5 +1,3 @@
-use std::ops::Sub;
-
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
     to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Order, QuerierWrapper,
@@ -14,11 +12,7 @@ use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use crate::state::{
     MigrationStatus, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, POOL_CONFIG, USER_REWARDS,
 };
-use crate::{
-    msg::AutoCompoundAsset,
-    state::{STRATEGIST_REWARDS, VAULT_CONFIG},
-    ContractError,
-};
+use crate::{msg::AutoCompoundAsset, state::VAULT_CONFIG, ContractError};
 
 use super::helpers::CoinList;
 
@@ -113,34 +107,24 @@ pub fn execute_auto_compound_swap(
 
     let mut swap_msgs: Vec<SubMsg> = vec![];
     for current_swap_route in swap_routes {
-        // sanity check on the amount of tokens
-        let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-        let balance_in_contract = deps.querier.query_balance(
-            env.clone().contract.address,
-            current_swap_route.clone().token_in_denom,
-        )?;
-        let balance_remaining_for_swap = balance_in_contract.amount.sub(
-            strategist_rewards
-                .find_coin(current_swap_route.clone().token_in_denom)
-                .amount,
-        );
+        let balance_in_contract = deps
+            .querier
+            .query_balance(
+                env.clone().contract.address,
+                current_swap_route.clone().token_in_denom,
+            )?
+            .amount;
 
-        // todo ask if this check is needed
-        if balance_remaining_for_swap == Uint128::zero() {
-            return Err(ContractError::InsufficientFundsForSwap {
-                balance: balance_in_contract.amount,
-                needed: strategist_rewards
-                    .find_coin(current_swap_route.clone().token_in_denom)
-                    .amount,
-            });
+        // Throw an Error if contract balance for the wanted denom is 0
+        if balance_in_contract == Uint128::zero() {
+            // TODO: Use InsufficientFundsForSwap instead
+            return Err(ContractError::InsufficientFunds {});
         }
 
         let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-        let part_1_amount = balance_remaining_for_swap
-            .checked_div(Uint128::new(2))
-            .unwrap();
-        let part_2_amount = balance_remaining_for_swap
+        let part_1_amount = balance_in_contract.checked_div(Uint128::new(2)).unwrap();
+        let part_2_amount = balance_in_contract
             .checked_add(Uint128::new(1))
             .unwrap()
             .checked_div(Uint128::new(2))

@@ -58,7 +58,7 @@ pub fn execute_withdraw(
     // get the dust amounts belonging to the user
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
-    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, &env)?;
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount

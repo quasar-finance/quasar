@@ -71,7 +71,6 @@ pub enum AdminExtensionExecuteMsg {
         /// The new dex router address.
         address: Option<String>,
     },
-    ClaimStrategistRewards {},
     /// Build tick exponent cache
     BuildTickCache {},
     /// Update the auto compound admin
