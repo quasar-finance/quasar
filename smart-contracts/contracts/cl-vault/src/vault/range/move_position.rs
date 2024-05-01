@@ -131,21 +131,9 @@ pub fn handle_withdraw_position_reply(
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    let mut amount0: Uint128 = msg.amount0.parse()?;
-    let mut amount1: Uint128 = msg.amount1.parse()?;
-
     let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
-    let unused_balance0 = unused_balances
-        .find_coin(pool_config.token0.clone())
-        .amount
-        .checked_sub(amount0)?;
-    let unused_balance1 = unused_balances
-        .find_coin(pool_config.token1.clone())
-        .amount
-        .checked_sub(amount1)?;
-
-    amount0 = amount0.checked_add(unused_balance0)?;
-    amount1 = amount1.checked_add(unused_balance1)?;
+    let mut amount0: Uint128 = unused_balances.find_coin(pool_config.token0.clone()).amount;
+    let mut amount1: Uint128 = unused_balances.find_coin(pool_config.token1.clone()).amount;
 
     CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 
@@ -285,7 +273,8 @@ pub fn do_swap_deposit_merge(
     let (swap_amount, swap_direction) = if !balance0.is_zero() {
         (
             // range is above current tick
-            if pool_details.current_tick > target_upper_tick {
+            // greater than or equal to is correct here for upper range: https://github.com/osmosis-labs/osmosis/blob/main/x/concentrated-liquidity/README.md#calculating-liquidity-for-buckets
+            if pool_details.current_tick >= target_upper_tick {
                 balance0
             } else {
                 get_single_sided_deposit_0_to_1_swap_amount(
@@ -299,9 +288,9 @@ pub fn do_swap_deposit_merge(
         )
     } else if !balance1.is_zero() {
         (
-            // current tick is above range
-            if pool_details.current_tick < target_lower_tick {
-                // TODO: Maybe here <= ?
+            // current tick is below range
+            // less than or equal is correct here for lower range: https://github.com/osmosis-labs/osmosis/blob/main/x/concentrated-liquidity/README.md#calculating-liquidity-for-buckets
+            if pool_details.current_tick <= target_lower_tick {
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
@@ -314,7 +303,7 @@ pub fn do_swap_deposit_merge(
             SwapDirection::OneToZero,
         )
     } else {
-        // if we have not tokens to swap, that means all tokens we correctly used in the create position
+        // if we have no tokens to swap, that means all tokens were correctly used in the create position
         // this means we can save the position id of the first create_position
         // if position_id is None, then no first position was ever created, meaning we should never hit this else case.
         let position_id = position_id.unwrap();
