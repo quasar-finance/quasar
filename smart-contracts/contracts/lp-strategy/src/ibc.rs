@@ -467,7 +467,7 @@ pub fn handle_icq_ack(
         response_idx += 1;
 
         // decode result
-        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[response_idx].value.as_ref())?
+        QueryCalcExitPoolCoinsFromSharesResponse::decode(resp.responses[response_idx].key.as_ref())?
     } else {
         QueryCalcExitPoolCoinsFromSharesResponse { tokens_out: vec![] }
     };
@@ -852,9 +852,9 @@ mod tests {
                     pool_id: 1,
                     pool_denom: "gamm/pool/1".to_string(),
                     base_denom: "uosmo".to_string(),
-                    quote_denom: "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2".to_string(),
+                    quote_denom: "stake".to_string(),
                     local_denom:
-                        "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+                        "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518"
                             .to_string(),
                     transfer_channel: "channel-0".to_string(),
                     return_source_channel: "channel-0".to_string(),
@@ -880,7 +880,7 @@ mod tests {
         ).unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
-        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2hZeUZBb1NDZ1YxYjNOdGJ4SUpNalkxT1RZeE16YzVDazB5U3dwSkNrUnBZbU12TWpjek9UUkdRakE1TWtReVJVTkRSRFUyTVRJelF6YzBSak0yUlRSRE1VWTVNall3TURGRFJVRkVRVGxEUVRrM1JVRTJNakpDTWpWR05ERkZOVVZDTWhJQk1Bb3BNaWNLSlFvTFoyRnRiUzl3YjI5c0x6RVNGalk1TVRJNE5UazRNamt5TXpFMU1qVXpNVGMwT0RVS2FqSm9DbEVLUkdsaVl5OHlOek01TkVaQ01Ea3lSREpGUTBORU5UWXhNak5ETnpSR016WkZORU14UmpreU5qQXdNVU5GUVVSQk9VTkJPVGRGUVRZeU1rSXlOVVkwTVVVMVJVSXlFZ2t4TVRrMk16VTFNelFLRXdvRmRXOXpiVzhTQ2pFeU1ERXhOVFE1TWpnS0dESVdDaFF3TGpBNU9UWXdNRFF4T1RBd01EQXdNREF3TUFxRUFUS0JBUXAvQ1B1N1loSS9iM050YnpGM2JYWmxlbXh3YzJzME1Ib3plbVp6ZVhsbGVEQmpaRGhrYzNWdE4yZDZkWEI0TW5Gbk5HZ3dkV0YyYXpkMGVIYzBjMlZ4Y1RjeVptdHRHZ1FJaXVwSklnc0lnSks0dzVqKy8vLy9BU29sQ2d0bllXMXRMM0J2YjJ3dk1SSVdPVFl5TXpReU5UVTFOemN6TlRNd01qTTFNekEzTXc9PSJ9").unwrap();
+        let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2c0eURBb0tDZ1YxYjNOdGJ4SUJNQW9TTWhBS0Rnb0pabUZyWlhOMFlXdGxFZ0V3Q2hReUVnb1FDZ3RuWVcxdEwzQnZiMnd2TXhJQk1Bb0FDaGd5RmdvVU1TNHdNREF3TURBd01EQXdNREF3TURBd01EQUtKeklsQ2hJeE5qVTJPVFU0T1RFNE5UY3hNRGcwTURBU0R3b0ZkVzl6Ylc4U0JqTXpNek16TXc9PSJ9").unwrap();
         // queues are empty at this point so we just expect a succesful response without anyhting else
         handle_icq_ack(deps.as_mut().storage, env, ack_bin).unwrap();
     }
