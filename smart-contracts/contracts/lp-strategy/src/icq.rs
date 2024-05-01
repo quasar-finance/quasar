@@ -3,7 +3,7 @@ use cosmwasm_std::{
     Uint128,
 };
 #[allow(deprecated)]
-use osmosis_std::types::osmosis::gamm::v1beta1::QuerySpotPriceRequest;
+use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceRequest;
 use osmosis_std::types::{
     cosmos::bank::v1beta1::QueryBalanceRequest,
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -200,7 +200,7 @@ pub fn prepare_full_query(
         )
         .add_request(
             spot_price.encode_to_vec().into(),
-            "/osmosis.gamm.v1beta1.Query/SpotPrice".to_string(),
+            "/osmosis.gamm.v2.Query/SpotPrice".to_string(),
         );
 
     if let Some(join_pool) = checked_join_pool {

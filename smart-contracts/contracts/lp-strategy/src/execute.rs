@@ -120,9 +120,9 @@ mod tests {
         to_json_binary, Addr, StdError, Timestamp, Uint128,
     };
     #[allow(deprecated)]
+    use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
     use osmosis_std::types::osmosis::gamm::v1beta1::{
         QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
-        QuerySpotPriceResponse,
     };
     use prost::Message;
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAckData};

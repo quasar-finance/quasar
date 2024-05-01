@@ -24,7 +24,7 @@ use crate::execute::{bond, claim, force_claim, force_unbond, unbond, update_cap}
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
-    PrimitiveInitMsg, QueryMsg, VaultTokenInfoResponse,
+    QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
     query_active_users, query_deposit_ratio, query_investment, query_pending_bonds,
@@ -32,7 +32,7 @@ use crate::query::{
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP, CLAIMS,
-    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, OLD_INVESTMENT, VAULT_REWARDS,
+    CONTRACT_NAME, CONTRACT_VERSION, DEBUG_TOOL, INVESTMENT, VAULT_REWARDS,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -363,7 +363,7 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute("success", "true"))

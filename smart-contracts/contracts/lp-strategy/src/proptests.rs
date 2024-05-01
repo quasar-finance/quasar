@@ -26,11 +26,11 @@ mod tests {
     };
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     #[allow(deprecated)]
+    use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
     use osmosis_std::types::{
         cosmos::bank::v1beta1::QueryBalanceResponse,
         osmosis::gamm::v1beta1::{
             QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
-            QuerySpotPriceResponse,
         },
     };
     use proptest::collection::vec;
