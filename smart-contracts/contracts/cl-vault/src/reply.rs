@@ -30,7 +30,7 @@ pub enum Replies {
     // create a new singular position in the merge, used internally for merging
     CreatePositionMerge,
     /// reply for final swap success in auto compound
-    Redeposit,
+    Autocompound,
     /// handle exact deposit swap reply
     AnyDepositSwap,
     #[default]

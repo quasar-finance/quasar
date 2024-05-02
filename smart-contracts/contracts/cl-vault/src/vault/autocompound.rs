@@ -144,7 +144,7 @@ pub fn execute_autocompound(
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
             create_position_msg,
-            Replies::Redeposit as u64,
+            Replies::Autocompound as u64,
         ))
         .add_attribute("method", "execute")
         .add_attribute("action", "autocompound")
