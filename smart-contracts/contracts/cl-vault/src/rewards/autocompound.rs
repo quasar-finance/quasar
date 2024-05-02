@@ -12,7 +12,7 @@ use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use crate::state::{
     MigrationStatus, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, POOL_CONFIG, USER_REWARDS,
 };
-use crate::{msg::AutoCompoundAsset, state::VAULT_CONFIG, ContractError};
+use crate::{msg::SwapAsset, state::VAULT_CONFIG, ContractError};
 
 use super::helpers::CoinList;
 
@@ -89,14 +89,18 @@ pub fn execute_migration_step(
     Ok(response)
 }
 
-pub fn execute_auto_compound_swap(
+// TODO: I would like to rename this to a more generic thing like "execute_idle_funds_swap" or just "execute_swap"
+pub fn execute_swap_idle_funds(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     force_swap_route: bool,
-    swap_routes: Vec<AutoCompoundAsset>,
+    swap_routes: Vec<SwapAsset>,
 ) -> Result<Response, ContractError> {
-    // auto compound admin
+    // TODO: Should we assert that no BASE_DENOM / QUOTE_DENOM is trying to be swapped?
+    //       Idt there is any use case for that and so we'd prevent tempering and/or fat fingering.
+
+    // auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_auto_compound_admin(deps.storage, &info.sender)?;
 
     let vault_config = VAULT_CONFIG.may_load(deps.storage)?;
@@ -105,6 +109,8 @@ pub fn execute_auto_compound_swap(
         return Err(ContractError::EmptyCompoundAssetList {});
     }
 
+    // TODO: Why are we using SubMsgs if we are not replying?
+    //       We should probably use Messages to fire and forget with atomic behavior?
     let mut swap_msgs: Vec<SubMsg> = vec![];
     for current_swap_route in swap_routes {
         let balance_in_contract = deps
@@ -117,7 +123,7 @@ pub fn execute_auto_compound_swap(
 
         // Throw an Error if contract balance for the wanted denom is 0
         if balance_in_contract == Uint128::zero() {
-            // TODO: Use InsufficientFundsForSwap instead
+            // TODO: Use InsufficientFundsForSwap instead, this has been removed after STRATEGIST_REWARDS state eval removal
             return Err(ContractError::InsufficientFunds {});
         }
 
@@ -151,7 +157,7 @@ pub fn execute_auto_compound_swap(
     }
 
     Ok(Response::new()
-        .add_submessages(swap_msgs)
+        .add_submessages(swap_msgs) // TODO: Adjust that to add_messages() if above doubt is resolved in favor of that
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_compund_swap"))
 }

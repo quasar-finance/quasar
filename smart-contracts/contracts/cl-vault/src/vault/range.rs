@@ -160,7 +160,9 @@ pub fn handle_withdraw_position_reply(
 ) -> Result<Response, ContractError> {
     let msg: MsgWithdrawPositionResponse = data.try_into()?;
 
-    // let msg: MsgWithdrawPositionResponse = data.into_result().unwrap().data.unwrap().try_into()?;
+    // TODO: First we should subtract strategist rewrds and send them out. then follow
+    // This with autocompound wouldnt create any math issue because we would then compound those, but no performance_fee for treasury.
+    // But as we are pre-autocompound this broke the contraact balance (in positive) leaving idle funds of no one till today.
 
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -450,7 +452,7 @@ pub fn handle_swap_reply(
                 Ok(msg) => Ok(msg.token_out_amount),
                 Err(_) => {
                     let tokens_out_opt = extract_attribute_value_by_ty_and_key(
-                        msg.events,
+                        &msg.events,
                         "token_swapped",
                         "tokens_out",
                     );

@@ -21,14 +21,14 @@ pub enum ExtensionExecuteMsg {
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
-    /// provides an entry point for redepositing funds to position
-    Redeposit {},
+    /// provides an entry point for autocompounding idle funds to current position
+    Autocompound {},
     /// Distribute any rewards over all users
     CollectRewards {},
-    /// Claim rewards belonging to a single user
-    AutoCompoundRewards {
+    /// SwapIdleFunds
+    SwapIdleFunds {
         force_swap_route: bool,
-        swap_routes: Vec<AutoCompoundAsset>,
+        swap_routes: Vec<SwapAsset>,
     },
     /// Build tick exponent cache
     BuildTickCache {},
@@ -37,7 +37,7 @@ pub enum ExtensionExecuteMsg {
 }
 
 #[cw_serde]
-pub struct AutoCompoundAsset {
+pub struct SwapAsset {
     pub token_in_denom: String,
     pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
     pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
