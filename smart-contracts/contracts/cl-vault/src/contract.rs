@@ -10,7 +10,7 @@ use crate::query::{
     query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::autocompound::{execute_auto_compound_swap, execute_migration_step};
+use crate::rewards::autocompound::{execute_migration_step, execute_swap_idle_funds};
 use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
@@ -31,7 +31,7 @@ use crate::vault::range::{
     handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
     handle_withdraw_position_reply,
 };
-use crate::vault::redeposit::{execute_redeposit, handle_redeposit_reply};
+use crate::vault::redeposit::{execute_autocompound, handle_redeposit_reply};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -82,7 +82,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Redeposit {} => execute_redeposit(deps, env, info),
+                crate::msg::ExtensionExecuteMsg::Autocompound {} => {
+                    execute_autocompound(deps, env, info)
+                }
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
@@ -111,10 +113,10 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
-                crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+                crate::msg::ExtensionExecuteMsg::SwapIdleFunds {
                     force_swap_route,
                     swap_routes,
-                } => execute_auto_compound_swap(deps, env, info, force_swap_route, swap_routes),
+                } => execute_swap_idle_funds(deps, env, info, force_swap_route, swap_routes),
                 crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
                     execute_migration_step(deps, env, amount_of_users)
                 }

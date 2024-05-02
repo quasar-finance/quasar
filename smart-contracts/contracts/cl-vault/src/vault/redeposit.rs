@@ -26,7 +26,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositi
 /// # Returns
 ///
 /// Returns a `Response` containing the result of the redeposit operation.
-pub fn execute_redeposit(
+pub fn execute_autocompound(
     deps: DepsMut,
     env: Env,
     _info: MessageInfo,

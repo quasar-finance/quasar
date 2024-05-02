@@ -77,7 +77,7 @@ mod tests {
             let _result = wasm
                 .execute(
                     contract_address.as_str(),
-                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Redeposit {}),
+                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Autocompound {}),
                     &[],
                     &admin,
                 )

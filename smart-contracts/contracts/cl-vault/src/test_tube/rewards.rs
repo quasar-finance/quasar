@@ -8,7 +8,9 @@ mod tests {
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
-    use osmosis_std::types::cosmos::bank::v1beta1::{MsgSend, QueryBalanceRequest};
+    use osmosis_std::types::cosmos::bank::v1beta1::{
+        MsgSend, QueryAllBalancesRequest, QueryBalanceRequest,
+    };
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -17,9 +19,10 @@ mod tests {
     use osmosis_test_tube::{Account, Bank, Module, PoolManager, Wasm};
     use std::str::FromStr;
 
+    use crate::helpers::extract_attribute_value_by_ty_and_key;
     use crate::msg::ClQueryMsg::SharePrice;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
-    use crate::msg::{AutoCompoundAsset, ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg};
+    use crate::msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, SwapAsset};
     use crate::query::{SharePriceResponse, UserSharesBalanceResponse};
     use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
     use crate::test_tube::initialize::initialize::{
@@ -29,11 +32,13 @@ mod tests {
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
     const DENOM_REWARD: &str = "ustride";
+    const DENOM_REWARD_AMOUNT: &str = "100000000000";
+
     const ACCOUNTS_NUM: u64 = 10;
     const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     const DEPOSIT_AMOUNT: u128 = 5_000_000;
     const SWAPS_NUM: usize = 10;
-    const SWAPS_AMOUNT: &str = "1000000000";
+    const SWAPS_AMOUNT: &str = "10000000000000";
 
     #[test]
     #[ignore]
@@ -41,6 +46,14 @@ mod tests {
         let (app, contract_address, _dex_router_addr, cl_pool_id, lp_pools_ids, admin) =
             dex_cl_init_lp_pools();
         let bm = Bank::new(&app);
+
+        let balances = bm
+            .query_all_balances(&QueryAllBalancesRequest {
+                address: contract_address.to_string(),
+                pagination: None,
+            })
+            .unwrap();
+        println!("balances 1: {:?}", balances);
 
         // Initialize accounts
         let accounts = app
@@ -73,7 +86,15 @@ mod tests {
         // Declare swapper accounts
         let swapper = &accounts[0];
 
-        // Swaps to generate spread rewards on previously created user positions
+        let balances = bm
+            .query_all_balances(&QueryAllBalancesRequest {
+                address: contract_address.to_string(),
+                pagination: None,
+            })
+            .unwrap();
+        println!("balances before swap: {:?}", balances);
+
+        // Swaps to generate some DENOM_QUOTE SpreadRewards for previously created user positions
         for _ in 0..SWAPS_NUM {
             PoolManager::new(&app)
                 .swap_exact_amount_in(
@@ -93,8 +114,16 @@ mod tests {
                 )
                 .unwrap();
         }
+        let balances = bm
+            .query_all_balances(&QueryAllBalancesRequest {
+                address: contract_address.to_string(),
+                pagination: None,
+            })
+            .unwrap();
+        println!("balances after swap: {:?}", balances);
 
-        let _result = wasm
+        // Collect rewards (spread only in this test)
+        let collect_rewards_resp = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
@@ -102,19 +131,41 @@ mod tests {
                 &admin,
             )
             .unwrap();
+        let collected_spread_rewards = extract_attribute_value_by_ty_and_key(
+            &collect_rewards_resp.events,
+            "wasm",
+            "collected_spread_rewards",
+        )
+        .unwrap();
+        assert_eq!(
+            collected_spread_rewards,
+            "[Coin { denom: \"uosmo\", amount: \"9\" }]".to_string()
+        );
 
+        // TODO: Check that we actually sent out the strategist rewards here
+        // let treasury_received = extract_attribute_value_by_ty_and_key(
+        //     &collect_rewards_resp.events,
+        //     "coin_received",
+        //     "receiver",
+        // )
+        // .unwrap();
+        // assert_eq!(treasury_received, admin.address().to_string());
+
+        // Airdrop some DENOM_REWARD funds to the contract, this will be like idle claimed spread rewards
         let _send = bm.send(
             MsgSend {
                 from_address: admin.address(),
                 to_address: contract_address.to_string(),
                 amount: vec![OsmoCoin {
                     denom: DENOM_REWARD.to_string(),
-                    amount: "100000000000".to_string(),
+                    amount: DENOM_REWARD_AMOUNT.to_string(),
                 }],
             },
             &admin,
         );
 
+        // Get the contract balance for DENOM_QUOTE
+        // TODO: Define in a comment what do we expect here (ask Arham to avoid grinding unnecessary)
         let balances_quote = bm
             .query_balance(&QueryBalanceRequest {
                 address: contract_address.to_string(),
@@ -122,6 +173,8 @@ mod tests {
             })
             .unwrap();
         assert_eq!("4999".to_string(), balances_quote.balance.unwrap().amount);
+
+        // Get the contract balance for DENOM_REWARD
         let balances_rewards = bm
             .query_balance(&QueryBalanceRequest {
                 address: contract_address.to_string(),
@@ -129,10 +182,11 @@ mod tests {
             })
             .unwrap();
         assert_eq!(
-            "100000000000".to_string(),
+            DENOM_REWARD_AMOUNT.to_string(),
             balances_rewards.balance.unwrap().amount,
         );
 
+        // TODO: What do we expect here?
         let shares_price: SharePriceResponse = wasm
             .query(
                 contract_address.as_str(),
@@ -145,6 +199,7 @@ mod tests {
         assert_eq!(Uint128::new(2), shares_price.balances[0].amount);
         assert_eq!(Uint128::new(3), shares_price.balances[1].amount);
 
+        // Define CW Dex Router swap routes
         let path1 = vec![
             SwapOperationBase::new(
                 cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pools_ids[1])),
@@ -163,12 +218,13 @@ mod tests {
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
         )];
 
+        // Autocompound funds
         let _auto_compound = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapIdleFunds {
                     force_swap_route: false,
-                    swap_routes: vec![AutoCompoundAsset {
+                    swap_routes: vec![SwapAsset {
                         token_in_denom: DENOM_REWARD.to_string(),
                         recommended_swap_route_token_0: Option::from(
                             SwapOperationsListUnchecked::new(path1),
@@ -183,6 +239,7 @@ mod tests {
             )
             .unwrap();
 
+        // Assert there is no balance for DENOM_REWARD (ustrd)
         let balances_after = bm
             .query_balance(&QueryBalanceRequest {
                 address: contract_address.to_string(),
@@ -405,7 +462,7 @@ mod tests {
                 to_address: contract_address.to_string(),
                 amount: vec![OsmoCoin {
                     denom: DENOM_REWARD.to_string(),
-                    amount: "100000000000".to_string(),
+                    amount: DENOM_REWARD_AMOUNT.to_string(),
                 }],
             },
             &admin,
@@ -425,7 +482,7 @@ mod tests {
             })
             .unwrap();
         assert_eq!(
-            "100000000000".to_string(),
+            DENOM_REWARD_AMOUNT.to_string(),
             balances_rewards.balance.unwrap().amount,
         );
 
@@ -450,9 +507,9 @@ mod tests {
         let _auto_compound = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::AutoCompoundRewards {
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapIdleFunds {
                     force_swap_route: false,
-                    swap_routes: vec![AutoCompoundAsset {
+                    swap_routes: vec![SwapAsset {
                         token_in_denom: DENOM_REWARD.to_string(),
                         recommended_swap_route_token_0: Option::from(
                             SwapOperationsListUnchecked::new(path1),

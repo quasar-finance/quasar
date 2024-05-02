@@ -33,7 +33,7 @@ pub mod initialize {
     use crate::state::VaultConfig;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
+    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000000";
     const TOKENS_PROVIDED_AMOUNT_1: &str = "100000000000000000000";
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
@@ -51,7 +51,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
@@ -82,7 +82,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
@@ -117,7 +117,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
@@ -393,7 +393,7 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.01").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price

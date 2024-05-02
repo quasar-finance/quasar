@@ -115,14 +115,15 @@ pub enum RewardsStatus {
 }
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-/// @deprecated: This wikll be deprecated after the migrate() entrypoint executes
+/// @deprecated: This will be deprecated after the migrate() entrypoint executes
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// Shared collection+distribution states
+/// @deprecated: This will be incrementally cleared and deprecated after the MigrateStep(s) entrypoint executes
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
-/// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
-pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
+/// Swap helper states
+pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
     Item::new("current_swap_any_deposit");
