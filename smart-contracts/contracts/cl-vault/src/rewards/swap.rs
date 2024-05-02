@@ -1,93 +1,15 @@
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Order, QuerierWrapper,
-    Response, Storage, SubMsg, Uint128, WasmMsg,
+    to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
+    SubMsg, Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
     operations::SwapOperationsListUnchecked,
 };
-use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 
-use crate::state::{
-    MigrationStatus, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, POOL_CONFIG, USER_REWARDS,
-};
+use crate::{helpers::assert_auto_compound_admin, state::POOL_CONFIG};
 use crate::{msg::SwapAsset, state::VAULT_CONFIG, ContractError};
-
-use super::helpers::CoinList;
-
-// Migration is a to-depreacate entrypoint useful to migrate from Distribute to Accumulate after Autocompound implementation
-pub fn execute_migration_step(
-    deps: DepsMut,
-    env: Env,
-    amount_of_users: Uint128,
-) -> Result<Response, ContractError> {
-    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
-
-    if matches!(migration_status, MigrationStatus::Closed) {
-        return Err(ContractError::MigrationStatusClosed {});
-    }
-
-    let mut outputs = Vec::new();
-    let mut addresses = Vec::new();
-    let mut total_amount = CoinList::new();
-
-    // Iterate user rewards in a paginated fashion
-    for item in USER_REWARDS
-        .range(deps.storage, None, None, Order::Ascending)
-        .take(amount_of_users.u128() as usize)
-    {
-        let (address, rewards) = item?;
-        deps.api.debug(format!("address {:?}", address).as_str());
-        deps.api.debug(format!("rewards {:?}", rewards).as_str());
-
-        addresses.push(address.clone());
-        outputs.push(Output {
-            address: address.to_string(),
-            coins: rewards.osmo_coin_from_coin_list(),
-        });
-        total_amount.add(rewards)?;
-    }
-    deps.api
-        .debug(format!("total_amount {:?}", total_amount).as_str());
-
-    // Remove processed rewards in a separate iteration.
-    for addr in addresses {
-        USER_REWARDS.remove(deps.storage, addr);
-    }
-
-    // Check if this is the last execution.
-    let is_last_execution = USER_REWARDS
-        .range(deps.storage, None, None, Order::Ascending)
-        .next()
-        .is_none();
-    deps.api
-        .debug(format!("is_last_execution {:?}", is_last_execution).as_str());
-
-    if is_last_execution {
-        deps.api.debug("{:?}");
-        migration_status = MigrationStatus::Closed;
-        MIGRATION_STATUS.save(deps.storage, &migration_status)?;
-    }
-
-    let mut response = Response::new();
-    // Only if there are rewards append the send_message
-    if !total_amount.is_empty() {
-        let send_message = MsgMultiSend {
-            inputs: vec![Input {
-                address: env.contract.address.to_string(),
-                coins: total_amount.osmo_coin_from_coin_list(),
-            }],
-            outputs,
-        };
-        response = response.add_message(send_message);
-    }
-    response = response
-        .add_attribute("migration_status", format!("{:?}", migration_status))
-        .add_attribute("is_last_execution", is_last_execution.to_string());
-
-    Ok(response)
-}
 
 // TODO: I would like to rename this to a more generic thing like "execute_idle_funds_swap" or just "execute_swap"
 pub fn execute_swap_idle_funds(
@@ -252,15 +174,4 @@ fn get_execute_swap_operations_msg(
     .into();
 
     Ok(swap_msg)
-}
-
-fn assert_auto_compound_admin(
-    storage: &mut dyn Storage,
-    sender: &Addr,
-) -> Result<(), ContractError> {
-    let admin = AUTO_COMPOUND_ADMIN.load(storage)?;
-    if admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    Ok(())
 }

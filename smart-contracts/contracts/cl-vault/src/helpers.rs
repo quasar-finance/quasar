@@ -6,7 +6,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 use crate::rewards::CoinList;
-use crate::state::ADMIN_ADDRESS;
+use crate::state::{ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -445,6 +445,17 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
     } else {
         Ok(caller.clone())
     }
+}
+
+pub fn assert_auto_compound_admin(
+    storage: &mut dyn Storage,
+    sender: &Addr,
+) -> Result<(), ContractError> {
+    let admin = AUTO_COMPOUND_ADMIN.load(storage)?;
+    if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
 
 pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {

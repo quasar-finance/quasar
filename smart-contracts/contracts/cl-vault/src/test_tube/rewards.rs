@@ -31,7 +31,7 @@ mod tests {
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    const DENOM_REWARD: &str = "ustride";
+    const DENOM_REWARD: &str = "ustrd";
     const DENOM_REWARD_AMOUNT: &str = "100000000000";
 
     const ACCOUNTS_NUM: u64 = 10;
@@ -92,7 +92,7 @@ mod tests {
                 pagination: None,
             })
             .unwrap();
-        println!("balances before swap: {:?}", balances);
+        println!("balances after deposits: {:?}", balances);
 
         // Swaps to generate some DENOM_QUOTE SpreadRewards for previously created user positions
         for _ in 0..SWAPS_NUM {
@@ -114,13 +114,6 @@ mod tests {
                 )
                 .unwrap();
         }
-        let balances = bm
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-        println!("balances after swap: {:?}", balances);
 
         // Collect rewards (spread only in this test)
         let collect_rewards_resp = wasm
@@ -165,14 +158,16 @@ mod tests {
         );
 
         // Get the contract balance for DENOM_QUOTE
-        // TODO: Define in a comment what do we expect here (ask Arham to avoid grinding unnecessary)
         let balances_quote = bm
             .query_balance(&QueryBalanceRequest {
                 address: contract_address.to_string(),
                 denom: DENOM_QUOTE.to_string(),
             })
             .unwrap();
-        assert_eq!("4999".to_string(), balances_quote.balance.unwrap().amount);
+        assert_eq!(
+            "50000008".to_string(),
+            balances_quote.balance.unwrap().amount
+        ); // 10_000_000 uosmo * 10users + 8uosmo from collected rewards (1uosmo out of 9 to treasury)
 
         // Get the contract balance for DENOM_REWARD
         let balances_rewards = bm
@@ -749,9 +744,11 @@ mod tests {
             let result = wasm
                 .execute(
                     contract_address.as_str(),
-                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
-                        amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
-                    }),
+                    &ExecuteMsg::VaultExtension(
+                        crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
+                            amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
+                        },
+                    ),
                     &[],
                     &admin,
                 )
@@ -770,9 +767,11 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
-                    amount_of_users: Uint128::one(),
-                }),
+                &ExecuteMsg::VaultExtension(
+                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
+                        amount_of_users: Uint128::one(),
+                    },
+                ),
                 &[],
                 &admin,
             )
@@ -805,9 +804,11 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
-                    amount_of_users: Uint128::one(),
-                }),
+                &ExecuteMsg::VaultExtension(
+                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
+                        amount_of_users: Uint128::one(),
+                    },
+                ),
                 &[],
                 &admin,
             )
@@ -855,9 +856,11 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
-                    amount_of_users: Uint128::one(),
-                }),
+                &ExecuteMsg::VaultExtension(
+                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
+                        amount_of_users: Uint128::one(),
+                    },
+                ),
                 &[],
                 &admin,
             )
@@ -875,9 +878,11 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
-                    amount_of_users: Uint128::one(),
-                }),
+                &ExecuteMsg::VaultExtension(
+                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
+                        amount_of_users: Uint128::one(),
+                    },
+                ),
                 &[],
                 &admin,
             )

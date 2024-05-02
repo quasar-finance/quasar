@@ -33,7 +33,7 @@ pub enum ExtensionExecuteMsg {
     /// Build tick exponent cache
     BuildTickCache {},
     /// MigrationStep
-    MigrationStep { amount_of_users: Uint128 },
+    AutocompoundMigrationStep { amount_of_users: Uint128 },
 }
 
 #[cw_serde]
