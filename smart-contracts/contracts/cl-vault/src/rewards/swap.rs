@@ -50,6 +50,7 @@ pub fn execute_swap_non_vault_funds(
             return Err(ContractError::InsufficientFunds {});
         }
 
+        // TODO_FUTURE: We could be swapping into the actual vault balance so we could prepend_swap() the autocompound entrypoint.
         let part_1_amount = balance_in_contract.checked_div(Uint128::new(2)).unwrap();
         let part_2_amount = balance_in_contract
             .checked_add(Uint128::new(1))

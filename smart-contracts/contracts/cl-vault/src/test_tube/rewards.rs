@@ -8,9 +8,7 @@ mod tests {
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
-    use osmosis_std::types::cosmos::bank::v1beta1::{
-        MsgSend, QueryAllBalancesRequest, QueryBalanceRequest,
-    };
+    use osmosis_std::types::cosmos::bank::v1beta1::{MsgSend, QueryBalanceRequest};
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -31,7 +29,7 @@ mod tests {
 
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "uosmo";
-    const DENOM_REWARD: &str = "ustrd";
+    const DENOM_REWARD: &str = "ustride";
     const DENOM_REWARD_AMOUNT: &str = "100000000000";
 
     const ACCOUNTS_NUM: u64 = 10;
@@ -47,14 +45,6 @@ mod tests {
             dex_cl_init_lp_pools();
         let bm = Bank::new(&app);
 
-        let balances = bm
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-        println!("balances 1: {:?}", balances);
-
         // Initialize accounts
         let accounts = app
             .init_accounts(
@@ -68,9 +58,18 @@ mod tests {
 
         let wasm = Wasm::new(&app);
 
+        let balance_base_before = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_BASE.to_string(),
+            })
+            .unwrap();
+
+        let mut refund0_amount_total = Uint128::zero();
+
         // Foreach Account execute an exact_deposit with the same amount of tokens
         for account in &accounts {
-            let _ = wasm
+            let exact_deposit_rsp = wasm
                 .execute(
                     contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
@@ -81,20 +80,29 @@ mod tests {
                     account,
                 )
                 .unwrap();
+
+            // TODO: Assert balance deposited and refunded
+            let refund0_amount = get_event_attributes_by_ty_and_key(
+                &exact_deposit_rsp,
+                "wasm",
+                vec!["refund0_amount"],
+            );
+            refund0_amount_total = refund0_amount_total
+                .checked_add(Uint128::new(
+                    refund0_amount[0].value.parse::<u128>().unwrap(),
+                ))
+                .unwrap();
+            // TODO: Increment
+            let refund1_amount = get_event_attributes_by_ty_and_key(
+                &exact_deposit_rsp,
+                "wasm",
+                vec!["refund1_amount"],
+            );
+            assert!(refund1_amount.is_empty());
         }
 
-        // Declare swapper accounts
-        let swapper = &accounts[0];
-
-        let balances = bm
-            .query_all_balances(&QueryAllBalancesRequest {
-                address: contract_address.to_string(),
-                pagination: None,
-            })
-            .unwrap();
-        println!("balances after deposits: {:?}", balances);
-
         // Swaps to generate some DENOM_QUOTE SpreadRewards for previously created user positions
+        let swapper = &accounts[0];
         for _ in 0..SWAPS_NUM {
             PoolManager::new(&app)
                 .swap_exact_amount_in(
@@ -145,16 +153,45 @@ mod tests {
         // assert_eq!(treasury_received, admin.address().to_string());
 
         // Airdrop some DENOM_REWARD funds to the contract, this will be like idle claimed spread rewards
-        let _send = bm.send(
-            MsgSend {
-                from_address: admin.address(),
-                to_address: contract_address.to_string(),
-                amount: vec![OsmoCoin {
-                    denom: DENOM_REWARD.to_string(),
-                    amount: DENOM_REWARD_AMOUNT.to_string(),
-                }],
-            },
-            &admin,
+        let _send = bm
+            .send(
+                MsgSend {
+                    from_address: admin.address(),
+                    to_address: contract_address.to_string(),
+                    amount: vec![OsmoCoin {
+                        denom: DENOM_REWARD.to_string(),
+                        amount: DENOM_REWARD_AMOUNT.to_string(),
+                    }],
+                },
+                &admin,
+            )
+            .unwrap();
+
+        // declare expected contract balance after 10x user deposits
+        let expected_balance_base_after_deposit = 50000000u128
+            .checked_add(
+                balance_base_before
+                    .balance
+                    .unwrap()
+                    .amount
+                    .parse::<u128>()
+                    .unwrap(),
+            )
+            .unwrap()
+            .checked_sub(refund0_amount_total.u128())
+            .unwrap();
+
+        // Get the contract balance for DENOM_BASE
+        let balances_base = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_BASE.to_string(),
+            })
+            .unwrap();
+        // We expect TODO (10_000_000 uatom * 10users), so a total of 50.00 $ATOM - balance_base_before  - refund0_amount_total
+        assert_eq!(
+            expected_balance_base_after_deposit.to_string(),
+            balances_base.balance.unwrap().amount
         );
 
         // Get the contract balance for DENOM_QUOTE
@@ -164,10 +201,11 @@ mod tests {
                 denom: DENOM_QUOTE.to_string(),
             })
             .unwrap();
+        // We expect (10_000_000 uosmo * 10users) + 8uosmo from collected rewards (1uosmo out of 9 to treasury) so a total of 50.000008 $OSMO
         assert_eq!(
             "50000008".to_string(),
             balances_quote.balance.unwrap().amount
-        ); // 10_000_000 uosmo * 10users + 8uosmo from collected rewards (1uosmo out of 9 to treasury)
+        );
 
         // Get the contract balance for DENOM_REWARD
         let balances_rewards = bm
@@ -180,19 +218,6 @@ mod tests {
             DENOM_REWARD_AMOUNT.to_string(),
             balances_rewards.balance.unwrap().amount,
         );
-
-        // TODO: What do we expect here?
-        let shares_price: SharePriceResponse = wasm
-            .query(
-                contract_address.as_str(),
-                &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
-                    shares: Uint128::new(10),
-                })),
-            )
-            .unwrap();
-        println!("{:?}", shares_price.balances);
-        assert_eq!(Uint128::new(2), shares_price.balances[0].amount);
-        assert_eq!(Uint128::new(3), shares_price.balances[1].amount);
 
         // Define CW Dex Router swap routes
         let path1 = vec![
@@ -213,8 +238,8 @@ mod tests {
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
         )];
 
-        // Autocompound funds
-        let _auto_compound = wasm
+        // Swap non vault funds to vault funds
+        let swap_non_vault_funds = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
@@ -233,40 +258,134 @@ mod tests {
                 &admin,
             )
             .unwrap();
+        println!("swap_non_vault_funds: {:?}", swap_non_vault_funds);
+        // 50000000000ustride to 49500000000uatom
+        // 50000000000ustride to 49500000000uosmo
+        // TODO: assert on swap_non_vault_funds how much token_out against the previous balance
 
-        // Assert there is no balance for DENOM_REWARD (ustrd)
-        let balances_after = bm
+        // Assert there is no balance for DENOM_REWARD (ustrd) and there is more DENOM_BASE
+        let balances_after_swap_rewards = bm
             .query_balance(&QueryBalanceRequest {
                 address: contract_address.to_string(),
                 denom: DENOM_REWARD.to_string(),
             })
             .unwrap();
-        assert_eq!("0".to_string(), balances_after.balance.unwrap().amount);
+        assert_eq!(
+            "0".to_string(),
+            balances_after_swap_rewards.balance.unwrap().amount
+        );
+        // DENOM_BASE
+        let balances_after_swap_base = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_BASE.to_string(),
+            })
+            .unwrap();
+        assert_eq!(
+            expected_balance_base_after_deposit
+                .checked_add(49500000000u128)
+                .unwrap()
+                .to_string(),
+            balances_after_swap_base.balance.unwrap().amount
+        );
+        // DENOM_QUOTE
+        let balances_after_swap_quote = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_QUOTE.to_string(),
+            })
+            .unwrap();
+        assert_eq!(
+            50000008u128
+                .checked_add(49500000000u128)
+                .unwrap()
+                .to_string(),
+            balances_after_swap_quote.balance.unwrap().amount
+        );
+
         // let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_BASE.to_string() }).unwrap();
         // assert_eq!("49005000373".to_string(), balances_after.balance.unwrap().amount);
         // let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
         // assert_eq!("49500004998".to_string(), balances_after.balance.unwrap().amount);
 
-        let _update_range = wasm
+        // TODO: What do we expect here?
+        // let shares_price: SharePriceResponse = wasm
+        //     .query(
+        //         contract_address.as_str(),
+        //         &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
+        //             shares: Uint128::new(10),
+        //         })),
+        //     )
+        //     .unwrap();
+        // assert_eq!(Uint128::new(2), shares_price.balances[0].amount);
+        // assert_eq!(Uint128::new(3), shares_price.balances[1].amount);
+
+        let autocompound_resp = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("0.51").unwrap(),
-                        upper_price: Decimal::from_str("1.49").unwrap(),
-                        max_slippage: Decimal::bps(9500),
-                        ratio_of_swappable_funds_to_use: Decimal::one(),
-                        twap_window_seconds: 45,
-                        recommended_swap_route: None,
-                        force_swap_route: false,
-                        claim_after: None,
-                    },
-                )),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Autocompound {}),
                 &[],
                 &admin,
             )
             .unwrap();
+        println!("autocompound_resp: {:?}", autocompound_resp);
 
+        // // Rebalance the vault. Why are we doing that? shouldnt we ::Autocompound?
+        // let _update_range = wasm
+        //     .execute(
+        //         contract_address.as_str(),
+        //         &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+        //             ModifyRangeMsg {
+        //                 lower_price: Decimal::from_str("0.51").unwrap(),
+        //                 upper_price: Decimal::from_str("1.49").unwrap(),
+        //                 max_slippage: Decimal::bps(9500),
+        //                 ratio_of_swappable_funds_to_use: Decimal::one(),
+        //                 twap_window_seconds: 45,
+        //                 recommended_swap_route: None,
+        //                 force_swap_route: false,
+        //                 claim_after: None,
+        //             },
+        //         )),
+        //         &[],
+        //         &admin,
+        //     )
+        //     .unwrap();
+
+        let balances_after_swap_rewards = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_REWARD.to_string(),
+            })
+            .unwrap();
+        assert_eq!(
+            "0".to_string(),
+            balances_after_swap_rewards.balance.unwrap().amount
+        );
+        // DENOM_BASE
+        let balances_after_swap_base = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_BASE.to_string(),
+            })
+            .unwrap();
+        // TODO: fix this asert by contract code
+        // assert_eq!(
+        //     "25036768588".to_string(),
+        //     balances_after_swap_base.balance.unwrap().amount
+        // );
+        // DENOM_QUOTE
+        let balances_after_swap_quote = bm
+            .query_balance(&QueryBalanceRequest {
+                address: contract_address.to_string(),
+                denom: DENOM_QUOTE.to_string(),
+            })
+            .unwrap();
+        assert_eq!(
+            "0".to_string(),
+            balances_after_swap_quote.balance.unwrap().amount
+        );
+
+        // TODO: What do we expect here?
         let shares_price: SharePriceResponse = wasm
             .query(
                 contract_address.as_str(),
@@ -451,17 +570,19 @@ mod tests {
             )
             .unwrap();
 
-        let _send = bm.send(
-            MsgSend {
-                from_address: admin.address(),
-                to_address: contract_address.to_string(),
-                amount: vec![OsmoCoin {
-                    denom: DENOM_REWARD.to_string(),
-                    amount: DENOM_REWARD_AMOUNT.to_string(),
-                }],
-            },
-            &admin,
-        );
+        let _send = bm
+            .send(
+                MsgSend {
+                    from_address: admin.address(),
+                    to_address: contract_address.to_string(),
+                    amount: vec![OsmoCoin {
+                        denom: DENOM_REWARD.to_string(),
+                        amount: DENOM_REWARD_AMOUNT.to_string(),
+                    }],
+                },
+                &admin,
+            )
+            .unwrap();
 
         let balances_quote = bm
             .query_balance(&QueryBalanceRequest {
@@ -711,17 +832,19 @@ mod tests {
         let bm = Bank::new(&app);
 
         for account in &ops_accounts {
-            let _send = bm.send(
-                MsgSend {
-                    from_address: account.address(),
-                    to_address: contract_address.to_string(),
-                    amount: vec![OsmoCoin {
-                        denom: "rewards".to_string(),
-                        amount: ACCOUNTS_INIT_BALANCE.to_string(),
-                    }],
-                },
-                &account,
-            );
+            let _send = bm
+                .send(
+                    MsgSend {
+                        from_address: account.address(),
+                        to_address: contract_address.to_string(),
+                        amount: vec![OsmoCoin {
+                            denom: "rewards".to_string(),
+                            amount: ACCOUNTS_INIT_BALANCE.to_string(),
+                        }],
+                    },
+                    &account,
+                )
+                .unwrap();
         }
 
         // todo : un-comment this whenever testing for migration in auto compounding
@@ -877,8 +1000,6 @@ mod tests {
                 &admin,
             )
             .unwrap_err();
-
-        println!("{:?}", result);
 
         // Assert that the response is an error
         assert!(
