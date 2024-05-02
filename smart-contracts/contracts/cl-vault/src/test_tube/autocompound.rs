@@ -1,5 +1,3 @@
-// redeposit
-
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{Coin, Uint128};
@@ -21,7 +19,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_redeposit() {
+    fn test_autocompound() {
         let (app, contract_address, _cl_pool_id, admin) = default_init();
 
         let wasm = Wasm::new(&app);
@@ -81,16 +79,16 @@ mod tests {
                 .unwrap();
             assert!(!shares.balance.is_zero());
 
-            // redeposit on every 10th deposit into the vault
+            // autocompound on every 10th deposit into the vault
             if i % 10 == 0 {
-                // check for contract balance as it has not been redeposited yet
+                // check for contract balance as it has not been autocompounded yet
                 let balance_before = bm
                     .query_all_balances(&QueryAllBalancesRequest {
                         address: contract_address.to_string(),
                         pagination: None,
                     })
                     .unwrap();
-                // assert 3 denom on balance before as it has not been redeposited yet
+                // assert 3 denom on balance before as it has not been autocompounded yet
                 // 3 denom : vault shares, base denom, quote denom
                 assert_eq!(3usize, balance_before.balances.len());
 
@@ -105,7 +103,7 @@ mod tests {
                     )
                     .unwrap();
 
-                // check for contract balance as it has been redeposited
+                // check for contract balance as it has been autocompounded
                 let balance_after = bm
                     .query_balance(&QueryBalanceRequest {
                         address: contract_address.to_string(),

@@ -10,7 +10,7 @@ use crate::query::{
     query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::autocompound::{execute_migration_step, execute_swap_idle_funds};
+use crate::rewards::swap::execute_swap_idle_funds;
 use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply, prepend_claim_msg,
 };
@@ -21,6 +21,9 @@ use crate::state::{
     STRATEGIST_REWARDS, VAULT_CONFIG,
 };
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
+use crate::vault::autocompound::{
+    execute_autocompound, execute_migration_step, handle_autocompound_reply,
+};
 use crate::vault::exact_deposit::execute_exact_deposit;
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
@@ -31,7 +34,6 @@ use crate::vault::range::{
     handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
     handle_withdraw_position_reply,
 };
-use crate::vault::redeposit::{execute_autocompound, handle_redeposit_reply};
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -115,7 +117,7 @@ pub fn execute(
                     force_swap_route,
                     swap_routes,
                 } => execute_swap_idle_funds(deps, env, info, force_swap_route, swap_routes),
-                crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
+                crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep { amount_of_users } => {
                     execute_migration_step(deps, env, amount_of_users)
                 }
             }
@@ -201,7 +203,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
-        Replies::Redeposit => handle_redeposit_reply(deps, env, msg.result),
+        Replies::Redeposit => handle_autocompound_reply(deps, env, msg.result),
         Replies::AnyDepositSwap => handle_any_deposit_swap_reply(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
