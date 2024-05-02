@@ -249,7 +249,7 @@ mod tests {
             )).unwrap(),
             funds: vec![],
         });
-    
+
 
         let updated_response = prepend_claim_msg(&env, response).unwrap();
         assert_eq!(updated_response.messages.len(), 2);
