@@ -1,7 +1,7 @@
 use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
     to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
-    SubMsg, Uint128, WasmMsg,
+    Uint128, WasmMsg,
 };
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg},
@@ -11,32 +11,33 @@ use cw_dex_router::{
 use crate::{helpers::assert_auto_compound_admin, state::POOL_CONFIG};
 use crate::{msg::SwapAsset, state::VAULT_CONFIG, ContractError};
 
-pub fn execute_swap_idle_funds(
+pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
     force_swap_route: bool,
     swap_routes: Vec<SwapAsset>,
 ) -> Result<Response, ContractError> {
-    // TODO: Should we assert that no BASE_DENOM / QUOTE_DENOM is trying to be swapped?
-    //       The only use case it could be to reach the perfect balance between asset right before the autocompound.
-    //       But for that we should implement the swap call in the autocompound function in order to:
-    //          1. Make it sync and avoid the perfect balance isn't perfect anymore at autocompound stage.
-    //          2. Avoid fatfingering or malicious tempering over vault's compoundable funds outside autocompound context.
-
     // auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_auto_compound_admin(deps.storage, &info.sender)?;
 
-    let vault_config = VAULT_CONFIG.may_load(deps.storage)?;
-    let dex_router = vault_config.unwrap().dex_router;
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
     if swap_routes.is_empty() {
         return Err(ContractError::EmptyCompoundAssetList {});
     }
 
-    // TODO: Why are we using SubMsgs if we are not replying?
-    //       We should probably use Messages to fire and forget with atomic behavior?
-    let mut swap_msgs: Vec<SubMsg> = vec![];
+    let mut swap_msgs: Vec<CosmosMsg> = vec![];
+
     for current_swap_route in swap_routes {
+        // Assert that no BASE_DENOM / QUOTE_DENOM is trying to be swapped as token_in
+        if current_swap_route.token_in_denom == pool_config.token0
+            || current_swap_route.token_in_denom == pool_config.token1
+        {
+            return Err(ContractError::InvalidSwapAssets {});
+        }
+
+        // Throw an Error if contract balance for the wanted denom is 0
         let balance_in_contract = deps
             .querier
             .query_balance(
@@ -44,14 +45,10 @@ pub fn execute_swap_idle_funds(
                 current_swap_route.clone().token_in_denom,
             )?
             .amount;
-
-        // Throw an Error if contract balance for the wanted denom is 0
         if balance_in_contract == Uint128::zero() {
             // TODO: Use InsufficientFundsForSwap instead, this has been removed after STRATEGIST_REWARDS state eval removal
             return Err(ContractError::InsufficientFunds {});
         }
-
-        let pool_config = POOL_CONFIG.load(deps.storage)?;
 
         let part_1_amount = balance_in_contract.checked_div(Uint128::new(2)).unwrap();
         let part_2_amount = balance_in_contract
@@ -60,101 +57,94 @@ pub fn execute_swap_idle_funds(
             .checked_div(Uint128::new(2))
             .unwrap();
 
-        swap_msgs.push(SubMsg::new(generate_swap_message(
+        swap_msgs.push(generate_swap_message(
             deps.querier,
-            Some(dex_router.clone()),
-            current_swap_route.clone().recommended_swap_route_token_0,
-            current_swap_route.clone().token_in_denom,
+            &vault_config.dex_router,
+            &current_swap_route.recommended_swap_route_token_0,
+            &current_swap_route.token_in_denom,
             part_1_amount,
-            pool_config.token0,
+            &pool_config.token0,
             force_swap_route,
-        )?));
-        swap_msgs.push(SubMsg::new(generate_swap_message(
+        )?);
+        swap_msgs.push(generate_swap_message(
             deps.querier,
-            Some(dex_router.clone()),
-            current_swap_route.clone().recommended_swap_route_token_1,
-            current_swap_route.clone().token_in_denom,
+            &vault_config.dex_router,
+            &current_swap_route.recommended_swap_route_token_1,
+            &current_swap_route.token_in_denom,
             part_2_amount,
-            pool_config.token1,
+            &pool_config.token1,
             force_swap_route,
-        )?));
+        )?);
     }
 
     Ok(Response::new()
-        .add_submessages(swap_msgs) // TODO: Adjust that to add_messages() if above doubt is resolved in favor of that
+        .add_messages(swap_msgs)
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_compund_swap"))
 }
 
 fn generate_swap_message(
     querier: QuerierWrapper,
-    dex_router: Option<Addr>,
-    current_swap_route: Option<SwapOperationsListUnchecked>,
-    token_in_denom: String,
+    dex_router_addr: &Addr,
+    current_swap_route: &Option<SwapOperationsListUnchecked>,
+    token_in_denom: &String,
     token_in_amount: Uint128,
-    token_out_denom: String,
+    token_out_denom: &String,
     force_swap_route: bool,
 ) -> Result<CosmosMsg, ContractError> {
-    let swap_msg = match dex_router {
-        Some(ref dex_router_address) => {
-            let offer_asset = AssetInfo::Native(token_in_denom.clone());
-            let ask_asset = AssetInfo::Native(token_out_denom);
+    let offer_asset = AssetInfo::Native(token_in_denom.to_string());
+    let ask_asset = AssetInfo::Native(token_out_denom.to_string());
 
-            let recommended_out: Uint128 = match current_swap_route.clone() {
-                Some(operations) => querier.query_wasm_smart(
-                    dex_router_address.to_string(),
-                    &ApolloQueryMsg::SimulateSwapOperations {
-                        offer_amount: token_in_amount,
-                        operations,
-                    },
-                )?,
-                None => 0u128.into(),
-            };
-            let best_path: Option<BestPathForPairResponse> = querier.query_wasm_smart(
-                dex_router_address.to_string(),
-                &ApolloQueryMsg::BestPathForPair {
-                    offer_asset: offer_asset.into(),
-                    ask_asset: ask_asset.into(),
-                    exclude_paths: None,
-                    offer_amount: token_in_amount,
-                },
-            )?;
-            let best_outcome = best_path
-                .as_ref()
-                .map_or(Uint128::zero(), |path| path.return_amount);
-
-            // Determine the route to use
-            let route = if force_swap_route {
-                current_swap_route
-                    .clone()
-                    .ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
-            } else if best_outcome >= recommended_out {
-                best_path.expect("Expected a best path").operations.into()
-            } else {
-                current_swap_route
-                    .clone()
-                    .expect("Expected a recommended route")
-            };
-
-            // Execute swap operations once with the determined route
-            get_execute_swap_operations_msg(
-                dex_router_address.clone(),
-                route,
-                Uint128::zero(),
-                &token_in_denom.clone(),
-                token_in_amount,
-            )
-        }
-        None => {
-            return Err(ContractError::InvalidDexRouterAddress {});
-        }
+    let recommended_out: Uint128 = match current_swap_route.clone() {
+        Some(operations) => querier.query_wasm_smart(
+            dex_router_addr.to_string(),
+            &ApolloQueryMsg::SimulateSwapOperations {
+                offer_amount: token_in_amount,
+                operations,
+            },
+        )?,
+        None => 0u128.into(),
     };
+    let best_path: Option<BestPathForPairResponse> = querier.query_wasm_smart(
+        dex_router_addr.to_string(),
+        &ApolloQueryMsg::BestPathForPair {
+            offer_asset: offer_asset.into(),
+            ask_asset: ask_asset.into(),
+            exclude_paths: None,
+            offer_amount: token_in_amount,
+        },
+    )?;
+    let best_outcome = best_path
+        .as_ref()
+        .map_or(Uint128::zero(), |path| path.return_amount);
+
+    // Determine the route to use
+    let route = if force_swap_route {
+        current_swap_route
+            .clone()
+            .ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
+    } else if best_outcome >= recommended_out {
+        best_path.expect("Expected a best path").operations.into()
+    } else {
+        current_swap_route
+            .clone()
+            .expect("Expected a recommended route")
+    };
+
+    // Execute swap operations once with the determined route
+    let swap_msg = get_execute_swap_operations_msg(
+        dex_router_addr,
+        route,
+        Uint128::zero(),
+        &token_in_denom,
+        token_in_amount,
+    );
 
     swap_msg
 }
 
 fn get_execute_swap_operations_msg(
-    dex_router_address: Addr,
+    dex_router_address: &Addr,
     operations: SwapOperationsListUnchecked,
     token_out_min_amount: Uint128,
     token_in_denom: &String,

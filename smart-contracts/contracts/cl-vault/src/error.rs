@@ -134,9 +134,6 @@ pub enum ContractError {
     #[error("Cannot force a recommended route if recommended route is passed in as None")]
     TryForceRouteWithoutRecommendedSwapRoute {},
 
-    #[error("Invalid Dex Router address in auto compound swap")]
-    InvalidDexRouterAddress {},
-
     #[error("Auto compound swap list is empty")]
     EmptyCompoundAssetList {},
 
@@ -148,4 +145,7 @@ pub enum ContractError {
 
     #[error("Vault is already distributing rewards")]
     IsDistributing {},
+
+    #[error("Swap vault related denoms is not allowed.")]
+    InvalidSwapAssets {},
 }
