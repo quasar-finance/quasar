@@ -12,7 +12,7 @@ use osmosis_std::types::{
 };
 
 /// prepends a callback to the contract to claim any rewards
-pub fn prepend_claim_msg(env: Env, response: Response) -> Result<Response, StdError> {
+pub fn prepend_claim_msg(env: &Env, response: Response) -> Result<Response, ContractError> {
     let claim_msg = CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
         msg: to_json_binary(&ExecuteMsg::VaultExtension(
@@ -248,7 +248,7 @@ mod tests {
         });
     
 
-        let updated_response = prepend_claim_msg(env, response).unwrap();
+        let updated_response = prepend_claim_msg(&env, response).unwrap();
         assert_eq!(updated_response.messages.len(), 2);
         assert_eq!(updated_response.messages[0].msg, claim_msg);
         assert_eq!(updated_response.messages[1].msg, msg);

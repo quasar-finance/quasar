@@ -28,7 +28,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositi
 /// Returns a `Response` containing the result of the redeposit operation.
 pub fn execute_redeposit(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
     let position_id = (POSITION.load(deps.storage)?).position_id;

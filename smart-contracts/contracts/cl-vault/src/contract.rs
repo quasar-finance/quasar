@@ -12,7 +12,7 @@ use crate::query::{
 use crate::reply::Replies;
 use crate::rewards::autocompound::{execute_auto_compound_swap, execute_migration_step};
 use crate::rewards::{
-    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply, prepend_claim_msg,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 
@@ -82,7 +82,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Redeposit {} => execute_redeposit(deps, env, info),
+                crate::msg::ExtensionExecuteMsg::Redeposit {} => prepend_claim_msg(&env, execute_redeposit(deps, &env, info)?),
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
@@ -92,9 +92,9 @@ pub fn execute(
                     recommended_swap_route,
                     force_swap_route,
                     claim_after,
-                }) => execute_update_range(
+                }) => prepend_claim_msg(&env, execute_update_range(
                     deps,
-                    env,
+                    &env,
                     info,
                     lower_price,
                     upper_price,
@@ -104,7 +104,7 @@ pub fn execute(
                     recommended_swap_route,
                     force_swap_route,
                     claim_after,
-                ),
+                )?),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
                 }
