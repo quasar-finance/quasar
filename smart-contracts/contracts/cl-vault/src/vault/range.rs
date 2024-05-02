@@ -54,7 +54,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 #[allow(clippy::too_many_arguments)]
 pub fn execute_update_range(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     info: MessageInfo,
     lower_price: Decimal,
     upper_price: Decimal,
@@ -103,7 +103,7 @@ pub fn execute_update_range(
 #[allow(clippy::too_many_arguments)]
 pub fn execute_update_range_ticks(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     info: MessageInfo,
     modify_range_config: ModifyRangeState,
     claim_after: Option<u64>,
@@ -677,7 +677,7 @@ mod tests {
 
         let res = super::execute_update_range(
             deps.as_mut(),
-            env,
+            &env,
             info,
             lower_price,
             upper_price,

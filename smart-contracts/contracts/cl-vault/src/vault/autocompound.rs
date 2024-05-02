@@ -106,7 +106,7 @@ pub fn execute_migration_step(
 /// Returns a `Response` containing the result of the autocompound operation.
 pub fn execute_autocompound(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
     let position_id = (POSITION.load(deps.storage)?).position_id;
