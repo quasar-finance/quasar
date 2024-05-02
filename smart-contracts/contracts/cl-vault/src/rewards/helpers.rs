@@ -11,7 +11,10 @@ use osmosis_std::types::{
     osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
 };
 
-/// prepends a callback to the contract to claim any rewards
+/// Prepends a callback to the contract to claim any rewards, used to
+/// enforce the claiming of rewards before any action that might
+/// cause Osmosis to collect rewards anyway, such as fully withdrawing a position
+/// or adding funds into a position
 pub fn prepend_claim_msg(env: &Env, response: Response) -> Result<Response, ContractError> {
     let claim_msg = CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
