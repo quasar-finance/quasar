@@ -11,7 +11,6 @@ use cw_dex_router::{
 use crate::{helpers::assert_auto_compound_admin, state::POOL_CONFIG};
 use crate::{msg::SwapAsset, state::VAULT_CONFIG, ContractError};
 
-// TODO: I would like to rename this to a more generic thing like "execute_idle_funds_swap" or just "execute_swap"
 pub fn execute_swap_idle_funds(
     deps: DepsMut,
     env: Env,
