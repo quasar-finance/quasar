@@ -90,7 +90,7 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?;
+    let withdraw_msg = withdraw_msg(deps, &env, shares_to_withdraw_u128)?;
 
     let collect_rewards_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
@@ -114,7 +114,7 @@ pub fn execute_withdraw(
         )))
 }
 
-fn withdraw(
+fn withdraw_msg(
     deps: DepsMut,
     env: &Env,
     user_shares: Uint128,

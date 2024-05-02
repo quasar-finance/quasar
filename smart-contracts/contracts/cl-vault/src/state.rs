@@ -62,9 +62,9 @@ pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status"
 #[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
-    pub token0: String,
     // todo: Verify in instantiate message
-    pub token1: String, // todo: Verify in instantiate message
+    pub token0: String,
+    pub token1: String,
 }
 
 impl PoolConfig {

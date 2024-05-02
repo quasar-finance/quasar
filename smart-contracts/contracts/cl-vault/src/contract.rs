@@ -10,7 +10,7 @@ use crate::query::{
     query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::swap::execute_swap_idle_funds;
+use crate::rewards::swap::execute_swap_non_vault_funds;
 use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply, prepend_claim_msg,
 };
@@ -113,11 +113,11 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
-                crate::msg::ExtensionExecuteMsg::SwapIdleFunds {
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     force_swap_route,
                     swap_routes,
-                } => execute_swap_idle_funds(deps, env, info, force_swap_route, swap_routes),
-                crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep { amount_of_users } => {
+                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
+                crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
                     execute_migration_step(deps, env, amount_of_users)
                 }
             }

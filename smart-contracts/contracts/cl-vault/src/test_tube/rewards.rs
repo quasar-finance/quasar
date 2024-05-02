@@ -217,7 +217,7 @@ mod tests {
         let _auto_compound = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapIdleFunds {
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     force_swap_route: false,
                     swap_routes: vec![SwapAsset {
                         token_in_denom: DENOM_REWARD.to_string(),
@@ -502,7 +502,7 @@ mod tests {
         let _auto_compound = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapIdleFunds {
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     force_swap_route: false,
                     swap_routes: vec![SwapAsset {
                         token_in_denom: DENOM_REWARD.to_string(),
@@ -744,11 +744,9 @@ mod tests {
             let result = wasm
                 .execute(
                     contract_address.as_str(),
-                    &ExecuteMsg::VaultExtension(
-                        crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
-                            amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
-                        },
-                    ),
+                    &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                        amount_of_users: Uint128::one(), // this is ignored the first time but lets pass it anyway for now
+                    }),
                     &[],
                     &admin,
                 )
@@ -767,11 +765,9 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(
-                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
-                        amount_of_users: Uint128::one(),
-                    },
-                ),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
                 &[],
                 &admin,
             )
@@ -804,11 +800,9 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(
-                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
-                        amount_of_users: Uint128::one(),
-                    },
-                ),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
                 &[],
                 &admin,
             )
@@ -856,11 +850,9 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(
-                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
-                        amount_of_users: Uint128::one(),
-                    },
-                ),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
                 &[],
                 &admin,
             )
@@ -878,11 +870,9 @@ mod tests {
         let result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(
-                    crate::msg::ExtensionExecuteMsg::AutocompoundMigrationStep {
-                        amount_of_users: Uint128::one(),
-                    },
-                ),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::MigrationStep {
+                    amount_of_users: Uint128::one(),
+                }),
                 &[],
                 &admin,
             )

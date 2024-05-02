@@ -25,15 +25,15 @@ pub enum ExtensionExecuteMsg {
     Autocompound {},
     /// Distribute any rewards over all users
     CollectRewards {},
-    /// SwapIdleFunds
-    SwapIdleFunds {
+    /// SwapNonVaultFunds
+    SwapNonVaultFunds {
         force_swap_route: bool,
         swap_routes: Vec<SwapAsset>,
     },
     /// Build tick exponent cache
     BuildTickCache {},
     /// MigrationStep
-    AutocompoundMigrationStep { amount_of_users: Uint128 },
+    MigrationStep { amount_of_users: Uint128 },
 }
 
 #[cw_serde]
