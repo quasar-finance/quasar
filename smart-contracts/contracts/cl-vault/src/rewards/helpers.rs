@@ -4,7 +4,7 @@ use crate::{
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
-    Response, StdError, SubMsg,
+    Response, SubMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -216,7 +216,9 @@ mod tests {
     #[test]
     fn test_prepend_msg_with_empty_response() {
         let response = Response::default();
-        let msg = CosmosMsg::Bank(BankMsg::Burn { amount: vec![coin(100, "stake")] });
+        let msg = CosmosMsg::Bank(BankMsg::Burn {
+            amount: vec![coin(100, "stake")],
+        });
 
         let updated_response = prepend_msg(response, SubMsg::new(msg.clone()));
         assert_eq!(updated_response.messages.len(), 1);
@@ -225,8 +227,13 @@ mod tests {
 
     #[test]
     fn test_prepend_msg_with_non_empty_response() {
-        let existing_msg = CosmosMsg::Bank(BankMsg::Send { to_address: "bob".to_string(), amount: vec![coin(100, "stake")] });
-        let new_msg = CosmosMsg::Bank(BankMsg::Burn { amount: vec![coin(100, "stake")] });
+        let existing_msg = CosmosMsg::Bank(BankMsg::Send {
+            to_address: "bob".to_string(),
+            amount: vec![coin(100, "stake")],
+        });
+        let new_msg = CosmosMsg::Bank(BankMsg::Burn {
+            amount: vec![coin(100, "stake")],
+        });
 
         let response = Response::new().add_message(existing_msg.clone());
 
@@ -239,17 +246,19 @@ mod tests {
     #[test]
     fn test_prepend_claim_msg_normal_operation() {
         let env = mock_env();
-        let msg = CosmosMsg::Bank(BankMsg::Burn { amount: vec![coin(100, "stake")] });
+        let msg = CosmosMsg::Bank(BankMsg::Burn {
+            amount: vec![coin(100, "stake")],
+        });
         let response = Response::new().add_message(msg.clone());
 
         let claim_msg = CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
             msg: to_json_binary(&ExecuteMsg::VaultExtension(
                 crate::msg::ExtensionExecuteMsg::CollectRewards {},
-            )).unwrap(),
+            ))
+            .unwrap(),
             funds: vec![],
         });
-
 
         let updated_response = prepend_claim_msg(&env, response).unwrap();
         assert_eq!(updated_response.messages.len(), 2);

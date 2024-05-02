@@ -12,7 +12,8 @@ use crate::query::{
 use crate::reply::Replies;
 use crate::rewards::swap::execute_swap_non_vault_funds;
 use crate::rewards::{
-    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply, prepend_claim_msg,
+    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+    prepend_claim_msg,
 };
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 
@@ -85,7 +86,7 @@ pub fn execute(
                     execute_merge_position(deps, env, info, msg)
                 }
                 crate::msg::ExtensionExecuteMsg::Autocompound {} => {
-                    prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?),
+                    prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?)
                 }
                 crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
@@ -96,19 +97,22 @@ pub fn execute(
                     recommended_swap_route,
                     force_swap_route,
                     claim_after,
-                }) => prepend_claim_msg(&env, execute_update_range(
-                    deps,
+                }) => prepend_claim_msg(
                     &env,
-                    info,
-                    lower_price,
-                    upper_price,
-                    max_slippage,
-                    ratio_of_swappable_funds_to_use,
-                    twap_window_seconds,
-                    recommended_swap_route,
-                    force_swap_route,
-                    claim_after,
-                )?),
+                    execute_update_range(
+                        deps,
+                        &env,
+                        info,
+                        lower_price,
+                        upper_price,
+                        max_slippage,
+                        ratio_of_swappable_funds_to_use,
+                        twap_window_seconds,
+                        recommended_swap_route,
+                        force_swap_route,
+                        claim_after,
+                    )?,
+                ),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
                 }
