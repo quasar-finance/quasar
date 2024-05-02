@@ -15,6 +15,7 @@ members = [
   "contracts/cl-vault",
   "contracts/merkle-incentives",
   "contracts/range-middleware",
+  "contracts/splitter",
 ]
 
 [workspace.dependencies]

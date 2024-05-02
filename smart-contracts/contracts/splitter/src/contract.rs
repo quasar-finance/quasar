@@ -3,8 +3,10 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 // use cw2::set_contract_version;
 
+use crate::admin::execute_admin;
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::execute::{execute_claim, execute_split};
+use crate::msg::{self, ExecuteMsg, InstantiateMsg, QueryMsg};
 
 /*
 // version info for migration info
@@ -24,12 +26,16 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    _deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    _msg: ExecuteMsg,
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    unimplemented!()
+    match msg {
+        ExecuteMsg::Admin(msg) => execute_admin(deps, env, info, msg),
+        ExecuteMsg::Split {} => execute_split(deps.as_ref(), env),
+        ExecuteMsg::Claim { claims } => execute_claim(claims),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
