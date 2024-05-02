@@ -23,7 +23,7 @@ use osmosis_std::types::{
 #[allow(clippy::unnecessary_fallible_conversions)]
 pub fn execute_withdraw(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     info: MessageInfo,
     recipient: Option<String>,
     shares_to_withdraw: Uint256,
@@ -215,7 +215,7 @@ mod tests {
             .unwrap();
 
         let _res =
-            execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
+            execute_withdraw(deps.as_mut(), &env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
