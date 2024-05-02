@@ -20,7 +20,10 @@ pub fn execute_swap_idle_funds(
     swap_routes: Vec<SwapAsset>,
 ) -> Result<Response, ContractError> {
     // TODO: Should we assert that no BASE_DENOM / QUOTE_DENOM is trying to be swapped?
-    //       Idt there is any use case for that and so we'd prevent tempering and/or fat fingering.
+    //       The only use case it could be to reach the perfect balance between asset right before the autocompound.
+    //       But for that we should implement the swap call in the autocompound function in order to:
+    //          1. Make it sync and avoid the perfect balance isn't perfect anymore at autocompound stage.
+    //          2. Avoid fatfingering or malicious tempering over vault's compoundable funds outside autocompound context.
 
     // auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_auto_compound_admin(deps.storage, &info.sender)?;
