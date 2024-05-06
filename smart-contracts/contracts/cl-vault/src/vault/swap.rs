@@ -17,6 +17,14 @@ use crate::{
     ContractError,
 };
 
+pub struct SwapCalculationResult {
+    pub swap_msg: Option<CosmosMsg>,
+    pub token_in_denom: Option<String>,
+    pub swap_amount: Uint128,
+    pub token_out_min_amount: Uint128,
+    pub position_id: Option<u64>,
+}
+
 pub struct SwapParams {
     pub token_in_amount: Uint128,
     pub token_in_denom: String,

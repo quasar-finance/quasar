@@ -38,8 +38,6 @@ pub fn execute_migration_step(
         .take(amount_of_users.u128() as usize)
     {
         let (address, rewards) = item?;
-        deps.api.debug(format!("address {:?}", address).as_str());
-        deps.api.debug(format!("rewards {:?}", rewards).as_str());
 
         addresses.push(address.clone());
         outputs.push(Output {
@@ -48,8 +46,6 @@ pub fn execute_migration_step(
         });
         total_amount.add(rewards)?;
     }
-    deps.api
-        .debug(format!("total_amount {:?}", total_amount).as_str());
 
     // Remove processed rewards in a separate iteration.
     for addr in addresses {
@@ -61,11 +57,7 @@ pub fn execute_migration_step(
         .range(deps.storage, None, None, Order::Ascending)
         .next()
         .is_none();
-    deps.api
-        .debug(format!("is_last_execution {:?}", is_last_execution).as_str());
-
     if is_last_execution {
-        deps.api.debug("{:?}");
         migration_status = MigrationStatus::Closed;
         MIGRATION_STATUS.save(deps.storage, &migration_status)?;
     }
@@ -109,6 +101,8 @@ pub fn execute_autocompound(
     env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
+    // TODO: Validate claim_after timestamp
+
     let position_id = (POSITION.load(deps.storage)?).position_id;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
         .position_by_id(position_id)?
@@ -119,6 +113,9 @@ pub fn execute_autocompound(
 
     let balance = get_unused_balances(&deps.querier, &env).unwrap();
     let pool = POOL_CONFIG.load(deps.storage)?;
+
+    // TODO: We should swap() here
+
     let (token0, token1) =
         must_pay_one_or_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;
 

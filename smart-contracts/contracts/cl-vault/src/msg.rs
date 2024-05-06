@@ -25,22 +25,10 @@ pub enum ExtensionExecuteMsg {
     Autocompound {},
     /// Distribute any rewards over all users
     CollectRewards {},
-    /// SwapNonVaultFunds
-    SwapNonVaultFunds {
-        force_swap_route: bool,
-        swap_routes: Vec<SwapAsset>,
-    },
     /// Build tick exponent cache
     BuildTickCache {},
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
-}
-
-#[cw_serde]
-pub struct SwapAsset {
-    pub token_in_denom: String,
-    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
-    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
 }
 
 /// Apollo extension messages define functionality that is part of all apollo

@@ -15,11 +15,9 @@ use crate::helpers::{get_asset0_value, must_pay_one_or_two};
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
-use crate::rewards::CoinList;
 use crate::state::{
     Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, METADATA,
-    MIGRATION_STATUS, POOL_CONFIG, POSITION, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG,
-    VAULT_DENOM,
+    MIGRATION_STATUS, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
@@ -61,8 +59,6 @@ pub fn handle_instantiate(
             token1: pool.token1.clone(),
         },
     )?;
-
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
 
     METADATA.save(
         deps.storage,

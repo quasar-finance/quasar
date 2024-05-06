@@ -1,6 +1,3 @@
-use crate::{
-    error::ContractResult, helpers::sort_tokens, msg::ExecuteMsg, state::POSITION, ContractError,
-};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
@@ -9,6 +6,10 @@ use cosmwasm_std::{
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
+};
+
+use crate::{
+    error::ContractResult, helpers::sort_tokens, msg::ExecuteMsg, state::POSITION, ContractError,
 };
 
 /// Prepends a callback to the contract to claim any rewards, used to
@@ -28,7 +29,7 @@ pub fn prepend_claim_msg(env: &Env, response: Response) -> Result<Response, Cont
 }
 
 /// Prepend a msg to the start of the messages in a response
-pub fn prepend_msg(mut response: Response, msg: SubMsg) -> Response {
+fn prepend_msg(mut response: Response, msg: SubMsg) -> Response {
     response.messages.splice(0..0, vec![msg.into()]);
     response
 }

@@ -147,8 +147,7 @@ mod tests {
 
     use crate::helpers::get_depositable_tokens;
     use crate::{
-        rewards::CoinList,
-        state::{PoolConfig, Position, POSITION, STRATEGIST_REWARDS},
+        state::{Position, POSITION},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
 
@@ -303,19 +302,19 @@ mod tests {
             )
             .unwrap();
 
-        STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::new())
-            .unwrap();
-        POOL_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &PoolConfig {
-                    pool_id: 1,
-                    token0: "token0".to_string(),
-                    token1: "token1".to_string(),
-                },
-            )
-            .unwrap();
+        // STRATEGIST_REWARDS
+        //     .save(deps.as_mut().storage, &CoinList::new())
+        //     .unwrap();
+        // POOL_CONFIG
+        //     .save(
+        //         deps.as_mut().storage,
+        //         &PoolConfig {
+        //             pool_id: 1,
+        //             token0: "token0".to_string(),
+        //             token1: "token1".to_string(),
+        //         },
+        //     )
+        //     .unwrap();
 
         execute_exact_deposit(
             deps.as_mut(),

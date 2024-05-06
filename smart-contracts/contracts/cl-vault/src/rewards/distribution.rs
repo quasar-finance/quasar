@@ -406,7 +406,7 @@ pub fn handle_collect_incentives_reply(
 //         .performance_fee;
 
 //     assert_eq!(
-//         STRATEGIST_REWARDS.load(mut_deps.storage).unwrap(),
+//         .load(mut_deps.storage).unwrap(),
 //         strategist_rewards
 //             .add(
 //                 rewards
