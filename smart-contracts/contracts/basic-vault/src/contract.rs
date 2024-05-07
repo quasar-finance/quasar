@@ -363,15 +363,22 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let mut investment_info = INVESTMENT.load(deps.storage)?;
+    investment_info.min_withdrawal = msg.min_withdrawal;
+
+    INVESTMENT.save(deps.storage, &investment_info)?;
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
+        .add_attribute("update_min_withdrawal", msg.min_withdrawal.to_string())
         .add_attribute("success", "true"))
 }
 
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{
+        attr,
         testing::{mock_dependencies, mock_env, mock_info},
         Addr, ContractResult, Decimal, QuerierResult,
     };
@@ -379,6 +386,49 @@ mod test {
     use crate::msg::PrimitiveConfig;
 
     use super::*;
+
+    #[test]
+    fn test_migrate() {
+        let mut deps = mock_dependencies();
+
+        // Setup initial data
+        let initial_investment_info = InvestmentInfo {
+            owner: Addr::unchecked("owner_address"),
+            min_withdrawal: Uint128::new(1000),
+            deposit_denom: "uosmo".to_string(),
+            primitives: vec![], // Assuming PrimitiveConfig is properly defined elsewhere
+        };
+
+        // Save initial data
+        INVESTMENT
+            .save(&mut deps.storage, &initial_investment_info)
+            .unwrap();
+
+        // Create migration message
+        let msg = MigrateMsg {
+            min_withdrawal: Uint128::new(500), // New minimum withdrawal value
+        };
+
+        // Call migrate function
+        let env = mock_env();
+        let response = migrate(deps.as_mut(), env, msg).unwrap();
+
+        // Load the updated investment info
+        let updated_investment_info = INVESTMENT.load(&deps.storage).unwrap();
+
+        // Assert the min_withdrawal was updated
+        assert_eq!(updated_investment_info.min_withdrawal, Uint128::new(500));
+
+        // Check response attributes
+        assert_eq!(
+            response.attributes,
+            vec![
+                attr("migrate", CONTRACT_NAME),
+                attr("update_min_withdrawal", "500"),
+                attr("success", "true"),
+            ]
+        );
+    }
 
     #[test]
     fn instantiate_works() {

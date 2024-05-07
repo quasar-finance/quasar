@@ -210,7 +210,9 @@ pub enum QueryMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub min_withdrawal: Uint128,
+}
 
 #[cw_serde]
 pub struct InvestmentResponse {
