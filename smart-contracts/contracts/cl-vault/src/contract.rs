@@ -10,7 +10,6 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::swap::execute_swap_non_vault_funds;
 use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
@@ -35,6 +34,7 @@ use crate::vault::range::{
     handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
     handle_withdraw_position_reply,
 };
+use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
