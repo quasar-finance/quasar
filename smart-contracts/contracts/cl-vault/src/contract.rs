@@ -255,14 +255,14 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
         Addr, Decimal,
     };
+    use std::str::FromStr;
 
     use crate::state::OldVaultConfig;
+    use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
 
     use super::*;
 
@@ -282,7 +282,7 @@ mod tests {
                 &OldVaultConfig {
                     performance_fee: Decimal::from_str("0.2").unwrap(),
                     treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(5),
+                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                 },
             )
             .unwrap();

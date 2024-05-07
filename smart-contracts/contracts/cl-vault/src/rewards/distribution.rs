@@ -61,9 +61,9 @@ pub fn handle_collect_spread_rewards_reply(
     if !strategist_fee.is_empty() {
         let bank_send_msg = BankMsg::Send {
             to_address: vault_config.treasury.to_string(),
-            amount: sort_tokens(strategist_fee.coins()),
+            amount: strategist_fee.coins(),
         };
-        response = response.add_message(bank_send_msg);
+        response = response.add_message(bank_send_msg.clone());
     }
 
     // Collect the incentives rewards optional workflow

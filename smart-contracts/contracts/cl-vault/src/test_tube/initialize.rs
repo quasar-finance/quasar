@@ -32,9 +32,16 @@ pub mod initialize {
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
 
-    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000000";
-    const TOKENS_PROVIDED_AMOUNT_1: &str = "100000000000000000000";
+    const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
+    pub const PERFORMANCE_FEE: u64 = 20;
+
+    const TOKENS_PROVIDED_AMOUNT_LOW: &str = "1000000000000000";
+    const SPREAD_FACTOR_LOW: &str = "0.01";
+    pub const _MAX_SLIPPAGE_LOW: u64 = 9900; // this should be inline with the pool spread_factor
+
+    const TOKENS_PROVIDED_AMOUNT_HIGH: &str = "100000000000000000000";
+    const SPREAD_FACTOR_HIGH: &str = "0.1";
+    pub const MAX_SLIPPAGE_HIGH: u64 = 9000; // this should be inline with the pool spread_factor
 
     pub const DENOM_BASE: &str = "uatom";
     pub const DENOM_QUOTE: &str = "uosmo";
@@ -56,18 +63,21 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
+                    .unwrap()
+                    .atomics()
+                    .to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -87,18 +97,21 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_LOW)
+                    .unwrap()
+                    .atomics()
+                    .to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT_1.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT_1.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -122,18 +135,21 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
+                    .unwrap()
+                    .atomics()
+                    .to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -345,9 +361,9 @@ pub mod initialize {
                     admin: admin.address(),
                     pool_id: pool.id,
                     config: VaultConfig {
-                        performance_fee: Decimal::percent(20),
+                        performance_fee: Decimal::percent(PERFORMANCE_FEE),
                         treasury: Addr::unchecked(admin.address()),
-                        swap_max_slippage: Decimal::bps(5),
+                        swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         dex_router: Addr::unchecked(contract_dex_router.clone().data.address),
                     },
                     vault_token_subdenom: "utestvault".to_string(),
@@ -398,18 +414,21 @@ pub mod initialize {
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.1").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
+                    .unwrap()
+                    .atomics()
+                    .to_string(),
             },
             -5000000, // 0.5 spot price
             500000,   // 1.5 spot price
             vec![
                 v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
                 v1beta1::Coin {
                     denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
             ],
             Uint128::zero(),
@@ -666,7 +685,7 @@ pub mod initialize {
                     config: VaultConfig {
                         performance_fee: Decimal::percent(20),
                         treasury: Addr::unchecked(admin.address()),
-                        swap_max_slippage: Decimal::bps(5),
+                        swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         dex_router: Addr::unchecked(contract_dex_router.clone().data.address),
                     },
                     vault_token_subdenom: "utestvault".to_string(),
@@ -862,7 +881,7 @@ pub mod initialize {
                     config: VaultConfig {
                         performance_fee: Decimal::percent(20),
                         treasury: Addr::unchecked(admin.address()),
-                        swap_max_slippage: Decimal::bps(5),
+                        swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         dex_router: Addr::unchecked(admin.address()), // Just to fulfill bech32 requirement
                     },
                     vault_token_subdenom: "utestvault".to_string(),
@@ -962,7 +981,7 @@ pub mod initialize {
                 ModifyRangeMsg {
                     lower_price: Decimal::from_str("0.993").unwrap(),
                     upper_price: Decimal::from_str("1.002").unwrap(),
-                    max_slippage: Decimal::bps(9500),
+                    max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
                     recommended_swap_route: None,

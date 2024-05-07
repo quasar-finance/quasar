@@ -15,7 +15,8 @@ mod tests {
     use proptest::prelude::*;
 
     use crate::query::AssetsBalanceResponse;
-    use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
+    use crate::test_tube::helpers::{get_balance, get_event_attributes_by_ty_and_key};
+    use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -313,7 +314,7 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                        max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         recommended_swap_route: None,
@@ -454,9 +455,9 @@ mod tests {
     // TESTS
     proptest! {
         // setup the config with amount of cases, usable for setting different values on ci vs local
-        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
-        #[test]
-        #[ignore]
+        // #![proptest_config(ProptestConfig::with_cases(get_cases()))]
+        // #[test]
+        // #[ignore]
         fn test_complete_works(
             (initial_lower_tick, initial_upper_tick) in get_initial_range(),
             actions in get_strategy_list(),

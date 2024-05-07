@@ -19,7 +19,9 @@ mod test {
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::{init_test_contract, DENOM_BASE, DENOM_QUOTE},
+        test_tube::initialize::initialize::{
+            init_test_contract, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH,
+        },
     };
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
@@ -28,8 +30,8 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_works() {
+        // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
         let (app, contract, cl_pool_id, admin) = init_test_contract(
-            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
@@ -129,7 +131,7 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("400").unwrap(),
                         upper_price: Decimal::from_str("1466").unwrap(),
-                        max_slippage: Decimal::bps(9500),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         recommended_swap_route: None,
@@ -247,7 +249,7 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("20.71").unwrap(),
                         upper_price: Decimal::from_str("45").unwrap(),
-                        max_slippage: Decimal::bps(9500),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         recommended_swap_route: None,

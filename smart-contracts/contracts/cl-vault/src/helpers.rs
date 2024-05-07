@@ -190,7 +190,6 @@ pub fn get_depositable_tokens(
             let token1 = token1.amount;
             let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
             let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
-            println!("{:?}", ratio);
 
             // Refund token0 if ratio.numerator is zero
             if ratio.numerator().is_zero() {

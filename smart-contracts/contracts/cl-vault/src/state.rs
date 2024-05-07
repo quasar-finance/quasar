@@ -28,7 +28,7 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// swap max slippage
+    /// swap max slippage // TODO: This is unused
     pub swap_max_slippage: Decimal,
     /// Dex router address
     pub dex_router: Addr,
@@ -50,7 +50,7 @@ pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("new_vault_config");
 
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
-/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade
+/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade // TODO: Deprecate!
 #[cw_serde]
 pub enum MigrationStatus {
     Open,

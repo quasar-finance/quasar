@@ -1,6 +1,8 @@
 use cosmwasm_std::Attribute;
-use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
-use osmosis_test_tube::ExecuteResponse;
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::QueryBalanceRequest, cosmwasm::wasm::v1::MsgExecuteContractResponse,
+};
+use osmosis_test_tube::{Bank, ExecuteResponse, Module, OsmosisTestApp};
 
 pub fn get_event_attributes_by_ty_and_key(
     response: &ExecuteResponse<MsgExecuteContractResponse>,
@@ -14,6 +16,18 @@ pub fn get_event_attributes_by_ty_and_key(
         .flat_map(|event| event.attributes.clone())
         .filter(|attribute| keys.contains(&attribute.key.as_str()))
         .collect()
+}
+
+pub fn get_balance(app: &OsmosisTestApp, address: String, denom: String) -> u128 {
+    let bm = Bank::new(app);
+
+    bm.query_balance(&QueryBalanceRequest { address, denom })
+        .unwrap()
+        .balance
+        .unwrap()
+        .amount
+        .parse::<u128>()
+        .unwrap()
 }
 
 pub fn get_amount_from_denom(value: &String) -> u128 {

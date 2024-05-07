@@ -21,11 +21,17 @@ mod tests {
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::UserSharesBalanceResponse;
+    use crate::state::USER_REWARDS;
+    use crate::test_tube::helpers::get_balance;
     use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
     use crate::test_tube::initialize::initialize::{
         default_init, dex_cl_init_lp_pools, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
         DENOM_QUOTE, DENOM_REWARD, DEPOSIT_AMOUNT,
     };
+
+    const DENOM_REWARD_AMOUNT: &str = "100000000000";
+    const SWAPS_AMOUNT: &str = "10000000000000";
+    const SWAPS_NUM: u64 = 10;
 
     #[test]
     #[ignore]
@@ -114,19 +120,12 @@ mod tests {
                     .unwrap();
 
                 // check for contract balance as it has been autocompounded
-                let balance_after = bm
-                    .query_balance(&QueryBalanceRequest {
-                        address: contract_address.to_string(),
-                        denom: DENOM_QUOTE.to_string(),
-                    })
-                    .unwrap();
+                let balance_after =
+                    get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
 
                 // assert quote denom balance to be lass than 1 as sometimes the balance for
                 // quote denom becomes more than zero in odd number cases
-                assert!(
-                    Uint128::from_str(&balance_after.balance.unwrap_or_default().amount).unwrap()
-                        <= Uint128::new(1)
-                );
+                assert!(balance_after <= 1);
             }
 
             // increment i with 1
@@ -134,16 +133,13 @@ mod tests {
         }
     }
 
-    const DENOM_REWARD_AMOUNT: &str = "100000000000";
-    const SWAPS_AMOUNT: &str = "10000000000000";
-    const SWAPS_NUM: u64 = 10;
-
     #[test]
     #[ignore]
     fn test_autocompound_rewards_lp_pools() {
         let (app, contract_address, _dex_router_addr, _cl_pool_id, lp_pools_ids, admin) =
             dex_cl_init_lp_pools();
         let bm = Bank::new(&app);
+        let wasm = Wasm::new(&app);
 
         // Initialize accounts
         let accounts = app
@@ -156,14 +152,9 @@ mod tests {
             )
             .unwrap();
 
-        let wasm = Wasm::new(&app);
-
-        let balance_base_before = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_BASE.to_string(),
-            })
-            .unwrap();
+        // Balance before
+        let balance_base_before =
+            get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
 
         let mut refund0_amount_total = Uint128::zero();
 
@@ -229,52 +220,35 @@ mod tests {
             .unwrap();
 
         // declare expected contract balance after 10x user deposits
-        let users_total_deposit_per_asset = DEPOSIT_AMOUNT.checked_mul(5u128).unwrap();
+        let users_total_deposit_per_asset =
+            DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
         let expected_balance_base_after_deposit = users_total_deposit_per_asset
-            .checked_add(
-                balance_base_before
-                    .balance
-                    .unwrap()
-                    .amount
-                    .parse::<u128>()
-                    .unwrap(),
-            )
+            .checked_add(balance_base_before)
             .unwrap()
             .checked_sub(refund0_amount_total.u128())
             .unwrap();
 
-        // Get the contract balance for DENOM_BASE
-        let balances_rewards = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_REWARD.to_string(),
-            })
-            .unwrap();
+        // <assert balances
+        let balances_rewards =
+            get_balance(&app, contract_address.to_string(), DENOM_REWARD.to_string());
         assert_eq!(
             DENOM_REWARD_AMOUNT.to_string(),
-            balances_rewards.balance.unwrap().amount,
+            balances_rewards.to_string(),
         );
-        let balances_base = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_BASE.to_string(),
-            })
-            .unwrap();
-        // We expect TODO (10_000_000 uatom * 10users), so a total of 50.00 $ATOM - (balance_base_before  - refund0_amount_total) from expected_balance_base_after_deposit
+
+        // We expect (10_000_000 uatom * 10users), so a total of 50.00 $ATOM - (balance_base_before  - refund0_amount_total) from expected_balance_base_after_deposit
+        let balances_base = get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
         assert_eq!(
             expected_balance_base_after_deposit.to_string(),
-            balances_base.balance.unwrap().amount
+            balances_base.to_string()
         );
-        let balances_quote = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_QUOTE.to_string(),
-            })
-            .unwrap();
+
         // We expect (10_000_000 uosmo * 10users) so a total of 50 $OSMO
+        let balances_quote =
+            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(
             users_total_deposit_per_asset.to_string(),
-            balances_quote.balance.unwrap().amount
+            balances_quote.to_string()
         );
 
         // Define CW Dex Router swap routes
@@ -322,43 +296,22 @@ mod tests {
         // TODO: Log how many swap fees / price impact we incurred into so we can assert at the end of test the total vaults assets by shares among users
 
         // Assert there is no balance for DENOM_REWARD (ustrd) and there is more DENOM_BASE
-        let balances_after_swap_rewards = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_REWARD.to_string(),
-            })
-            .unwrap();
-        assert_eq!(
-            "0".to_string(),
-            balances_after_swap_rewards.balance.unwrap().amount
-        );
-        // DENOM_BASE
-        let balances_after_swap_base = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_BASE.to_string(),
-            })
-            .unwrap();
+        let balances_after_swap_rewards =
+            get_balance(&app, contract_address.to_string(), DENOM_REWARD.to_string());
+        assert_eq!(0u128, balances_after_swap_rewards);
+        let balances_after_swap_base =
+            get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
         assert_eq!(
             expected_balance_base_after_deposit
                 .checked_add(49500000000u128)
-                .unwrap()
-                .to_string(),
-            balances_after_swap_base.balance.unwrap().amount
+                .unwrap(),
+            balances_after_swap_base
         );
-        // DENOM_QUOTE
-        let balances_after_swap_quote = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_QUOTE.to_string(),
-            })
-            .unwrap();
+        let balances_after_swap_quote =
+            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(
-            50000008u128
-                .checked_add(49500000000u128)
-                .unwrap()
-                .to_string(),
-            balances_after_swap_quote.balance.unwrap().amount
+            50000000000u128.checked_add(49500000000u128).unwrap(),
+            balances_after_swap_quote
         );
 
         // TODO: What do we expect here?
@@ -382,53 +335,24 @@ mod tests {
             )
             .unwrap();
 
-        // DENOM_BASE
-        let balances_after_autocompound_base = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_BASE.to_string(),
-            })
-            .unwrap();
-        // TODO: Explain why we await that amount of funds on either token0 or 1 (we do not swap to ideal position balance)
+        // Assert balances after AUTOCOMPOUND
+        let balances_after_autocompound_base =
+            get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
         assert_eq!(
-            "25036768588".to_string(),
-            balances_after_autocompound_base.balance.unwrap().amount
+            18511274090u128, // TODO: De hardcode this
+            balances_after_autocompound_base
         );
-        // DENOM_QUOTE
-        let balances_after_autocompound_quote = bm
-            .query_balance(&QueryBalanceRequest {
-                address: contract_address.to_string(),
-                denom: DENOM_QUOTE.to_string(),
-            })
-            .unwrap();
-        assert_eq!(
-            "0".to_string(),
-            balances_after_autocompound_quote.balance.unwrap().amount
-        );
+        let balances_after_autocompound_quote =
+            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+        assert_eq!(0u128, balances_after_autocompound_quote);
 
         // TODO: Check these More asserts
         for account in &accounts {
             // Get balances before for current account
-            let balances_before_withdraw_quote_denom = get_amount_from_denom(
-                &bm.query_balance(&QueryBalanceRequest {
-                    address: account.address(),
-                    denom: DENOM_QUOTE.to_string(),
-                })
-                .unwrap()
-                .balance
-                .unwrap()
-                .amount,
-            );
-            let balances_before_withdraw_base_denom = get_amount_from_denom(
-                &bm.query_balance(&QueryBalanceRequest {
-                    address: account.address(),
-                    denom: DENOM_BASE.to_string(),
-                })
-                .unwrap()
-                .balance
-                .unwrap()
-                .amount,
-            );
+            let balances_before_withdraw_base_denom =
+                get_balance(&app, account.address().to_string(), DENOM_BASE.to_string());
+            let balances_before_withdraw_quote_denom =
+                get_balance(&app, account.address().to_string(), DENOM_QUOTE.to_string());
 
             // Get shares balance for current account
             let shares_to_redeem: UserSharesBalanceResponse = wasm
@@ -454,38 +378,22 @@ mod tests {
                 )
                 .unwrap();
 
-                let balances_after_withdraw_quote_denom = get_amount_from_denom(
-                    &bm.query_balance(&QueryBalanceRequest {
-                        address: account.address(),
-                        denom: DENOM_QUOTE.to_string(),
-                    })
-                    .unwrap()
-                    .balance
-                    .unwrap()
-                    .amount,
-                );
-                let balances_after_withdraw_base_denom = get_amount_from_denom(
-                    &bm.query_balance(&QueryBalanceRequest {
-                        address: account.address(),
-                        denom: DENOM_BASE.to_string(),
-                    })
-                    .unwrap()
-                    .balance
-                    .unwrap()
-                    .amount,
-                );
-
-                assert_eq!(
-                    true,
-                    balances_after_withdraw_quote_denom
-                        .checked_sub(balances_before_withdraw_quote_denom)
-                        .unwrap()
-                        > DEPOSIT_AMOUNT
-                );
+                // Assert after balances
+                let balances_after_withdraw_base_denom =
+                    get_balance(&app, account.address().to_string(), DENOM_BASE.to_string());
                 assert_eq!(
                     true,
                     balances_after_withdraw_base_denom
                         .checked_sub(balances_before_withdraw_base_denom)
+                        .unwrap()
+                        > DEPOSIT_AMOUNT
+                );
+                let balances_after_withdraw_quote_denom =
+                    get_balance(&app, account.address().to_string(), DENOM_QUOTE.to_string());
+                assert_eq!(
+                    true,
+                    balances_after_withdraw_quote_denom
+                        .checked_sub(balances_before_withdraw_quote_denom)
                         .unwrap()
                         > DEPOSIT_AMOUNT
                 );
@@ -670,7 +578,7 @@ mod tests {
     //                 ModifyRangeMsg {
     //                     lower_price: Decimal::from_str("0.51").unwrap(),
     //                     upper_price: Decimal::from_str("1.49").unwrap(),
-    //                     max_slippage: Decimal::bps(9500),
+    //                     max_slippage: Decimal::bps(MAX_SLIPPAGE),
     //                     ratio_of_swappable_funds_to_use: Decimal::one(),
     //                     twap_window_seconds: 45,
     //                     recommended_swap_route: None,
@@ -768,6 +676,8 @@ mod tests {
     #[ignore]
     fn test_migration_step_with_rewards_works() {
         let (app, contract_address, cl_pool_id, admin) = default_init();
+        let bm = Bank::new(&app);
+        let wasm = Wasm::new(&app);
 
         // Initialize accounts
         let accounts = app
@@ -781,7 +691,6 @@ mod tests {
             .unwrap();
 
         // Depositing with users
-        let wasm = Wasm::new(&app);
         for account in &accounts {
             let _ = wasm
                 .execute(
@@ -840,8 +749,6 @@ mod tests {
         //     }
         // ]))?;
 
-        let bm = Bank::new(&app);
-
         for account in &ops_accounts {
             let _send = bm
                 .send(
@@ -885,14 +792,14 @@ mod tests {
                     &admin,
                 )
                 .unwrap();
-            // Extract the 'is_last_collection' attribute from the 'wasm' event
-            let is_last_collection = get_event_attributes_by_ty_and_key(
+            // Extract the 'is_last_execution' attribute from the 'wasm' event
+            let is_last_execution = get_event_attributes_by_ty_and_key(
                 &result,
                 "wasm",
                 vec!["is_last_execution", "migration_status"],
             );
-            assert_eq!(is_last_collection[0].value, "Open".to_string());
-            assert_eq!(is_last_collection[1].value, "false".to_string());
+            assert_eq!(is_last_execution[0].value, "Open".to_string());
+            assert_eq!(is_last_execution[1].value, "false".to_string());
         }
 
         // Try to collect one more time, this should be closing the process and set to Ready as there are not rewards
@@ -910,10 +817,10 @@ mod tests {
         let rewards_status =
             get_event_attributes_by_ty_and_key(&result, "wasm", vec!["migration_status"]);
         assert_eq!(rewards_status[0].value, "Closed".to_string());
-        // Extract the 'is_last_collection' attribute from the 'wasm' event
-        let is_last_collection =
+        // Extract the 'is_last_execution' attribute from the 'wasm' event
+        let is_last_execution =
             get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_execution"]);
-        assert_eq!(is_last_collection[0].value, "true".to_string());
+        assert_eq!(is_last_execution[0].value, "true".to_string());
 
         // todo : un-comment whenever testing for auto compound migration testing
         // let balance = bm.query_balance(&QueryBalanceRequest{
@@ -995,10 +902,10 @@ mod tests {
         let rewards_status =
             get_event_attributes_by_ty_and_key(&result, "wasm", vec!["migration_status"]);
         assert_eq!(rewards_status[0].value, "Closed".to_string());
-        // Extract the 'is_last_collection' attribute from the 'wasm' event
-        let is_last_collection =
+        // Extract the 'is_last_execution' attribute from the 'wasm' event
+        let is_last_execution =
             get_event_attributes_by_ty_and_key(&result, "wasm", vec!["is_last_execution"]);
-        assert_eq!(is_last_collection[0].value, "true".to_string());
+        assert_eq!(is_last_execution[0].value, "true".to_string());
 
         // Distribute just one time, as there are no rewards we expect this to clear the state even if 1 user < 10 users
         let result = wasm

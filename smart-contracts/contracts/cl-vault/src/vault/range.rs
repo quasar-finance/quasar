@@ -792,7 +792,6 @@ mod tests {
         });
 
         let res = super::handle_withdraw_position_reply(deps.as_mut(), env.clone(), data).unwrap();
-        println!("res: {:?}", res);
 
         // TODO: review this math as now strategist rewards are removed from balance etc etc
 

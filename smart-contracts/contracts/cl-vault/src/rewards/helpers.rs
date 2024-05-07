@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
-    Response, SubMsg,
+    Response, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -80,6 +80,11 @@ impl CoinList {
 
     /// calculates the ratio of the current rewards
     pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
+        if ratio == Decimal::zero() {
+            // Return an empty list if the ratio is zero.
+            return CoinList(Vec::new());
+        }
+
         CoinList(
             self.0
                 .iter()
@@ -142,13 +147,22 @@ impl CoinList {
         Ok(())
     }
 
-    /// substract a percentage from self, mutate self and return the subtracted rewards
+    /// Subtracts a percentage from self, mutate self and return the subtracted rewards,
+    /// excluding any coins with zero amounts.
     pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<CoinList> {
         let to_sub = self.mul_ratio(ratio);
 
-        // actually subtract the funds
+        // Actually subtract the funds
         self.sub(&to_sub)?;
-        Ok(to_sub)
+
+        // Return only coins with non-zero amounts, filtering out any zeros that might result from the subtraction.
+        Ok(CoinList(
+            to_sub
+                .0
+                .into_iter()
+                .filter(|c| c.amount != Uint128::zero())
+                .collect(),
+        ))
     }
 
     /// subtract to_sub from self, ignores any coins in to_sub that don't exist in self and vice versa
