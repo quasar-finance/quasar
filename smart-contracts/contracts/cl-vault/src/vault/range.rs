@@ -759,13 +759,6 @@ mod tests {
             &[(MOCK_CONTRACT_ADDR, &[coin(11234, "token1")])],
         );
 
-        // STRATEGIST_REWARDS
-        //     .save(
-        //         deps.as_mut().storage,
-        //         &CoinList::from_coins(vec![coin(1000, "token0"), coin(500, "token1")]),
-        //     )
-        //     .unwrap();
-
         // moving into a range
         MODIFY_RANGE_STATE
             .save(
@@ -799,6 +792,9 @@ mod tests {
         });
 
         let res = super::handle_withdraw_position_reply(deps.as_mut(), env.clone(), data).unwrap();
+        println!("res: {:?}", res);
+
+        // TODO: review this math as now strategist rewards are removed from balance etc etc
 
         // verify that we went straight to swap_deposit_merge
         assert_eq!(res.messages.len(), 1);
@@ -810,7 +806,7 @@ mod tests {
                 .find(|a| { a.key == "token_in" })
                 .unwrap()
                 .value,
-            "5962token1"
+            "5962token1" // TODO: number changed
         );
 
         let mut deps = mock_deps_with_querier_with_balance(

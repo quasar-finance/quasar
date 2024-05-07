@@ -35,9 +35,14 @@ pub mod initialize {
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
     const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000000";
     const TOKENS_PROVIDED_AMOUNT_1: &str = "100000000000000000000";
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
-    const DENOM_REWARD: &str = "ustride";
+
+    pub const DENOM_BASE: &str = "uatom";
+    pub const DENOM_QUOTE: &str = "uosmo";
+    pub const DENOM_REWARD: &str = "ustrd";
+
+    pub const ACCOUNTS_NUM: u64 = 10;
+    pub const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
+    pub const DEPOSIT_AMOUNT: u128 = 5_000_000_000;
 
     pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         init_test_contract(

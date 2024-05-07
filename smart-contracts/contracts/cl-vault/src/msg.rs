@@ -6,10 +6,17 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        SharePriceResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+        UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
 };
+
+#[cw_serde]
+pub struct SwapAsset {
+    pub token_in_denom: String,
+    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
+    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
+}
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -29,6 +36,11 @@ pub enum ExtensionExecuteMsg {
     BuildTickCache {},
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
+    /// SwapNonVaultFunds
+    SwapNonVaultFunds {
+        force_swap_route: bool,
+        swap_routes: Vec<SwapAsset>,
+    },
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -129,8 +141,6 @@ pub enum ClQueryMsg {
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
-    #[returns(SharePriceResponse)]
-    SharePrice { shares: Uint128 },
 }
 
 /// ExecuteMsg for an Autocompounding Vault.

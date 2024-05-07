@@ -1,4 +1,4 @@
-use cosmwasm_std::{attr, coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
+use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
 
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
@@ -94,11 +94,6 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    let mint_attrs = vec![
-        attr("mint_shares_amount", user_shares),
-        attr("receiver", recipient.as_str()),
-    ];
-
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
     // own the shares in their balance
@@ -116,7 +111,8 @@ pub(crate) fn execute_exact_deposit(
         .add_attribute("amount0", deposit.0)
         .add_attribute("amount1", deposit.1)
         .add_message(mint_msg)
-        .add_attributes(mint_attrs);
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str());
 
     if let Some((bank_msg, bank_attr)) = refund_bank_msg(
         recipient,

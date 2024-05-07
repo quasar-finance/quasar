@@ -6,10 +6,11 @@ use crate::instantiate::{
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
     query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_share_price, query_total_assets, query_total_vault_token_supply,
-    query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
+use crate::rewards::swap::execute_swap_non_vault_funds;
 use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
@@ -75,7 +76,9 @@ pub fn execute(
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             prepend_claim_msg(
-                &env,execute_withdraw(deps, &env, info, recipient, amount.into())?)
+                &env,
+                execute_withdraw(deps, &env, info, recipient, amount.into())?,
+            )
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {
@@ -113,6 +116,10 @@ pub fn execute(
                         claim_after,
                     )?,
                 ),
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
+                    force_swap_route,
+                    swap_routes,
+                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
                 crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
                     execute_build_tick_exp_cache(deps, info)
                 }
@@ -175,9 +182,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
                 }
                 crate::msg::ClQueryMsg::VerifyTickCache => {
                     Ok(to_json_binary(&query_verify_tick_cache(deps)?)?)
-                }
-                crate::msg::ClQueryMsg::SharePrice { shares } => {
-                    Ok(to_json_binary(&query_share_price(deps, env, shares)?)?)
                 }
             },
         },

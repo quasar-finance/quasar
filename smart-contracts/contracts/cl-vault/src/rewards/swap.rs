@@ -8,8 +8,8 @@ use cw_dex_router::{
     operations::SwapOperationsListUnchecked,
 };
 
-use crate::{helpers::assert_auto_compound_admin, state::POOL_CONFIG};
-use crate::{msg::SwapAsset, state::VAULT_CONFIG, ContractError};
+use crate::{helpers::assert_auto_compound_admin, msg::SwapAsset, state::POOL_CONFIG};
+use crate::{state::VAULT_CONFIG, ContractError};
 
 pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
@@ -18,7 +18,7 @@ pub fn execute_swap_non_vault_funds(
     force_swap_route: bool,
     swap_routes: Vec<SwapAsset>,
 ) -> Result<Response, ContractError> {
-    // auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
+    // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_auto_compound_admin(deps.storage, &info.sender)?;
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;

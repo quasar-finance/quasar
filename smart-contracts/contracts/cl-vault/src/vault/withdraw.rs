@@ -178,7 +178,8 @@ pub fn handle_withdraw_user_reply(
 mod tests {
     use crate::{
         // rewards::CoinList,
-        state::PoolConfig,
+        rewards::CoinList,
+        state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };
     use cosmwasm_std::{
@@ -200,19 +201,20 @@ mod tests {
         );
         let env = mock_env();
 
-        // STRATEGIST_REWARDS
-        //     .save(deps.as_mut().storage, &CoinList::new())
-        //     .unwrap();
-        // VAULT_DENOM
-        //     .save(deps.as_mut().storage, &"share_token".to_string())
-        //     .unwrap();
-        // SHARES
-        //     .save(
-        //         deps.as_mut().storage,
-        //         Addr::unchecked("bolice"),
-        //         &Uint128::new(1000),
-        //     )
-        //     .unwrap();
+        // TODO: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
+        STRATEGIST_REWARDS
+            .save(deps.as_mut().storage, &CoinList::new())
+            .unwrap();
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"share_token".to_string())
+            .unwrap();
+        SHARES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("bolice"),
+                &Uint128::new(1000),
+            )
+            .unwrap();
 
         let _res =
             execute_withdraw(deps.as_mut(), &env, info, None, Uint128::new(1000).into()).unwrap();

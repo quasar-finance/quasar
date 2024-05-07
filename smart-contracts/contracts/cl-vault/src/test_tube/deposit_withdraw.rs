@@ -8,13 +8,12 @@ mod tests {
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::{
-            helpers::get_event_attributes_by_ty_and_key, initialize::initialize::default_init,
+            helpers::get_event_attributes_by_ty_and_key,
+            initialize::initialize::{default_init, DENOM_BASE, DENOM_QUOTE},
         },
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
 
     #[test]
     #[ignore]

@@ -3,19 +3,16 @@ mod tests {
     use crate::msg::UserBalanceQueryMsg::{UserAssetsBalance, UserSharesBalance};
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::{AssetsBalanceResponse, UserSharesBalanceResponse};
-    use crate::test_tube::initialize::initialize::default_init_for_less_slippage;
+    use crate::test_tube::initialize::initialize::{
+        default_init_for_less_slippage, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
+        DENOM_QUOTE, DEPOSIT_AMOUNT,
+    };
     use cosmwasm_std::{assert_approx_eq, Coin, Fraction};
     use cosmwasm_std::{Decimal, Uint128};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
     use rand::{thread_rng, Rng};
-
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
-    const ACCOUNTS_NUM: u64 = 10;
-    const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
-    const DEPOSIT_AMOUNT_CAP: u128 = 5_000_000_000;
 
     #[test]
     #[ignore]
@@ -49,7 +46,7 @@ mod tests {
                 .unwrap();
 
             let mut rng = thread_rng();
-            let random_number: u128 = rng.gen_range(10_000..=DEPOSIT_AMOUNT_CAP);
+            let random_number: u128 = rng.gen_range(10_000..=DEPOSIT_AMOUNT);
 
             let total0 = Uint128::new(random_number)
                 .checked_add(

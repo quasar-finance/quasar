@@ -1,6 +1,6 @@
 use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
-    attr, coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+    coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
     Uint256,
 };
 use cw_dex::Pool::Osmosis;
@@ -144,11 +144,6 @@ pub(crate) fn execute_any_deposit(
             },
         )?;
 
-        let mint_attrs = vec![
-            attr("mint_shares_amount", user_shares),
-            attr("receiver", recipient.as_str()),
-        ];
-
         // TODO the locking of minted shares is a band-aid for giving out rewards to users,
         // once tokenfactory has send hooks, we can remove the lockup and have the users
         // own the shares in their balance
@@ -166,11 +161,12 @@ pub(crate) fn execute_any_deposit(
             .add_attribute("amount0", deposit_amount_in_ratio.0)
             .add_attribute("amount1", deposit_amount_in_ratio.1)
             .add_message(mint_msg)
-            .add_attributes(mint_attrs));
+            .add_attribute("mint_shares_amount", user_shares)
+            .add_attribute("receiver", recipient.as_str()));
     };
 
-    // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    // todo check on the twap_window_seconds (taking hardcoded value for now)
+    // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
+    // TODO check on the twap_window_seconds (taking hardcoded value for now)
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
@@ -226,6 +222,8 @@ pub(crate) fn execute_any_deposit(
             force_swap_route: false,
         },
     )?;
+
+    // TODO: Looks like we are already any_depositing, but swapping async and then retrying to any_deposit again
 
     // rest minting logic remains same
     Ok(Response::new()
@@ -293,6 +291,9 @@ pub(crate) fn handle_any_deposit_swap_reply(
         });
     }
 
+    // TODO: This logic looks repeated, we come here after creating a partial any_deposit with leftover. We swapped async and now we reany_deposit.
+    // Can't we first swap and finally create the any_deposit position?
+
     // calculate the amount of shares we can mint for this
     let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
     let total_assets_value = get_asset0_value(
@@ -341,11 +342,6 @@ pub(crate) fn handle_any_deposit_swap_reply(
         },
     )?;
 
-    let mint_attrs = vec![
-        attr("mint_shares_amount", user_shares),
-        attr("receiver", recipient.as_str()),
-    ];
-
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
     // own the shares in their balance
@@ -365,5 +361,6 @@ pub(crate) fn handle_any_deposit_swap_reply(
         .add_attribute("amount0", balance0)
         .add_attribute("amount1", balance1)
         .add_message(mint_msg)
-        .add_attributes(mint_attrs))
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str()))
 }

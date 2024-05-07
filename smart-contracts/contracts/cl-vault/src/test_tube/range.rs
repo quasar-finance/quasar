@@ -19,13 +19,11 @@ mod test {
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::init_test_contract,
+        test_tube::initialize::initialize::{init_test_contract, DENOM_BASE, DENOM_QUOTE},
     };
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
     const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
 
     #[test]
     #[ignore]
