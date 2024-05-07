@@ -16,10 +16,10 @@ use crate::helpers::{
     get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
 };
 use crate::reply::Replies;
-use crate::state::CURRENT_SWAP_ANY_DEPOSIT;
+use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
 use crate::vault::range::SwapDirection;
-use crate::vault::swap::{swap, SwapParams};
+use crate::vault::swap::{swap_msg, SwapParams};
 use crate::{
     helpers::must_pay_one_or_two,
     query::query_total_assets,
@@ -54,19 +54,23 @@ pub fn execute_any_deposit(
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
-    let pool = POOL_CONFIG.load(deps.storage)?;
-    let pool_details = get_cl_pool_info(&deps.querier, pool.pool_id)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown.position.clone().unwrap();
-    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0.clone(), pool.token1.clone()))?;
+    let (token0, token1) = must_pay_one_or_two(
+        &info,
+        (pool_config.token0.clone(), pool_config.token1.clone()),
+    )?;
 
     // get the amount of funds we can deposit from this ratio
     let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
-    // write swap logic here
-    let (swap_amount, swap_direction) = if !swappable_amount.0.is_zero() {
-        (
+    // Swap logic
+    // TODO: This is clearer now but it could be optimized further enhancing this function readibility
+    if !swappable_amount.0.is_zero() {
+        let (swap_amount, swap_direction) = (
             // range is above current tick
             if pool_details.current_tick > position.upper_tick {
                 swappable_amount.0
@@ -79,9 +83,30 @@ pub fn execute_any_deposit(
                 )?
             },
             SwapDirection::ZeroToOne,
-        )
+        );
+        let (swap_msg, token_in_denom, token_out_min_amount) = swap_msg_token_in_out_amounts(
+            deps,
+            &env,
+            pool_config,
+            swap_direction,
+            swap_amount,
+            swappable_amount,
+            deposit_amount_in_ratio,
+            &recipient,
+        )?;
+
+        // rest minting logic remains same
+        return Ok(Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                swap_msg,
+                Replies::AnyDepositSwap.into(),
+            ))
+            .add_attribute("method", "reply")
+            .add_attribute("action", "any_deposit_swap")
+            .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
+            .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
     } else if !swappable_amount.1.is_zero() {
-        (
+        let (swap_amount, swap_direction) = (
             // current tick is above range
             if pool_details.current_tick < position.lower_tick {
                 swappable_amount.1
@@ -94,10 +119,32 @@ pub fn execute_any_deposit(
                 )?
             },
             SwapDirection::OneToZero,
-        )
+        );
+        let (swap_msg, token_in_denom, token_out_min_amount) = swap_msg_token_in_out_amounts(
+            deps,
+            &env,
+            pool_config,
+            swap_direction,
+            swap_amount,
+            swappable_amount,
+            deposit_amount_in_ratio,
+            &recipient,
+        )?;
+
+        // rest minting logic remains same
+        return Ok(Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                swap_msg,
+                Replies::AnyDepositSwap.into(),
+            ))
+            .add_attribute("method", "reply")
+            .add_attribute("action", "any_deposit_swap")
+            .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
+            .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
     } else {
+        // TODO: I dont like this early return here and the fact that this function is or finishing here, or going to invoke an async reply.
         let (mint_msg, user_shares) =
-            get_mint_msg_user_shares(&mut deps, &env, &deposit_amount_in_ratio, &recipient)?;
+            mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
 
         return Ok(Response::new()
             .add_attribute("method", "reply")
@@ -108,77 +155,6 @@ pub fn execute_any_deposit(
             .add_attribute("mint_shares_amount", user_shares)
             .add_attribute("receiver", recipient.as_str()));
     };
-
-    // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    // TODO check on the twap_window_seconds (taking hardcoded value for now)
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
-    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
-        match swap_direction {
-            SwapDirection::ZeroToOne => (
-                pool.token0,
-                pool.token1,
-                swap_amount
-                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-                swappable_amount.0.checked_sub(swap_amount)?,
-            ),
-            SwapDirection::OneToZero => (
-                pool.token1,
-                pool.token0,
-                swap_amount
-                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-                swappable_amount.1.checked_sub(swap_amount)?,
-            ),
-        };
-
-    CURRENT_SWAP_ANY_DEPOSIT.save(
-        deps.storage,
-        &(
-            swap_direction,
-            left_over_amount,
-            recipient,
-            deposit_amount_in_ratio,
-        ),
-    )?;
-
-    // todo change this later as it hardcoded as of now
-    let token_out_min_amount =
-        token_out_ideal_amount?.checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
-
-    // generate a swap message with recommended path as the current
-    // pool on which the vault is running
-    let swap_msg = swap(
-        deps,
-        &env,
-        SwapParams {
-            token_in_amount: swap_amount,
-            token_out_min_amount,
-            token_in_denom: token_in_denom.clone(),
-            token_out_denom: token_out_denom.clone(),
-            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
-                SwapOperationBase {
-                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(
-                        pool.pool_id,
-                    )),
-                    offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
-                    ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
-                },
-            ])),
-            force_swap_route: false,
-        },
-    )?;
-
-    // TODO: Looks like we are already any_depositing, but swapping async and then retrying to any_deposit again
-
-    // rest minting logic remains same
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(
-            swap_msg,
-            Replies::AnyDepositSwap.into(),
-        ))
-        .add_attribute("method", "reply")
-        .add_attribute("action", "any_deposit_swap")
-        .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
-        .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
 }
 
 /// Handles the reply from a swap operation during any deposit.
@@ -235,8 +211,8 @@ pub fn handle_any_deposit_swap_reply(
         });
     }
 
-    let (mint_msg, user_shares) = get_mint_msg_user_shares(
-        &mut deps,
+    let (mint_msg, user_shares) = mint_msg_user_shares(
+        deps.branch(),
         &env,
         &(coins_to_mint_for[0].amount, coins_to_mint_for[1].amount),
         &recipient,
@@ -254,8 +230,8 @@ pub fn handle_any_deposit_swap_reply(
         .add_attribute("receiver", recipient.as_str()))
 }
 
-fn get_mint_msg_user_shares(
-    deps: &mut DepsMut,
+fn mint_msg_user_shares(
+    deps: DepsMut,
     env: &Env,
     deposit_amount_in_ratio: &(Uint128, Uint128),
     recipient: &Addr,
@@ -320,4 +296,75 @@ fn get_mint_msg_user_shares(
     };
 
     Ok((mint_msg, user_shares))
+}
+
+fn swap_msg_token_in_out_amounts(
+    deps: DepsMut,
+    env: &Env,
+    pool_config: PoolConfig,
+    swap_direction: SwapDirection,
+    swap_amount: Uint128,
+    swappable_amount: (Uint128, Uint128),
+    deposit_amount_in_ratio: (Uint128, Uint128),
+    recipient: &Addr,
+) -> Result<(CosmosMsg, String, Uint128), ContractError> {
+    // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
+    // TODO check on the twap_window_seconds (taking hardcoded value for now)
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
+    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
+        match swap_direction {
+            SwapDirection::ZeroToOne => (
+                pool_config.token0,
+                pool_config.token1,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+                swappable_amount.0.checked_sub(swap_amount)?,
+            ),
+            SwapDirection::OneToZero => (
+                pool_config.token1,
+                pool_config.token0,
+                swap_amount
+                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+                swappable_amount.1.checked_sub(swap_amount)?,
+            ),
+        };
+
+    CURRENT_SWAP_ANY_DEPOSIT.save(
+        deps.storage,
+        &(
+            swap_direction,
+            left_over_amount,
+            recipient.clone(),
+            deposit_amount_in_ratio,
+        ),
+    )?;
+
+    // todo change this later as it hardcoded as of now
+    let token_out_min_amount =
+        token_out_ideal_amount?.checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
+
+    // generate a swap message with recommended path as the current
+    // pool on which the vault is running
+    let swap_msg = swap_msg(
+        deps,
+        &env,
+        SwapParams {
+            token_in_amount: swap_amount,
+            token_out_min_amount,
+            token_in_denom: token_in_denom.clone(),
+            token_out_denom: token_out_denom.clone(),
+            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
+                SwapOperationBase {
+                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(
+                        pool_config.pool_id,
+                    )),
+                    offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
+                    ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
+                },
+            ])),
+            force_swap_route: false,
+        },
+    )?;
+
+    Ok((swap_msg, token_in_denom, token_out_min_amount))
 }

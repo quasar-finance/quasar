@@ -45,9 +45,9 @@ mod tests {
                 .parse()
                 .unwrap();
 
+            // TODO: Why random? This is not a proptest.
             let mut rng = thread_rng();
             let random_number: u128 = rng.gen_range(10_000..=DEPOSIT_AMOUNT);
-
             let total0 = Uint128::new(random_number)
                 .checked_add(
                     Uint128::new(random_number)

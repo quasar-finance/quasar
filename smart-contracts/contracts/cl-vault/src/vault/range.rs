@@ -14,7 +14,7 @@ use crate::{
     vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
-        swap::swap,
+        swap::swap_msg,
     },
     ContractError,
 };
@@ -482,7 +482,7 @@ pub fn calculate_swap_amount(
         force_swap_route: mrs.force_swap_route,
     };
 
-    let swap_msg = swap(deps, &env, swap_params)?;
+    let swap_msg = swap_msg(deps, &env, swap_params)?;
 
     Ok(SwapCalculationResult {
         swap_msg: Some(swap_msg),

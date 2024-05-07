@@ -84,7 +84,7 @@ pub fn _estimate_swap(
 
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
-pub fn swap(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMsg, ContractError> {
+pub fn swap_msg(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMsg, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
@@ -271,7 +271,7 @@ mod tests {
             force_swap_route: false,
         };
 
-        let result = super::swap(deps_mut, &env, swap_params).unwrap();
+        let result = super::swap_msg(deps_mut, &env, swap_params).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =
@@ -320,7 +320,7 @@ mod tests {
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
 
-        let err = super::swap(deps_mut, &env, swap_params).unwrap_err();
+        let err = super::swap_msg(deps_mut, &env, swap_params).unwrap_err();
 
         assert_eq!(
             err.to_string(),
