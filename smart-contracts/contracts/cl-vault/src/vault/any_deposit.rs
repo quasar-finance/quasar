@@ -1,7 +1,7 @@
 use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
-    coin, Coin, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
-    Uint256,
+    coin, Addr, Coin, CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Uint256,
 };
 use cw_dex::Pool::Osmosis;
 use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -45,7 +45,7 @@ use crate::{
 /// # Returns
 ///
 /// Returns a `Response` containing the result of the deposit operation.
-pub(crate) fn execute_any_deposit(
+pub fn execute_any_deposit(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -96,64 +96,8 @@ pub(crate) fn execute_any_deposit(
             SwapDirection::OneToZero,
         )
     } else {
-        // calculate the amount of shares we can mint for this
-        let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
-        let total_assets_value = get_asset0_value(
-            deps.storage,
-            &deps.querier,
-            total_assets.token0.amount,
-            total_assets.token1.amount,
-        )?;
-
-        let vault_denom = VAULT_DENOM.load(deps.storage)?;
-        let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
-            .supply_of(vault_denom.clone())?
-            .amount
-            .unwrap()
-            .amount
-            .parse::<u128>()?
-            .into();
-
-        let user_value = get_asset0_value(
-            deps.storage,
-            &deps.querier,
-            deposit_amount_in_ratio.0,
-            deposit_amount_in_ratio.1,
-        )?;
-
-        // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
-        let user_shares: Uint128 = if total_vault_shares.is_zero() {
-            user_value
-        } else {
-            total_vault_shares
-                .checked_mul(user_value.into())?
-                .checked_div(total_assets_value.into())?
-                .try_into()?
-        };
-
-        // save the shares in the user map
-        SHARES.update(
-            deps.storage,
-            recipient.clone(),
-            |old| -> Result<Uint128, ContractError> {
-                if let Some(existing_user_shares) = old {
-                    Ok(user_shares + existing_user_shares)
-                } else {
-                    Ok(user_shares)
-                }
-            },
-        )?;
-
-        // TODO the locking of minted shares is a band-aid for giving out rewards to users,
-        // once tokenfactory has send hooks, we can remove the lockup and have the users
-        // own the shares in their balance
-        // we mint shares to the contract address here, so we can lock those shares for the user later in the same call
-        // this is blocked by Osmosis v17 update
-        let mint_msg = MsgMint {
-            sender: env.clone().contract.address.to_string(),
-            amount: Some(coin(user_shares.into(), vault_denom).into()),
-            mint_to_address: env.clone().contract.address.to_string(),
-        };
+        let (mint_msg, user_shares) =
+            get_mint_msg_user_shares(&mut deps, &env, &deposit_amount_in_ratio, &recipient)?;
 
         return Ok(Response::new()
             .add_attribute("method", "reply")
@@ -252,8 +196,8 @@ pub(crate) fn execute_any_deposit(
 /// # Returns
 ///
 /// Returns a `Response` containing the result of the swap operation and minting of shares.
-pub(crate) fn handle_any_deposit_swap_reply(
-    deps: DepsMut,
+pub fn handle_any_deposit_swap_reply(
+    mut deps: DepsMut,
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
@@ -291,9 +235,31 @@ pub(crate) fn handle_any_deposit_swap_reply(
         });
     }
 
-    // TODO: This logic looks repeated, we come here after creating a partial any_deposit with leftover. We swapped async and now we reany_deposit.
-    // Can't we first swap and finally create the any_deposit position?
+    let (mint_msg, user_shares) = get_mint_msg_user_shares(
+        &mut deps,
+        &env,
+        &(coins_to_mint_for[0].amount, coins_to_mint_for[1].amount),
+        &recipient,
+    )?;
 
+    CURRENT_SWAP_ANY_DEPOSIT.remove(deps.storage);
+
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "any_deposit_swap_reply")
+        .add_attribute("amount0", balance0)
+        .add_attribute("amount1", balance1)
+        .add_message(mint_msg)
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str()))
+}
+
+fn get_mint_msg_user_shares(
+    deps: &mut DepsMut,
+    env: &Env,
+    deposit_amount_in_ratio: &(Uint128, Uint128),
+    recipient: &Addr,
+) -> Result<(MsgMint, Uint128), ContractError> {
     // calculate the amount of shares we can mint for this
     let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
     let total_assets_value = get_asset0_value(
@@ -305,7 +271,7 @@ pub(crate) fn handle_any_deposit_swap_reply(
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.clone())?
+        .supply_of(vault_denom.to_string())?
         .amount
         .unwrap()
         .amount
@@ -315,8 +281,8 @@ pub(crate) fn handle_any_deposit_swap_reply(
     let user_value = get_asset0_value(
         deps.storage,
         &deps.querier,
-        coins_to_mint_for[0].amount,
-        coins_to_mint_for[1].amount,
+        deposit_amount_in_ratio.0,
+        deposit_amount_in_ratio.1,
     )?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
@@ -325,7 +291,7 @@ pub(crate) fn handle_any_deposit_swap_reply(
     } else {
         total_vault_shares
             .checked_mul(user_value.into())?
-            .checked_div(total_assets_value.checked_sub(user_value)?.into())?
+            .checked_div(total_assets_value.into())?
             .try_into()?
     };
 
@@ -353,14 +319,5 @@ pub(crate) fn handle_any_deposit_swap_reply(
         mint_to_address: env.clone().contract.address.to_string(),
     };
 
-    CURRENT_SWAP_ANY_DEPOSIT.remove(deps.storage);
-
-    Ok(Response::new()
-        .add_attribute("method", "reply")
-        .add_attribute("action", "any_deposit_swap_reply")
-        .add_attribute("amount0", balance0)
-        .add_attribute("amount1", balance1)
-        .add_message(mint_msg)
-        .add_attribute("mint_shares_amount", user_shares)
-        .add_attribute("receiver", recipient.as_str()))
+    Ok((mint_msg, user_shares))
 }
