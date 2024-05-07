@@ -15,7 +15,7 @@ mod tests {
     use proptest::prelude::*;
 
     use crate::query::AssetsBalanceResponse;
-    use crate::test_tube::helpers::{get_balance, get_event_attributes_by_ty_and_key};
+    use crate::test_tube::helpers::{get_balance_amount, get_event_attributes_by_ty_and_key};
     use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
     use crate::{
         helpers::sort_tokens,

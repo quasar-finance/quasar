@@ -18,7 +18,7 @@ pub fn get_event_attributes_by_ty_and_key(
         .collect()
 }
 
-pub fn get_balance(app: &OsmosisTestApp, address: String, denom: String) -> u128 {
+pub fn get_balance_amount(app: &OsmosisTestApp, address: String, denom: String) -> u128 {
     let bm = Bank::new(app);
 
     bm.query_balance(&QueryBalanceRequest { address, denom })

@@ -2,7 +2,7 @@
 mod tests {
     use crate::msg::ExecuteMsg;
     use crate::test_tube::helpers::{
-        get_amount_from_denom, get_balance, get_event_attributes_by_ty_and_key,
+        get_amount_from_denom, get_balance_amount, get_event_attributes_by_ty_and_key,
     };
     use crate::test_tube::initialize::initialize::{
         default_init, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE, DEPOSIT_AMOUNT,
@@ -82,9 +82,9 @@ mod tests {
 
         // Before balances
         let balance_admin_before =
-            get_balance(&app, admin.address().to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, admin.address().to_string(), DENOM_QUOTE.to_string());
         let balance_contract_before =
-            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
 
         // Collect Rewards
         let result = wasm
@@ -109,9 +109,9 @@ mod tests {
 
         // After balances
         let balance_admin_after =
-            get_balance(&app, admin.address().to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, admin.address().to_string(), DENOM_QUOTE.to_string());
         let balance_contract_after =
-            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
 
         // Calculating the fee increment for the admin
         assert_eq!(

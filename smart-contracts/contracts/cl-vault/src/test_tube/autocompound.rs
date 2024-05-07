@@ -22,7 +22,7 @@ mod tests {
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::UserSharesBalanceResponse;
     use crate::state::USER_REWARDS;
-    use crate::test_tube::helpers::get_balance;
+    use crate::test_tube::helpers::get_balance_amount;
     use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
     use crate::test_tube::initialize::initialize::{
         default_init, dex_cl_init_lp_pools, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
@@ -121,7 +121,7 @@ mod tests {
 
                 // check for contract balance as it has been autocompounded
                 let balance_after =
-                    get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+                    get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
 
                 // assert quote denom balance to be lass than 1 as sometimes the balance for
                 // quote denom becomes more than zero in odd number cases
@@ -154,7 +154,7 @@ mod tests {
 
         // Balance before
         let balance_base_before =
-            get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
 
         let mut refund0_amount_total = Uint128::zero();
 
@@ -230,14 +230,15 @@ mod tests {
 
         // <assert balances
         let balances_rewards =
-            get_balance(&app, contract_address.to_string(), DENOM_REWARD.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
         assert_eq!(
             DENOM_REWARD_AMOUNT.to_string(),
             balances_rewards.to_string(),
         );
 
         // We expect (10_000_000 uatom * 10users), so a total of 50.00 $ATOM - (balance_base_before  - refund0_amount_total) from expected_balance_base_after_deposit
-        let balances_base = get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
+        let balances_base =
+            get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
         assert_eq!(
             expected_balance_base_after_deposit.to_string(),
             balances_base.to_string()
@@ -245,7 +246,7 @@ mod tests {
 
         // We expect (10_000_000 uosmo * 10users) so a total of 50 $OSMO
         let balances_quote =
-            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(
             users_total_deposit_per_asset.to_string(),
             balances_quote.to_string()
@@ -297,10 +298,10 @@ mod tests {
 
         // Assert there is no balance for DENOM_REWARD (ustrd) and there is more DENOM_BASE
         let balances_after_swap_rewards =
-            get_balance(&app, contract_address.to_string(), DENOM_REWARD.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
         assert_eq!(0u128, balances_after_swap_rewards);
         let balances_after_swap_base =
-            get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
         assert_eq!(
             expected_balance_base_after_deposit
                 .checked_add(49500000000u128)
@@ -308,7 +309,7 @@ mod tests {
             balances_after_swap_base
         );
         let balances_after_swap_quote =
-            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(
             50000000000u128.checked_add(49500000000u128).unwrap(),
             balances_after_swap_quote
@@ -337,22 +338,22 @@ mod tests {
 
         // Assert balances after AUTOCOMPOUND
         let balances_after_autocompound_base =
-            get_balance(&app, contract_address.to_string(), DENOM_BASE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
         assert_eq!(
             18511274090u128, // TODO: De hardcode this
             balances_after_autocompound_base
         );
         let balances_after_autocompound_quote =
-            get_balance(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
+            get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(0u128, balances_after_autocompound_quote);
 
         // TODO: Check these More asserts
         for account in &accounts {
             // Get balances before for current account
             let balances_before_withdraw_base_denom =
-                get_balance(&app, account.address().to_string(), DENOM_BASE.to_string());
+                get_balance_amount(&app, account.address().to_string(), DENOM_BASE.to_string());
             let balances_before_withdraw_quote_denom =
-                get_balance(&app, account.address().to_string(), DENOM_QUOTE.to_string());
+                get_balance_amount(&app, account.address().to_string(), DENOM_QUOTE.to_string());
 
             // Get shares balance for current account
             let shares_to_redeem: UserSharesBalanceResponse = wasm
@@ -380,7 +381,7 @@ mod tests {
 
                 // Assert after balances
                 let balances_after_withdraw_base_denom =
-                    get_balance(&app, account.address().to_string(), DENOM_BASE.to_string());
+                    get_balance_amount(&app, account.address().to_string(), DENOM_BASE.to_string());
                 assert_eq!(
                     true,
                     balances_after_withdraw_base_denom
@@ -388,8 +389,11 @@ mod tests {
                         .unwrap()
                         > DEPOSIT_AMOUNT
                 );
-                let balances_after_withdraw_quote_denom =
-                    get_balance(&app, account.address().to_string(), DENOM_QUOTE.to_string());
+                let balances_after_withdraw_quote_denom = get_balance_amount(
+                    &app,
+                    account.address().to_string(),
+                    DENOM_QUOTE.to_string(),
+                );
                 assert_eq!(
                     true,
                     balances_after_withdraw_quote_denom
