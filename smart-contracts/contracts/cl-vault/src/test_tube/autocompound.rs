@@ -7,7 +7,7 @@ mod tests {
     use cw_dex_router::operations::SwapOperationsListUnchecked;
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
-    use osmosis_std::types::cosmos::bank::v1beta1::{QueryAllBalancesRequest, QueryBalanceRequest};
+    use osmosis_std::types::cosmos::bank::v1beta1::QueryAllBalancesRequest;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -15,15 +15,13 @@ mod tests {
     use osmosis_test_tube::PoolManager;
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
-    use std::str::FromStr;
 
     use crate::msg::SwapAsset;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::UserSharesBalanceResponse;
-    use crate::state::USER_REWARDS;
     use crate::test_tube::helpers::get_balance_amount;
-    use crate::test_tube::helpers::{get_amount_from_denom, get_event_attributes_by_ty_and_key};
+    use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::test_tube::initialize::initialize::{
         default_init, dex_cl_init_lp_pools, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
         DENOM_QUOTE, DENOM_REWARD, DEPOSIT_AMOUNT,
