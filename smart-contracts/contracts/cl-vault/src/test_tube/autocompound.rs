@@ -38,17 +38,17 @@ mod tests {
     #[test]
     #[ignore]
     fn test_autocompound_rewards_lp_pools() {
-        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_lp_pools();
+        let (app, contract_address, _dex_router_addr, swap_pools, admin) = fixture_lp_pools();
 
-        wrapped_autocompound_case(app, contract_address, pools_ids, admin);
+        wrapped_autocompound_case(app, contract_address, swap_pools, admin);
     }
 
     #[test]
     #[ignore]
     fn test_autocompound_rewards_cl_pools() {
-        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_cl_pools();
+        let (app, contract_address, _dex_router_addr, swap_pools, admin) = fixture_cl_pools();
 
-        wrapped_autocompound_case(app, contract_address, pools_ids, admin);
+        wrapped_autocompound_case(app, contract_address, swap_pools, admin);
     }
 
     fn wrapped_autocompound_case(
@@ -240,7 +240,7 @@ mod tests {
         )];
 
         // Swap non vault funds to vault funds
-        let swap_non_vault_funds = wasm
+        let _swap_non_vault_funds = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
