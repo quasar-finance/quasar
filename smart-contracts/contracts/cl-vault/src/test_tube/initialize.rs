@@ -52,6 +52,8 @@ pub mod initialize {
     pub const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
     pub const DEPOSIT_AMOUNT: u128 = 5_000_000_000;
 
+    // Fixtures: Default variants
+
     pub fn fixture_default() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -120,9 +122,9 @@ pub mod initialize {
         )
     }
 
+    // Fixtures: CeDexRouter
+
     pub fn fixture_lp_pools() -> (OsmosisTestApp, Addr, Addr, Vec<u64>, SigningAccount) {
-        // TODO: We should be reusing the init_test_contract() for basic setup,
-        // and init_cl_vault_with_dex_router_contract_with_lp_pools should be like init_dex_router_contract_with_lp_pools only.
         init_cl_vault_with_dex_router_contract_with_lp_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             "./test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm",
@@ -211,8 +213,41 @@ pub mod initialize {
         let gm = Gamm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let wasm = Wasm::new(&app);
-
         let admin = app.init_account(admin_balance).unwrap();
+
+        // Swap pools where the first one is CL for the vault_pool
+        let pools_coins = vec![
+            vec![
+                Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+                Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+            ],
+            vec![
+                Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+                Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+            ],
+            vec![
+                Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+                Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+            ],
+        ];
 
         // Load compiled wasm bytecode
         let wasm_byte_code_cl = std::fs::read(filename_cl).unwrap();
@@ -249,42 +284,9 @@ pub mod initialize {
         )
         .unwrap();
 
-        let pools_coins = vec![
-            vec![
-                Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: Uint128::new(10000000000000000000000),
-                },
-                Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: Uint128::new(10000000000000000000000),
-                },
-            ],
-            vec![
-                Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: Uint128::new(10000000000000000000000),
-                },
-                Coin {
-                    denom: DENOM_REWARD.to_string(),
-                    amount: Uint128::new(10000000000000000000000),
-                },
-            ],
-            vec![
-                Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: Uint128::new(10000000000000000000000),
-                },
-                Coin {
-                    denom: DENOM_REWARD.to_string(),
-                    amount: Uint128::new(10000000000000000000000),
-                },
-            ],
-        ];
-
         // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap(); // we only have one here as we then create legacy gAMM Balancer pools
 
         // Create Balancer pools with previous vec of vec of coins
         let mut lp_pools = vec![];
@@ -292,6 +294,8 @@ pub mod initialize {
             let lp_pool = gm.create_basic_pool(&pool_coins, &admin).unwrap();
             lp_pools.push(lp_pool.data.pool_id);
         }
+
+        // Here we have 4 pools in pools_ids where the index 0 is the cl_pool id
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
@@ -405,6 +409,39 @@ pub mod initialize {
 
         let admin = app.init_account(admin_balance).unwrap();
 
+        let pools_coins = vec![
+            vec![
+                v1beta1::Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+                v1beta1::Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+            ],
+            vec![
+                v1beta1::Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+                v1beta1::Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+            ],
+            vec![
+                v1beta1::Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+                v1beta1::Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+            ],
+        ];
+
         // Load compiled wasm bytecode
         let wasm_byte_code_cl = std::fs::read(filename_cl).unwrap();
         let code_id_cl = wasm
@@ -489,39 +526,6 @@ pub mod initialize {
             &admin,
         )
         .unwrap();
-
-        let pools_coins = vec![
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: "10000000000000000000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "10000000000000000000000".to_string(),
-                },
-            ],
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "10000000000000000000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_REWARD.to_string(),
-                    amount: "10000000000000000000000".to_string(),
-                },
-            ],
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: "10000000000000000000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_REWARD.to_string(),
-                    amount: "10000000000000000000000".to_string(),
-                },
-            ],
-        ];
 
         // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
@@ -724,8 +728,6 @@ pub mod initialize {
         let pm = PoolManager::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let wasm = Wasm::new(&app);
-
-        // Create new account with initial funds
         let admin = app.init_account(admin_balance).unwrap();
 
         // Load compiled wasm bytecode

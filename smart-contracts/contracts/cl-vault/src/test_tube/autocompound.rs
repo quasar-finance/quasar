@@ -240,7 +240,7 @@ mod tests {
         )];
 
         // Swap non vault funds to vault funds
-        let swap_non_vault_funds = wasm
+        let _swap_non_vault_funds = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
