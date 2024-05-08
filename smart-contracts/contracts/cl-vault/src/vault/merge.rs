@@ -12,7 +12,6 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 };
 
 use crate::{
-    error::ContractResult,
     msg::MergePositionMsg,
     reply::Replies,
     state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
@@ -30,7 +29,7 @@ pub fn execute_merge_position(
     env: Env,
     info: MessageInfo,
     msg: MergePositionMsg,
-) -> ContractResult<Response> {
+) -> Result<Response, ContractError> {
     //check that the sender is our contract
     if env.contract.address != info.sender {
         return Err(ContractError::Unauthorized {});
@@ -38,7 +37,7 @@ pub fn execute_merge_position(
 
     let mut range: Option<CurrentMergePosition> = None;
     // Withdraw all positions
-    let withdraw_msgs: ContractResult<Vec<MsgWithdrawPosition>> = msg
+    let withdraw_msgs: Result<Vec<MsgWithdrawPosition>, ContractError> = msg
         .position_ids
         .into_iter()
         .map(|position_id| {
@@ -107,7 +106,7 @@ pub fn handle_merge_withdraw_position_reply(
     deps: DepsMut,
     env: Env,
     msg: SubMsgResult,
-) -> ContractResult<Response> {
+) -> Result<Response, ContractError> {
     let response: MsgWithdrawPositionResponse = msg.try_into()?;
 
     // get the corresponding withdraw
@@ -187,7 +186,7 @@ pub fn handle_merge_create_position_reply(
     _deps: DepsMut,
     _env: Env,
     msg: SubMsgResult,
-) -> ContractResult<Response> {
+) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = msg.try_into()?;
     // TODO decide if we want any healthchecks here
     Ok(Response::new()

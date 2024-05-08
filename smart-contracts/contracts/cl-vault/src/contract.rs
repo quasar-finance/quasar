@@ -1,4 +1,4 @@
-use crate::error::{ContractError, ContractResult};
+use crate::error::ContractError;
 use crate::helpers::sort_tokens;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
@@ -135,7 +135,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> ContractResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
         cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {

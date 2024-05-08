@@ -32,13 +32,16 @@ pub fn _liquidity0(
     // Should we check here that the leftover bytes are zero? that is technically an overflow
     let result_bytes: [u8; 64] = result.to_le_bytes();
     for b in result_bytes[32..64].iter() {
-        if b != &0_u8 {
-            return Err(ContractError::Overflow {});
+        if *b != 0_u8 {
+            return Err(ContractError::Std(StdError::generic_err(
+                "Invalid truncation; non-zero bytes found",
+            )));
         }
     }
+
     let intermediate = Uint256::from_le_bytes(result_bytes[..32].try_into().unwrap());
     // we use Decimal256 to
-    let intermediate_2 = Decimal256::from_atomics(intermediate, 36).unwrap();
+    let intermediate_2 = Decimal256::from_atomics(intermediate, 36)?;
 
     // since we start with Decimal and multiply with big_factor, we expect to be able to convert back here
     Ok(Decimal::new(intermediate_2.atomics().try_into()?))

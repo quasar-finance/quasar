@@ -48,8 +48,7 @@ pub fn handle_instantiate(
         .ok_or(ContractError::PoolNotFound {
             pool_id: msg.pool_id,
         })?
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
     POOL_CONFIG.save(
         deps.storage,
@@ -134,11 +133,19 @@ pub fn handle_instantiate_create_position_reply(
     )?;
 
     let position_info = get_position(deps.storage, &deps.querier)?;
-    let assets = try_proto_to_cosmwasm_coins(vec![
-        position_info.asset0.unwrap(),
-        position_info.asset1.unwrap(),
-    ])?;
+    // Check if asset0 and asset1 are present, and handle the case where they are not.
+    let asset0 = position_info
+        .asset0
+        .ok_or_else(|| ContractError::MissingAssetInfo {
+            asset: "asset0".to_string(),
+        })?;
+    let asset1 = position_info
+        .asset1
+        .ok_or_else(|| ContractError::MissingAssetInfo {
+            asset: "asset1".to_string(),
+        })?;
 
+    let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
     let free_asset0 = deps
         .querier
         .query_balance(&env.contract.address, assets[0].denom.clone())?;

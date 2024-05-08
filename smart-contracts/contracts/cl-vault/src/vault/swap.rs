@@ -153,18 +153,25 @@ pub fn swap_msg(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMs
                     params.token_out_min_amount,
                 ))
             } else if best_out.ge(&recommended_out) {
+                let operations = best_path
+                    .ok_or(ContractError::MissingBestPath {})?
+                    .operations
+                    .into();
                 execute_swap_operations(
                     dex_router_address,
-                    best_path.unwrap().operations.into(),
+                    operations,
                     params.token_out_min_amount,
                     &token_in_denom.clone(),
                     params.token_in_amount,
                 )
             } else {
                 // recommended_out > best_out
+                let recommended_swap_route = params
+                    .recommended_swap_route
+                    .ok_or(ContractError::MissingRecommendedSwapRoute {})?;
                 execute_swap_operations(
                     dex_router_address,
-                    params.recommended_swap_route.unwrap(), // will be some here
+                    recommended_swap_route, // will be some here
                     params.token_out_min_amount,
                     &token_in_denom.clone(),
                     params.token_in_amount,
@@ -266,12 +273,10 @@ pub fn execute_swap_non_vault_funds(
         }
 
         // TODO_FUTURE: We could be swapping into the actual vault balance so we could prepend_swap() the autocompound entrypoint.
-        let part_1_amount = balance_in_contract.checked_div(Uint128::new(2)).unwrap();
+        let part_1_amount = balance_in_contract.checked_div(Uint128::new(2))?;
         let part_2_amount = balance_in_contract
-            .checked_add(Uint128::new(1))
-            .unwrap()
-            .checked_div(Uint128::new(2))
-            .unwrap();
+            .checked_add(Uint128::new(1))?
+            .checked_div(Uint128::new(2))?;
 
         swap_msgs.push(generate_swap_message(
             deps.querier,

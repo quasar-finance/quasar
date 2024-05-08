@@ -8,9 +8,7 @@ use osmosis_std::types::{
     osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
 };
 
-use crate::{
-    error::ContractResult, helpers::sort_tokens, msg::ExecuteMsg, state::POSITION, ContractError,
-};
+use crate::{helpers::sort_tokens, msg::ExecuteMsg, state::POSITION, ContractError};
 
 /// Prepends a callback to the contract to claim any rewards, used to
 /// enforce the claiming of rewards before any action that might
@@ -105,8 +103,8 @@ impl CoinList {
     }
 
     /// merge any values already in Rewards and append any others
-    pub fn update_rewards(&mut self, rewards: &[OsmoCoin]) -> ContractResult<()> {
-        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+    pub fn update_rewards(&mut self, rewards: &[OsmoCoin]) -> Result<(), ContractError> {
+        let parsed_rewards: Result<Vec<Coin>, ContractError> = rewards
             .iter()
             .map(|c| Ok(coin(c.amount.parse()?, c.denom.clone())))
             .collect();
@@ -117,8 +115,8 @@ impl CoinList {
     }
 
     // TODO: Cant we get Coins from a coinlist and use above function?
-    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> ContractResult<()> {
-        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> Result<(), ContractError> {
+        let parsed_rewards: Result<Vec<Coin>, ContractError> = rewards
             .coins()
             .into_iter()
             .map(|c| Ok(coin(c.amount.u128(), c.denom)))
@@ -130,12 +128,12 @@ impl CoinList {
     }
 
     /// add rewards to self and mutate self
-    pub fn add(&mut self, rewards: CoinList) -> ContractResult<()> {
+    pub fn add(&mut self, rewards: CoinList) -> Result<(), ContractError> {
         self.merge(rewards.coins())?;
         Ok(())
     }
 
-    pub fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
+    pub fn merge(&mut self, coins: Vec<Coin>) -> Result<(), ContractError> {
         for c in coins {
             let same = self.0.iter_mut().find(|c2| c.denom == c2.denom);
             if let Some(c2) = same {
@@ -149,7 +147,7 @@ impl CoinList {
 
     /// Subtracts a percentage from self, mutate self and return the subtracted rewards,
     /// excluding any coins with zero amounts.
-    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<CoinList> {
+    pub fn sub_ratio(&mut self, ratio: Decimal) -> Result<CoinList, ContractError> {
         let to_sub = self.mul_ratio(ratio);
 
         // Actually subtract the funds
@@ -168,11 +166,11 @@ impl CoinList {
     /// subtract to_sub from self, ignores any coins in to_sub that don't exist in self and vice versa
     /// every item in self is expected to be greater or equal to the amount of the coin with the same denom
     /// in to_sub
-    pub fn sub(&mut self, to_sub: &CoinList) -> ContractResult<()> {
+    pub fn sub(&mut self, to_sub: &CoinList) -> Result<(), ContractError> {
         to_sub
             .0
             .iter()
-            .try_for_each(|sub_coin| -> ContractResult<()> {
+            .try_for_each(|sub_coin| -> Result<(), ContractError> {
                 let coin = self.0.iter_mut().find(|coin| sub_coin.denom == coin.denom);
                 if let Some(c) = coin {
                     c.amount = c.amount.checked_sub(sub_coin.amount)?;
@@ -181,7 +179,7 @@ impl CoinList {
             })
     }
 
-    pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
+    pub fn claim(&mut self, recipient: &str) -> Result<CosmosMsg, ContractError> {
         let rewards = sort_tokens(self.coins());
         self.0.clear();
 

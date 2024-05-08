@@ -116,8 +116,7 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
     let ticks_filled_uint_floor = ticks_filled_by_current_spacing.to_uint_floor();
     let ticks_filled_int: i128 = Uint128::try_from(ticks_filled_uint_floor)?
         .u128()
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
     let tick_index = geo_spacing.initial_tick as i128 + ticks_filled_int;
 
@@ -131,7 +130,7 @@ fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
     if exponent >= 0 {
         10u128
             .checked_pow(exponent.unsigned_abs() as u32)
-            .ok_or(ContractError::Overflow {})
+            .ok_or(ContractError::InitialTickError {})
     } else {
         // TODO: write tests for negative exponents as it looks like this will always be 0
         Err(ContractError::CannotHandleNegativePowersInUint {})
@@ -142,10 +141,13 @@ fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
 fn _pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
     let p = 10u128
         .checked_pow(exponent.unsigned_abs() as u32)
-        .ok_or(ContractError::Overflow {})?;
+        .ok_or(ContractError::InitialTickError {})?;
     if exponent >= 0 {
         Ok(Decimal::from_ratio(p, 1u128))
     } else {
+        // If the power calculation resulted in a zero (which it shouldn't as handled by pow_ten_internal_u128),
+        // you would still need to handle the case where division by zero might occur.
+        // Since pow_ten_internal_u128 returns an error for negative exponents, this else block is safe.
         Ok(Decimal::from_ratio(1u128, p))
     }
 }
@@ -175,9 +177,9 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
             )?,
             initial_tick: (9u128
                 .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
-                .ok_or(ContractError::Overflow {})? as i64)
+                .ok_or(ContractError::InitialTickError {})? as i64)
                 .checked_mul(cur_exp_index)
-                .ok_or(ContractError::Overflow {})?,
+                .ok_or(ContractError::InitialTickError {})?,
         };
         TICK_EXP_CACHE.save(storage, cur_exp_index, &tick_exp_index_data)?;
 
@@ -195,9 +197,9 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
             pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
         let initial_tick = (9u128
             .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
-            .ok_or(ContractError::Overflow {})? as i64)
+            .ok_or(ContractError::InitialTickError {})? as i64)
             .checked_mul(cur_exp_index)
-            .ok_or(ContractError::Overflow {})?;
+            .ok_or(ContractError::InitialTickError {})?;
 
         let tick_exp_index_data = TickExpIndexData {
             initial_price,

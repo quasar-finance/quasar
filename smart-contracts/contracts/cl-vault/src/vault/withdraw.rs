@@ -1,4 +1,12 @@
-use crate::msg::{ExecuteMsg, ExtensionExecuteMsg};
+use cosmwasm_std::{
+    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+};
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
+    tokenfactory::v1beta1::MsgBurn,
+};
+
 use crate::{
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
@@ -6,16 +14,9 @@ use crate::{
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
-use cosmwasm_std::{
-    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
-};
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier,
-    osmosis::{
-        concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
-        tokenfactory::v1beta1::MsgBurn,
-    },
+use crate::{
+    msg::{ExecuteMsg, ExtensionExecuteMsg},
+    query::query_total_vault_token_supply,
 };
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
@@ -46,14 +47,9 @@ pub fn execute_withdraw(
     let left_over = user_shares
         .checked_sub(shares_to_withdraw)
         .map_err(|_| ContractError::InsufficientFunds)?;
-    SHARES.save(deps.storage, info.sender, &left_over.try_into().unwrap())?;
+    SHARES.save(deps.storage, info.sender, &left_over.try_into()?)?;
 
-    let total_shares = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.clone())?
-        .amount
-        .unwrap()
-        .amount
-        .parse()?;
+    let total_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
     // get the dust amounts belonging to the user
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -77,7 +73,7 @@ pub fn execute_withdraw(
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
 
-    let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into().unwrap();
+    let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into()?;
     // burn the shares
     let burn_coin = coin(shares_to_withdraw_u128.u128(), vault_denom);
     let burn_msg: CosmosMsg = MsgBurn {
@@ -126,20 +122,11 @@ fn withdraw_msg(
         .liquidity
         .parse()?;
 
-    let bq = BankQuerier::new(&deps.querier);
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-    let total_vault_shares: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
 
     let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
         .checked_mul(existing_liquidity)?
-        .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
+        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
 
     withdraw_from_position(deps.storage, env, user_liquidity)
 }

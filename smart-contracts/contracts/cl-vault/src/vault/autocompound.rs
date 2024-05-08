@@ -6,7 +6,6 @@ use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
-use crate::error::ContractResult;
 use crate::helpers::{get_unused_balances, must_pay_one_or_two_from_balance};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
@@ -111,7 +110,7 @@ pub fn execute_autocompound(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let balance = get_unused_balances(&deps.querier, &env).unwrap();
+    let balance = get_unused_balances(&deps.querier, &env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
 
     // TODO: We should swap() here
@@ -171,7 +170,7 @@ pub fn handle_autocompound_reply(
     deps: DepsMut,
     env: Env,
     data: SubMsgResult,
-) -> ContractResult<Response> {
+) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
     // set claim after

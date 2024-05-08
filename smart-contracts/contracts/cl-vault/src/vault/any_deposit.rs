@@ -7,14 +7,13 @@ use cw_dex::Pool::Osmosis;
 use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
 
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
-};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
 use crate::helpers::{
     get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
     get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
 };
+use crate::query::query_total_vault_token_supply;
 use crate::reply::Replies;
 use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
@@ -56,8 +55,10 @@ pub fn execute_any_deposit(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-    let position_breakdown = get_position(deps.storage, &deps.querier)?;
-    let position = position_breakdown.position.clone().unwrap();
+    let position = get_position(deps.storage, &deps.querier)?
+        .position
+        .ok_or(ContractError::MissingPosition {})?;
+
     let (token0, token1) = must_pay_one_or_two(
         &info,
         (pool_config.token0.clone(), pool_config.token1.clone()),
@@ -246,13 +247,7 @@ fn mint_msg_user_shares(
     )?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.to_string())?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+    let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
     let user_value = get_asset0_value(
         deps.storage,

@@ -117,7 +117,9 @@ pub fn execute_update_range_ticks(
 
     // this will error if we dont have a position anyway
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
-    let position = position_breakdown.position.unwrap();
+    let position = position_breakdown
+        .position
+        .ok_or(ContractError::MissingPosition {})?;
 
     let withdraw_msg = MsgWithdrawPosition {
         position_id: position.position_id,
