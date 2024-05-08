@@ -145,9 +145,6 @@ fn _pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
     if exponent >= 0 {
         Ok(Decimal::from_ratio(p, 1u128))
     } else {
-        // If the power calculation resulted in a zero (which it shouldn't as handled by pow_ten_internal_u128),
-        // you would still need to handle the case where division by zero might occur.
-        // Since pow_ten_internal_u128 returns an error for negative exponents, this else block is safe.
         Ok(Decimal::from_ratio(1u128, p))
     }
 }
