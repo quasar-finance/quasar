@@ -7,7 +7,6 @@ mod tests {
     use cw_dex_router::operations::SwapOperationsListUnchecked;
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
-    use osmosis_std::types::cosmos::bank::v1beta1::QueryAllBalancesRequest;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
         MsgSwapExactAmountIn, SwapAmountInRoute,
@@ -16,9 +15,12 @@ mod tests {
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
+    use crate::msg::QueryMsg;
     use crate::msg::SwapAsset;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
+    use crate::query::AssetsBalanceResponse;
+    use crate::query::TotalVaultTokenSupplyResponse;
     use crate::query::UserSharesBalanceResponse;
     use crate::test_tube::helpers::get_balance_amount;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
@@ -30,106 +32,6 @@ mod tests {
     const DENOM_REWARD_AMOUNT: &str = "100000000000";
     const SWAPS_AMOUNT: &str = "10000000000000";
     const SWAPS_NUM: u64 = 10;
-
-    #[test]
-    #[ignore]
-    fn test_autocompound() {
-        let (app, contract_address, _cl_pool_id, admin) = default_init();
-
-        let wasm = Wasm::new(&app);
-        let bm = Bank::new(&app);
-
-        // Initialize accounts
-        let accounts = app
-            .init_accounts(
-                &[
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                ],
-                ACCOUNTS_NUM,
-            )
-            .unwrap();
-
-        let mut i = 1;
-        for account in &accounts {
-            if i % 2 == 0 {
-                let _ = wasm
-                    .execute(
-                        contract_address.as_str(),
-                        &ExecuteMsg::ExactDeposit { recipient: None },
-                        &[
-                            Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-                            Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-                        ],
-                        account,
-                    )
-                    .unwrap();
-            } else {
-                let _ = wasm
-                    .execute(
-                        contract_address.as_str(),
-                        &ExecuteMsg::AnyDeposit {
-                            amount: Default::default(),
-                            asset: "".to_string(),
-                            recipient: None,
-                        },
-                        &[
-                            Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-                            Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-                        ],
-                        account,
-                    )
-                    .unwrap();
-            }
-
-            // Get shares for Alice from vault contract and assert
-            let shares: UserSharesBalanceResponse = wasm
-                .query(
-                    contract_address.as_str(),
-                    &VaultExtension(ExtensionQueryMsg::Balances(UserSharesBalance {
-                        user: account.address(),
-                    })),
-                )
-                .unwrap();
-            assert!(!shares.balance.is_zero());
-
-            // autocompound on every 10th deposit into the vault
-            if i % 10 == 0 {
-                // check for contract balance as it has not been autocompounded yet
-                let balance_before = bm
-                    .query_all_balances(&QueryAllBalancesRequest {
-                        address: contract_address.to_string(),
-                        pagination: None,
-                    })
-                    .unwrap();
-                // assert 3 denom on balance before as it has not been autocompounded yet
-                // 3 denom : vault shares, base denom, quote denom
-                assert_eq!(3usize, balance_before.balances.len());
-
-                let _result = wasm
-                    .execute(
-                        contract_address.as_str(),
-                        &ExecuteMsg::VaultExtension(
-                            crate::msg::ExtensionExecuteMsg::Autocompound {},
-                        ),
-                        &[],
-                        &admin,
-                    )
-                    .unwrap();
-
-                // check for contract balance as it has been autocompounded
-                let balance_after =
-                    get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
-
-                // assert quote denom balance to be lass than 1 as sometimes the balance for
-                // quote denom becomes more than zero in odd number cases
-                assert!(balance_after <= 1);
-            }
-
-            // increment i with 1
-            i += 1;
-        }
-    }
 
     #[test]
     #[ignore]
@@ -150,13 +52,34 @@ mod tests {
             )
             .unwrap();
 
+        // Assert total vault shares
+        let initial_total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::TotalVaultTokenSupply {},
+            )
+            .unwrap();
+        assert_eq!(Uint128::new(2000), initial_total_vault_token_supply.total);
+
+        // Assert shares underlying assets
+        let shares_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: Uint128::new(1000u128),
+                },
+            )
+            .unwrap();
+        assert_eq!(Uint128::new(500), shares_assets.balances[0].amount);
+        assert_eq!(Uint128::new(500), shares_assets.balances[1].amount);
+
         // Balance before
         let balance_base_before =
             get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
 
-        let mut refund0_amount_total = Uint128::zero();
-
         // Foreach Account execute an exact_deposit with the same amount of tokens
+        let mut refund0_amount_total = Uint128::zero();
+        let mut total_minted_shares_from_deposits = Uint128::zero();
         for account in &accounts {
             let exact_deposit_rsp = wasm
                 .execute(
@@ -168,6 +91,19 @@ mod tests {
                     ],
                     account,
                 )
+                .unwrap();
+
+            // TODO: Assert before shares balance for the user and new one. also increment it to assert afterward
+            let minted_shares: UserSharesBalanceResponse = wasm
+                .query(
+                    contract_address.as_str(),
+                    &VaultExtension(ExtensionQueryMsg::Balances(UserSharesBalance {
+                        user: account.address(),
+                    })),
+                )
+                .unwrap();
+            total_minted_shares_from_deposits = total_minted_shares_from_deposits
+                .checked_add(minted_shares.balance)
                 .unwrap();
 
             // TODO: Assert balance deposited and refunded
@@ -190,17 +126,32 @@ mod tests {
             assert!(refund1_amount.is_empty());
         }
 
-        // TODO: What do we expect here? This should be returning the Uint128 of tokenA and blablabla, just adapt it.
-        // let shares_price_before: SharePriceResponse = wasm
-        //     .query(
-        //         contract_address.as_str(),
-        //         &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(Convert {
-        //             shares: Uint128::new(10),
-        //         })),
-        //     )
-        //     .unwrap();
-        // assert_eq!(Uint128::new(2763), shares_price_before.balances[0].amount);
-        // assert_eq!(Uint128::new(4368), shares_price_before.balances[1].amount);
+        // Assert total vault shares
+        let total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::TotalVaultTokenSupply {},
+            )
+            .unwrap();
+        assert_eq!(
+            total_minted_shares_from_deposits
+                .checked_add(initial_total_vault_token_supply.total)
+                .unwrap(),
+            total_vault_token_supply.total
+        );
+
+        // Assert shares underlying assets
+        let shares_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: Uint128::new(1000u128),
+                },
+            )
+            .unwrap();
+        // TODO: Check this asserts COMPUTE THEM RATHER THAN MAGIC VALUES
+        assert_eq!(Uint128::new(385), shares_assets.balances[0].amount);
+        assert_eq!(Uint128::new(614), shares_assets.balances[1].amount);
 
         // Airdrop some DENOM_REWARD funds to the contract, this will be like idle claimed spread rewards
         let _send = bm
@@ -313,17 +264,18 @@ mod tests {
             balances_after_swap_quote
         );
 
-        // TODO: What do we expect here?
-        // let shares_price: SharePriceResponse = wasm
-        //     .query(
-        //         contract_address.as_str(),
-        //         &VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(SharePrice {
-        //             shares: Uint128::new(10),
-        //         })),
-        //     )
-        //     .unwrap();
-        // assert_eq!(Uint128::new(2), shares_price.balances[0].amount);
-        // assert_eq!(Uint128::new(3), shares_price.balances[1].amount);
+        // Assert shares underlying assets
+        let shares_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: Uint128::new(1000u128),
+                },
+            )
+            .unwrap();
+        // TODO: Check this asserts COMPUTE THEM RATHER THAN MAGIC VALUES
+        assert_eq!(Uint128::new(993), shares_assets.balances[0].amount);
+        assert_eq!(Uint128::new(1223), shares_assets.balances[1].amount);
 
         let _autocompound_resp = wasm
             .execute(
@@ -344,6 +296,35 @@ mod tests {
         let balances_after_autocompound_quote =
             get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(0u128, balances_after_autocompound_quote);
+
+        // Assert total vault shares after autocompounding tokens.
+        // We expect this to be the exact same amount of total shares of before autocompunding.
+        // Assert total vault shares
+        let total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::TotalVaultTokenSupply {},
+            )
+            .unwrap();
+        assert_eq!(
+            total_minted_shares_from_deposits
+                .checked_add(initial_total_vault_token_supply.total)
+                .unwrap(),
+            total_vault_token_supply.total
+        );
+
+        // Assert shares underlying assets
+        let shares_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: Uint128::new(1000u128),
+                },
+            )
+            .unwrap();
+        // TODO: Check this asserts COMPUTE THEM RATHER THAN MAGIC VALUES
+        assert_eq!(Uint128::new(993), shares_assets.balances[0].amount);
+        assert_eq!(Uint128::new(1223), shares_assets.balances[1].amount);
 
         // TODO: Check these More asserts
         for account in &accounts {
@@ -402,17 +383,27 @@ mod tests {
             }
         }
 
-        // // as there are no more deposists the share price should not change
-        // let shares_price: ConvertAssetsResponse = wasm
-        //     .query(
-        //         contract_address.as_str(),
-        //         &VaultExtension(ExtensionQueryMsg::V(V {
-        //             shares: Uint128::new(10),
-        //         })),
-        //     )
-        //     .unwrap();
-        // assert_eq!(Uint128::new(2763), shares_price.balances[0].amount);
-        // assert_eq!(Uint128::new(4368), shares_price.balances[1].amount);
+        // Assert total vault shares after autocompounding tokens.
+        let total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::TotalVaultTokenSupply {},
+            )
+            .unwrap();
+        assert_eq!(Uint128::new(2000), total_vault_token_supply.total);
+
+        // Assert shares underlying assets
+        let shares_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: Uint128::new(1000u128),
+                },
+            )
+            .unwrap();
+        // TODO: Check this asserts COMPUTE THEM RATHER THAN MAGIC VALUES
+        assert_eq!(Uint128::new(994), shares_assets.balances[0].amount);
+        assert_eq!(Uint128::new(1223), shares_assets.balances[1].amount);
     }
 
     // TODO: This is redundant, just invoke the above switching LP and CL default instantiation
@@ -766,21 +757,6 @@ mod tests {
                 )
                 .unwrap();
         }
-
-        // todo : un-comment this whenever testing for migration in auto compounding
-        // let balance = bm.query_balance(&QueryBalanceRequest{
-        //     address: contract_address.to_string(),
-        //     denom: "rewards".to_string(),
-        // }).unwrap();
-        // assert_eq!("2000000000000000".to_string(), balance.balance.unwrap().amount);
-        //
-        // for account in &accounts {
-        //     let balance = bm.query_balance(&QueryBalanceRequest{
-        //         address: account.address(),
-        //         denom: "rewards".to_string(),
-        //     }).unwrap();
-        //     assert_eq!("0".to_string(), balance.balance.unwrap().amount);
-        // }
 
         // Collect init
         for _i in 0..(ACCOUNTS_NUM - 1) {
