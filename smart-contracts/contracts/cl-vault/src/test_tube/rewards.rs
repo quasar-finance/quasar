@@ -5,8 +5,8 @@ mod tests {
         get_amount_from_denom, get_balance_amount, get_event_attributes_by_ty_and_key,
     };
     use crate::test_tube::initialize::initialize::{
-        default_init, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE, DEPOSIT_AMOUNT,
-        PERFORMANCE_FEE,
+        fixture_default, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
+        DEPOSIT_AMOUNT, PERFORMANCE_FEE,
     };
     use cosmwasm_std::Coin;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -21,7 +21,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_collect_rewards_with_rewards_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
+        let (app, contract_address, cl_pool_id, admin) = fixture_default();
 
         // Initialize accounts
         let utility_account = app
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_collect_rewards_no_rewards_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin) = fixture_default();
 
         // Initialize accounts
         let accounts = app

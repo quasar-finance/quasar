@@ -1,6 +1,9 @@
-use cosmwasm_std::Attribute;
+use std::str::FromStr;
+
+use cosmwasm_std::{Attribute, Coin, Uint128};
 use osmosis_std::types::{
-    cosmos::bank::v1beta1::QueryBalanceRequest, cosmwasm::wasm::v1::MsgExecuteContractResponse,
+    cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1},
+    cosmwasm::wasm::v1::MsgExecuteContractResponse,
 };
 use osmosis_test_tube::{Bank, ExecuteResponse, Module, OsmosisTestApp};
 
@@ -15,6 +18,16 @@ pub fn get_event_attributes_by_ty_and_key(
         .filter(|event| event.ty == ty)
         .flat_map(|event| event.attributes.clone())
         .filter(|attribute| keys.contains(&attribute.key.as_str()))
+        .collect()
+}
+
+pub fn convert_osmosis_coins_to_coins(osmosis_coins: &Vec<v1beta1::Coin>) -> Vec<Coin> {
+    osmosis_coins
+        .into_iter()
+        .map(|coin| Coin {
+            denom: coin.denom.clone(),
+            amount: Uint128::from_str(coin.amount.as_str()).unwrap(),
+        })
         .collect()
 }
 

@@ -2,19 +2,21 @@
 mod tests {
     use osmosis_test_tube::{Module, Wasm};
 
-    use crate::{query::VerifyTickCacheResponse, test_tube::initialize::initialize::default_init};
+    use crate::{
+        query::VerifyTickCacheResponse, test_tube::initialize::initialize::fixture_default,
+    };
 
     #[test]
     #[ignore]
     fn range_admin_update_works() {
-        let (_app, _contract_address, _cl_pool_id, _admin) = default_init();
+        let (_app, _contract_address, _cl_pool_id, _admin) = fixture_default();
         // change the range admin and verify that it works
     }
 
     #[test]
     #[ignore]
     fn admin_build_tick_cache_works() {
-        let (app, contract_address, _cl_pool_id, admin) = default_init();
+        let (app, contract_address, _cl_pool_id, admin) = fixture_default();
         let wasm = Wasm::new(&app);
 
         // When we will implement this entrypoint, if we do, purge it first

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use apollo_cw_asset::AssetInfoBase;
+    use cosmwasm_std::Addr;
     use cosmwasm_std::{Coin, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::SwapOperationBase;
@@ -14,6 +15,7 @@ mod tests {
     use osmosis_test_tube::PoolManager;
     use osmosis_test_tube::RunnerError::ExecuteError;
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
+    use osmosis_test_tube::{OsmosisTestApp, SigningAccount};
 
     use crate::msg::QueryMsg;
     use crate::msg::SwapAsset;
@@ -25,8 +27,8 @@ mod tests {
     use crate::test_tube::helpers::get_balance_amount;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::test_tube::initialize::initialize::{
-        default_init, dex_cl_init_lp_pools, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
-        DENOM_QUOTE, DENOM_REWARD, DEPOSIT_AMOUNT,
+        fixture_cl_pools, fixture_default, fixture_lp_pools, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM,
+        DENOM_BASE, DENOM_QUOTE, DENOM_REWARD, DEPOSIT_AMOUNT,
     };
 
     const DENOM_REWARD_AMOUNT: &str = "100000000000";
@@ -36,8 +38,25 @@ mod tests {
     #[test]
     #[ignore]
     fn test_autocompound_rewards_lp_pools() {
-        let (app, contract_address, _dex_router_addr, _cl_pool_id, lp_pools_ids, admin) =
-            dex_cl_init_lp_pools();
+        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_lp_pools();
+
+        wrapped_autocompound_case(app, contract_address, pools_ids, admin);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_autocompound_rewards_cl_pools() {
+        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_cl_pools();
+
+        wrapped_autocompound_case(app, contract_address, pools_ids, admin);
+    }
+
+    fn wrapped_autocompound_case(
+        app: OsmosisTestApp,
+        contract_address: Addr,
+        pools_ids: Vec<u64>,
+        admin: SigningAccount,
+    ) {
         let bm = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
@@ -204,18 +223,18 @@ mod tests {
         // Define CW Dex Router swap routes
         let path1 = vec![
             SwapOperationBase::new(
-                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pools_ids[1])),
+                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
                 AssetInfoBase::Native(DENOM_REWARD.to_string()),
                 AssetInfoBase::Native(DENOM_QUOTE.to_string()),
             ),
             SwapOperationBase::new(
-                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pools_ids[0])),
+                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[0])),
                 AssetInfoBase::Native(DENOM_QUOTE.to_string()),
                 AssetInfoBase::Native(DENOM_BASE.to_string()),
             ),
         ];
         let path2 = vec![SwapOperationBase::new(
-            cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pools_ids[1])),
+            cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
             AssetInfoBase::Native(DENOM_REWARD.to_string()),
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
         )];
@@ -406,269 +425,10 @@ mod tests {
         assert_eq!(Uint128::new(1223), shares_assets.balances[1].amount);
     }
 
-    // TODO: This is redundant, just invoke the above switching LP and CL default instantiation
-    // #[test]
-    // #[ignore]
-    // fn test_autocompound_rewards_cl_pools() {
-    //     let (
-    //         app,
-    //         contract_address,
-    //         _dex_router_addr,
-    //         cl_pool_id,
-    //         lp_pool1,
-    //         lp_pool2,
-    //         _lp_pool3,
-    //         admin,
-    //     ) = dex_cl_init_cl_pools();
-    //     let bm = Bank::new(&app);
-
-    //     // Initialize accounts
-    //     let accounts = app
-    //         .init_accounts(
-    //             &[
-    //                 Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-    //                 Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-    //             ],
-    //             ACCOUNTS_NUM,
-    //         )
-    //         .unwrap();
-
-    //     let wasm = Wasm::new(&app);
-
-    //     for account in &accounts {
-    //         let _ = wasm
-    //             .execute(
-    //                 contract_address.as_str(),
-    //                 &ExecuteMsg::ExactDeposit { recipient: None },
-    //                 &[
-    //                     Coin::new(DEPOSIT_AMOUNT, DENOM_BASE),
-    //                     Coin::new(DEPOSIT_AMOUNT, DENOM_QUOTE),
-    //                 ],
-    //                 account,
-    //             )
-    //             .unwrap();
-    //     }
-
-    //     // Declare swapper accounts
-    //     let swapper = &accounts[0];
-
-    //     // Swaps to generate spread rewards on previously created user positions
-    //     for _ in 0..SWAPS_NUM {
-    //         PoolManager::new(&app)
-    //             .swap_exact_amount_in(
-    //                 MsgSwapExactAmountIn {
-    //                     sender: swapper.address(),
-    //                     routes: vec![SwapAmountInRoute {
-    //                         pool_id: cl_pool_id,
-    //                         token_out_denom: DENOM_BASE.to_string(),
-    //                     }],
-    //                     token_in: Some(OsmoCoin {
-    //                         denom: DENOM_QUOTE.to_string(),
-    //                         amount: SWAPS_AMOUNT.to_string(),
-    //                     }),
-    //                     token_out_min_amount: "1".to_string(),
-    //                 },
-    //                 &swapper,
-    //             )
-    //             .unwrap();
-    //     }
-
-    //     let _result = wasm
-    //         .execute(
-    //             contract_address.as_str(),
-    //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CollectRewards {}),
-    //             &[],
-    //             &admin,
-    //         )
-    //         .unwrap();
-
-    //     let _send = bm
-    //         .send(
-    //             MsgSend {
-    //                 from_address: admin.address(),
-    //                 to_address: contract_address.to_string(),
-    //                 amount: vec![OsmoCoin {
-    //                     denom: DENOM_REWARD.to_string(),
-    //                     amount: DENOM_REWARD_AMOUNT.to_string(),
-    //                 }],
-    //             },
-    //             &admin,
-    //         )
-    //         .unwrap();
-
-    //     let balances_quote = bm
-    //         .query_balance(&QueryBalanceRequest {
-    //             address: contract_address.to_string(),
-    //             denom: DENOM_QUOTE.to_string(),
-    //         })
-    //         .unwrap();
-    //     assert_eq!("4999".to_string(), balances_quote.balance.unwrap().amount);
-    //     let balances_rewards = bm
-    //         .query_balance(&QueryBalanceRequest {
-    //             address: contract_address.to_string(),
-    //             denom: DENOM_REWARD.to_string(),
-    //         })
-    //         .unwrap();
-    //     assert_eq!(
-    //         DENOM_REWARD_AMOUNT.to_string(),
-    //         balances_rewards.balance.unwrap().amount,
-    //     );
-
-    //     let path1 = vec![
-    //         SwapOperationBase::new(
-    //             cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2)),
-    //             AssetInfoBase::Native(DENOM_REWARD.to_string()),
-    //             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-    //         ),
-    //         SwapOperationBase::new(
-    //             cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool1)),
-    //             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-    //             AssetInfoBase::Native(DENOM_BASE.to_string()),
-    //         ),
-    //     ];
-    //     let path2 = vec![SwapOperationBase::new(
-    //         cw_dex::Pool::Osmosis(OsmosisPool::unchecked(lp_pool2)),
-    //         AssetInfoBase::Native(DENOM_REWARD.to_string()),
-    //         AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-    //     )];
-
-    //     let _auto_compound = wasm
-    //         .execute(
-    //             contract_address.as_str(),
-    //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-    //                 force_swap_route: false,
-    //                 swap_routes: vec![SwapAsset {
-    //                     token_in_denom: DENOM_REWARD.to_string(),
-    //                     recommended_swap_route_token_0: Option::from(
-    //                         SwapOperationsListUnchecked::new(path1),
-    //                     ),
-    //                     recommended_swap_route_token_1: Option::from(
-    //                         SwapOperationsListUnchecked::new(path2),
-    //                     ),
-    //                 }],
-    //             }),
-    //             &[],
-    //             &admin,
-    //         )
-    //         .unwrap();
-
-    //     let balances_after = bm
-    //         .query_balance(&QueryBalanceRequest {
-    //             address: contract_address.to_string(),
-    //             denom: DENOM_REWARD.to_string(),
-    //         })
-    //         .unwrap();
-    //     assert_eq!("0".to_string(), balances_after.balance.unwrap().amount);
-    //     // let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_BASE.to_string() }).unwrap();
-    //     // assert_eq!("49005000373".to_string(), balances_after.balance.unwrap().amount);
-    //     // let balances_after = bm.query_balance(&QueryBalanceRequest { address: contract_address.to_string(), denom: DENOM_QUOTE.to_string() }).unwrap();
-    //     // assert_eq!("49500004998".to_string(), balances_after.balance.unwrap().amount);
-
-    //     let _update_range = wasm
-    //         .execute(
-    //             contract_address.as_str(),
-    //             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-    //                 ModifyRangeMsg {
-    //                     lower_price: Decimal::from_str("0.51").unwrap(),
-    //                     upper_price: Decimal::from_str("1.49").unwrap(),
-    //                     max_slippage: Decimal::bps(MAX_SLIPPAGE),
-    //                     ratio_of_swappable_funds_to_use: Decimal::one(),
-    //                     twap_window_seconds: 45,
-    //                     recommended_swap_route: None,
-    //                     force_swap_route: false,
-    //                     claim_after: None,
-    //                 },
-    //             )),
-    //             &[],
-    //             &admin,
-    //         )
-    //         .unwrap();
-
-    //     for account in &accounts {
-    //         // Get balances before for current account
-    //         let balances_before_withdraw_quote_denom = get_amount_from_denom(
-    //             &bm.query_balance(&QueryBalanceRequest {
-    //                 address: account.address(),
-    //                 denom: DENOM_QUOTE.to_string(),
-    //             })
-    //             .unwrap()
-    //             .balance
-    //             .unwrap()
-    //             .amount,
-    //         );
-    //         let balances_before_withdraw_base_denom = get_amount_from_denom(
-    //             &bm.query_balance(&QueryBalanceRequest {
-    //                 address: account.address(),
-    //                 denom: DENOM_BASE.to_string(),
-    //             })
-    //             .unwrap()
-    //             .balance
-    //             .unwrap()
-    //             .amount,
-    //         );
-    //         let shares_to_redeem: UserSharesBalanceResponse = wasm
-    //             .query(
-    //                 contract_address.as_str(),
-    //                 &VaultExtension(ExtensionQueryMsg::Balances(UserSharesBalance {
-    //                     user: account.address(),
-    //                 })),
-    //             )
-    //             .unwrap();
-
-    //         if shares_to_redeem.balance.is_zero() {
-    //             continue;
-    //         }
-
-    //         let _ = wasm
-    //             .execute(
-    //                 contract_address.as_str(),
-    //                 &ExecuteMsg::Redeem {
-    //                     recipient: None,
-    //                     amount: shares_to_redeem.balance,
-    //                 },
-    //                 &[],
-    //                 account,
-    //             )
-    //             .unwrap();
-
-    //         let balances_after_withdraw_quote_denom = get_amount_from_denom(
-    //             &bm.query_balance(&QueryBalanceRequest {
-    //                 address: account.address(),
-    //                 denom: DENOM_QUOTE.to_string(),
-    //             })
-    //             .unwrap()
-    //             .balance
-    //             .unwrap()
-    //             .amount,
-    //         );
-    //         let balances_after_withdraw_base_denom = get_amount_from_denom(
-    //             &bm.query_balance(&QueryBalanceRequest {
-    //                 address: account.address(),
-    //                 denom: DENOM_BASE.to_string(),
-    //             })
-    //             .unwrap()
-    //             .balance
-    //             .unwrap()
-    //             .amount,
-    //         );
-
-    //         assert_eq!(
-    //             true,
-    //             balances_after_withdraw_quote_denom - balances_before_withdraw_quote_denom
-    //                 > DEPOSIT_AMOUNT
-    //         );
-    //         assert_eq!(
-    //             true,
-    //             balances_after_withdraw_base_denom - balances_before_withdraw_base_denom
-    //                 > DEPOSIT_AMOUNT
-    //         );
-    //     }
-    // }
-
     #[test]
     #[ignore]
     fn test_migration_step_with_rewards_works() {
-        let (app, contract_address, cl_pool_id, admin) = default_init();
+        let (app, contract_address, cl_pool_id, admin) = fixture_default();
         let bm = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
@@ -836,7 +596,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_migration_step_no_rewards_works() {
-        let (app, contract_address, _cl_pool_id, admin) = default_init();
+        let (app, contract_address, _cl_pool_id, admin) = fixture_default();
 
         // Initialize accounts
         let accounts = app

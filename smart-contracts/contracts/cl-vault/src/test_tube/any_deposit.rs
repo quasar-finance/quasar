@@ -4,7 +4,7 @@ mod tests {
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::{AssetsBalanceResponse, UserSharesBalanceResponse};
     use crate::test_tube::initialize::initialize::{
-        default_init_for_less_slippage, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
+        fixture_default_less_slippage, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
         DENOM_QUOTE, DEPOSIT_AMOUNT,
     };
     use cosmwasm_std::{assert_approx_eq, Coin, Fraction};
@@ -17,7 +17,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_any_deposit() {
-        let (app, contract_address, cl_pool_id, admin) = default_init_for_less_slippage();
+        let (app, contract_address, cl_pool_id, admin) = fixture_default_less_slippage();
 
         let wasm = Wasm::new(&app);
 
