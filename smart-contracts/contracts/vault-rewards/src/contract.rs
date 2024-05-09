@@ -1,15 +1,12 @@
 use crate::error::VaultRewardsError;
-use crate::execute::admin::{
-    execute_add_distribution_schedule, execute_remove_distribution_schedule,
-    execute_update_distribution_schedule, execute_withdraw_funds,
-};
+use crate::execute::admin::{execute_add_distribution_schedule, execute_auto_claim, execute_remove_distribution_schedule, execute_update_distribution_schedule, execute_withdraw_funds};
 use crate::execute::user::execute_claim;
 use crate::execute::vault::execute_update_user_reward_index;
 use crate::helpers::is_contract_admin;
 use crate::msg::{
     AdminExecuteMsg, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, VaultExecuteMsg,
 };
-use crate::query::{query_config, query_pending_rewards, query_user_rewards_index};
+use crate::query::{query_all_users_and_rewards, query_config, query_pending_rewards, query_user_rewards_index};
 use crate::state::{Config, CONFIG};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -57,6 +54,9 @@ pub fn execute(
                 AdminExecuteMsg::RemoveDistributionSchedule(id) => {
                     execute_remove_distribution_schedule(deps, env, id)
                 }
+                AdminExecuteMsg::AutoClaim {user_addresses} => {
+                    execute_auto_claim(deps, env, user_addresses)
+                }
             }
         }
         ExecuteMsg::Vault(vault_msg) => {
@@ -86,6 +86,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, VaultRewards
             let user = deps.api.addr_validate(&user)?;
             to_json_binary(&query_user_rewards_index(deps, user)?)
         }
+        QueryMsg::AllUsers {} => to_json_binary(&query_all_users_and_rewards(deps)?),
     }
     .map_err(|e| e.into())
 }

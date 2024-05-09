@@ -1,6 +1,6 @@
 use crate::state::DistributionSchedule;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Addr, Uint128};
 use cw_asset::{Asset, AssetInfo};
 
 #[cw_serde]
@@ -28,6 +28,9 @@ pub enum AdminExecuteMsg {
         update: DistributionScheduleOptions,
     },
     RemoveDistributionSchedule(u64),
+    AutoClaim{
+        user_addresses: Vec<Addr>,
+    }
 }
 
 #[cw_serde]
@@ -40,6 +43,7 @@ pub enum QueryMsg {
     Config {},
     PendingRewards(String),
     GetUserRewardsIndex(String),
+    AllUsers{},
 }
 
 #[cw_serde]
@@ -67,4 +71,9 @@ pub struct DistributionScheduleOptions {
     pub start: Option<u64>,
     pub end: Option<u64>,
     pub amount: Option<Uint128>,
+}
+
+#[cw_serde]
+pub struct QueryAllUsersResponse {
+    pub users_and_rewards: Vec<Addr>,
 }

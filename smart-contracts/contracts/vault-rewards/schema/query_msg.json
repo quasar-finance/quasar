@@ -26,6 +26,31 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_user_rewards_index"
+      ],
+      "properties": {
+        "get_user_rewards_index": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "all_users"
+      ],
+      "properties": {
+        "all_users": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }

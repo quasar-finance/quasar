@@ -1,9 +1,9 @@
 use crate::helpers::get_user_reward_index;
-use crate::msg::ConfigResponse;
-use crate::state::{DistributionSchedule, UserBalance, CONFIG};
+use crate::msg::{ConfigResponse, QueryAllUsersResponse};
+use crate::state::{DistributionSchedule, UserBalance, CONFIG, USER_REWARD_INDEX};
 use crate::VaultRewardsError;
 use crate::{execute::user::get_claim_amount, state::UserRewardIndex};
-use cosmwasm_std::{Addr, Deps, Env, Uint128};
+use cosmwasm_std::{Addr, Deps, Env, Order, Uint128};
 use cw_asset::AssetInfo;
 
 pub fn query_config(deps: Deps, env: Env) -> Result<ConfigResponse, VaultRewardsError> {
@@ -61,5 +61,14 @@ pub fn query_user_rewards_index(
     Ok(user_reward_index)
 }
 
-#[cfg(test)]
-mod tests {}
+pub fn query_all_users_and_rewards(deps: Deps) -> Result<QueryAllUsersResponse, VaultRewardsError> {
+    let mut users_and_rewards: Vec<Addr> = vec![];
+    for res in USER_REWARD_INDEX.range(deps.storage, None, None, Order::Ascending) {
+        users_and_rewards.push((res.as_ref().unwrap().0.clone()));
+    }
+    Ok(
+        QueryAllUsersResponse{
+            users_and_rewards,
+        }
+    )
+}

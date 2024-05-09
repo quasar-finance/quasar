@@ -3,13 +3,16 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "distribution_schedule",
+    "distribution_schedules",
     "reward_token",
     "vault_token"
   ],
   "properties": {
-    "distribution_schedule": {
-      "$ref": "#/definitions/DistributionSchedule"
+    "distribution_schedules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/DistributionSchedule"
+      }
     },
     "reward_token": {
       "$ref": "#/definitions/AssetInfoBase_for_Addr"
