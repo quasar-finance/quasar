@@ -6,7 +6,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN};
+use crate::state::ADMIN_ADDRESS;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -162,16 +162,15 @@ pub fn get_depositable_tokens(
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
-    deps.api.debug("debug 22222");
+    let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
+    let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
-    // TODO: This match looks off, position will always have both assets as Some(Coin(denom, amount)) even if the amount is 0.
-
-    match (position.asset0, position.asset1) {
-        (None, _) => Ok((
+    match (asset0_amount.is_zero(), asset1_amount.is_zero()) {
+        (true, false) => Ok((
             (Uint128::zero(), token1.amount),
             (token0.amount, Uint128::zero()),
         )),
-        (_, None) => Ok((
+        (false, true) => Ok((
             (token0.amount, Uint128::zero()),
             (Uint128::zero(), token1.amount),
         )),
@@ -188,18 +187,17 @@ pub fn get_depositable_tokens(
            if token1 is limiting, we calculate the token0 amount by
            token0 = token1 * ratio0 / ratio1
         */
-        (Some(asset0), Some(asset1)) => {
-            deps.api
-                .debug(format!(">>> asset0: {:?}", asset0.clone()).as_str());
-            deps.api
-                .debug(format!(">>> asset1: {:?}", asset1.clone()).as_str());
+        (false, false) => {
             let token0 = token0.amount;
             let token1 = token1.amount;
             deps.api
                 .debug(format!(">>> token0: {:?}", token0.clone()).as_str());
             deps.api
                 .debug(format!(">>> token1: {:?}", token1.clone()).as_str());
-            let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+            let assets = try_proto_to_cosmwasm_coins(vec![
+                position.asset0.unwrap(),
+                position.asset1.unwrap(),
+            ])?;
             let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
             deps.api.debug("ratio");
 
@@ -231,6 +229,10 @@ pub fn get_depositable_tokens(
                 .try_into()?;
                 Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
             }
+        }
+        // (true, true) => {
+        _ => {
+            return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
         }
     }
 }
@@ -459,17 +461,6 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
     } else {
         Ok(caller.clone())
     }
-}
-
-pub fn assert_auto_compound_admin(
-    storage: &mut dyn Storage,
-    sender: &Addr,
-) -> Result<(), ContractError> {
-    let admin = AUTO_COMPOUND_ADMIN.load(storage)?;
-    if admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    Ok(())
 }
 
 pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {

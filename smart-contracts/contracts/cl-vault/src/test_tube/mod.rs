@@ -4,6 +4,6 @@ mod autocompound;
 mod deposit_withdraw;
 mod helpers;
 pub mod initialize;
-//mod proptest;
+mod proptest;
 mod range;
 mod rewards;

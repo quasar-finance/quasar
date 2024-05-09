@@ -37,7 +37,7 @@ use super::{
     swap::{SwapCalculationResult, SwapParams},
 };
 
-fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+pub fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
     if admin != sender {
         return Err(ContractError::Unauthorized {});

@@ -16,8 +16,8 @@ use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
-    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, METADATA,
-    MIGRATION_STATUS, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM,
+    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, METADATA, MIGRATION_STATUS,
+    POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
@@ -71,10 +71,6 @@ pub fn handle_instantiate(
 
     ADMIN_ADDRESS.save(deps.storage, &admin)?;
     RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
-    AUTO_COMPOUND_ADMIN.save(
-        deps.storage,
-        &deps.api.addr_validate(&msg.auto_compound_admin)?,
-    )?;
     MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
 
     let create_denom_msg: CosmosMsg = MsgCreateDenom {

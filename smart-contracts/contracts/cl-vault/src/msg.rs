@@ -73,11 +73,6 @@ pub enum AdminExtensionExecuteMsg {
     },
     /// Build tick exponent cache
     BuildTickCache {},
-    /// Update the auto compound admin
-    UpdateAutoCompoundAdmin {
-        /// The new admin address.
-        address: String,
-    },
 }
 
 #[cw_serde]
@@ -177,5 +172,4 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub struct MigrateMsg {
     pub dex_router: Addr,
-    pub auto_compound_admin: Addr,
 }

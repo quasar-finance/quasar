@@ -17,8 +17,8 @@ use crate::rewards::{
 use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 
 use crate::state::{
-    MigrationStatus, VaultConfig, AUTO_COMPOUND_ADMIN, MIGRATION_STATUS, OLD_VAULT_CONFIG,
-    STRATEGIST_REWARDS, VAULT_CONFIG,
+    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
+    VAULT_CONFIG,
 };
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
@@ -228,11 +228,6 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     OLD_VAULT_CONFIG.remove(deps.storage);
     VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
 
-    AUTO_COMPOUND_ADMIN.save(
-        deps.storage,
-        &deps.api.addr_validate(msg.auto_compound_admin.as_ref())?,
-    )?;
-
     MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
 
     // Declare response object as mut
@@ -256,24 +251,27 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
+        coin,
+        testing::{mock_dependencies, mock_dependencies_with_balances, mock_env},
         Addr, Decimal,
     };
     use std::str::FromStr;
 
-    use crate::state::OldVaultConfig;
     use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
+    use crate::{
+        state::OldVaultConfig,
+        test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
+    };
 
     use super::*;
 
     #[test]
-    fn test_migrate() {
+    fn test_migrate_no_rewards() {
         let mut deps = mock_dependencies();
         let env = mock_env();
 
         // Declare new items for states
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-        let new_auto_compound_admin = Addr::unchecked("auto_compound_admin"); // completely new state item
 
         // Mock a previous state item
         OLD_VAULT_CONFIG
@@ -292,7 +290,6 @@ mod tests {
             env,
             MigrateMsg {
                 dex_router: new_dex_router.clone(),
-                auto_compound_admin: new_auto_compound_admin.clone(),
             },
         );
 
@@ -303,14 +300,54 @@ mod tests {
         let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
         assert_eq!(vault_config.dex_router, new_dex_router);
 
-        // Assert new AUTO_COMPOUND_ADMIN state have correct value
-        let auto_compound_admin = AUTO_COMPOUND_ADMIN.load(deps.as_mut().storage).unwrap();
-        assert_eq!(auto_compound_admin, new_auto_compound_admin);
+        // Assert new MIGRATION_STATUS state have correct value
+        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
+        assert_eq!(migration_status, MigrationStatus::Open);
+    }
+
+    #[test]
+    fn test_migrate_with_rewards() {
+        let mut deps = mock_dependencies_with_balances(&[
+            ("cl_vault_contract", &[coin(10000u128, DENOM_BASE)]),
+            ("cl_vault_contract", &[coin(10000u128, DENOM_QUOTE)]),
+            ("cl_vault_contract", &[coin(10000u128, DENOM_REWARD)]),
+        ]);
+        let env = mock_env();
+
+        // Declare new items for states
+        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
+
+        // Mock a previous state item
+        OLD_VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &OldVaultConfig {
+                    performance_fee: Decimal::from_str("0.2").unwrap(),
+                    treasury: Addr::unchecked("treasury"),
+                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                },
+            )
+            .unwrap();
+
+        let _ = migrate(
+            deps.as_mut(),
+            env,
+            MigrateMsg {
+                dex_router: new_dex_router.clone(),
+            },
+        );
+
+        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
+        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
+
+        // Assert new VAULT_CONFIG.dex_router field have correct value
+        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
+        assert_eq!(vault_config.dex_router, new_dex_router);
 
         // Assert new MIGRATION_STATUS state have correct value
         let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
         assert_eq!(migration_status, MigrationStatus::Open);
 
-        // TODO: Add bankSend check in this test
+        todo!()
     }
 }

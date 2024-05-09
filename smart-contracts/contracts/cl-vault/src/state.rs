@@ -19,7 +19,6 @@ pub const METADATA: Item<Metadata> = Item::new("metadata");
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
-pub const AUTO_COMPOUND_ADMIN: Item<Addr> = Item::new("auto_compound_admin");
 
 /// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
@@ -46,8 +45,7 @@ pub struct OldVaultConfig {
 }
 
 pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
-pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("new_vault_config");
-
+pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config_v2");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade // TODO: Deprecate!
