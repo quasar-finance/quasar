@@ -351,6 +351,7 @@ pub fn do_swap_deposit_merge(
     // Start constructing the response
     let mut response = Response::new()
         .add_attribute("method", "reply")
+        // TODO: This is not really exact, this function is invoked by 2 different reply entrypoints so the action should be conditionally set
         .add_attribute("action", "do_swap_deposit_merge");
 
     // Check if there is a swap message and append accordingly
@@ -534,7 +535,7 @@ pub fn handle_swap_reply(
     }
 }
 
-fn handle_swap_success(
+fn handle_swap_success_reply(
     deps: DepsMut,
     env: Env,
     tokens_out: String,

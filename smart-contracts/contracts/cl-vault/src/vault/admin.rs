@@ -49,7 +49,8 @@ pub fn execute_update_admin(
     ADMIN_ADDRESS.save(deps.storage, &new_admin)?;
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
@@ -72,7 +73,8 @@ pub fn execute_update_range_admin(
     RANGE_ADMIN.save(deps.storage, &new_admin)?;
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_range_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
@@ -98,7 +100,8 @@ pub fn execute_update_dex_router(
     }
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_dex_router")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_dex_router")
         .add_attribute("previous_router", previous_router)
         .add_attribute("new_router", address.unwrap_or("none".to_owned())))
 }
@@ -128,7 +131,8 @@ pub fn execute_update_config(
     VAULT_CONFIG.save(deps.storage, &updates)?;
 
     Ok(Response::default()
-        .add_attribute("action", "execute_update_config")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_config")
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
@@ -143,7 +147,8 @@ pub fn execute_update_metadata(
     METADATA.save(deps.storage, &updates)?;
 
     Ok(Response::default()
-        .add_attribute("action", "execute_update_metadata")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_metadata")
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
@@ -157,7 +162,9 @@ pub fn execute_build_tick_exp_cache(
 
     build_tick_exp_cache(deps.storage)?;
 
-    Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
+    Ok(Response::new()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "build_tick_exp_cache"))
 }
 
 #[cfg(test)]

@@ -191,7 +191,7 @@ pub fn handle_autocompound_reply(
             Replies::Merge.into(),
         ))
         .add_attribute("method", "reply")
-        .add_attribute("action", "handle_autocompound_reply")
+        .add_attribute("action", "handle_autocompound")
         .add_attribute(
             "position_ids",
             format!("{:?}", vec![create_position_message.position_id]),

@@ -104,7 +104,7 @@ pub(crate) fn execute_exact_deposit(
     };
 
     let mut resp = Response::new()
-        .add_attribute("method", "exact_deposit")
+        .add_attribute("method", "execute")
         .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", deposit.0)
         .add_attribute("amount1", deposit.1)

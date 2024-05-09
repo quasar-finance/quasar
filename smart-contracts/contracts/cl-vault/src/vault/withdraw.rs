@@ -110,27 +110,6 @@ pub fn execute_withdraw(
         )))
 }
 
-fn withdraw_msg(
-    deps: DepsMut,
-    env: &Env,
-    user_shares: Uint128,
-) -> Result<MsgWithdrawPosition, ContractError> {
-    let existing_position = get_position(deps.storage, &deps.querier)?;
-    let existing_liquidity: Decimal256 = existing_position
-        .position
-        .ok_or(ContractError::PositionNotFound)?
-        .liquidity
-        .parse()?;
-
-    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
-
-    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
-        .checked_mul(existing_liquidity)?
-        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
-
-    withdraw_from_position(deps.storage, env, user_liquidity)
-}
-
 pub fn handle_withdraw_user_reply(
     deps: DepsMut,
     data: SubMsgResult,
@@ -152,13 +131,33 @@ pub fn handle_withdraw_user_reply(
         to_address: user.to_string(),
         amount: sort_tokens(vec![coin0.clone(), coin1.clone()]),
     };
-    Ok(Response::new().add_message(msg).add_event(
-        Event::new("withdraw_cl_position")
-            .add_attribute("method", "withdraw_position_reply")
-            .add_attribute("action", "withdraw")
-            .add_attribute("token0_amount", coin0.clone().amount)
-            .add_attribute("token1_amount", coin1.clone().amount),
-    ))
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_withdraw_user")
+        .add_attribute("amount0", coin0.clone().amount)
+        .add_attribute("amount1", coin1.clone().amount))
+}
+
+fn withdraw_msg(
+    deps: DepsMut,
+    env: &Env,
+    user_shares: Uint128,
+) -> Result<MsgWithdrawPosition, ContractError> {
+    let existing_position = get_position(deps.storage, &deps.querier)?;
+    let existing_liquidity: Decimal256 = existing_position
+        .position
+        .ok_or(ContractError::PositionNotFound)?
+        .liquidity
+        .parse()?;
+
+    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
+
+    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
+        .checked_mul(existing_liquidity)?
+        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
+
+    withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
 #[cfg(test)]

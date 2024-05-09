@@ -102,8 +102,8 @@ pub fn execute_any_deposit(
                 swap_msg,
                 Replies::AnyDepositSwap.into(),
             ))
-            .add_attribute("method", "reply")
-            .add_attribute("action", "any_deposit_swap")
+            .add_attribute("method", "execute")
+            .add_attribute("action", "any_deposit")
             .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
             .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
     } else if !swappable_amount.1.is_zero() {
@@ -138,8 +138,8 @@ pub fn execute_any_deposit(
                 swap_msg,
                 Replies::AnyDepositSwap.into(),
             ))
-            .add_attribute("method", "reply")
-            .add_attribute("action", "any_deposit_swap")
+            .add_attribute("method", "execute")
+            .add_attribute("action", "any_deposit")
             .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
             .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
     } else {
@@ -148,7 +148,7 @@ pub fn execute_any_deposit(
             mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
 
         return Ok(Response::new()
-            .add_attribute("method", "reply")
+            .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
             .add_attribute("amount0", deposit_amount_in_ratio.0)
             .add_attribute("amount1", deposit_amount_in_ratio.1)
@@ -223,7 +223,7 @@ pub fn handle_any_deposit_swap_reply(
 
     Ok(Response::new()
         .add_attribute("method", "reply")
-        .add_attribute("action", "any_deposit_swap_reply")
+        .add_attribute("action", "handle_any_deposit_swap")
         .add_attribute("amount0", balance0)
         .add_attribute("amount1", balance1)
         .add_message(mint_msg)

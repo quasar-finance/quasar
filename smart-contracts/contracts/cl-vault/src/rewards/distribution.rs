@@ -49,7 +49,6 @@ pub fn handle_collect_spread_rewards_reply(
     let strategist_fee = response_coin_list.sub_ratio(vault_config.performance_fee)?;
 
     let mut response = Response::new()
-        .add_event(Event::new("cl_collect_spread_rewards"))
         .add_attribute(
             "collected_spread_rewards",
             format!("{:?}", response.clone().collected_spread_rewards),
@@ -110,7 +109,6 @@ pub fn handle_collect_incentives_reply(
 
     // Create the base response object
     let mut response = Response::new()
-        .add_event(Event::new("cl_collect_incentive"))
         .add_attribute(
             "collected_incentives",
             format!("{:?}", response.clone().collected_incentives),

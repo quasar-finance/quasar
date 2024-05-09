@@ -303,7 +303,7 @@ pub fn execute_swap_non_vault_funds(
     Ok(Response::new()
         .add_messages(swap_msgs)
         .add_attribute("method", "execute")
-        .add_attribute("action", "auto_compund_swap"))
+        .add_attribute("action", "swap_non_vault_funds"))
 }
 
 fn generate_swap_message(
