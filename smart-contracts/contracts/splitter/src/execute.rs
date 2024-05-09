@@ -16,7 +16,7 @@ pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
                         c.amount
                             .multiply_ratio(recv.share.numerator(), recv.share.denominator())
                             .u128(),
-                        c.denom,
+                        c.denom.clone(),
                     )
                 }),
             )
@@ -30,7 +30,7 @@ pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
     Ok(Response::new().add_messages(to_send))
 }
 
-// TODO is it save to just execute user given binary messages? Since we send no funds along I'd assume it's save
+// TODO is it save to just execute user given binary messages? Since we send no funds along I'd assume it's save except if this contract is used as the receiver for CW20's
 pub fn execute_claim(claims: Vec<Claim>) -> Result<Response, ContractError> {
     let (attrs, msgs): (Vec<Attribute>, Vec<CosmosMsg>) = claims
         .into_iter()

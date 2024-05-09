@@ -41,4 +41,5 @@ serde = { workspace = true}
 thiserror = { workspace = true}
 
 [dev-dependencies]
-cw-multi-test ={ workspace = true}
+cw-it = { workspace = true }
+cw-multi-test = { workspace = true}

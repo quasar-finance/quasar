@@ -32,6 +32,7 @@ cw20 = "1.1.2"
 cw20-base = {version = "1.1.2", features = ["library"]}
 cw20-staking = "0.11.1"
 apollo-cw-asset = "0.1.2"
+cw-it = { version = "0.3.1", features = [ "osmosis", "multi-test" ]  }
 
 # SDK
 cosmos-sdk-proto = {version = "0.20.0", default-features = false}
