@@ -252,12 +252,15 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 mod tests {
     use cosmwasm_std::{
         coin,
-        testing::{mock_dependencies, mock_dependencies_with_balances, mock_env},
-        Addr, Decimal,
+        testing::{mock_dependencies, mock_dependencies_with_balance, mock_env},
+        Addr, Decimal, Uint128,
     };
     use std::str::FromStr;
 
-    use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
+    use crate::{
+        rewards::CoinList, state::USER_REWARDS,
+        test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
+    };
     use crate::{
         state::OldVaultConfig,
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
@@ -287,7 +290,7 @@ mod tests {
 
         let _ = migrate(
             deps.as_mut(),
-            env,
+            env.clone(),
             MigrateMsg {
                 dex_router: new_dex_router.clone(),
             },
@@ -303,16 +306,46 @@ mod tests {
         // Assert new MIGRATION_STATUS state have correct value
         let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
         assert_eq!(migration_status, MigrationStatus::Open);
+
+        // Assert STRATEGIST_REWARDS state have been correctly removed by unwrapping the error
+        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
+
+        // Execute one migration step and assert the correct behavior
+        execute_migration_step(deps.as_mut(), env, Uint128::one()).unwrap();
+
+        // Assert new MIGRATION_STATUS state have correct value
+        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
+        assert_eq!(migration_status, MigrationStatus::Closed);
     }
 
     #[test]
-    fn test_migrate_with_rewards() {
-        let mut deps = mock_dependencies_with_balances(&[
-            ("cl_vault_contract", &[coin(10000u128, DENOM_BASE)]),
-            ("cl_vault_contract", &[coin(10000u128, DENOM_QUOTE)]),
-            ("cl_vault_contract", &[coin(10000u128, DENOM_REWARD)]),
+    fn test_migrate_with_rewards_execute_steps() {
+        let mut deps = mock_dependencies_with_balance(&[
+            coin(10000u128, DENOM_BASE),
+            coin(10000u128, DENOM_QUOTE),
+            coin(10000u128, DENOM_REWARD),
         ]);
         let env = mock_env();
+
+        // Assert contract balance contains rewards
+        let contract_balance = deps
+            .as_ref()
+            .querier
+            .query_balance(&env.contract.address, DENOM_BASE)
+            .unwrap();
+        assert_eq!(contract_balance.amount, Uint128::from(10000u128));
+        let contract_balance = deps
+            .as_ref()
+            .querier
+            .query_balance(&env.contract.address, DENOM_QUOTE)
+            .unwrap();
+        assert_eq!(contract_balance.amount, Uint128::from(10000u128));
+        let contract_balance = deps
+            .as_ref()
+            .querier
+            .query_balance(&env.contract.address, DENOM_REWARD)
+            .unwrap();
+        assert_eq!(contract_balance.amount, Uint128::from(10000u128));
 
         // Declare new items for states
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
@@ -331,7 +364,7 @@ mod tests {
 
         let _ = migrate(
             deps.as_mut(),
-            env,
+            env.clone(),
             MigrateMsg {
                 dex_router: new_dex_router.clone(),
             },
@@ -348,6 +381,92 @@ mod tests {
         let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
         assert_eq!(migration_status, MigrationStatus::Open);
 
-        todo!()
+        // Mock USER_REWARDS in order to have something to iterate over
+        for i in 0..10 {
+            USER_REWARDS
+                .save(
+                    deps.as_mut().storage,
+                    Addr::unchecked(format!("user{}", i)),
+                    &CoinList::from_coins(vec![
+                        coin(1000u128, DENOM_BASE),
+                        coin(1000u128, DENOM_QUOTE),
+                        coin(1000u128, DENOM_REWARD),
+                    ]),
+                )
+                .unwrap();
+        }
+
+        // Execute 9 migration steps leaving the last one to close the migration
+        for _ in 0..9 {
+            let execute_migration_resp =
+                execute_migration_step(deps.as_mut(), env.clone(), Uint128::one());
+            // Assert response contains bank send messages attributes
+            println!("execute_migration_resp {:?}", execute_migration_resp);
+
+            // Assert new MIGRATION_STATUS state have correct value
+            let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
+            assert_eq!(migration_status, MigrationStatus::Open);
+        }
+
+        // Execute the last migration step
+        let execute_migration_resp =
+            execute_migration_step(deps.as_mut(), env.clone(), Uint128::one());
+        println!("execute_migration_resp {:?}", execute_migration_resp);
+
+        // Assert new MIGRATION_STATUS state have correct value
+        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
+        assert_eq!(migration_status, MigrationStatus::Closed);
+
+        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
+        for i in 0..10 {
+            USER_REWARDS
+                .load(deps.as_mut().storage, Addr::unchecked(format!("user{}", i)))
+                .unwrap_err();
+        }
+
+        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
+        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
+
+        // Assert contract balance is empty now
+        let contract_balance = deps
+            .as_ref()
+            .querier
+            .query_balance(&env.contract.address, DENOM_BASE)
+            .unwrap();
+        assert_eq!(contract_balance.amount, Uint128::zero());
+        let contract_balance = deps
+            .as_ref()
+            .querier
+            .query_balance(&env.contract.address, DENOM_QUOTE)
+            .unwrap();
+        assert_eq!(contract_balance.amount, Uint128::zero());
+        let contract_balance = deps
+            .as_ref()
+            .querier
+            .query_balance(&env.contract.address, DENOM_REWARD)
+            .unwrap();
+        assert_eq!(contract_balance.amount, Uint128::zero());
+
+        // Foreach user assert the correct balance
+        for i in 0..10 {
+            let user_balance = deps
+                .as_ref()
+                .querier
+                .query_balance(&Addr::unchecked(format!("user{}", i)), DENOM_BASE)
+                .unwrap();
+            assert_eq!(user_balance.amount, Uint128::from(1000u128));
+            let user_balance = deps
+                .as_ref()
+                .querier
+                .query_balance(&Addr::unchecked(format!("user{}", i)), DENOM_QUOTE)
+                .unwrap();
+            assert_eq!(user_balance.amount, Uint128::from(1000u128));
+            let user_balance = deps
+                .as_ref()
+                .querier
+                .query_balance(&Addr::unchecked(format!("user{}", i)), DENOM_REWARD)
+                .unwrap();
+            assert_eq!(user_balance.amount, Uint128::from(1000u128));
+        }
     }
 }
