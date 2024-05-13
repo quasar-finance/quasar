@@ -264,7 +264,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 mod tests {
     use cosmwasm_std::{
         coin,
-        testing::{mock_dependencies, mock_dependencies_with_balance, mock_env},
+        testing::{mock_dependencies, mock_env},
         Addr, Decimal, Uint128,
     };
     use std::str::FromStr;

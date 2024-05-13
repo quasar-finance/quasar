@@ -35,9 +35,10 @@ mod tests {
         // Check if the response contains the expected event
         let has_expected_event = build_resp.events.iter().any(|event| {
             event.ty == "wasm"
-                && event.attributes.iter().any(|attr| {
-                    attr.key == "action" && attr.value == "execute_build_tick_exp_cache"
-                })
+                && event
+                    .attributes
+                    .iter()
+                    .any(|attr| attr.key == "action" && attr.value == "build_tick_exp_cache")
         });
         assert!(has_expected_event, "Expected event not found in build_resp");
 
