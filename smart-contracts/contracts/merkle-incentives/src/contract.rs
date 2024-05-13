@@ -20,13 +20,16 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    INCENTIVES_ADMIN.save(deps.storage, &info.sender)?;
+    INCENTIVES_ADMIN.save(
+        deps.storage,
+        &deps.api.addr_validate(msg.incentives_admin.as_str())?,
+    )?;
 
-    Ok(Response::default().add_attribute("incentive_admin", info.sender))
+    Ok(Response::default().add_attribute("incentives_admin", info.sender))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
