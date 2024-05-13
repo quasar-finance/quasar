@@ -190,10 +190,6 @@ pub fn get_depositable_tokens(
         (false, false) => {
             let token0 = token0.amount;
             let token1 = token1.amount;
-            deps.api
-                .debug(format!(">>> token0: {:?}", token0.clone()).as_str());
-            deps.api
-                .debug(format!(">>> token1: {:?}", token1.clone()).as_str());
             let assets = try_proto_to_cosmwasm_coins(vec![
                 position.asset0.unwrap(),
                 position.asset1.unwrap(),
