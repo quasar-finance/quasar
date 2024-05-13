@@ -6,7 +6,8 @@ use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult}
 use crate::admin::execute_admin;
 use crate::error::ContractError;
 use crate::execute::{execute_claim, execute_split};
-use crate::msg::{self, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::instantiate::do_instantiate;
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 /*
 // version info for migration info
@@ -16,12 +17,12 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    unimplemented!()
+    do_instantiate(deps, msg)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

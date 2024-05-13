@@ -4,7 +4,10 @@ use cosmwasm_std::Binary;
 use crate::state::Receiver;
 
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub admin: String,
+    pub receivers: Vec<Receiver>,
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -31,5 +34,5 @@ pub enum QueryMsg {
     #[returns(Vec<Receiver>)]
     GetReceivers {},
     #[returns(String)]
-    GetAdmin {}
+    GetAdmin {},
 }

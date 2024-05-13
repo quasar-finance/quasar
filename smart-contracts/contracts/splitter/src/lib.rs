@@ -3,6 +3,7 @@ pub mod contract;
 mod error;
 mod execute;
 pub mod helpers;
+mod instantiate;
 pub mod msg;
 pub mod state;
 

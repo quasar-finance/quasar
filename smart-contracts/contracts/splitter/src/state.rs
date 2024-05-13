@@ -46,3 +46,9 @@ pub struct Receiver {
     pub address: Addr,
     pub share: Decimal,
 }
+
+impl Receiver {
+    pub fn new(address: Addr, share: Decimal) -> Receiver {
+        Receiver { address, share }
+    }
+}
