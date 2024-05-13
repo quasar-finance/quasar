@@ -23,6 +23,8 @@ pub struct SwapAsset {
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
+    /// An interface of certain vault interaction with forced values for authz
+    Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
@@ -41,6 +43,15 @@ pub enum ExtensionExecuteMsg {
         force_swap_route: bool,
         swap_routes: Vec<SwapAsset>,
     },
+}
+
+/// Extension messages for Authz. This interface basically reexports certain vault functionality
+/// but sets recipient forcibly to None
+#[cw_serde]
+pub enum AuthzExtension {
+    ExactDeposit {},
+    AnyDeposit {},
+    Redeem { amount: Uint128 },
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
