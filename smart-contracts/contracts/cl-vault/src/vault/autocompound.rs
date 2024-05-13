@@ -15,71 +15,6 @@ use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
 
-// Migration is a to-depreacate entrypoint useful to migrate from Distribute to Accumulate after Autocompound implementation
-pub fn execute_migration_step(
-    deps: DepsMut,
-    env: Env,
-    amount_of_users: Uint128,
-) -> Result<Response, ContractError> {
-    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
-
-    if matches!(migration_status, MigrationStatus::Closed) {
-        return Err(ContractError::MigrationStatusClosed {});
-    }
-
-    let mut outputs = Vec::new();
-    let mut addresses = Vec::new();
-    let mut total_amount = CoinList::new();
-
-    // Iterate user rewards in a paginated fashion
-    for item in USER_REWARDS
-        .range(deps.storage, None, None, Order::Ascending)
-        .take(amount_of_users.u128() as usize)
-    {
-        let (address, rewards) = item?;
-
-        addresses.push(address.clone());
-        outputs.push(Output {
-            address: address.to_string(),
-            coins: rewards.osmo_coin_from_coin_list(),
-        });
-        total_amount.add(rewards)?;
-    }
-
-    // Remove processed rewards in a separate iteration.
-    for addr in addresses {
-        USER_REWARDS.remove(deps.storage, addr);
-    }
-
-    // Check if this is the last execution.
-    let is_last_execution = USER_REWARDS
-        .range(deps.storage, None, None, Order::Ascending)
-        .next()
-        .is_none();
-    if is_last_execution {
-        migration_status = MigrationStatus::Closed;
-        MIGRATION_STATUS.save(deps.storage, &migration_status)?;
-    }
-
-    let mut response = Response::new();
-    // Only if there are rewards append the send_message
-    if !total_amount.is_empty() {
-        let send_message = MsgMultiSend {
-            inputs: vec![Input {
-                address: env.contract.address.to_string(),
-                coins: total_amount.osmo_coin_from_coin_list(),
-            }],
-            outputs,
-        };
-        response = response.add_message(send_message);
-    }
-    response = response
-        .add_attribute("migration_status", format!("{:?}", migration_status))
-        .add_attribute("is_last_execution", is_last_execution.to_string());
-
-    Ok(response)
-}
-
 /// Execute the autocompound process, creating a new position with unused balances.
 ///
 /// # Arguments
@@ -196,4 +131,69 @@ pub fn handle_autocompound_reply(
             "position_ids",
             format!("{:?}", vec![create_position_message.position_id]),
         ))
+}
+
+// Migration is a to-depreacate entrypoint useful to migrate from Distribute to Accumulate after Autocompound implementation
+pub fn execute_migration_step(
+    deps: DepsMut,
+    env: Env,
+    amount_of_users: Uint128,
+) -> Result<Response, ContractError> {
+    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
+
+    if matches!(migration_status, MigrationStatus::Closed) {
+        return Err(ContractError::MigrationStatusClosed {});
+    }
+
+    let mut outputs = Vec::new();
+    let mut addresses = Vec::new();
+    let mut total_amount = CoinList::new();
+
+    // Iterate user rewards in a paginated fashion
+    for item in USER_REWARDS
+        .range(deps.storage, None, None, Order::Ascending)
+        .take(amount_of_users.u128() as usize)
+    {
+        let (address, rewards) = item?;
+
+        addresses.push(address.clone());
+        outputs.push(Output {
+            address: address.to_string(),
+            coins: rewards.osmo_coins_vec_from_coin_list(),
+        });
+        total_amount.add(rewards)?;
+    }
+
+    // Remove processed rewards in a separate iteration.
+    for addr in addresses {
+        USER_REWARDS.remove(deps.storage, addr);
+    }
+
+    // Check if this is the last execution.
+    let is_last_execution = USER_REWARDS
+        .range(deps.storage, None, None, Order::Ascending)
+        .next()
+        .is_none();
+    if is_last_execution {
+        migration_status = MigrationStatus::Closed;
+        MIGRATION_STATUS.save(deps.storage, &migration_status)?;
+    }
+
+    let mut response = Response::new();
+    // Only if there are rewards append the send_message
+    if !total_amount.is_empty() {
+        let send_message = MsgMultiSend {
+            inputs: vec![Input {
+                address: env.contract.address.to_string(),
+                coins: total_amount.osmo_coins_vec_from_coin_list(),
+            }],
+            outputs,
+        };
+        response = response.add_message(send_message);
+    }
+    response = response
+        .add_attribute("migration_status", format!("{:?}", migration_status))
+        .add_attribute("is_last_execution", is_last_execution.to_string());
+
+    Ok(response)
 }

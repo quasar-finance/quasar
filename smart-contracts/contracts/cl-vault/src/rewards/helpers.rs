@@ -65,7 +65,7 @@ impl CoinList {
         CoinList::default()
     }
 
-    pub fn osmo_coin_from_coin_list(&self) -> Vec<OsmoCoin> {
+    pub fn osmo_coins_vec_from_coin_list(&self) -> Vec<OsmoCoin> {
         let mut temp_coins = vec![];
         for coin in self.coins() {
             temp_coins.push(OsmoCoin {
