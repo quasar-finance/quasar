@@ -1,4 +1,4 @@
-use cosmwasm_std::{BankMsg, DepsMut, Env, Event, Response, StdError, SubMsg, SubMsgResult};
+use cosmwasm_std::{BankMsg, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,

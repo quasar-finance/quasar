@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
+    SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},

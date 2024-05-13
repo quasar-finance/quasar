@@ -529,7 +529,7 @@ pub fn handle_swap_reply(
                     }
                 }
             };
-            handle_swap_success(deps, env, tokens_out?)
+            handle_swap_success_reply(deps, env, tokens_out?)
         }
         SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
     }
