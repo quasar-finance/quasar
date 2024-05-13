@@ -61,6 +61,5 @@ cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 
 [dev-dependencies]
-rand = "0.8.5"
 osmosis-test-tube = { workspace = true }
 proptest = { workspace = true }

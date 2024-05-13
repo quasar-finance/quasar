@@ -309,7 +309,6 @@ dependencies = [
  "osmosis-test-tube",
  "proptest",
  "prost 0.12.4",
- "rand",
  "schemars",
  "serde",
  "thiserror",
