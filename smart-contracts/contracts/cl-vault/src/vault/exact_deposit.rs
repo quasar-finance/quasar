@@ -180,10 +180,16 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let mut deps = mock_deps_with_position(None, Some(token1.clone()));
-        let mutdeps = deps.as_mut();
+        // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
+        let mut deps = mock_deps_with_position(
+            Some(Coin {
+                denom: "token0".to_string(),
+                amount: Uint128::zero(),
+            }),
+            Some(token1.clone()),
+        );
 
-        let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
+        let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
         assert_eq!(
             result,
             (
@@ -204,10 +210,16 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let mut deps = mock_deps_with_position(Some(token0.clone()), None);
-        let mutdeps = deps.as_mut();
+        // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
+        let mut deps = mock_deps_with_position(
+            Some(token0.clone()),
+            Some(Coin {
+                denom: "token1".to_string(),
+                amount: Uint128::zero(),
+            }),
+        );
 
-        let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
+        let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
         assert_eq!(
             result,
             (
@@ -230,10 +242,10 @@ mod tests {
 
         // we use a ratio of 1/2
         let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
-        let mutdeps = deps.as_mut();
 
         let result =
-            get_depositable_tokens(mutdeps, coin(2000, "token0"), coin(5000, "token1")).unwrap();
+            get_depositable_tokens(deps.as_mut(), coin(2000, "token0"), coin(5000, "token1"))
+                .unwrap();
         assert_eq!(
             result,
             (
