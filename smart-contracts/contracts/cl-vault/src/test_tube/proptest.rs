@@ -50,7 +50,6 @@ mod tests {
         denom0: &str,
         denom1: &str,
     ) {
-        println!("DEPOSIT");
         // Get user DENOM_BASE balance
         let balance_asset0 = get_user_denom_balance(bank, account, denom0);
         let balance0_str = balance_asset0.balance.unwrap().amount;
@@ -103,7 +102,6 @@ mod tests {
         //     get_vault_position_assets(wasm, contract_address);
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
-        println!("coins_to_deposit: {:?}", coins_to_deposit);
 
         // Execute deposit
         let create_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -172,7 +170,6 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        println!("WITHDRAW");
         let balance = get_user_shares_balance(wasm, contract_address, account);
         // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
@@ -288,8 +285,6 @@ mod tests {
         percentage: f64,
         admin_account: &SigningAccount,
     ) {
-        println!("UPDATE RANGE");
-
         let (current_lower_tick, current_upper_tick) =
             get_position_ticks(wasm, cl, contract_address);
         let (current_lower_price, current_upper_price) = (

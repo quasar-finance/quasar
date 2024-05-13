@@ -199,24 +199,20 @@ pub fn get_depositable_tokens(
                 position.asset1.unwrap(),
             ])?;
             let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
-            deps.api.debug("ratio");
 
             // Refund token0 if ratio.numerator is zero
             if ratio.numerator().is_zero() {
                 return Ok(((Uint128::zero(), token1), (token0, Uint128::zero())));
             }
 
-            deps.api.debug("pre zero_usage");
             let zero_usage: Uint128 = ((Uint256::from(token0)
                 * Uint256::from_u128(1_000_000_000_000_000_000u128))
                 / Uint256::from(ratio.numerator()))
             .try_into()?;
-            deps.api.debug("zero_usage");
             let one_usage: Uint128 = ((Uint256::from(token1)
                 * Uint256::from_u128(1_000_000_000_000_000_000u128))
                 / Uint256::from(ratio.denominator()))
             .try_into()?;
-            deps.api.debug("one_usage");
 
             if zero_usage < one_usage {
                 let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))

@@ -39,19 +39,16 @@ pub(crate) fn execute_exact_deposit(
 
     let pool = POOL_CONFIG.load(deps.storage)?;
     let (token0, token1) = must_pay_one_or_two(&info, (pool.token0.clone(), pool.token1.clone()))?;
-    deps.api.debug("debug 1");
 
     // get the amount of funds we can deposit from this ratio
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
-    deps.api.debug("debug 2");
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
     let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
-    deps.api.debug("debug 3");
 
     // calculate the amount of shares we can mint for this
     let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
@@ -61,7 +58,6 @@ pub(crate) fn execute_exact_deposit(
         total_assets.token0.amount,
         total_assets.token1.amount,
     )?;
-    deps.api.debug("debug 4");
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
@@ -77,7 +73,6 @@ pub(crate) fn execute_exact_deposit(
             )?
             .try_into()?
     };
-    deps.api.debug("debug 5");
 
     // save the shares in the user map
     SHARES.update(
