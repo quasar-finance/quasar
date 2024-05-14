@@ -340,6 +340,7 @@ pub mod initialize {
             )
             .unwrap();
 
+        // Here we pass only the 3x swap LP pools, not the Vault CL pool id 1
         set_dex_router_paths(
             &app,
             contract_dex_router.data.address.to_string(),
@@ -468,80 +469,31 @@ pub mod initialize {
             .data
             .code_id;
 
-        // Setup a dummy CL pool to work with
-        gov.propose_and_execute(
-            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
-            CreateConcentratedLiquidityPoolsProposal {
-                title: "CL Pool".to_string(),
-                description: "So that we can trade it".to_string(),
-                pool_records: vec![PoolRecord {
-                    denom0: pool.clone().denom0,
-                    denom1: pool.clone().denom1,
-                    tick_spacing: pool.clone().tick_spacing,
-                    spread_factor: pool.clone().spread_factor,
-                }],
-            },
-            admin.address(),
-            &admin,
-        )
-        .unwrap();
+        // Create the liquidity pools in a loop
+        for pair in pools_coins.iter() {
+            gov.propose_and_execute(
+                CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
+                CreateConcentratedLiquidityPoolsProposal {
+                    title: "CL Pool".to_string(),
+                    description: "So that we can trade it".to_string(),
+                    pool_records: vec![PoolRecord {
+                        denom0: pair[0].clone().denom,
+                        denom1: pair[1].clone().denom,
+                        tick_spacing: pool.tick_spacing,
+                        spread_factor: pool.spread_factor.to_string(),
+                    }],
+                },
+                admin.address(),
+                &admin,
+            )
+            .unwrap();
+        }
 
-        gov.propose_and_execute(
-            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
-            CreateConcentratedLiquidityPoolsProposal {
-                title: "CL Pool".to_string(),
-                description: "So that we can trade it".to_string(),
-                pool_records: vec![PoolRecord {
-                    denom0: DENOM_BASE.to_string(),
-                    denom1: DENOM_QUOTE.to_string(),
-                    tick_spacing: pool.clone().tick_spacing,
-                    spread_factor: pool.clone().spread_factor,
-                }],
-            },
-            admin.address(),
-            &admin,
-        )
-        .unwrap();
-
-        gov.propose_and_execute(
-            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
-            CreateConcentratedLiquidityPoolsProposal {
-                title: "CL Pool".to_string(),
-                description: "So that we can trade it".to_string(),
-                pool_records: vec![PoolRecord {
-                    denom0: DENOM_QUOTE.to_string(),
-                    denom1: DENOM_REWARD.to_string(),
-                    tick_spacing: pool.clone().tick_spacing,
-                    spread_factor: pool.clone().spread_factor,
-                }],
-            },
-            admin.address(),
-            &admin,
-        )
-        .unwrap();
-
-        gov.propose_and_execute(
-            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
-            CreateConcentratedLiquidityPoolsProposal {
-                title: "CL Pool".to_string(),
-                description: "So that we can trade it".to_string(),
-                pool_records: vec![PoolRecord {
-                    denom0: DENOM_BASE.to_string(),
-                    denom1: DENOM_REWARD.to_string(),
-                    tick_spacing: pool.clone().tick_spacing,
-                    spread_factor: pool.clone().spread_factor,
-                }],
-            },
-            admin.address(),
-            &admin,
-        )
-        .unwrap();
-
-        // Get just created pool information by querying all the pools, and taking the first one
+        // Query all created pools (assuming previous code created the pools successfully)
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
-        // Create Balancer pools with previous vec of vec of coins
+        // Collect pool ids assuming the order of creation matches the order of querying
         let mut cl_pools = vec![];
         for (index, _pool_coins) in pools_coins.iter().enumerate() {
             let cl_pool: Pool = Pool::decode(pools.pools[index].value.as_slice()).unwrap();
@@ -596,6 +548,7 @@ pub mod initialize {
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
         app.increase_time(1000000);
 
+        // Instantiate Dex Router
         let contract_dex_router = wasm
             .instantiate(
                 code_id_dex,
@@ -606,7 +559,6 @@ pub mod initialize {
                 &admin,
             )
             .unwrap();
-
         let pools_coins_converted: Vec<Vec<Coin>> = pools_coins
             .into_iter()
             .map(|coins: Vec<v1beta1::Coin>| convert_osmosis_coins_to_coins(&coins))
@@ -614,8 +566,8 @@ pub mod initialize {
         set_dex_router_paths(
             &app,
             contract_dex_router.data.address.to_string(),
-            &cl_pools,
-            &pools_coins_converted,
+            &cl_pools[1..].to_vec(),
+            &pools_coins_converted[1..].to_vec(),
             &admin,
         );
 
@@ -679,6 +631,26 @@ pub mod initialize {
             println!("index: {:?}", index);
             println!("pool_id: {:?}", pool_id);
             println!("dex_router: {:?}", dex_router);
+            println!(
+                "SetPath: {:?}",
+                DexExecuteMsg::SetPath {
+                    offer_asset: AssetInfoUnchecked::Native(
+                        pools_coins[index][0].denom.to_string(),
+                    ),
+                    ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
+                    path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
+                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
+                        offer_asset_info: AssetInfoBase::Native(
+                            pools_coins[index][0].denom.to_string(),
+                        ),
+                        ask_asset_info: AssetInfoBase::Native(
+                            pools_coins[index][1].denom.to_string(),
+                        ),
+                    }]),
+                    bidirectional: true,
+                }
+            );
+
             wasm.execute(
                 &dex_router,
                 &DexExecuteMsg::SetPath {
