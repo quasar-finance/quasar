@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
 
-use crate::state::Receiver;
+use crate::state::{Receiver, Receivers};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -31,7 +31,7 @@ pub struct Claim {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(Vec<Receiver>)]
+    #[returns(Receivers)]
     GetReceivers {},
     #[returns(String)]
     GetAdmin {},

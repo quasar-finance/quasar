@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 // use cw2::set_contract_version;
 
 use crate::admin::execute_admin;
@@ -8,6 +8,7 @@ use crate::error::ContractError;
 use crate::execute::{execute_claim, execute_split};
 use crate::instantiate::do_instantiate;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::query::{query_admin, query_receivers};
 
 /*
 // version info for migration info
@@ -40,8 +41,11 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    unimplemented!()
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetReceivers {} => to_json_binary(&query_receivers(deps)?),
+        QueryMsg::GetAdmin {} => to_json_binary(&query_admin(deps)?),
+    }
 }
 
 #[cfg(test)]
