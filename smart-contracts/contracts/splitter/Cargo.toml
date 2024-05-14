@@ -41,5 +41,6 @@ serde = { workspace = true}
 thiserror = { workspace = true}
 
 [dev-dependencies]
-cw-it = { workspace = true }
 cw-multi-test = { workspace = true}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+cl-vault = { path = "../cl-vault" }
