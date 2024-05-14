@@ -265,7 +265,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
-        Addr, CosmosMsg, Decimal, Uint128,
+        Addr, Coin, CosmosMsg, Decimal, Uint128,
     };
     use prost::Message;
     use std::str::FromStr;
@@ -394,24 +394,11 @@ mod tests {
             let execute_migration_resp =
                 execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
 
-            if let CosmosMsg::Stargate { type_url, value } = &execute_migration_resp.messages[0].msg
-            {
-                // Decode and validate the MsgMultiSend message
-                // This has been decoded manually rather than encoding the expected message because its simpler to assert the values
-                assert_eq!(type_url, "/cosmos.bank.v1beta1.MsgMultiSend");
-                let msg: MsgMultiSend =
-                    MsgMultiSend::decode(value.as_slice()).expect("Failed to decode MsgMultiSend");
-                for output in msg.outputs {
-                    let expected_user = format!("user{}", i); // Adjust index as necessary based on your logic
-                    assert_eq!(output.address, expected_user);
-                    assert_eq!(
-                        output.coins,
-                        convert_coins_to_osmosis_coins(&user_rewards_coins.clone())
-                    );
-                }
-            } else {
-                panic!("Expected Stargate message type, found another.");
-            }
+            assert_multi_send(
+                &execute_migration_resp.messages[0].msg,
+                &format!("user{}", i),
+                &user_rewards_coins,
+            );
 
             // Assert new MIGRATION_STATUS state have correct value
             let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
@@ -421,9 +408,10 @@ mod tests {
         // Execute the last migration step
         let execute_migration_resp =
             execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
-        println!(
-            "response.messages[0].msg {:?}",
-            execute_migration_resp.messages[0].msg
+        assert_multi_send(
+            &execute_migration_resp.messages[0].msg,
+            &"user9".to_string(),
+            &user_rewards_coins,
         );
 
         // Assert new MIGRATION_STATUS state have correct value
@@ -439,5 +427,24 @@ mod tests {
 
         // Assert USER_REWARDS state have been correctly removed by unwrapping the error
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
+    }
+
+    fn assert_multi_send(msg: &CosmosMsg, expected_user: &String, user_rewards_coins: &Vec<Coin>) {
+        if let CosmosMsg::Stargate { type_url, value } = msg {
+            // Decode and validate the MsgMultiSend message
+            // This has been decoded manually rather than encoding the expected message because its simpler to assert the values
+            assert_eq!(type_url, "/cosmos.bank.v1beta1.MsgMultiSend");
+            let msg: MsgMultiSend =
+                MsgMultiSend::decode(value.as_slice()).expect("Failed to decode MsgMultiSend");
+            for output in msg.outputs {
+                assert_eq!(&output.address, expected_user);
+                assert_eq!(
+                    output.coins,
+                    convert_coins_to_osmosis_coins(user_rewards_coins)
+                );
+            }
+        } else {
+            panic!("Expected Stargate message type, found another.");
+        }
     }
 }
