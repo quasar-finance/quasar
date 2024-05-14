@@ -48,7 +48,7 @@ fn assert_admin(deps: Deps, env: Env, info: MessageInfo) -> Result<(), ContractE
 }
 
 pub fn update_admin(deps: DepsMut, new: &str) -> Result<Response, ContractError> {
-    let new_admin = deps.api.addr_validate(&new)?;
+    let new_admin = deps.api.addr_validate(new)?;
 
     ADMIN.save(deps.storage, &new_admin)?;
 

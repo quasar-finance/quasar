@@ -1,6 +1,6 @@
-use std::str::FromStr;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Empty, Uint128};
 use cw_multi_test::{App, BankSudo, Contract, ContractWrapper, Executor};
+use std::str::FromStr;
 
 use splitter::contract::{execute, instantiate, query};
 use splitter::msg::{Claim, ExecuteMsg, InstantiateMsg};

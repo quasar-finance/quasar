@@ -25,7 +25,7 @@ pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
             to_address: addr.to_string(),
             amount: coins.collect(),
         })
-        .map(|b| CosmosMsg::Bank(b));
+        .map(CosmosMsg::Bank);
 
     Ok(Response::new().add_messages(to_send))
 }
