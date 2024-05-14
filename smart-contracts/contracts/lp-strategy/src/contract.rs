@@ -12,7 +12,7 @@ use quasar_types::ibc::IcsAck;
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::execute::execute_retry;
+use crate::execute::{execute_retry, execute_transfer_airdrop};
 use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
@@ -125,6 +125,10 @@ pub fn execute(
             execute_remove_lock_admin(deps, env, info, to_remove)
         }
         ExecuteMsg::Retry { seq, channel } => execute_retry(deps, env, info, seq, channel),
+        ExecuteMsg::TransferAirdrop {
+            destination_address,
+            amounts,
+        } => execute_transfer_airdrop(deps, env, destination_address, amounts),
     }
 }
 

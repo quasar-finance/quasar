@@ -371,7 +371,10 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("update_min_withdrawal", investment_info.min_withdrawal.to_string())
+        .add_attribute(
+            "update_min_withdrawal",
+            investment_info.min_withdrawal.to_string(),
+        )
         .add_attribute("success", "true"))
 }
 

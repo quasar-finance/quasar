@@ -125,6 +125,7 @@ fn _handle_last_succesful_ica_recovery(
         IcaMessages::ReturnTransfer(_) => todo!(),
         IcaMessages::RecoveryExitPool(_) => todo!(),
         IcaMessages::RecoveryReturnTransfer(_) => todo!(),
+        IcaMessages::BankSend(_, _) => todo!(),
     }
 }
 fn _handle_last_failed_ica_recovery(
@@ -159,6 +160,7 @@ fn _handle_last_failed_ica_recovery(
         IcaMessages::RecoveryExitPool(_) => todo!(),
         // same as regular transfer recovery
         IcaMessages::RecoveryReturnTransfer(_) => todo!(),
+        IcaMessages::BankSend(_, _) => todo!(),
     }
 }
 

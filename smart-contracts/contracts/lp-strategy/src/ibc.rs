@@ -563,6 +563,7 @@ pub fn handle_ica_ack(
         IcaMessages::RecoveryExitPool(_pending) => todo!(),
         // After a RecoveryReturnTransfer, we save the funds to a local map, to be claimed by vaults when a users asks
         IcaMessages::RecoveryReturnTransfer(_pending) => todo!(),
+        IcaMessages::BankSend(_pending, _pending1) => todo!(),
     }
 }
 
@@ -875,9 +876,9 @@ mod tests {
         SIMULATED_JOIN_AMOUNT_IN
             .save(deps.as_mut().storage, &Uint128::zero())
             .unwrap();
-        SIMULATED_EXIT_SHARES_IN.save(
-            deps.as_mut().storage, &Uint128::new(100590)
-        ).unwrap();
+        SIMULATED_EXIT_SHARES_IN
+            .save(deps.as_mut().storage, &Uint128::new(100590))
+            .unwrap();
 
         // base64 of '{"data":"Chs6FAoSCgV1b3NtbxIJMTkyODcwODgySNW/pQQKUjpLCkkKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgEwSNW/pQQKGToSChAKC2dhbW0vcG9vbC8xEgEwSNW/pQQKFjoPCgEwEgoKBXVvc21vEgEwSNW/pQQKcTpqClIKRGliYy8yNzM5NEZCMDkyRDJFQ0NENTYxMjNDNzRGMzZFNEMxRjkyNjAwMUNFQURBOUNBOTdFQTYyMkIyNUY0MUU1RUIyEgoxMDg5ODQ5Nzk5ChQKBXVvc21vEgsxNTQyOTM2Mzg2MEjVv6UECh06FgoUMC4wNzA2MzQ3ODUwMDAwMDAwMDBI1b+lBAqMATqEAQqBAQj7u2ISP29zbW8xd212ZXpscHNrNDB6M3pmc3l5ZXgwY2Q4ZHN1bTdnenVweDJxZzRoMHVhdms3dHh3NHNlcXE3MmZrbRoECIrqSSILCICSuMOY/v///wEqJwoLZ2FtbS9wb29sLzESGDEwODE3NDg0NTgwODQ4MDkyOTUyMDU1MUjVv6UE"}'
         let ack_bin = Binary::from_base64("eyJkYXRhIjoiQ2c0eURBb0tDZ1YxYjNOdGJ4SUJNQW9TTWhBS0Rnb0pabUZyWlhOMFlXdGxFZ0V3Q2hReUVnb1FDZ3RuWVcxdEwzQnZiMnd2TXhJQk1Bb0FDaGd5RmdvVU1TNHdNREF3TURBd01EQXdNREF3TURBd01EQUtKeklsQ2hJeE5qVTJPVFU0T1RFNE5UY3hNRGcwTURBU0R3b0ZkVzl6Ylc4U0JqTXpNek16TXc9PSJ9").unwrap();

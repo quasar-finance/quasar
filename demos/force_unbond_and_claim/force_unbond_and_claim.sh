@@ -33,8 +33,8 @@ modified_string=$(echo "$list" | sed 's/,$//')
 modified_string+="]"
 echo $modified_string
 
-#quasarnoded tx wasm execute $VAULT_ADDR '{"force_unbond":{"addresses":'$modified_string'}}' -y --from alice --keyring-backend test --gas 50000000 --fees 10000uqsr --chain-id $CHAIN_ID
-#sleep 10
+quasarnoded tx wasm execute $VAULT_ADDR '{"force_unbond":{"addresses":'$modified_string'}}' -y --from alice --keyring-backend test --gas 50000000 --fees 10000uqsr --chain-id $CHAIN_ID
+sleep 10
 
 rly transact flush
 sleep 10

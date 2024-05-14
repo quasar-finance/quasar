@@ -1,9 +1,9 @@
+use crate::execute::user::execute_claim;
 use crate::msg::DistributionScheduleOptions;
 use crate::state::{DistributionSchedule, CONFIG};
 use crate::VaultRewardsError;
 use cosmwasm_std::{attr, Addr, DepsMut, Env, Response, Uint128};
 use cw_asset::Asset;
-use crate::execute::user::execute_claim;
 
 pub fn execute_withdraw_funds(
     deps: DepsMut,
@@ -117,7 +117,7 @@ pub fn execute_auto_claim(
 
     for user in user_addresses {
         // validate address
-        deps.api.addr_validate(&user.clone().to_string())?;
+        deps.api.addr_validate(user.as_ref())?;
 
         // get claim response to separate out messages from it
         let execute_claim_response = execute_claim(deps.branch(), &env, user.clone())?;

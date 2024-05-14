@@ -10,22 +10,14 @@ INIT3='{"lock_period":6,"pool_id":2,"pool_denom":"gamm/pool/2","base_denom":"uos
 
 cd ../../smart-contracts
 
-#docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
-
-platform='unknown'
-unamestr=$(uname)
-if [ "$unamestr" = 'Linux' ]; then
-    platform='linux'
-elif [ "$unamestr" = 'Darwin' ]; then
-    platform='macos'
-fi
+docker run --rm -v "$(pwd)":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  --env CARGO_BUILD_JOBS=1 \
+  --platform linux/amd64 cosmwasm/workspace-optimizer:0.15.0
 
 echo "Running store code"
-if [ $platform = 'macos' ]; then
-    RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
-elif [ $platform = 'linux' ]; then
-    RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
-fi
+RES=$(quasarnoded tx wasm store artifacts/lp_strategy.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got CODE_ID = $CODE_ID"
 
@@ -35,7 +27,6 @@ OUT1=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from alice --keyring-
 ADDR1=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR1"
 
-ADDR1=quasar14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sy9numu
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icqhost --order unordered --version icq-1 --override
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
 
@@ -56,22 +47,19 @@ rly transact channel quasar_osmosis --src-port "wasm.$ADDR3" --dst-port icqhost 
 rly transact channel quasar_osmosis --src-port "wasm.$ADDR3" --dst-port icahost --order ordered --version '{"version":"ics27-1","encoding":"proto3","tx_type":"sdk_multi_msg","controller_connection_id":"connection-0","host_connection_id":"connection-0"}' --override
 
 echo "Running store code for reward contract"
-if [ $platform = 'macos' ]; then
-    RES=$(quasarnoded tx wasm store artifacts/vault_rewards-aarch64.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
-elif [ $platform = 'linux' ]; then
-    RES=$(quasarnoded tx wasm store artifacts/vault_rewards.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
-fi
+RES=$(quasarnoded tx wasm store artifacts/vault_rewards.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
 VR_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
-VAULT_INIT='{"total_cap":"200000000000","deposit_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","thesis":"test","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.5","init":{"l_p":'$INIT3'}}]}'
+CURRENT_HEIGHT=$(quasarnoded status | jq -r '.SyncInfo.latest_block_height')
+OFFSET=50
+END=950
+START_HEIGHT=$(($CURRENT_HEIGHT + $OFFSET))
+END_HEIGHT=$(($CURRENT_HEIGHT + $END))
+VAULT_INIT='{"total_cap":"200000000000","deposit_denom":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","thesis":"test","vault_rewards_code_id":'$VR_CODE_ID',"reward_token":{"native":"uqsr"},"reward_distribution_schedules":[{"amount": "1000000000", "start": '$START_HEIGHT', "end": '$END_HEIGHT' }],"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","primitives":[{"address":"'$ADDR1'","weight":"0.5","init":{"l_p":'$INIT1'}},{"address":"'$ADDR2'","weight":"0.5","init":{"l_p":'$INIT2'}},{"address":"'$ADDR3'","weight":"0.5","init":{"l_p":'$INIT3'}}]}'
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
-if [ $platform = 'macos' ]; then
-    RES=$(quasarnoded tx wasm store artifacts/basic_vault-aarch64.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
-elif [ $platform = 'linux' ]; then
-    RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
-fi
+RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from alice --keyring-backend test -y --output json -b block --chain-id $CHAIN_ID --gas auto --fees 10000uqsr)
 VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got CODE_ID = $VAULT_CODE_ID"
 
@@ -79,7 +67,9 @@ echo "Deploying contract (vault)"
 # # swallow output
 OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from alice --keyring-backend test --label "my first contract" --gas auto --fees 10000uqsr -b block -y --admin quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec --chain-id $CHAIN_ID)
 VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json | jq -r '.contracts[0]')
+VR_ADDR=$(quasarnoded query wasm list-contract-by-code $VR_CODE_ID --output json | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $VAULT_ADDR (vault)"
+echo "Got address of deployed contract = $VR_ADDR (rewards)"
 
 echo "setting depositor"
 sleep 6

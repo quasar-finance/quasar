@@ -47,6 +47,22 @@
       "properties": {
         "all_users": {
           "type": "object",
+          "required": [
+            "limit",
+            "start_after"
+          ],
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          },
           "additionalProperties": false
         }
       },

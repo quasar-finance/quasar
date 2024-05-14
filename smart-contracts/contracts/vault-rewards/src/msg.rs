@@ -28,9 +28,9 @@ pub enum AdminExecuteMsg {
         update: DistributionScheduleOptions,
     },
     RemoveDistributionSchedule(u64),
-    AutoClaim{
+    AutoClaim {
         user_addresses: Vec<Addr>,
-    }
+    },
 }
 
 #[cw_serde]
@@ -43,7 +43,7 @@ pub enum QueryMsg {
     Config {},
     PendingRewards(String),
     GetUserRewardsIndex(String),
-    AllUsers{},
+    AllUsers { start_after: u64, limit: u64 },
 }
 
 #[cw_serde]
@@ -75,5 +75,5 @@ pub struct DistributionScheduleOptions {
 
 #[cw_serde]
 pub struct QueryAllUsersResponse {
-    pub users_and_rewards: Vec<Addr>,
+    pub users: Vec<Addr>,
 }

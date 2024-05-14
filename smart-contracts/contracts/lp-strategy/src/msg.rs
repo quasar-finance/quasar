@@ -5,8 +5,8 @@ use std::{
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
-
 pub use cw20::BalanceResponse;
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
@@ -278,5 +278,9 @@ pub enum ExecuteMsg {
     Retry {
         seq: u64,
         channel: String,
+    },
+    TransferAirdrop {
+        destination_address: Addr,
+        amounts: Vec<OsmoCoin>,
     },
 }
