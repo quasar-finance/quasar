@@ -48,3 +48,32 @@ pub fn execute_claim(claims: Vec<Claim>) -> Result<Response, ContractError> {
 
     Ok(Response::new().add_messages(msgs).add_attributes(attrs))
 }
+
+#[cfg(test)]
+mod tests {
+    use cl_vault::msg::AdminExtensionExecuteMsg;
+    use cosmwasm_std::{to_json_binary, Addr};
+
+    use super::*;
+
+    #[test]
+    fn test_claim_works() {
+        let claim_msg = cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(
+            AdminExtensionExecuteMsg::ClaimStrategistRewards {},
+        );
+        let claim = Claim {
+            address: "vault".to_string(),
+            msg: to_json_binary(&claim_msg).unwrap(),
+        };
+
+        let response = execute_claim(vec![claim]).unwrap();
+        assert_eq!(
+            response.messages[0].msg,
+            CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+                contract_addr: "vault".to_string(),
+                msg: to_json_binary(&claim_msg).unwrap(),
+                funds: vec![]
+            })
+        )
+    }
+}
