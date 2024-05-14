@@ -1,3 +1,10 @@
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{
+    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+};
+use cw2::set_contract_version;
+
 use crate::error::ContractError;
 use crate::helpers::sort_tokens;
 use crate::instantiate::{
@@ -14,12 +21,11 @@ use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
 };
-use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
-
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
 };
+use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
@@ -36,12 +42,6 @@ use crate::vault::range::{
 };
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
-use cw2::set_contract_version;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -265,10 +265,12 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
-        Addr, Decimal, Uint128,
+        Addr, CosmosMsg, Decimal, Uint128,
     };
+    use prost::Message;
     use std::str::FromStr;
 
+    use crate::test_tube::helpers::convert_coins_to_osmosis_coins;
     use crate::{
         rewards::CoinList, state::USER_REWARDS,
         test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
@@ -277,6 +279,7 @@ mod tests {
         state::OldVaultConfig,
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
+    use osmosis_std::types::cosmos::bank::v1beta1::MsgMultiSend;
 
     use super::*;
 
@@ -330,36 +333,10 @@ mod tests {
         assert_eq!(migration_status, MigrationStatus::Closed);
     }
 
-    // TODO: MultiSend assertion
     #[test]
     fn test_migrate_with_rewards_execute_steps() {
         let env = mock_env();
         let mut deps = mock_dependencies();
-        // let mut deps = mock_dependencies_with_balance(&[
-        //     coin(10000u128, DENOM_BASE),
-        //     coin(10000u128, DENOM_QUOTE),
-        //     coin(10000u128, DENOM_REWARD),
-        // ]);
-
-        // // Assert contract balance contains rewards
-        // let contract_balance = deps
-        //     .as_ref()
-        //     .querier
-        //     .query_balance(&env.contract.address, DENOM_BASE)
-        //     .unwrap();
-        // assert_eq!(contract_balance.amount, Uint128::from(10000u128));
-        // let contract_balance = deps
-        //     .as_ref()
-        //     .querier
-        //     .query_balance(&env.contract.address, DENOM_QUOTE)
-        //     .unwrap();
-        // assert_eq!(contract_balance.amount, Uint128::from(10000u128));
-        // let contract_balance = deps
-        //     .as_ref()
-        //     .querier
-        //     .query_balance(&env.contract.address, DENOM_REWARD)
-        //     .unwrap();
-        // assert_eq!(contract_balance.amount, Uint128::from(10000u128));
 
         // Declare new items for states
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
@@ -396,26 +373,45 @@ mod tests {
         assert_eq!(migration_status, MigrationStatus::Open);
 
         // Mock USER_REWARDS in order to have something to iterate over
+        let user_rewards_coins = vec![
+            coin(1000u128, DENOM_BASE),
+            coin(1000u128, DENOM_QUOTE),
+            coin(1000u128, DENOM_REWARD),
+        ];
         for i in 0..10 {
             USER_REWARDS
                 .save(
                     deps.as_mut().storage,
                     Addr::unchecked(format!("user{}", i)),
-                    &CoinList::from_coins(vec![
-                        coin(1000u128, DENOM_BASE),
-                        coin(1000u128, DENOM_QUOTE),
-                        coin(1000u128, DENOM_REWARD),
-                    ]),
+                    &CoinList::from_coins(user_rewards_coins.clone()),
                 )
                 .unwrap();
         }
 
-        // Execute 9 migration steps leaving the last one to close the migration
-        for _ in 0..9 {
+        // Execute 9 migration steps paginating by 2 users_amount.
+        // leaving the last user to close the migration in the last step
+        for i in 0..9 {
             let execute_migration_resp =
-                execute_migration_step(deps.as_mut(), env.clone(), Uint128::one());
-            // Assert response contains bank send messages attributes
-            println!("execute_migration_resp {:?}", execute_migration_resp);
+                execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
+
+            if let CosmosMsg::Stargate { type_url, value } = &execute_migration_resp.messages[0].msg
+            {
+                // Decode and validate the MsgMultiSend message
+                // This has been decoded manually rather than encoding the expected message because its simpler to assert the values
+                assert_eq!(type_url, "/cosmos.bank.v1beta1.MsgMultiSend");
+                let msg: MsgMultiSend =
+                    MsgMultiSend::decode(value.as_slice()).expect("Failed to decode MsgMultiSend");
+                for output in msg.outputs {
+                    let expected_user = format!("user{}", i); // Adjust index as necessary based on your logic
+                    assert_eq!(output.address, expected_user);
+                    assert_eq!(
+                        output.coins,
+                        convert_coins_to_osmosis_coins(&user_rewards_coins.clone())
+                    );
+                }
+            } else {
+                panic!("Expected Stargate message type, found another.");
+            }
 
             // Assert new MIGRATION_STATUS state have correct value
             let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
@@ -424,8 +420,11 @@ mod tests {
 
         // Execute the last migration step
         let execute_migration_resp =
-            execute_migration_step(deps.as_mut(), env.clone(), Uint128::one());
-        println!("execute_migration_resp {:?}", execute_migration_resp);
+            execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
+        println!(
+            "response.messages[0].msg {:?}",
+            execute_migration_resp.messages[0].msg
+        );
 
         // Assert new MIGRATION_STATUS state have correct value
         let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
@@ -440,47 +439,5 @@ mod tests {
 
         // Assert USER_REWARDS state have been correctly removed by unwrapping the error
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
-
-        // // Assert contract balance is empty now
-        // let contract_balance = deps
-        //     .as_ref()
-        //     .querier
-        //     .query_balance(&env.contract.address, DENOM_BASE)
-        //     .unwrap();
-        // assert_eq!(contract_balance.amount, Uint128::zero());
-        // let contract_balance = deps
-        //     .as_ref()
-        //     .querier
-        //     .query_balance(&env.contract.address, DENOM_QUOTE)
-        //     .unwrap();
-        // assert_eq!(contract_balance.amount, Uint128::zero());
-        // let contract_balance = deps
-        //     .as_ref()
-        //     .querier
-        //     .query_balance(&env.contract.address, DENOM_REWARD)
-        //     .unwrap();
-        // assert_eq!(contract_balance.amount, Uint128::zero());
-
-        // // Foreach user assert the correct balance
-        // for i in 0..10 {
-        //     let user_balance = deps
-        //         .as_ref()
-        //         .querier
-        //         .query_balance(&Addr::unchecked(format!("user{}", i)), DENOM_BASE)
-        //         .unwrap();
-        //     assert_eq!(user_balance.amount, Uint128::from(1000u128));
-        //     let user_balance = deps
-        //         .as_ref()
-        //         .querier
-        //         .query_balance(&Addr::unchecked(format!("user{}", i)), DENOM_QUOTE)
-        //         .unwrap();
-        //     assert_eq!(user_balance.amount, Uint128::from(1000u128));
-        //     let user_balance = deps
-        //         .as_ref()
-        //         .querier
-        //         .query_balance(&Addr::unchecked(format!("user{}", i)), DENOM_REWARD)
-        //         .unwrap();
-        //     assert_eq!(user_balance.amount, Uint128::from(1000u128));
-        // }
     }
 }

@@ -31,7 +31,7 @@ pub fn convert_osmosis_coins_to_coins(osmosis_coins: &Vec<v1beta1::Coin>) -> Vec
         .collect()
 }
 
-pub fn _convert_coins_to_osmosis_coins(coins: &Vec<Coin>) -> Vec<v1beta1::Coin> {
+pub fn convert_coins_to_osmosis_coins(coins: &Vec<Coin>) -> Vec<v1beta1::Coin> {
     coins
         .into_iter()
         .map(|coin| v1beta1::Coin {

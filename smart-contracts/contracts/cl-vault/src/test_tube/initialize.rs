@@ -412,6 +412,16 @@ pub mod initialize {
         let pools_coins = vec![
             vec![
                 v1beta1::Coin {
+                    denom: pool.clone().denom0,
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+                v1beta1::Coin {
+                    denom: pool.clone().denom1,
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+            ],
+            vec![
+                v1beta1::Coin {
                     denom: DENOM_BASE.to_string(),
                     amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
@@ -657,11 +667,18 @@ pub mod initialize {
         pools_coins: &Vec<Vec<Coin>>,
         admin: &SigningAccount,
     ) {
+        println!("dex_router: {:?}", dex_router);
+        println!("pools: {:?}", pools);
+        println!("pools_coins: {:?}", pools_coins);
+
         let wasm = Wasm::new(app);
         assert_eq!(pools.len(), pools_coins.len());
 
         // Set Dex Router contract paths
         for (index, pool_id) in pools.iter().enumerate() {
+            println!("index: {:?}", index);
+            println!("pool_id: {:?}", pool_id);
+            println!("dex_router: {:?}", dex_router);
             wasm.execute(
                 &dex_router,
                 &DexExecuteMsg::SetPath {
