@@ -19,6 +19,7 @@ use crate::{state::VAULT_CONFIG, ContractError};
 
 use super::range::assert_range_admin;
 
+/// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
     pub token_in_denom: String,
@@ -27,6 +28,7 @@ pub struct SwapCalculationResult {
     pub position_id: Option<u64>,
 }
 
+/// SwapParams holds the parameters for a swap
 pub struct SwapParams {
     pub token_in_amount: Uint128,
     pub token_in_denom: String,

@@ -473,7 +473,6 @@ pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
 }
 
 /// this function subtracts out anything from the raw contract balance that isn't dedicated towards user or strategist rewards.
-/// TODO: This could be now deprecated as its simply a bank query al balances against this same contract addy
 pub fn get_unused_balances(querier: &QuerierWrapper, env: &Env) -> Result<CoinList, ContractError> {
     Ok(CoinList::from_coins(
         querier.query_all_balances(env.contract.address.to_string())?,

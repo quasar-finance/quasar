@@ -113,11 +113,11 @@ pub enum RewardsStatus {
 }
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-/// @deprecated: This will be deprecated after the migrate() entrypoint executes
+#[deprecated]
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// Shared collection+distribution states
-/// @deprecated: This will be incrementally cleared and deprecated after the MigrateStep(s) entrypoint executes
+#[deprecated]
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
 /// Swap helper states
