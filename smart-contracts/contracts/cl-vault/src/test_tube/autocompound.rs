@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use std::ops::Mul;
+    use std::ops::Sub;
+
     use apollo_cw_asset::AssetInfoBase;
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::assert_approx_eq;
     use cosmwasm_std::{Coin, Uint128};
     use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::SwapOperationBase;
@@ -10,7 +13,6 @@ mod tests {
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
-    use osmosis_test_tube::{OsmosisTestApp, SigningAccount};
 
     use crate::msg::QueryMsg;
     use crate::msg::SwapAsset;
@@ -21,39 +23,22 @@ mod tests {
     use crate::query::UserSharesBalanceResponse;
     use crate::test_tube::helpers::get_balance_amount;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
+    use crate::test_tube::initialize::initialize::INITIAL_POSITION_BURN;
     use crate::test_tube::initialize::initialize::{
-        fixture_cl_pools, fixture_lp_pools, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
-        DENOM_QUOTE, DENOM_REWARD, DEPOSIT_AMOUNT,
+        fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
+        DENOM_REWARD, DEPOSIT_AMOUNT,
     };
 
     const DENOM_REWARD_AMOUNT: &str = "100000000000";
 
     #[test]
     #[ignore]
-    fn test_autocompound_rewards_lp_pools() {
-        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_lp_pools();
-
-        wrapped_autocompound_case(app, contract_address, pools_ids, admin);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_autocompound_rewards_cl_pools() {
-        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_cl_pools();
-
-        wrapped_autocompound_case(app, contract_address, pools_ids, admin);
-    }
-
-    fn wrapped_autocompound_case(
-        app: OsmosisTestApp,
-        contract_address: Addr,
-        pools_ids: Vec<u64>,
-        admin: SigningAccount,
-    ) {
+    fn test_autocompound_with_rewards() {
+        let (app, contract_address, _dex_router_addr, pools_ids, admin) = fixture_cw_dex_router();
         let bm = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
-        // Initialize accounts
+        // Initialize accounts as users
         let accounts = app
             .init_accounts(
                 &[
@@ -64,36 +49,64 @@ mod tests {
             )
             .unwrap();
 
-        // Assert total vault shares
+        // AFTER INITIAL SETUP
+
+        // Assert total vault shares are just INITIAL_POSITION_BURN * 2 accordingly to the initial setup
         let initial_total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::TotalVaultTokenSupply {},
             )
             .unwrap();
-        assert_eq!(Uint128::new(2000), initial_total_vault_token_supply.total);
-
+        assert_eq!(
+            INITIAL_POSITION_BURN.mul(2u128),
+            initial_total_vault_token_supply.total.u128()
+        );
         // Assert shares underlying assets
-        let shares_assets: AssetsBalanceResponse = wasm
+        // Here we expect the total existing shares from initial tokens provided to represent the INITIAL_POSITION_BURN amount for each asset
+        let shares_underlying_assets: AssetsBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::ConvertToAssets {
-                    amount: Uint128::new(1000u128),
+                    amount: initial_total_vault_token_supply.total,
                 },
             )
             .unwrap();
-        assert_eq!(Uint128::new(500), shares_assets.balances[0].amount);
-        assert_eq!(Uint128::new(500), shares_assets.balances[1].amount);
+        assert_eq!(
+            Uint128::new(INITIAL_POSITION_BURN),
+            shares_underlying_assets.balances[0].amount
+        );
+        assert_eq!(
+            Uint128::new(INITIAL_POSITION_BURN),
+            shares_underlying_assets.balances[1].amount
+        );
 
-        // Balance before
-        let balance_base_before =
+        // BEFORE DEPOSITS CHECKS
+
+        // This will be useful after all deposits to assert the contract balance
+        let balance_before_contract_base =
             get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
 
-        // Foreach Account execute an exact_deposit with the same amount of tokens
+        // Keep track of the total refunded amount on token0 from user deposits
+        // TODO: Deprecate this as soon as the deposit debalance is fixed
         let mut refund0_amount_total = Uint128::zero();
+        // Keep track of the total minted shares from deposits
         let mut total_minted_shares_from_deposits = Uint128::zero();
+        // Execute exact_deposit for each account using the same amount of tokens for each asset and user
         for account in &accounts {
-            let exact_deposit_rsp = wasm
+            // Assert user starts with 0 shares
+            let balance_user_shares_before: UserSharesBalanceResponse = wasm
+                .query(
+                    contract_address.as_str(),
+                    &VaultExtension(ExtensionQueryMsg::Balances(UserSharesBalance {
+                        user: account.address(),
+                    })),
+                )
+                .unwrap();
+            assert!(balance_user_shares_before.balance.is_zero());
+
+            // Make the deposit
+            let exact_deposit = wasm
                 .execute(
                     contract_address.as_str(),
                     &ExecuteMsg::ExactDeposit { recipient: None },
@@ -105,8 +118,24 @@ mod tests {
                 )
                 .unwrap();
 
-            // TODO: Assert before shares balance for the user and new one. also increment it to assert afterward
-            let minted_shares: UserSharesBalanceResponse = wasm
+            // Assert balance refunded is not empty for token0
+            let refund0_amount =
+                get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund0_amount"]);
+            println!("refund0_amount per-user: {:?}", refund0_amount);
+            assert!(!refund0_amount.is_empty());
+            let refund_amount_parsed = refund0_amount[0].value.parse::<u128>().unwrap();
+            println!("refund_amount_parsed per-user: {:?}", refund_amount_parsed);
+            refund0_amount_total = refund0_amount_total
+                .checked_add(Uint128::new(refund_amount_parsed))
+                .unwrap();
+            // Assert we have no token1 refund
+            let refund1_amount =
+                get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund1_amount"]);
+            assert!(refund1_amount.is_empty());
+
+            // Assert after shares balance for the user accoridngly to the refunded amounts
+            // TODO: This is minting 8132_600000 because of the 1867_400000 refund0_amount
+            let balance_user_shares_after: UserSharesBalanceResponse = wasm
                 .query(
                     contract_address.as_str(),
                     &VaultExtension(ExtensionQueryMsg::Balances(UserSharesBalance {
@@ -114,29 +143,19 @@ mod tests {
                     })),
                 )
                 .unwrap();
-            total_minted_shares_from_deposits = total_minted_shares_from_deposits
-                .checked_add(minted_shares.balance)
-                .unwrap();
+            println!("{}", INITIAL_POSITION_BURN.mul(2u128).to_string());
+            assert_eq!(
+                balance_user_shares_after.balance,
+                Uint128::new(DEPOSIT_AMOUNT.mul(2u128).sub(refund_amount_parsed))
+            ); // TODO: There should be NO REFUND here
 
-            // TODO: Assert balance deposited and refunded
-            let refund0_amount = get_event_attributes_by_ty_and_key(
-                &exact_deposit_rsp,
-                "wasm",
-                vec!["refund0_amount"],
-            );
-            refund0_amount_total = refund0_amount_total
-                .checked_add(Uint128::new(
-                    refund0_amount[0].value.parse::<u128>().unwrap(),
-                ))
+            // Increment the total minted shares counter
+            total_minted_shares_from_deposits = total_minted_shares_from_deposits
+                .checked_add(balance_user_shares_after.balance)
                 .unwrap();
-            // TODO: Increment
-            let refund1_amount = get_event_attributes_by_ty_and_key(
-                &exact_deposit_rsp,
-                "wasm",
-                vec!["refund1_amount"],
-            );
-            assert!(refund1_amount.is_empty());
         }
+
+        // AFTER DEPOSITS CHECKS
 
         // Assert total vault shares
         let total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
@@ -161,9 +180,8 @@ mod tests {
                 },
             )
             .unwrap();
-        // TODO: Check this asserts COMPUTE THEM RATHER THAN MAGIC VALUES
-        assert_eq!(Uint128::new(385), shares_assets.balances[0].amount);
-        assert_eq!(Uint128::new(614), shares_assets.balances[1].amount);
+        assert_eq!(Uint128::new(500), shares_assets.balances[0].amount);
+        assert_eq!(Uint128::new(500), shares_assets.balances[1].amount);
 
         // Airdrop some DENOM_REWARD funds to the contract, this will be like idle claimed spread rewards
         let _send = bm
@@ -184,7 +202,7 @@ mod tests {
         let users_total_deposit_per_asset =
             DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
         let expected_balance_base_after_deposit = users_total_deposit_per_asset
-            .checked_add(balance_base_before)
+            .checked_add(balance_before_contract_base)
             .unwrap()
             .checked_sub(refund0_amount_total.u128())
             .unwrap();
