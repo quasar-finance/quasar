@@ -3,7 +3,7 @@ use cosmwasm_std::{
     to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
     Storage, Uint128, WasmMsg,
 };
-use cw_dex_router::msg::{ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg};
+use cw_dex_router::msg::{ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg};
 use cw_dex_router::{
     msg::{BestPathForPairResponse, ExecuteMsg, QueryMsg},
     operations::SwapOperationsListUnchecked,
@@ -321,7 +321,7 @@ fn generate_swap_message(
     let recommended_out: Uint128 = match current_swap_route.clone() {
         Some(operations) => querier.query_wasm_smart(
             dex_router_addr.to_string(),
-            &ApolloQueryMsg::SimulateSwapOperations {
+            &DexRouterQueryMsg::SimulateSwapOperations {
                 offer_amount: token_in_amount,
                 operations,
             },
@@ -330,7 +330,7 @@ fn generate_swap_message(
     };
     let best_path: Option<BestPathForPairResponse> = querier.query_wasm_smart(
         dex_router_addr.to_string(),
-        &ApolloQueryMsg::BestPathForPair {
+        &DexRouterQueryMsg::BestPathForPair {
             offer_asset: offer_asset.into(),
             ask_asset: ask_asset.into(),
             exclude_paths: None,
@@ -375,7 +375,7 @@ fn get_execute_swap_operations_msg(
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_json_binary(&ApolloExecuteMsg::ExecuteSwapOperations {
+        msg: to_json_binary(&DexRouterExecuteMsg::ExecuteSwapOperations {
             operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,
