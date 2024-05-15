@@ -241,23 +241,23 @@ pub fn execute_swap_non_vault_funds(
     env: Env,
     info: MessageInfo,
     force_swap_route: bool,
-    swap_routes: Vec<SwapAsset>,
+    swap_assets: Vec<SwapAsset>,
 ) -> Result<Response, ContractError> {
     // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_range_admin(deps.storage, &info.sender)?;
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    if swap_routes.is_empty() {
+    if swap_assets.is_empty() {
         return Err(ContractError::EmptyCompoundAssetList {});
     }
 
     let mut swap_msgs: Vec<CosmosMsg> = vec![];
 
-    for current_swap_route in swap_routes {
+    for current_swap_asset in swap_assets {
         // Assert that no BASE_DENOM / QUOTE_DENOM is trying to be swapped as token_in
-        if current_swap_route.token_in_denom == pool_config.token0
-            || current_swap_route.token_in_denom == pool_config.token1
+        if current_swap_asset.token_in_denom == pool_config.token0
+            || current_swap_asset.token_in_denom == pool_config.token1
         {
             return Err(ContractError::InvalidSwapAssets {});
         }
@@ -267,7 +267,7 @@ pub fn execute_swap_non_vault_funds(
             .querier
             .query_balance(
                 env.clone().contract.address,
-                current_swap_route.clone().token_in_denom,
+                current_swap_asset.clone().token_in_denom,
             )?
             .amount;
         if balance_in_contract == Uint128::zero() {
@@ -284,8 +284,8 @@ pub fn execute_swap_non_vault_funds(
         swap_msgs.push(generate_swap_message(
             deps.querier,
             &vault_config.dex_router,
-            &current_swap_route.recommended_swap_route_token_0,
-            &current_swap_route.token_in_denom,
+            &current_swap_asset.recommended_swap_route_token_0,
+            &current_swap_asset.token_in_denom,
             part_1_amount,
             &pool_config.token0,
             force_swap_route,
@@ -293,8 +293,8 @@ pub fn execute_swap_non_vault_funds(
         swap_msgs.push(generate_swap_message(
             deps.querier,
             &vault_config.dex_router,
-            &current_swap_route.recommended_swap_route_token_1,
-            &current_swap_route.token_in_denom,
+            &current_swap_asset.recommended_swap_route_token_1,
+            &current_swap_asset.token_in_denom,
             part_2_amount,
             &pool_config.token1,
             force_swap_route,
