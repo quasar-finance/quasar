@@ -7,6 +7,7 @@ pub mod initialize {
     use cw_dex_router::msg::InstantiateMsg as DexInstantiate;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultInfoResponse;
+    use osmosis_std::try_proto_to_cosmwasm_coins;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
@@ -31,7 +32,6 @@ pub mod initialize {
     };
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
-    use crate::test_tube::helpers::convert_osmosis_coins_to_coins;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
     pub const PERFORMANCE_FEE: u64 = 20;
@@ -559,10 +559,13 @@ pub mod initialize {
                 &admin,
             )
             .unwrap();
-        let pools_coins_converted: Vec<Vec<Coin>> = pools_coins
+        let pools_coins_converted: Result<Vec<Vec<Coin>>, cosmwasm_std::StdError> = pools_coins
             .into_iter()
-            .map(|coins: Vec<v1beta1::Coin>| convert_osmosis_coins_to_coins(&coins))
+            .map(|coins: Vec<v1beta1::Coin>| try_proto_to_cosmwasm_coins(coins.iter().cloned()))
             .collect();
+
+        let pools_coins_converted = pools_coins_converted.unwrap();
+
         set_dex_router_paths(
             &app,
             contract_dex_router.data.address.to_string(),

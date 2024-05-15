@@ -21,16 +21,6 @@ pub fn get_event_attributes_by_ty_and_key(
         .collect()
 }
 
-pub fn convert_osmosis_coins_to_coins(osmosis_coins: &Vec<v1beta1::Coin>) -> Vec<Coin> {
-    osmosis_coins
-        .into_iter()
-        .map(|coin| Coin {
-            denom: coin.denom.clone(),
-            amount: Uint128::from_str(coin.amount.as_str()).unwrap(),
-        })
-        .collect()
-}
-
 pub fn get_balance_amount(app: &OsmosisTestApp, address: String, denom: String) -> u128 {
     let bm = Bank::new(app);
 
