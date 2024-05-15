@@ -71,7 +71,7 @@ pub fn handle_instantiate(
 
     ADMIN_ADDRESS.save(deps.storage, &admin)?;
     RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
-    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
+    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Closed)?;
 
     let create_denom_msg: CosmosMsg = MsgCreateDenom {
         sender: env.contract.address.to_string(),
