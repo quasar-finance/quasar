@@ -619,7 +619,7 @@ pub mod initialize {
         assert_eq!(pools.len(), pools_coins.len());
 
         // Set Dex Router contract paths
-        for (index, pool_id) in pools.iter().enumerate().rev() {
+        for (index, pool_id) in pools.iter().enumerate() {
             println!("index: {:?}", index);
             println!("pool_id: {:?}", pool_id);
             println!("dex_router: {:?}", dex_router);
