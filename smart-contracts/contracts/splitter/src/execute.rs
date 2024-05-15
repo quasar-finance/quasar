@@ -1,8 +1,8 @@
 use cosmwasm_std::{attr, coin, Attribute, BankMsg, CosmosMsg, Deps, Env, Fraction, Response};
 
-use crate::{state::RECEIVERS, ContractError};
 #[cfg(claim)]
 use crate::msg::Claim;
+use crate::{state::RECEIVERS, ContractError};
 
 /// Split the current contract balance between all receivers
 pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
@@ -33,7 +33,7 @@ pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
     Ok(Response::new().add_messages(to_send))
 }
 
-/// Claim any funds through the fee splitter contract, this is needed for any strategy 
+/// Claim any funds through the fee splitter contract, this is needed for any strategy
 /// This also means that this contract should not be receiving any CW20s
 #[cfg(claim)]
 pub fn execute_claim(claims: Vec<Claim>) -> Result<Response, ContractError> {

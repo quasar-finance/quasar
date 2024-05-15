@@ -25,7 +25,6 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    
     do_instantiate(deps, msg)
 }
 

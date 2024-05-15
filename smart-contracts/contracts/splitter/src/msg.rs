@@ -15,7 +15,9 @@ pub enum ExecuteMsg {
     Admin(AdminMsg),
     Split {},
     #[cfg(claim)]
-    Claim { claims: Vec<Claim> },
+    Claim {
+        claims: Vec<Claim>,
+    },
 }
 
 #[cw_serde]
