@@ -265,7 +265,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
-        Addr, Coin, CosmosMsg, Decimal, Uint128,
+        Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
     };
     use prost::Message;
     use std::str::FromStr;
@@ -352,13 +352,49 @@ mod tests {
             )
             .unwrap();
 
-        let _ = migrate(
+        // Mock USER_REWARDS in order to have something to iterate over
+        let rewards_coins = vec![
+            coin(1000u128, DENOM_BASE),
+            coin(1000u128, DENOM_QUOTE),
+            coin(1000u128, DENOM_REWARD),
+        ];
+        for i in 0..10 {
+            USER_REWARDS
+                .save(
+                    deps.as_mut().storage,
+                    Addr::unchecked(format!("user{}", i)),
+                    &CoinList::from_coins(rewards_coins.clone()),
+                )
+                .unwrap();
+        }
+        // Mock STRATEGIST_REWARDS in order to have something to distribute
+        STRATEGIST_REWARDS
+            .save(
+                deps.as_mut().storage,
+                &CoinList::from_coins(rewards_coins.clone()),
+            )
+            .unwrap();
+
+        let migrate_resp = migrate(
             deps.as_mut(),
             env.clone(),
             MigrateMsg {
                 dex_router: new_dex_router.clone(),
             },
-        );
+        )
+        .unwrap();
+        if let Some(SubMsg {
+            msg: CosmosMsg::Bank(BankMsg::Send { to_address, amount }),
+            ..
+        }) = migrate_resp.messages.get(0) {
+            assert_eq!(to_address, "treasury");
+            assert_eq!(amount, &rewards_coins);
+        } else {
+            panic!("Expected BankMsg::Send message in the response");
+        }
+
+        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
+        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
 
         // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
         OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
@@ -371,32 +407,16 @@ mod tests {
         let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
         assert_eq!(migration_status, MigrationStatus::Open);
 
-        // Mock USER_REWARDS in order to have something to iterate over
-        let user_rewards_coins = vec![
-            coin(1000u128, DENOM_BASE),
-            coin(1000u128, DENOM_QUOTE),
-            coin(1000u128, DENOM_REWARD),
-        ];
-        for i in 0..10 {
-            USER_REWARDS
-                .save(
-                    deps.as_mut().storage,
-                    Addr::unchecked(format!("user{}", i)),
-                    &CoinList::from_coins(user_rewards_coins.clone()),
-                )
-                .unwrap();
-        }
-
         // Execute 9 migration steps paginating by 2 users_amount.
         // leaving the last user to close the migration in the last step
         for i in 0..9 {
-            let execute_migration_resp =
+            let migration_step =
                 execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
 
             assert_multi_send(
-                &execute_migration_resp.messages[0].msg,
+                &migration_step.messages[0].msg,
                 &format!("user{}", i),
-                &user_rewards_coins,
+                &rewards_coins,
             );
 
             // Assert new MIGRATION_STATUS state have correct value
@@ -405,12 +425,12 @@ mod tests {
         }
 
         // Execute the last migration step
-        let execute_migration_resp =
+        let migration_step =
             execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
         assert_multi_send(
-            &execute_migration_resp.messages[0].msg,
+            &migration_step.messages[0].msg,
             &"user9".to_string(),
-            &user_rewards_coins,
+            &rewards_coins,
         );
 
         // Assert new MIGRATION_STATUS state have correct value
@@ -423,9 +443,6 @@ mod tests {
                 .load(deps.as_mut().storage, Addr::unchecked(format!("user{}", i)))
                 .unwrap_err();
         }
-
-        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
-        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
     }
 
     fn assert_multi_send(msg: &CosmosMsg, expected_user: &String, user_rewards_coins: &Vec<Coin>) {

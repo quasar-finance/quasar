@@ -187,68 +187,6 @@ mod tests {
         assert_eq!((), verify_resp);
     }
 
-    // #[test]
-    // fn test_execute_claim_strategist_rewards_success() {
-    //     let treasury = Addr::unchecked("bob");
-    //     let mut deps = mock_dependencies();
-    //     let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-    //     STRATEGIST_REWARDS
-    //         .save(
-    //             deps.as_mut().storage,
-    //             &CoinList::from_coins(rewards.clone()),
-    //         )
-    //         .unwrap();
-
-    //     VAULT_CONFIG
-    //         .save(
-    //             deps.as_mut().storage,
-    //             &VaultConfig {
-    //                 performance_fee: Decimal::percent(20),
-    //                 treasury: treasury.clone(),
-    //                 swap_max_slippage: Decimal::percent(10),
-    //                 dex_router: Addr::unchecked("bob-router"),
-    //             },
-    //         )
-    //         .unwrap();
-
-    //     let response =
-    //         execute_claim_strategist_rewards(deps.as_mut(), mock_info(treasury.as_str(), &[]))
-    //             .unwrap();
-    //     assert_eq!(
-    //         CosmosMsg::Bank(BankMsg::Send {
-    //             to_address: treasury.to_string(),
-    //             amount: sort_tokens(rewards)
-    //         }),
-    //         response.messages[0].msg
-    //     )
-    // }
-
-    // #[test]
-    // fn test_execute_claim_strategist_rewards_not_admin() {
-    //     let treasury = Addr::unchecked("bob");
-    //     let mut deps = mock_dependencies();
-    //     let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-    //     STRATEGIST_REWARDS
-    //         .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
-    //         .unwrap();
-
-    //     VAULT_CONFIG
-    //         .save(
-    //             deps.as_mut().storage,
-    //             &VaultConfig {
-    //                 performance_fee: Decimal::percent(20),
-    //                 treasury: treasury.clone(),
-    //                 swap_max_slippage: Decimal::percent(10),
-    //                 dex_router: Addr::unchecked("bob-router"),
-    //             },
-    //         )
-    //         .unwrap();
-
-    //     let err =
-    //         execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
-    //     assert_eq!(ContractError::Unauthorized {}, err)
-    // }
-
     #[test]
     fn test_execute_update_admin_success() {
         let old_admin = Addr::unchecked("old_admin");
