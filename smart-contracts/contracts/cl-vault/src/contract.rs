@@ -386,7 +386,8 @@ mod tests {
         if let Some(SubMsg {
             msg: CosmosMsg::Bank(BankMsg::Send { to_address, amount }),
             ..
-        }) = migrate_resp.messages.get(0) {
+        }) = migrate_resp.messages.get(0)
+        {
             assert_eq!(to_address, "treasury");
             assert_eq!(amount, &rewards_coins);
         } else {
