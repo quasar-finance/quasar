@@ -134,6 +134,9 @@ pub enum ContractError {
     #[error("Error converting {asset}: {msg}")]
     ConversionError { asset: String, msg: String },
 
+    #[error("Position claim after period is not expired yet.")]
+    ClaimAfterNotExpired {},
+
     // Imported errors
     #[error("{0}")]
     PaymentError(#[from] PaymentError),

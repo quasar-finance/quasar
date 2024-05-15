@@ -15,31 +15,22 @@ use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
 
-/// Execute the autocompound process, creating a new position with unused balances.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies for interacting with the contract.
-/// * `env` - Environment for fetching contract address.
-/// * `_info` - Message information (not used).
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns a `Response` containing the result of the autocompound operation.
 pub fn execute_autocompound(
     deps: DepsMut,
     env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    // TODO: Validate claim_after timestamp
+    let position_state = POSITION.load(deps.storage)?;
 
-    let position_id = (POSITION.load(deps.storage)?).position_id;
+    // If the position claim after timestamp is not reached yet, return an error
+    if position_state.claim_after.is_some()
+        && position_state.claim_after.unwrap() <= env.block.time.seconds()
+    {
+        return Err(ContractError::ClaimAfterNotExpired {});
+    }
+
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
-        .position_by_id(position_id)?
+        .position_by_id(position_state.position_id)?
         .position
         .ok_or(ContractError::PositionNotFound)?
         .position
@@ -47,8 +38,6 @@ pub fn execute_autocompound(
 
     let balance = get_unused_balances(&deps.querier, &env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
-
-    // TODO: We should swap() here
 
     let (token0, token1) =
         must_pay_one_or_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;
@@ -85,22 +74,6 @@ pub fn execute_autocompound(
         .add_attribute("token1", format!("{:?}", token1.clone())))
 }
 
-/// Handle the reply from the autocompound operation and then calling merge position
-/// on the newly created position.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies for interacting with the contract.
-/// * `env` - Environment for fetching contract address.
-/// * `data` - Result of the autocompound operation.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns a `Response` containing the result of the merge operation.
 pub fn handle_autocompound_reply(
     deps: DepsMut,
     env: Env,
