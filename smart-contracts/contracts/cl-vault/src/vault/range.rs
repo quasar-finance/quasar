@@ -337,7 +337,7 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
-    let calculate_swap: SwapCalculationResult = calculate_swap_amount(
+    let calculated_swap: Option<SwapCalculationResult> = calculate_swap_amount(
         deps,
         env,
         position_id,
@@ -351,24 +351,24 @@ pub fn do_swap_deposit_merge(
     // Start constructing the response
     let mut response = Response::new()
         .add_attribute("method", "reply")
-        // TODO: This is not really exact, this function is invoked by 2 different reply entrypoints so the action should be conditionally set
         .add_attribute("action", "do_swap_deposit_merge");
 
     // Check if there is a swap message and append accordingly
-    if let Some(swap_msg) = calculate_swap.swap_msg {
-        response =
-            response.add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()));
+    if let Some(calculated) = calculated_swap {
+        response = response.add_submessage(SubMsg::reply_on_success(
+            calculated.swap_msg,
+            Replies::Swap.into(),
+        ));
         response = response.add_attribute(
             "token_in",
             format!(
                 "{}{}",
-                calculate_swap.swap_amount,
-                calculate_swap.token_in_denom.unwrap()
+                calculated.token_in_amount, calculated.token_in_denom
             ),
         );
         response = response.add_attribute(
             "token_out_min",
-            format!("{}", calculate_swap.token_out_min_amount),
+            format!("{}", calculated.token_out_min_amount),
         );
     } else {
         // If no swap message, add a new position attribute
@@ -387,13 +387,13 @@ pub fn calculate_swap_amount(
     target_lower_tick: i64,
     target_upper_tick: i64,
     twap_window_seconds: u64,
-) -> Result<SwapCalculationResult, ContractError> {
+) -> Result<Option<SwapCalculationResult>, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
-    let (swap_amount, swap_direction) = if !balance0.is_zero() {
+    let (token_in_amount, swap_direction) = if !balance0.is_zero() {
         (
             // range is above current tick
             if pool_details.current_tick > target_upper_tick {
@@ -441,13 +441,7 @@ pub fn calculate_swap_amount(
 
         SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
-        return Ok(SwapCalculationResult {
-            swap_msg: None,
-            token_in_denom: None,
-            swap_amount: Uint128::zero(),
-            token_out_min_amount: Uint128::zero(),
-            position_id,
-        });
+        return Ok(None);
     };
 
     // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
@@ -457,16 +451,16 @@ pub fn calculate_swap_amount(
             SwapDirection::ZeroToOne => (
                 pool_config.token0,
                 pool_config.token1,
-                swap_amount
+                token_in_amount
                     .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-                balance0.checked_sub(swap_amount)?,
+                balance0.checked_sub(token_in_amount)?,
             ),
             SwapDirection::OneToZero => (
                 pool_config.token1,
                 pool_config.token0,
-                swap_amount
+                token_in_amount
                     .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-                balance1.checked_sub(swap_amount)?,
+                balance1.checked_sub(token_in_amount)?,
             ),
         };
 
@@ -477,7 +471,7 @@ pub fn calculate_swap_amount(
         .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
 
     let swap_params = SwapParams {
-        token_in_amount: swap_amount,
+        token_in_amount,
         token_out_min_amount,
         token_in_denom: token_in_denom.clone(),
         token_out_denom,
@@ -487,13 +481,13 @@ pub fn calculate_swap_amount(
 
     let swap_msg = swap_msg(deps, &env, swap_params)?;
 
-    Ok(SwapCalculationResult {
-        swap_msg: Some(swap_msg),
-        token_in_denom: Some(token_in_denom),
-        swap_amount,
+    Ok(Some(SwapCalculationResult {
+        swap_msg,
+        token_in_denom,
+        token_in_amount,
         token_out_min_amount,
         position_id: None,
-    })
+    }))
 }
 
 // do deposit

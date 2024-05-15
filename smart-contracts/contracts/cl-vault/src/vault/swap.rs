@@ -20,9 +20,9 @@ use crate::{state::VAULT_CONFIG, ContractError};
 use super::range::assert_range_admin;
 
 pub struct SwapCalculationResult {
-    pub swap_msg: Option<CosmosMsg>,
-    pub token_in_denom: Option<String>,
-    pub swap_amount: Uint128,
+    pub swap_msg: CosmosMsg,
+    pub token_in_denom: String,
+    pub token_in_amount: Uint128,
     pub token_out_min_amount: Uint128,
     pub position_id: Option<u64>,
 }
@@ -35,6 +35,7 @@ pub struct SwapParams {
     pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
     pub force_swap_route: bool,
 }
+
 /// estimate_swap can be used to pass correct token_out_min_amount values into swap()
 /// for now this function can only be used for our pool
 /// this will likely be expanded once we allow arbitrary pool swaps
