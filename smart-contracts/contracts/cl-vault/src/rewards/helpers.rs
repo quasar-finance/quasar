@@ -65,17 +65,6 @@ impl CoinList {
         CoinList::default()
     }
 
-    pub fn osmo_coins_vec_from_coin_list(&self) -> Vec<OsmoCoin> {
-        let mut temp_coins = vec![];
-        for coin in self.coins() {
-            temp_coins.push(OsmoCoin {
-                amount: coin.amount.to_string(),
-                denom: coin.denom,
-            })
-        }
-        temp_coins
-    }
-
     /// calculates the ratio of the current rewards
     pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
         if ratio == Decimal::zero() {

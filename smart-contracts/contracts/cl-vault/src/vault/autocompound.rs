@@ -2,6 +2,7 @@ use cosmwasm_std::Order;
 use cosmwasm_std::{
     to_json_binary, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
 };
+use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
@@ -132,7 +133,7 @@ pub fn execute_migration_step(
         addresses.push(address.clone());
         outputs.push(Output {
             address: address.to_string(),
-            coins: rewards.osmo_coins_vec_from_coin_list(),
+            coins: cosmwasm_to_proto_coins(rewards.coins().iter().cloned()),
         });
         total_amount.add(rewards)?;
     }
@@ -158,7 +159,7 @@ pub fn execute_migration_step(
         let send_message = MsgMultiSend {
             inputs: vec![Input {
                 address: env.contract.address.to_string(),
-                coins: total_amount.osmo_coins_vec_from_coin_list(),
+                coins: cosmwasm_to_proto_coins(total_amount.coins().iter().cloned()),
             }],
             outputs,
         };
