@@ -56,3 +56,105 @@ pub fn update_admin(deps: DepsMut, new: &str) -> Result<Response, ContractError>
 
     Ok(Response::new().add_attribute("new_admin", new_admin))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use cosmwasm_std::{testing::mock_dependencies, Addr, Decimal};
+
+    use crate::{state::{Receiver, ADMIN, RECEIVERS}, ContractError};
+
+    use super::{update_admin, update_receivers};
+
+    #[test]
+    fn update_admin_works() {
+        let mut deps = mock_dependencies();
+        ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("old_admin"))
+            .unwrap();
+
+        let new = "new_admin";
+        update_admin(deps.as_mut(), new).unwrap();
+
+        assert_eq!(ADMIN.load(deps.as_mut().storage).unwrap(), new)
+    }
+
+    #[test]
+    fn update_receivers_works() {
+        let mut deps = mock_dependencies();
+        ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("old_admin"))
+            .unwrap();
+        RECEIVERS
+            .save(
+                deps.as_mut().storage,
+                &vec![
+                    Receiver {
+                        address: Addr::unchecked("alice"),
+                        share: Decimal::from_str("0.6").unwrap(),
+                    },
+                    Receiver {
+                        address: Addr::unchecked("bob"),
+                        share: Decimal::from_str("0.4").unwrap(),
+                    },
+                ]
+                .try_into()
+                .unwrap(),
+            )
+            .unwrap();
+
+            let new_receivers = vec![
+                Receiver {
+                    address: Addr::unchecked("alice"),
+                    share: Decimal::from_str("0.5").unwrap(),
+                },
+                Receiver {
+                    address: Addr::unchecked("bob"),
+                    share: Decimal::from_str("0.5").unwrap(),
+                },
+            ];
+
+        update_receivers(deps.as_mut(), new_receivers.clone()).unwrap();
+        assert_eq!(RECEIVERS.load(deps.as_mut().storage).unwrap(), new_receivers.try_into().unwrap())
+    }
+
+    #[test]
+    fn update_receivers_fails_on_bad_total() {
+        let mut deps = mock_dependencies();
+        ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked("old_admin"))
+            .unwrap();
+        RECEIVERS
+            .save(
+                deps.as_mut().storage,
+                &vec![
+                    Receiver {
+                        address: Addr::unchecked("alice"),
+                        share: Decimal::from_str("0.6").unwrap(),
+                    },
+                    Receiver {
+                        address: Addr::unchecked("bob"),
+                        share: Decimal::from_str("0.4").unwrap(),
+                    },
+                ]
+                .try_into()
+                .unwrap(),
+            )
+            .unwrap();
+
+            let new_receivers = vec![
+                Receiver {
+                    address: Addr::unchecked("alice"),
+                    share: Decimal::from_str("0.5").unwrap(),
+                },
+                Receiver {
+                    address: Addr::unchecked("bob"),
+                    share: Decimal::from_str("0.4").unwrap(),
+                },
+            ];
+
+        let err = update_receivers(deps.as_mut(), new_receivers.clone()).unwrap_err();
+        assert_eq!(err, ContractError::IncorrectReceivers)
+    }
+}
