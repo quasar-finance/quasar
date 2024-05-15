@@ -31,16 +31,6 @@ pub fn convert_osmosis_coins_to_coins(osmosis_coins: &Vec<v1beta1::Coin>) -> Vec
         .collect()
 }
 
-pub fn convert_coins_to_osmosis_coins(coins: &Vec<Coin>) -> Vec<v1beta1::Coin> {
-    coins
-        .into_iter()
-        .map(|coin| v1beta1::Coin {
-            denom: coin.denom.clone(),
-            amount: coin.amount.to_string(),
-        })
-        .collect()
-}
-
 pub fn get_balance_amount(app: &OsmosisTestApp, address: String, denom: String) -> u128 {
     let bm = Bank::new(app);
 

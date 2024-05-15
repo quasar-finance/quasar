@@ -177,7 +177,8 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     while max_price < Decimal256::from_str(MAX_SPOT_PRICE)? {
         let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
         let max_price_temp = pow_ten_internal_dec_256(cur_exp_index + 1)?;
-        let additive_increment_per_tick = pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
+        let additive_increment_per_tick =
+            pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
 
         let base_tick_value = 9u128
             .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
@@ -187,13 +188,14 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
                 operand2: pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?.to_string(),
             }))? as i64;
 
-        let initial_tick = base_tick_value
-            .checked_mul(cur_exp_index)
-            .ok_or(ContractError::OverflowError(OverflowError {
-                operation: cosmwasm_std::OverflowOperation::Mul,
-                operand1: base_tick_value.to_string(),
-                operand2: cur_exp_index.to_string(),
-            }))?;
+        let initial_tick =
+            base_tick_value
+                .checked_mul(cur_exp_index)
+                .ok_or(ContractError::OverflowError(OverflowError {
+                    operation: cosmwasm_std::OverflowOperation::Mul,
+                    operand1: base_tick_value.to_string(),
+                    operand2: cur_exp_index.to_string(),
+                }))?;
 
         let tick_exp_index_data = TickExpIndexData {
             initial_price,
@@ -215,7 +217,8 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     while min_price > Decimal256::from_str(MIN_SPOT_PRICE)? {
         let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
         let max_price_temp = pow_ten_internal_dec_256(cur_exp_index + 1)?;
-        let additive_increment_per_tick = pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
+        let additive_increment_per_tick =
+            pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
 
         let base_tick_value = 9u128
             .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
@@ -225,13 +228,14 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
                 operand2: pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?.to_string(),
             }))? as i64;
 
-        let initial_tick = base_tick_value
-            .checked_mul(cur_exp_index)
-            .ok_or(ContractError::OverflowError(OverflowError {
-                operation: cosmwasm_std::OverflowOperation::Mul,
-                operand1: base_tick_value.to_string(),
-                operand2: cur_exp_index.to_string(),
-            }))?;
+        let initial_tick =
+            base_tick_value
+                .checked_mul(cur_exp_index)
+                .ok_or(ContractError::OverflowError(OverflowError {
+                    operation: cosmwasm_std::OverflowOperation::Mul,
+                    operand1: base_tick_value.to_string(),
+                    operand2: cur_exp_index.to_string(),
+                }))?;
 
         let tick_exp_index_data = TickExpIndexData {
             initial_price,

@@ -270,7 +270,6 @@ mod tests {
     use prost::Message;
     use std::str::FromStr;
 
-    use crate::test_tube::helpers::convert_coins_to_osmosis_coins;
     use crate::{
         rewards::CoinList, state::USER_REWARDS,
         test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
@@ -279,7 +278,7 @@ mod tests {
         state::OldVaultConfig,
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
-    use osmosis_std::types::cosmos::bank::v1beta1::MsgMultiSend;
+    use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
 
     use super::*;
 
@@ -440,7 +439,7 @@ mod tests {
                 assert_eq!(&output.address, expected_user);
                 assert_eq!(
                     output.coins,
-                    convert_coins_to_osmosis_coins(user_rewards_coins)
+                    cosmwasm_to_proto_coins(user_rewards_coins.iter().cloned())
                 );
             }
         } else {
