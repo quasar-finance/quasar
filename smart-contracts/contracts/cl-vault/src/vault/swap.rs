@@ -3,11 +3,9 @@ use cosmwasm_std::{
     to_json_binary, Addr, Coin, CosmosMsg, DepsMut, Env, MessageInfo, QuerierWrapper, Response,
     Storage, Uint128, WasmMsg,
 };
+use cw_dex_router::contract::simulate_swap_operations;
 use cw_dex_router::msg::{ExecuteMsg as ApolloExecuteMsg, QueryMsg as ApolloQueryMsg};
-use cw_dex_router::{
-    msg::{BestPathForPairResponse, ExecuteMsg, QueryMsg},
-    operations::SwapOperationsListUnchecked,
-};
+use cw_dex_router::operations::{SwapOperationsList, SwapOperationsListUnchecked};
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::poolmanager::v1beta1::SwapAmountInRoute,
 };
@@ -35,6 +33,7 @@ pub struct SwapParams {
     pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
     pub force_swap_route: bool,
 }
+
 /// estimate_swap can be used to pass correct token_out_min_amount values into swap()
 /// for now this function can only be used for our pool
 /// this will likely be expanded once we allow arbitrary pool swaps
@@ -113,26 +112,22 @@ pub fn swap_msg(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMs
             let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
                 Some(operations) => deps.querier.query_wasm_smart(
                     dex_router_address.to_string(),
-                    &QueryMsg::SimulateSwapOperations {
+                    &ApolloQueryMsg::SimulateSwapOperations {
                         offer_amount: params.token_in_amount,
                         operations,
                     },
                 )?,
                 None => 0u128.into(),
             };
-            let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
-                dex_router_address.to_string(),
-                &QueryMsg::BestPathForPair {
-                    offer_asset: offer_asset.into(),
-                    ask_asset: ask_asset.into(),
-                    exclude_paths: None,
-                    offer_amount: params.token_in_amount,
-                },
+
+            // Try to get the best path using CwDexRouter contract
+            let (best_path, best_out) = get_best_path(
+                deps,
+                &dex_router_address,
+                params.token_in_amount,
+                offer_asset,
+                ask_asset,
             )?;
-            let best_out = match best_path.clone() {
-                Some(best_path) => best_path.return_amount,
-                None => 0u128.into(),
-            };
 
             // if we need to force the route
             if params.force_swap_route {
@@ -155,13 +150,12 @@ pub fn swap_msg(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMs
                     params.token_out_min_amount,
                 ))
             } else if best_out.ge(&recommended_out) {
-                let operations = best_path
-                    .ok_or(ContractError::MissingBestPath {})?
-                    .operations
-                    .into();
+                let operations = best_path.ok_or(ContractError::MissingBestPath {})?;
+                // .operations
+                // .into();
                 execute_swap_operations(
                     dex_router_address,
-                    operations,
+                    operations.into(),
                     params.token_out_min_amount,
                     &token_in_denom.clone(),
                     params.token_in_amount,
@@ -189,6 +183,55 @@ pub fn swap_msg(deps: DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMs
         )),
     };
     swap_msg
+}
+
+fn get_best_path(
+    deps: DepsMut,
+    dex_router_address: &Addr,
+    offer_amount: Uint128,
+    offer_asset: AssetInfo,
+    ask_asset: AssetInfo,
+) -> Result<(Option<SwapOperationsList>, Uint128), ContractError> {
+    let best_path: Option<SwapOperationsList> = deps
+        .querier
+        .query_wasm_smart(
+            dex_router_address.to_string(),
+            &ApolloQueryMsg::PathForPair {
+                offer_asset: offer_asset.into(),
+                ask_asset: ask_asset.into(),
+            },
+        )
+        .unwrap_or(None);
+
+    let best_out = match best_path.clone() {
+        Some(best_path) => {
+            simulate_swap_operations(deps.as_ref(), offer_amount, best_path.into()).unwrap()
+        }
+        None => Uint128::zero(),
+    };
+
+    // let excluded = exclude_paths.unwrap_or(vec![]);
+    // let paths: Vec<(u64, SwapOperationsList)> = paths
+    //     .into_iter()
+    //     .filter(|(id, _)| !excluded.contains(id))
+    //     .collect();
+
+    // let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
+    //     .into_iter()
+    //     .map(|(id, swaps)| {
+    //         let out = simulate_swap_operations(deps.as_ref(), offer_amount, swaps.clone().into())?;
+    //         Ok(BestPathForPairResponse {
+    //             operations: swaps,
+    //             return_amount: out,
+    //         })
+    //     })
+    //     .collect();
+
+    // let best_path = swap_paths?
+    //     .into_iter()
+    //     .max_by(|a, b| a.return_amount.cmp(&b.return_amount));
+
+    Ok((best_path, best_out))
 }
 
 fn swap_exact_amount_in(
@@ -219,7 +262,7 @@ fn execute_swap_operations(
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_json_binary(&ExecuteMsg::ExecuteSwapOperations {
+        msg: to_json_binary(&ApolloExecuteMsg::ExecuteSwapOperations {
             operations,
             minimum_receive: Some(token_out_min_amount),
             to: None,
@@ -236,7 +279,7 @@ fn execute_swap_operations(
 }
 
 pub fn execute_swap_non_vault_funds(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     force_swap_route: bool,
@@ -281,7 +324,7 @@ pub fn execute_swap_non_vault_funds(
             .checked_div(Uint128::new(2))?;
 
         swap_msgs.push(generate_swap_message(
-            deps.querier,
+            deps.branch(),
             &vault_config.dex_router,
             &current_swap_route.recommended_swap_route_token_0,
             &current_swap_route.token_in_denom,
@@ -290,7 +333,7 @@ pub fn execute_swap_non_vault_funds(
             force_swap_route,
         )?);
         swap_msgs.push(generate_swap_message(
-            deps.querier,
+            deps.branch(),
             &vault_config.dex_router,
             &current_swap_route.recommended_swap_route_token_1,
             &current_swap_route.token_in_denom,
@@ -307,7 +350,7 @@ pub fn execute_swap_non_vault_funds(
 }
 
 fn generate_swap_message(
-    querier: QuerierWrapper,
+    deps: DepsMut,
     dex_router_addr: &Addr,
     current_swap_route: &Option<SwapOperationsListUnchecked>,
     token_in_denom: &String,
@@ -319,7 +362,7 @@ fn generate_swap_message(
     let ask_asset = AssetInfo::Native(token_out_denom.to_string());
 
     let recommended_out: Uint128 = match current_swap_route.clone() {
-        Some(operations) => querier.query_wasm_smart(
+        Some(operations) => deps.querier.query_wasm_smart(
             dex_router_addr.to_string(),
             &ApolloQueryMsg::SimulateSwapOperations {
                 offer_amount: token_in_amount,
@@ -328,26 +371,22 @@ fn generate_swap_message(
         )?,
         None => 0u128.into(),
     };
-    let best_path: Option<BestPathForPairResponse> = querier.query_wasm_smart(
-        dex_router_addr.to_string(),
-        &ApolloQueryMsg::BestPathForPair {
-            offer_asset: offer_asset.into(),
-            ask_asset: ask_asset.into(),
-            exclude_paths: None,
-            offer_amount: token_in_amount,
-        },
+
+    let (best_path, best_out) = get_best_path(
+        deps,
+        dex_router_addr,
+        token_in_amount,
+        offer_asset,
+        ask_asset,
     )?;
-    let best_outcome = best_path
-        .as_ref()
-        .map_or(Uint128::zero(), |path| path.return_amount);
 
     // Determine the route to use
     let route = if force_swap_route {
         current_swap_route
             .clone()
             .ok_or(ContractError::TryForceRouteWithoutRecommendedSwapRoute {})?
-    } else if best_outcome >= recommended_out {
-        best_path.expect("Expected a best path").operations.into()
+    } else if best_out >= recommended_out {
+        best_path.expect("Expected a best path").into()
     } else {
         current_swap_route
             .clone()

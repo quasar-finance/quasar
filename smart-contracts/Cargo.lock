@@ -297,15 +297,15 @@ dependencies = [
  "apollo-cw-asset",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-dex",
- "cw-dex-router",
+ "cw-dex-osmosis",
+ "cw-dex-router 0.4.0",
  "cw-storage-plus",
  "cw-utils",
  "cw-vault-multi-standard",
  "cw2",
  "num_enum",
  "osmosis-std 0.24.0",
- "osmosis-std-derive",
+ "osmosis-std-derive 0.20.1",
  "osmosis-test-tube",
  "proptest",
  "prost 0.12.4",
@@ -381,9 +381,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-crypto"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6b4c3f9c4616d6413d4b5fc4c270a4cc32a374b9be08671e80e1a019f805d8f"
+checksum = "dd50718a2b6830ce9eb5d465de5a018a12e71729d66b70807ce97e6dd14f931d"
 dependencies = [
  "digest 0.10.7",
  "ecdsa",
@@ -395,18 +395,18 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-derive"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c586ced10c3b00e809ee664a895025a024f60d65d34fe4c09daed4a4db68a3f3"
+checksum = "242e98e7a231c122e08f300d9db3262d1007b51758a8732cd6210b3e9faa4f3a"
 dependencies = [
  "syn 1.0.109",
 ]
 
 [[package]]
 name = "cosmwasm-schema"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8467874827d384c131955ff6f4d47d02e72a956a08eb3c0ff24f8c903a5517b4"
+checksum = "7879036156092ad1c22fe0d7316efc5a5eceec2bc3906462a2560215f2a2f929"
 dependencies = [
  "cosmwasm-schema-derive",
  "schemars",
@@ -417,9 +417,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-schema-derive"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6db85d98ac80922aef465e564d5b21fa9cfac5058cb62df7f116c3682337393"
+checksum = "0bb57855fbfc83327f8445ae0d413b1a05ac0d68c396ab4d122b2abd7bb82cb6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -428,9 +428,9 @@ dependencies = [
 
 [[package]]
 name = "cosmwasm-std"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "712fe58f39d55c812f7b2c84e097cdede3a39d520f89b6dc3153837e31741927"
+checksum = "78c1556156fdf892a55cced6115968b961eaaadd6f724a2c2cb7d1e168e32dd3"
 dependencies = [
  "base64 0.21.7",
  "bech32 0.9.1",
@@ -537,6 +537,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-dex"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd655e137d57d6c77696247d2417cfee75b15d027b1465741f45fa88bfcbf1b7"
+dependencies = [
+ "apollo-cw-asset",
+ "apollo-utils",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-utils",
+ "cw20",
+ "osmosis-std 0.19.2",
+ "thiserror",
+]
+
+[[package]]
+name = "cw-dex-osmosis"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1691781e4deda5b4fb564542752e9226763997996a71abadb80f770cd7ec04c"
+dependencies = [
+ "apollo-cw-asset",
+ "apollo-utils",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-dex 0.5.3",
+ "cw-utils",
+ "osmosis-std 0.22.0",
+]
+
+[[package]]
 name = "cw-dex-router"
 version = "0.2.1-rc.1"
 source = "git+https://github.com/quasar-finance/cw-dex-router?branch=feat/deprecate-osmo-gamm#19283e9b7f960fd586bb6537ff133ac5230ef623"
@@ -546,7 +577,26 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-controllers",
- "cw-dex",
+ "cw-dex 0.1.3",
+ "cw-storage-plus",
+ "cw2",
+ "cw20",
+ "thiserror",
+]
+
+[[package]]
+name = "cw-dex-router"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e4582cf61a32d86ec08bc3ead5791be941ede5220e69abd0940776d23af009b"
+dependencies = [
+ "apollo-cw-asset",
+ "apollo-utils",
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-dex 0.5.3",
+ "cw-dex-osmosis",
  "cw-storage-plus",
  "cw2",
  "cw20",
@@ -1370,13 +1420,45 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "osmosis-std"
+version = "0.19.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "798fade51443a0e07eb25b59a11b320b9e8f03e6e8fbe14c520258f04742fe13"
+dependencies = [
+ "chrono",
+ "cosmwasm-std",
+ "osmosis-std-derive 0.16.2",
+ "prost 0.11.9",
+ "prost-types 0.11.9",
+ "schemars",
+ "serde",
+ "serde-cw-value",
+]
+
+[[package]]
+name = "osmosis-std"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e87adf61f03306474ce79ab322d52dfff6b0bcf3aed1e12d8864ac0400dec1bf"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive",
+ "osmosis-std-derive 0.20.1",
+ "prost 0.12.4",
+ "prost-types 0.12.3",
+ "schemars",
+ "serde",
+ "serde-cw-value",
+]
+
+[[package]]
+name = "osmosis-std"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8641c376f01f5af329dc2a34e4f5527eaeb0bde18cda8d86fed958d04c86159c"
+dependencies = [
+ "chrono",
+ "cosmwasm-std",
+ "osmosis-std-derive 0.20.1",
  "prost 0.12.4",
  "prost-types 0.12.3",
  "schemars",
@@ -1392,12 +1474,25 @@ checksum = "30a7a605885934d9bcfcd544f4e2098365725974522cbf8d696f65c5bb8047b3"
 dependencies = [
  "chrono",
  "cosmwasm-std",
- "osmosis-std-derive",
+ "osmosis-std-derive 0.20.1",
  "prost 0.12.4",
  "prost-types 0.12.3",
  "schemars",
  "serde",
  "serde-cw-value",
+]
+
+[[package]]
+name = "osmosis-std-derive"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f47f0b2f22adb341bb59e5a3a1b464dde033181954bd055b9ae86d6511ba465b"
+dependencies = [
+ "itertools 0.10.5",
+ "proc-macro2",
+ "prost-types 0.11.9",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1709,7 +1804,7 @@ dependencies = [
  "cl-vault",
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-dex-router",
+ "cw-dex-router 0.2.1-rc.1",
  "cw-multi-test",
  "cw-storage-plus",
  "cw2",

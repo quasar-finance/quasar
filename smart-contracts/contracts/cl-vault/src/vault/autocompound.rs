@@ -35,11 +35,9 @@ pub fn execute_autocompound(
     env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    // TODO: Validate claim_after timestamp
-
-    let position_id = (POSITION.load(deps.storage)?).position_id;
+    let position_state = POSITION.load(deps.storage)?;
     let position = ConcentratedliquidityQuerier::new(&deps.querier)
-        .position_by_id(position_id)?
+        .position_by_id(position_state.position_id)?
         .position
         .ok_or(ContractError::PositionNotFound)?
         .position
@@ -47,8 +45,6 @@ pub fn execute_autocompound(
 
     let balance = get_unused_balances(&deps.querier, &env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
-
-    // TODO: We should swap() here
 
     let (token0, token1) =
         must_pay_one_or_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;

@@ -3,9 +3,9 @@ mod tests {
     use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::Addr;
     use cosmwasm_std::{Coin, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
-    use cw_dex_router::operations::SwapOperationBase;
+    use cw_dex_osmosis::OsmosisPool;
     use cw_dex_router::operations::SwapOperationsListUnchecked;
+    use cw_dex_router::operations::{Pool as CwDexRouterPool, SwapOperationBase};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -216,18 +216,18 @@ mod tests {
         // Define CW Dex Router swap routes
         let path1 = vec![
             SwapOperationBase::new(
-                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
+                CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
                 AssetInfoBase::Native(DENOM_REWARD.to_string()),
                 AssetInfoBase::Native(DENOM_QUOTE.to_string()),
             ),
             SwapOperationBase::new(
-                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[0])),
+                CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pools_ids[0])),
                 AssetInfoBase::Native(DENOM_QUOTE.to_string()),
                 AssetInfoBase::Native(DENOM_BASE.to_string()),
             ),
         ];
         let path2 = vec![SwapOperationBase::new(
-            cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
+            CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
             AssetInfoBase::Native(DENOM_REWARD.to_string()),
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
         )];

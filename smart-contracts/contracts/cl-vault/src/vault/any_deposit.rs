@@ -3,8 +3,10 @@ use cosmwasm_std::{
     coin, Addr, Coin, CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
-use cw_dex::Pool::Osmosis;
-use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
+use cw_dex_osmosis::OsmosisPool;
+use cw_dex_router::operations::{
+    Pool as CwDexRouterPool, SwapOperationBase, SwapOperationsListUnchecked,
+};
 
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
@@ -350,9 +352,7 @@ fn swap_msg_token_in_out_amounts(
             token_out_denom: token_out_denom.clone(),
             recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
                 SwapOperationBase {
-                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(
-                        pool_config.pool_id,
-                    )),
+                    pool: CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pool_config.pool_id)),
                     offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
                     ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
                 },

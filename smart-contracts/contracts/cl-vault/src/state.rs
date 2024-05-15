@@ -130,6 +130,14 @@ pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128
 pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 #[cw_serde]
+pub struct BestPathForPairResponse {
+    /// the operations that will be executed to perform the swap
+    pub operations: cw_dex_router::operations::SwapOperationsList,
+    /// the amount of tokens that are expected to be received after the swap
+    pub return_amount: Uint128,
+}
+
+#[cw_serde]
 pub struct ModifyRangeState {
     // pre-withdraw state items
     pub lower_tick: i64,

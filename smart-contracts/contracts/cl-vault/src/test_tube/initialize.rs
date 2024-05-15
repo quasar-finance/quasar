@@ -2,10 +2,12 @@
 pub mod initialize {
     use apollo_cw_asset::{AssetInfoBase, AssetInfoUnchecked};
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
+    use cw_dex_osmosis::OsmosisPool;
     use cw_dex_router::msg::ExecuteMsg as DexExecuteMsg;
     use cw_dex_router::msg::InstantiateMsg as DexInstantiate;
-    use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
+    use cw_dex_router::operations::{
+        Pool as CwDexRouterPool, SwapOperationBase, SwapOperationsListUnchecked,
+    };
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
@@ -492,6 +494,10 @@ pub mod initialize {
         // Query all created pools (assuming previous code created the pools successfully)
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
         let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        println!(
+            "pool 4: {:?}",
+            Pool::decode(pools.pools[3].value.as_slice()).unwrap()
+        );
 
         // Collect pool ids assuming the order of creation matches the order of querying
         let mut cl_pools = vec![];
@@ -500,7 +506,7 @@ pub mod initialize {
             cl_pools.push(cl_pool.id);
         }
 
-        // Create pools
+        // Create initial positions on each CL pool
         for (index, cl_pool_id) in cl_pools.iter().enumerate() {
             cl.create_position(
                 MsgCreatePosition {
@@ -508,6 +514,7 @@ pub mod initialize {
                     sender: admin.address(),
                     lower_tick,
                     upper_tick,
+                    // tokens_provided: pools_coins[index].clone(),
                     tokens_provided: pools_coins[index].clone(),
                     token_min_amount0: token_min_amount0.to_string(),
                     token_min_amount1: token_min_amount1.to_string(),
@@ -519,21 +526,6 @@ pub mod initialize {
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
-
-        // Create a first position in the pool with the admin user
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: vault_pool.id,
-                sender: admin.address(),
-                lower_tick,
-                upper_tick,
-                tokens_provided: tokens_provided.clone(),
-                token_min_amount0: token_min_amount0.to_string(),
-                token_min_amount1: token_min_amount1.to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
 
         // Get and assert spot price is 1.0
         let spot_price = pm
@@ -627,7 +619,7 @@ pub mod initialize {
         assert_eq!(pools.len(), pools_coins.len());
 
         // Set Dex Router contract paths
-        for (index, pool_id) in pools.iter().enumerate() {
+        for (index, pool_id) in pools.iter().enumerate().rev() {
             println!("index: {:?}", index);
             println!("pool_id: {:?}", pool_id);
             println!("dex_router: {:?}", dex_router);
@@ -639,7 +631,7 @@ pub mod initialize {
                     ),
                     ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
                     path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
+                        pool: CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
                         offer_asset_info: AssetInfoBase::Native(
                             pools_coins[index][0].denom.to_string(),
                         ),
@@ -659,7 +651,7 @@ pub mod initialize {
                     ),
                     ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
                     path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
+                        pool: CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
                         offer_asset_info: AssetInfoBase::Native(
                             pools_coins[index][0].denom.to_string(),
                         ),
@@ -683,12 +675,12 @@ pub mod initialize {
                 ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
                 path: SwapOperationsListUnchecked::new(vec![
                     SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools[1])),
+                        pool: CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pools[1])),
                         ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
                         offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
                     },
                     SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools[0])),
+                        pool: CwDexRouterPool::Osmosis(OsmosisPool::unchecked(pools[0])),
                         offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
                         ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
                     },
