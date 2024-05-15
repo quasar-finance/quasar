@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+#[cfg(claim)]
 use cosmwasm_std::Binary;
 
 use crate::state::{Receiver, Receivers};
@@ -13,6 +14,7 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Admin(AdminMsg),
     Split {},
+    #[cfg(claim)]
     Claim { claims: Vec<Claim> },
 }
 
@@ -22,6 +24,7 @@ pub enum AdminMsg {
     UpdateAdmin { new: String },
 }
 
+#[cfg(claim)]
 #[cw_serde]
 pub struct Claim {
     pub address: String,

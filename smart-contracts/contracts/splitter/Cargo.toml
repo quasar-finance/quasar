@@ -23,6 +23,7 @@ overflow-checks = true
 [features]
 # use library feature to disable all instantiate/execute/query exports
 library = []
+claim = []
 
 [package.metadata.scripts]
 optimize = """docker run --rm -v "$(pwd)":/code \

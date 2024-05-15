@@ -15,11 +15,11 @@ pub fn execute_admin(
     assert_admin(deps.as_ref(), env, info)?;
     match msg {
         AdminMsg::UpdateReceivers { new } => update_receivers(deps, new),
-        // TODO make this a two step?
         AdminMsg::UpdateAdmin { new } => update_admin(deps, &new),
     }
 }
 
+/// Overwrite the old receivers with a complete new set of receivers
 pub fn update_receivers(deps: DepsMut, new: Vec<Receiver>) -> Result<Response, ContractError> {
     let recv: Receivers = new.try_into()?;
     RECEIVERS.save(deps.storage, &recv)?;
@@ -29,6 +29,7 @@ pub fn update_receivers(deps: DepsMut, new: Vec<Receiver>) -> Result<Response, C
         .add_attribute("new", recv.to_string()))
 }
 
+/// check whether the given admin address is either the admin inside the contract state or the cosmwasm admin of the contract
 fn assert_admin(deps: Deps, env: Env, info: MessageInfo) -> Result<(), ContractError> {
     if ADMIN.load(deps.storage)? == info.sender {
         Ok(())
@@ -47,6 +48,7 @@ fn assert_admin(deps: Deps, env: Env, info: MessageInfo) -> Result<(), ContractE
     }
 }
 
+/// Overwrite the old admin with a new admin address
 pub fn update_admin(deps: DepsMut, new: &str) -> Result<Response, ContractError> {
     let new_admin = deps.api.addr_validate(new)?;
 

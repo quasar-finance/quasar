@@ -1,7 +1,10 @@
 use cosmwasm_std::{attr, coin, Attribute, BankMsg, CosmosMsg, Deps, Env, Fraction, Response};
 
-use crate::{msg::Claim, state::RECEIVERS, ContractError};
+use crate::{state::RECEIVERS, ContractError};
+#[cfg(claim)]
+use crate::msg::Claim;
 
+/// Split the current contract balance between all receivers
 pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
     let receivers = RECEIVERS.load(deps.storage)?;
     let balance = deps.querier.query_all_balances(env.contract.address)?;
@@ -30,7 +33,9 @@ pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {
     Ok(Response::new().add_messages(to_send))
 }
 
-// TODO is it save to just execute user given binary messages? Since we send no funds along I'd assume it's save except if this contract is used as the receiver for CW20's
+/// Claim any funds through the fee splitter contract, this is needed for any strategy 
+/// This also means that this contract should not be receiving any CW20s
+#[cfg(claim)]
 pub fn execute_claim(claims: Vec<Claim>) -> Result<Response, ContractError> {
     let (attrs, msgs): (Vec<Attribute>, Vec<CosmosMsg>) = claims
         .into_iter()
@@ -48,11 +53,11 @@ pub fn execute_claim(claims: Vec<Claim>) -> Result<Response, ContractError> {
 
     Ok(Response::new().add_messages(msgs).add_attributes(attrs))
 }
-
+#[cfg(claim)]
 #[cfg(test)]
 mod tests {
     use cl_vault::msg::AdminExtensionExecuteMsg;
-    use cosmwasm_std::{to_json_binary, Addr};
+    use cosmwasm_std::to_json_binary;
 
     use super::*;
 
