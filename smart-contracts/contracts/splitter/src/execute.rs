@@ -2,9 +2,9 @@ use cosmwasm_std::{coin, BankMsg, CosmosMsg, Deps, Env, Fraction, Response};
 
 #[cfg(claim)]
 use crate::msg::Claim;
+use crate::{state::RECEIVERS, ContractError};
 #[cfg(claim)]
 use cosmwasm_std::{attr, Attribute};
-use crate::{state::RECEIVERS, ContractError};
 
 /// Split the current contract balance between all receivers
 pub fn execute_split(deps: Deps, env: Env) -> Result<Response, ContractError> {

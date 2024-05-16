@@ -63,7 +63,10 @@ mod tests {
 
     use cosmwasm_std::{testing::mock_dependencies, Addr, Decimal};
 
-    use crate::{state::{Receiver, ADMIN, RECEIVERS}, ContractError};
+    use crate::{
+        state::{Receiver, ADMIN, RECEIVERS},
+        ContractError,
+    };
 
     use super::{update_admin, update_receivers};
 
@@ -104,19 +107,22 @@ mod tests {
             )
             .unwrap();
 
-            let new_receivers = vec![
-                Receiver {
-                    address: Addr::unchecked("alice"),
-                    share: Decimal::from_str("0.5").unwrap(),
-                },
-                Receiver {
-                    address: Addr::unchecked("bob"),
-                    share: Decimal::from_str("0.5").unwrap(),
-                },
-            ];
+        let new_receivers = vec![
+            Receiver {
+                address: Addr::unchecked("alice"),
+                share: Decimal::from_str("0.5").unwrap(),
+            },
+            Receiver {
+                address: Addr::unchecked("bob"),
+                share: Decimal::from_str("0.5").unwrap(),
+            },
+        ];
 
         update_receivers(deps.as_mut(), new_receivers.clone()).unwrap();
-        assert_eq!(RECEIVERS.load(deps.as_mut().storage).unwrap(), new_receivers.try_into().unwrap())
+        assert_eq!(
+            RECEIVERS.load(deps.as_mut().storage).unwrap(),
+            new_receivers.try_into().unwrap()
+        )
     }
 
     #[test]
@@ -143,16 +149,16 @@ mod tests {
             )
             .unwrap();
 
-            let new_receivers = vec![
-                Receiver {
-                    address: Addr::unchecked("alice"),
-                    share: Decimal::from_str("0.5").unwrap(),
-                },
-                Receiver {
-                    address: Addr::unchecked("bob"),
-                    share: Decimal::from_str("0.4").unwrap(),
-                },
-            ];
+        let new_receivers = vec![
+            Receiver {
+                address: Addr::unchecked("alice"),
+                share: Decimal::from_str("0.5").unwrap(),
+            },
+            Receiver {
+                address: Addr::unchecked("bob"),
+                share: Decimal::from_str("0.4").unwrap(),
+            },
+        ];
 
         let err = update_receivers(deps.as_mut(), new_receivers.clone()).unwrap_err();
         assert_eq!(err, ContractError::IncorrectReceivers)
