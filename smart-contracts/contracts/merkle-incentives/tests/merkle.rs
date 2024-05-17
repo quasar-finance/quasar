@@ -17,12 +17,13 @@ use rs_merkle::{
     Hasher, MerkleProof, MerkleTree,
 };
 
-#[path="initialize.rs"] mod initialize;
+#[path = "initialize.rs"]
+mod initialize;
 
 #[test]
 #[ignore]
 fn merkle_complete_cycle_works() {
-    let (app, contract, admin) = initialize::default_init(vec![Coin {
+    let (app, contract, admin, incentive_admin) = initialize::default_init(vec![Coin {
         denom: "ugauge".to_string(),
         amount: Uint128::new(1000000000000000000u128),
     }]);
@@ -128,6 +129,21 @@ fn merkle_complete_cycle_works() {
         "1000000000000000000".to_string()
     );
 
+    // check that we can update as the incentive admin
+    let binding = STANDARD.encode(merkle_tree.root().unwrap());
+    let merkle_root: &str = binding.as_str();
+
+    let _ = wasm
+        .execute(
+            contract.as_str(),
+            &ExecuteMsg::AdminMsg(AdminExecuteMsg::UpdateMerkleRoot {
+                new_root: merkle_root.to_string(),
+            }),
+            &[],
+            &incentive_admin,
+        )
+        .unwrap();
+
     // Execute AdminMsg::UpdateAdmin
     let new_admin = app
         .init_account(&[Coin::new(1_000_000_000, "uosmo")])
@@ -146,8 +162,7 @@ fn merkle_complete_cycle_works() {
     // TODO: Assert admin changed and queriable
 
     // AdminMsg::UpdateMerkleRoot
-    let binding = STANDARD.encode(merkle_tree.root().unwrap());
-    let merkle_root: &str = binding.as_str();
+    // check that we can update as the new admin
     let _ = wasm
         .execute(
             contract.as_str(),
@@ -226,7 +241,7 @@ fn merkle_complete_cycle_works() {
 #[test]
 #[ignore]
 fn merkle_complete_cycle_works_mainnet_data() {
-    let (app, contract, admin) = initialize::default_init(vec![
+    let (app, contract, admin, incentive_admin) = initialize::default_init(vec![
         Coin {
             denom: "factory/osmo1nz7qdp7eg30sr959wvrwn9j9370h4xt6ttm0h3/ussosmo".to_string(),
             amount: Uint128::new(300000000u128),
@@ -297,7 +312,7 @@ fn merkle_complete_cycle_works_mainnet_data() {
                 new_root: merkle_root.to_string(),
             }),
             &[],
-            &admin,
+            &incentive_admin,
         )
         .unwrap();
 

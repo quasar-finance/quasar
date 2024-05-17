@@ -3,7 +3,9 @@ use osmosis_test_tube::{Account, Module, OsmosisTestApp, SigningAccount, Wasm};
 
 use merkle_incentives::msg::InstantiateMsg;
 
-pub fn default_init(gauge_coins: Vec<Coin>) -> (OsmosisTestApp, Addr, SigningAccount) {
+pub fn default_init(
+    gauge_coins: Vec<Coin>,
+) -> (OsmosisTestApp, Addr, SigningAccount, SigningAccount) {
     init_test_contract(
         "./test-tube-build/wasm32-unknown-unknown/release/merkle_incentives.wasm",
         gauge_coins,
@@ -13,7 +15,7 @@ pub fn default_init(gauge_coins: Vec<Coin>) -> (OsmosisTestApp, Addr, SigningAcc
 pub fn init_test_contract(
     filename: &str,
     gauge_coins: Vec<Coin>,
-) -> (OsmosisTestApp, Addr, SigningAccount) {
+) -> (OsmosisTestApp, Addr, SigningAccount, SigningAccount) {
     // Create new osmosis appchain instance
     let app = OsmosisTestApp::new();
     let wasm = Wasm::new(&app);
@@ -26,6 +28,7 @@ pub fn init_test_contract(
 
     // Create new account with initial funds
     let admin = app.init_account(&coins_with_uosmo).unwrap();
+    let incentive_admin = app.init_account(&coins_with_uosmo).unwrap();
 
     // Load compiled wasm bytecode
     let wasm_byte_code = std::fs::read(filename).unwrap();
@@ -40,7 +43,7 @@ pub fn init_test_contract(
         .instantiate(
             code_id,
             &InstantiateMsg {
-                incentive_admin: admin.address(),
+                incentive_admin: incentive_admin.address(),
             },
             Some(admin.address().as_str()),
             Some("merkle-incentives"),
@@ -49,7 +52,12 @@ pub fn init_test_contract(
         )
         .unwrap();
 
-    (app, Addr::unchecked(contract.data.address), admin)
+    (
+        app,
+        Addr::unchecked(contract.data.address),
+        admin,
+        incentive_admin,
+    )
 }
 
 #[test]
