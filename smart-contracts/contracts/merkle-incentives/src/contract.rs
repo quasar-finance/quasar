@@ -19,14 +19,14 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
-    _msg: InstantiateMsg,
+    _info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    INCENTIVES_ADMIN.save(deps.storage, &info.sender)?;
+    INCENTIVES_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.incentive_admin)?)?;
 
-    Ok(Response::default().add_attribute("incentive_admin", info.sender))
+    Ok(Response::default().add_attribute("incentive_admin", msg.incentive_admin))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
