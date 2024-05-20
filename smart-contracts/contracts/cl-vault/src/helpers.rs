@@ -658,7 +658,7 @@ pub fn get_liquidity_amount_for_unused_funds(
 }
 
 pub fn extract_attribute_value_by_ty_and_key(
-    events: &Vec<cosmwasm_std::Event>,
+    events: &[cosmwasm_std::Event],
     ty: &str,
     key: &str,
 ) -> Option<String> {
