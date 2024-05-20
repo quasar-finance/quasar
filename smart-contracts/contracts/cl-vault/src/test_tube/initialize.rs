@@ -41,7 +41,7 @@ pub mod initialize {
     pub const _MAX_SLIPPAGE_LOW: u64 = 9900; // this should be inline with the pool spread_factor
 
     const TOKENS_PROVIDED_AMOUNT_HIGH: &str = "100000000000000000000";
-    const SPREAD_FACTOR_HIGH: &str = "0.1";
+    pub const SPREAD_FACTOR_HIGH: &str = "0.1";
     pub const MAX_SLIPPAGE_HIGH: u64 = 9000; // this should be inline with the pool spread_factor
 
     pub const DENOM_BASE: &str = "uatom";

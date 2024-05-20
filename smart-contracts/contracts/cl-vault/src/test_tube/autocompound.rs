@@ -33,7 +33,7 @@ mod tests {
         DENOM_REWARD, DEPOSIT_AMOUNT,
     };
 
-    const DENOM_REWARD_AMOUNT: &str = "100000000000";
+    const DENOM_REWARD_AMOUNT: u128 = 100000000000;
 
     #[test]
     #[ignore]
@@ -311,10 +311,8 @@ mod tests {
         )];
 
         // Swap non vault funds to vault funds
-        // TODO: Remove that hardcoded value and make it dynamic based on REWARDS_DENOM_AMOUNT and remove spread_factor / swap_fee from it... / 2
         // 50000000000ustride to 49500000000uatom as spot price 1.0 less swap_fees
         // 50000000000ustride to 49500000000uosmo as spot price 1.0 less swap_fees
-        let swap_amount_rewards = 50000000000u128;
         let expected_amount_rewards = 49500000000u128;
 
         wasm.execute(
@@ -351,7 +349,8 @@ mod tests {
         let balances_after_swap_quote =
             get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
         assert_eq!(
-            swap_amount_rewards
+            DENOM_REWARD_AMOUNT
+                .div(2)
                 .checked_add(expected_amount_rewards)
                 .unwrap(),
             balances_after_swap_quote
