@@ -1,9 +1,10 @@
 mod admin;
 mod any_deposit;
+mod authz;
+mod autocompound;
 mod deposit_withdraw;
-mod helpers;
-mod initialize;
+pub mod helpers;
+pub mod initialize;
 mod proptest;
 mod range;
-mod redeposit;
 mod rewards;

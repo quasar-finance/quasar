@@ -1,4 +1,12 @@
-use crate::msg::{ExecuteMsg, ExtensionExecuteMsg};
+use cosmwasm_std::{
+    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
+    SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+};
+use osmosis_std::types::osmosis::{
+    concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
+    tokenfactory::v1beta1::MsgBurn,
+};
+
 use crate::{
     helpers::{get_unused_balances, sort_tokens},
     reply::Replies,
@@ -6,16 +14,9 @@ use crate::{
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
-use cosmwasm_std::{
-    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Event, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
-};
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier,
-    osmosis::{
-        concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
-        tokenfactory::v1beta1::MsgBurn,
-    },
+use crate::{
+    msg::{ExecuteMsg, ExtensionExecuteMsg},
+    query::query_total_vault_token_supply,
 };
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
@@ -23,7 +24,7 @@ use osmosis_std::types::{
 #[allow(clippy::unnecessary_fallible_conversions)]
 pub fn execute_withdraw(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     info: MessageInfo,
     recipient: Option<String>,
     shares_to_withdraw: Uint256,
@@ -46,19 +47,14 @@ pub fn execute_withdraw(
     let left_over = user_shares
         .checked_sub(shares_to_withdraw)
         .map_err(|_| ContractError::InsufficientFunds)?;
-    SHARES.save(deps.storage, info.sender, &left_over.try_into().unwrap())?;
+    SHARES.save(deps.storage, info.sender, &left_over.try_into()?)?;
 
-    let total_shares = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.clone())?
-        .amount
-        .unwrap()
-        .amount
-        .parse()?;
+    let total_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
     // get the dust amounts belonging to the user
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
-    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, &env)?;
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
@@ -77,7 +73,7 @@ pub fn execute_withdraw(
 
     CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
 
-    let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into().unwrap();
+    let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into()?;
     // burn the shares
     let burn_coin = coin(shares_to_withdraw_u128.u128(), vault_denom);
     let burn_msg: CosmosMsg = MsgBurn {
@@ -90,7 +86,7 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw(deps, &env, shares_to_withdraw_u128)?;
+    let withdraw_msg = withdraw_msg(deps, &env, shares_to_withdraw_u128)?;
 
     let collect_rewards_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
@@ -114,36 +110,6 @@ pub fn execute_withdraw(
         )))
 }
 
-fn withdraw(
-    deps: DepsMut,
-    env: &Env,
-    user_shares: Uint128,
-) -> Result<MsgWithdrawPosition, ContractError> {
-    let existing_position = get_position(deps.storage, &deps.querier)?;
-    let existing_liquidity: Decimal256 = existing_position
-        .position
-        .ok_or(ContractError::PositionNotFound)?
-        .liquidity
-        .parse()?;
-
-    let bq = BankQuerier::new(&deps.querier);
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-
-    let total_vault_shares: Uint128 = bq
-        .supply_of(vault_denom)?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
-
-    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
-        .checked_mul(existing_liquidity)?
-        .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
-
-    withdraw_from_position(deps.storage, env, user_liquidity)
-}
-
 pub fn handle_withdraw_user_reply(
     deps: DepsMut,
     data: SubMsgResult,
@@ -165,18 +131,39 @@ pub fn handle_withdraw_user_reply(
         to_address: user.to_string(),
         amount: sort_tokens(vec![coin0.clone(), coin1.clone()]),
     };
-    Ok(Response::new().add_message(msg).add_event(
-        Event::new("withdraw_cl_position")
-            .add_attribute("method", "withdraw_position_reply")
-            .add_attribute("action", "withdraw")
-            .add_attribute("token0_amount", coin0.clone().amount)
-            .add_attribute("token1_amount", coin1.clone().amount),
-    ))
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_withdraw_user")
+        .add_attribute("amount0", coin0.clone().amount)
+        .add_attribute("amount1", coin1.clone().amount))
+}
+
+fn withdraw_msg(
+    deps: DepsMut,
+    env: &Env,
+    user_shares: Uint128,
+) -> Result<MsgWithdrawPosition, ContractError> {
+    let existing_position = get_position(deps.storage, &deps.querier)?;
+    let existing_liquidity: Decimal256 = existing_position
+        .position
+        .ok_or(ContractError::PositionNotFound)?
+        .liquidity
+        .parse()?;
+
+    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
+
+    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
+        .checked_mul(existing_liquidity)?
+        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
+
+    withdraw_from_position(deps.storage, env, user_liquidity)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
+        // rewards::CoinList,
         rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
@@ -200,6 +187,7 @@ mod tests {
         );
         let env = mock_env();
 
+        // TODO: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::new())
             .unwrap();
@@ -215,7 +203,7 @@ mod tests {
             .unwrap();
 
         let _res =
-            execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
+            execute_withdraw(deps.as_mut(), &env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
         assert_eq!(
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),

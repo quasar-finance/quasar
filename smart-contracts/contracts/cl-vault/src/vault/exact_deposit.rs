@@ -1,10 +1,9 @@
-use cosmwasm_std::{attr, coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
+use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
 
-use osmosis_std::types::{
-    cosmos::bank::v1beta1::BankQuerier, osmosis::tokenfactory::v1beta1::MsgMint,
-};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
 use crate::helpers::{get_asset0_value, get_depositable_tokens, refund_bank_msg};
+use crate::query::query_total_vault_token_supply;
 use crate::{
     helpers::must_pay_one_or_two,
     query::query_total_assets,
@@ -46,13 +45,7 @@ pub(crate) fn execute_exact_deposit(
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_vault_shares: Uint256 = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.clone())?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+    let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
     let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
     let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
@@ -94,11 +87,6 @@ pub(crate) fn execute_exact_deposit(
         },
     )?;
 
-    let mint_attrs = vec![
-        attr("mint_shares_amount", user_shares),
-        attr("receiver", recipient.as_str()),
-    ];
-
     // TODO the locking of minted shares is a band-aid for giving out rewards to users,
     // once tokenfactory has send hooks, we can remove the lockup and have the users
     // own the shares in their balance
@@ -111,12 +99,13 @@ pub(crate) fn execute_exact_deposit(
     };
 
     let mut resp = Response::new()
-        .add_attribute("method", "exact_deposit")
+        .add_attribute("method", "execute")
         .add_attribute("action", "exact_deposit")
         .add_attribute("amount0", deposit.0)
         .add_attribute("amount1", deposit.1)
         .add_message(mint_msg)
-        .add_attributes(mint_attrs);
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str());
 
     if let Some((bank_msg, bank_attr)) = refund_bank_msg(
         recipient,
@@ -147,8 +136,7 @@ mod tests {
 
     use crate::helpers::get_depositable_tokens;
     use crate::{
-        rewards::CoinList,
-        state::{PoolConfig, Position, POSITION, STRATEGIST_REWARDS},
+        state::{Position, POSITION},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
 
@@ -192,10 +180,16 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let mut deps = mock_deps_with_position(None, Some(token1.clone()));
-        let mutdeps = deps.as_mut();
+        // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
+        let mut deps = mock_deps_with_position(
+            Some(Coin {
+                denom: "token0".to_string(),
+                amount: Uint128::zero(),
+            }),
+            Some(token1.clone()),
+        );
 
-        let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
+        let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
         assert_eq!(
             result,
             (
@@ -216,10 +210,16 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let mut deps = mock_deps_with_position(Some(token0.clone()), None);
-        let mutdeps = deps.as_mut();
+        // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
+        let mut deps = mock_deps_with_position(
+            Some(token0.clone()),
+            Some(Coin {
+                denom: "token1".to_string(),
+                amount: Uint128::zero(),
+            }),
+        );
 
-        let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
+        let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
         assert_eq!(
             result,
             (
@@ -242,10 +242,10 @@ mod tests {
 
         // we use a ratio of 1/2
         let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
-        let mutdeps = deps.as_mut();
 
         let result =
-            get_depositable_tokens(mutdeps, coin(2000, "token0"), coin(5000, "token1")).unwrap();
+            get_depositable_tokens(deps.as_mut(), coin(2000, "token0"), coin(5000, "token1"))
+                .unwrap();
         assert_eq!(
             result,
             (
@@ -303,19 +303,19 @@ mod tests {
             )
             .unwrap();
 
-        STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::new())
-            .unwrap();
-        POOL_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &PoolConfig {
-                    pool_id: 1,
-                    token0: "token0".to_string(),
-                    token1: "token1".to_string(),
-                },
-            )
-            .unwrap();
+        // STRATEGIST_REWARDS
+        //     .save(deps.as_mut().storage, &CoinList::new())
+        //     .unwrap();
+        // POOL_CONFIG
+        //     .save(
+        //         deps.as_mut().storage,
+        //         &PoolConfig {
+        //             pool_id: 1,
+        //             token0: "token0".to_string(),
+        //             token1: "token1".to_string(),
+        //         },
+        //     )
+        //     .unwrap();
 
         execute_exact_deposit(
             deps.as_mut(),

@@ -1,13 +1,10 @@
-use crate::error::ContractResult;
-use crate::helpers::{assert_admin, sort_tokens};
+use crate::helpers::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
-use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, VaultConfig, ADMIN_ADDRESS, AUTO_COMPOUND_ADMIN, DEX_ROUTER, METADATA, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG,
+    Metadata, VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, METADATA, RANGE_ADMIN, VAULT_CONFIG,
 };
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{BankMsg, Decimal, DepsMut, MessageInfo, Response, StdError};
+use cosmwasm_std::{Decimal, DepsMut, MessageInfo, Response, StdError};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
@@ -31,36 +28,8 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::UpdateDexRouter { address } => {
             execute_update_dex_router(deps, info, address)
         }
-        AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
-            execute_claim_strategist_rewards(deps, info)
-        }
         AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
-        AdminExtensionExecuteMsg::UpdateAutoCompoundAdmin { address } => {
-            execute_update_auto_compound_admin(deps, info, address)
-        }
     }
-}
-
-pub fn execute_claim_strategist_rewards(
-    deps: DepsMut,
-    info: MessageInfo,
-) -> ContractResult<Response> {
-    let allowed_claimer = VAULT_CONFIG.load(deps.storage)?.treasury;
-    if info.sender != allowed_claimer {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    // get the currently attained rewards
-    let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    // empty the saved rewards
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
-
-    Ok(Response::new()
-        .add_attribute("rewards", format!("{:?}", rewards.coins()))
-        .add_message(BankMsg::Send {
-            to_address: allowed_claimer.to_string(),
-            amount: sort_tokens(rewards.coins()),
-        }))
 }
 
 /// Updates the admin of the contract.
@@ -80,7 +49,8 @@ pub fn execute_update_admin(
     ADMIN_ADDRESS.save(deps.storage, &new_admin)?;
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
@@ -103,7 +73,8 @@ pub fn execute_update_range_admin(
     RANGE_ADMIN.save(deps.storage, &new_admin)?;
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_range_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
@@ -129,7 +100,8 @@ pub fn execute_update_dex_router(
     }
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_dex_router")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_dex_router")
         .add_attribute("previous_router", previous_router)
         .add_attribute("new_router", address.unwrap_or("none".to_owned())))
 }
@@ -159,7 +131,8 @@ pub fn execute_update_config(
     VAULT_CONFIG.save(deps.storage, &updates)?;
 
     Ok(Response::default()
-        .add_attribute("action", "execute_update_config")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_config")
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
@@ -174,7 +147,8 @@ pub fn execute_update_metadata(
     METADATA.save(deps.storage, &updates)?;
 
     Ok(Response::default()
-        .add_attribute("action", "execute_update_metadata")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_metadata")
         .add_attribute("updates", format!("{:?}", updates)))
 }
 
@@ -188,30 +162,9 @@ pub fn execute_build_tick_exp_cache(
 
     build_tick_exp_cache(deps.storage)?;
 
-    Ok(Response::new().add_attribute("action", "execute_build_tick_exp_cache"))
-}
-
-/// Updates the auto compound admin of the contract.
-///
-/// This function first checks if the message sender is nonpayable. If the sender sent funds, a `ContractError::NonPayable` error is returned.
-/// Then, it checks if the message sender is the current admin. If not, a `ContractError::Unauthorized` error is returned.
-/// If both checks pass, it saves the new admin address in the state.
-pub fn execute_update_auto_compound_admin(
-    deps: DepsMut,
-    info: MessageInfo,
-    address: String,
-) -> Result<Response, ContractError> {
-    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.as_ref(), &info.sender)?;
-
-    let previous_admin = AUTO_COMPOUND_ADMIN.load(deps.storage)?;
-    let new_admin = deps.api.addr_validate(&address)?;
-    AUTO_COMPOUND_ADMIN.save(deps.storage, &new_admin)?;
-
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
-        .add_attribute("previous_admin", previous_admin)
-        .add_attribute("new_admin", &new_admin))
+        .add_attribute("method", "execute")
+        .add_attribute("action", "build_tick_exp_cache"))
 }
 
 #[cfg(test)]
@@ -222,7 +175,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
-        Addr, CosmosMsg, Decimal, Uint128,
+        Addr, Decimal, Uint128,
     };
 
     #[test]
@@ -232,68 +185,6 @@ mod tests {
         build_tick_exp_cache(&mut deps.storage).unwrap();
         let verify_resp = verify_tick_exp_cache(&mut deps.storage).unwrap();
         assert_eq!((), verify_resp);
-    }
-
-    #[test]
-    fn test_execute_claim_strategist_rewards_success() {
-        let treasury = Addr::unchecked("bob");
-        let mut deps = mock_dependencies();
-        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-        STRATEGIST_REWARDS
-            .save(
-                deps.as_mut().storage,
-                &CoinList::from_coins(rewards.clone()),
-            )
-            .unwrap();
-
-        VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &VaultConfig {
-                    performance_fee: Decimal::percent(20),
-                    treasury: treasury.clone(),
-                    swap_max_slippage: Decimal::percent(10),
-                    dex_router: Addr::unchecked("bob-router"),
-                },
-            )
-            .unwrap();
-
-        let response =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info(treasury.as_str(), &[]))
-                .unwrap();
-        assert_eq!(
-            CosmosMsg::Bank(BankMsg::Send {
-                to_address: treasury.to_string(),
-                amount: sort_tokens(rewards)
-            }),
-            response.messages[0].msg
-        )
-    }
-
-    #[test]
-    fn test_execute_claim_strategist_rewards_not_admin() {
-        let treasury = Addr::unchecked("bob");
-        let mut deps = mock_dependencies();
-        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-        STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
-            .unwrap();
-
-        VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &VaultConfig {
-                    performance_fee: Decimal::percent(20),
-                    treasury: treasury.clone(),
-                    swap_max_slippage: Decimal::percent(10),
-                    dex_router: Addr::unchecked("bob-router"),
-                },
-            )
-            .unwrap();
-
-        let err =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
-        assert_eq!(ContractError::Unauthorized {}, err)
     }
 
     #[test]
@@ -356,25 +247,6 @@ mod tests {
         let res = execute_update_admin(deps.as_mut(), info_admin, old_admin.to_string());
         assert!(res.is_ok());
         assert_eq!(ADMIN_ADDRESS.load(&deps.storage).unwrap(), old_admin);
-    }
-
-    #[test]
-    fn test_execute_update_auto_compound_admin_success() {
-        let old_admin = Addr::unchecked("old_admin");
-        let mut deps = mock_dependencies();
-        ADMIN_ADDRESS
-            .save(deps.as_mut().storage, &old_admin)
-            .unwrap();
-        AUTO_COMPOUND_ADMIN
-            .save(deps.as_mut().storage, &old_admin)
-            .unwrap();
-
-        let new_admin = Addr::unchecked("new_admin");
-        let info_admin: MessageInfo = mock_info("old_admin", &[]);
-
-        execute_update_auto_compound_admin(deps.as_mut(), info_admin, new_admin.to_string())
-            .unwrap();
-        assert_eq!(AUTO_COMPOUND_ADMIN.load(&deps.storage).unwrap(), new_admin);
     }
 
     #[test]

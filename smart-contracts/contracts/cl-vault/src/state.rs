@@ -19,7 +19,6 @@ pub const METADATA: Item<Metadata> = Item::new("metadata");
 
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
-pub const AUTO_COMPOUND_ADMIN: Item<Addr> = Item::new("auto_compound_admin");
 
 /// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
@@ -28,7 +27,7 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// swap max slippage
+    /// swap max slippage // TODO: This is unused
     pub swap_max_slippage: Decimal,
     /// Dex router address
     pub dex_router: Addr,
@@ -46,11 +45,10 @@ pub struct OldVaultConfig {
 }
 
 pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
-pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("new_vault_config");
-
+pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config_v2");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
-/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade
+/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade // TODO: Deprecate!
 #[cw_serde]
 pub enum MigrationStatus {
     Open,
@@ -62,9 +60,9 @@ pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status"
 #[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
-    pub token0: String,
     // todo: Verify in instantiate message
-    pub token1: String, // todo: Verify in instantiate message
+    pub token0: String,
+    pub token1: String,
 }
 
 impl PoolConfig {
@@ -115,13 +113,15 @@ pub enum RewardsStatus {
 }
 
 /// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
+#[deprecated]
 pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
 
 /// Shared collection+distribution states
+#[deprecated]
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
-/// CURRENT_REMAINDERS is a tuple of Uin128 containing the current remainder amount before performing a swap
-pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance");
+/// Swap helper states
+pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
     Item::new("current_swap_any_deposit");

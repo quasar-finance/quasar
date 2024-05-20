@@ -6,9 +6,9 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, STRATEGIST_REWARDS};
+use crate::state::ADMIN_ADDRESS;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
-use crate::{error::ContractResult, state::POOL_CONFIG, ContractError};
+use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
     attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
     MessageInfo, QuerierWrapper, Storage, Uint128, Uint256,
@@ -20,7 +20,7 @@ use osmosis_std::try_proto_to_cosmwasm_coins;
 pub(crate) fn must_pay_one_or_two(
     info: &MessageInfo,
     denoms: (String, String),
-) -> ContractResult<(Coin, Coin)> {
+) -> Result<(Coin, Coin), ContractError> {
     if info.funds.len() != 2 && info.funds.len() != 1 {
         return Err(ContractError::IncorrectAmountFunds);
     }
@@ -81,7 +81,7 @@ pub fn get_asset0_value(
 pub(crate) fn must_pay_one_or_two_from_balance(
     funds: Vec<Coin>,
     denoms: (String, String),
-) -> ContractResult<(Coin, Coin)> {
+) -> Result<(Coin, Coin), ContractError> {
     if funds.len() < 2 {
         return Err(ContractError::IncorrectAmountFunds);
     }
@@ -132,8 +132,8 @@ pub fn get_twap_price(
         pool_config.token0,
         pool_config.token1,
         Some(OsmoTimestamp {
-            seconds: start_of_window.seconds().try_into().unwrap(), // this would never fail
-            nanos: 0,                                               // is this correct?
+            seconds: start_of_window.seconds().try_into()?,
+            nanos: 0,
         }),
     )?;
 
@@ -162,13 +162,15 @@ pub fn get_depositable_tokens(
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
+    let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
+    let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
-    match (position.asset0, position.asset1) {
-        (None, _) => Ok((
+    match (asset0_amount.is_zero(), asset1_amount.is_zero()) {
+        (true, false) => Ok((
             (Uint128::zero(), token1.amount),
             (token0.amount, Uint128::zero()),
         )),
-        (_, None) => Ok((
+        (false, true) => Ok((
             (token0.amount, Uint128::zero()),
             (Uint128::zero(), token1.amount),
         )),
@@ -185,12 +187,14 @@ pub fn get_depositable_tokens(
            if token1 is limiting, we calculate the token0 amount by
            token0 = token1 * ratio0 / ratio1
         */
-        (Some(asset0), Some(asset1)) => {
+        (false, false) => {
             let token0 = token0.amount;
             let token1 = token1.amount;
-            let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+            let assets = try_proto_to_cosmwasm_coins(vec![
+                position.asset0.unwrap(),
+                position.asset1.unwrap(),
+            ])?;
             let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
-            println!("{:?}", ratio);
 
             // Refund token0 if ratio.numerator is zero
             if ratio.numerator().is_zero() {
@@ -217,6 +221,10 @@ pub fn get_depositable_tokens(
                 .try_into()?;
                 Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
             }
+        }
+        // (true, true) => {
+        _ => {
+            return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
         }
     }
 }
@@ -341,7 +349,7 @@ pub fn refund_bank_msg(
 //         // scale quote token amount down by L0/L1, take full amount of base token
 //         let new_amount_1 =
 //             amount_1.multiply_ratio(liquidity_needed_token0, liquidity_needed_token1);
-//         remainder_1 = amount_1.checked_sub(new_amount_1).unwrap();
+//         remainder_1 = amount_1.checked_sub(new_amount_1)?;
 
 //         (amount_0, new_amount_1)
 //     };
@@ -465,21 +473,10 @@ pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
 }
 
 /// this function subtracts out anything from the raw contract balance that isn't dedicated towards user or strategist rewards.
-/// this function is expensive.
-pub fn get_unused_balances(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    env: &Env,
-) -> Result<CoinList, ContractError> {
-    let mut balances =
-        CoinList::from_coins(querier.query_all_balances(env.contract.address.to_string())?);
-
-    // subtract out strategist rewards and all user rewards
-    let strategist_rewards = STRATEGIST_REWARDS.load(storage)?;
-
-    balances.sub(&strategist_rewards)?;
-
-    Ok(balances)
+pub fn get_unused_balances(querier: &QuerierWrapper, env: &Env) -> Result<CoinList, ContractError> {
+    Ok(CoinList::from_coins(
+        querier.query_all_balances(env.contract.address.to_string())?,
+    ))
 }
 
 pub fn get_max_utilization_for_ratio(
@@ -514,9 +511,29 @@ pub fn get_liquidity_amount_for_unused_funds(
     if p.position.is_none() {
         return Ok(Decimal256::zero());
     }
-    let position_unwrapped = p.position.unwrap();
-    let token0: Coin = p.asset0.unwrap().try_into()?;
-    let token1: Coin = p.asset1.unwrap().try_into()?;
+    let position_unwrapped = p.position.ok_or(ContractError::MissingPosition {})?;
+
+    // Safely unwrap asset0 and asset1, handle absence through errors
+    let token0_str = p.asset0.ok_or(ContractError::MissingAssetInfo {
+        asset: "asset0".to_string(),
+    })?;
+    let token1_str = p.asset1.ok_or(ContractError::MissingAssetInfo {
+        asset: "asset1".to_string(),
+    })?;
+
+    let token0: Coin = token0_str
+        .try_into()
+        .map_err(|_| ContractError::ConversionError {
+            asset: "asset0".to_string(),
+            msg: "Failed to convert asset0 to Coin".to_string(),
+        })?;
+    let token1: Coin = token1_str
+        .try_into()
+        .map_err(|_| ContractError::ConversionError {
+            asset: "asset1".to_string(),
+            msg: "Failed to convert asset1 to Coin".to_string(),
+        })?;
+
     // if any of the values are 0, we fill 1
     let ratio = if token0.amount.is_zero() {
         Decimal256::from_ratio(1_u128, token1.amount)
@@ -530,7 +547,7 @@ pub fn get_liquidity_amount_for_unused_funds(
 
     // then figure out based on current unused balance, what the max initial deposit could be
     // (with the ratio, what is the max tokens we can deposit)
-    let tokens = get_unused_balances(deps.storage, &deps.querier, env)?;
+    let tokens = get_unused_balances(&deps.querier, env)?;
 
     // Notice: checked_sub has been replaced with saturating_sub due to overflowing response from dex
     let unused_t0: Uint256 = tokens
@@ -568,17 +585,17 @@ pub fn get_liquidity_amount_for_unused_funds(
     // call get_single_sided_deposit_0_to_1_swap_amount or get_single_sided_deposit_1_to_0_swap_amount to see how much we would swap to enter with the rest of our funds
     let post_swap_liquidity = if leftover_balance0 > leftover_balance1 {
         let swap_amount = if pool_details.current_tick > position_unwrapped.upper_tick {
-            leftover_balance0.try_into().unwrap()
+            leftover_balance0.try_into()?
         } else {
             get_single_sided_deposit_0_to_1_swap_amount(
-                leftover_balance0.try_into().unwrap(),
+                leftover_balance0.try_into()?,
                 position_unwrapped.lower_tick,
                 pool_details.current_tick,
                 position_unwrapped.upper_tick,
             )?
         };
         // let swap_amount = get_single_sided_deposit_0_to_1_swap_amount(
-        //     leftover_balance0.try_into().unwrap(),
+        //     leftover_balance0.try_into()?,
         //     position_unwrapped.lower_tick,
         //     pool_details.current_tick,
         //     position_unwrapped.upper_tick,
@@ -602,17 +619,17 @@ pub fn get_liquidity_amount_for_unused_funds(
         }
     } else {
         let swap_amount = if pool_details.current_tick < position_unwrapped.lower_tick {
-            leftover_balance1.try_into().unwrap()
+            leftover_balance1.try_into()?
         } else {
             get_single_sided_deposit_1_to_0_swap_amount(
-                leftover_balance1.try_into().unwrap(),
+                leftover_balance1.try_into()?,
                 position_unwrapped.lower_tick,
                 pool_details.current_tick,
                 position_unwrapped.upper_tick,
             )?
         };
         // let swap_amount = get_single_sided_deposit_1_to_0_swap_amount(
-        //     leftover_balance1.try_into().unwrap(),
+        //     leftover_balance1.try_into()?,
         //     position_unwrapped.lower_tick,
         //     pool_details.current_tick,
         //     position_unwrapped.upper_tick,
@@ -640,22 +657,17 @@ pub fn get_liquidity_amount_for_unused_funds(
     Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
 }
 
-// todo: added this back for making lint issue go away. Need to fix this before deposit math change merge
 pub fn extract_attribute_value_by_ty_and_key(
-    events: Vec<cosmwasm_std::Event>,
+    events: &Vec<cosmwasm_std::Event>,
     ty: &str,
     key: &str,
 ) -> Option<String> {
     events
         .iter()
-        .find(|event| event.ty == ty)
-        .and_then(|event| {
-            event
-                .attributes
-                .iter()
-                .find(|attr| attr.key == key)
-                .map(|attr| attr.value.clone())
-        })
+        .filter(|event| event.ty == ty)
+        .flat_map(|event| event.attributes.iter())
+        .find(|attr| attr.key == key)
+        .map(|attr| attr.value.clone())
 }
 
 #[cfg(test)]

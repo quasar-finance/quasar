@@ -8,23 +8,24 @@ mod tests {
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::{
-            helpers::get_event_attributes_by_ty_and_key, initialize::initialize::default_init,
+            helpers::get_event_attributes_by_ty_and_key,
+            initialize::initialize::{fixture_default, DENOM_BASE, DENOM_QUOTE},
         },
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
 
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
         let alice = app
             .init_account(&[
+                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
@@ -207,12 +208,14 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
         let alice = app
             .init_account(&[
+                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
@@ -335,14 +338,14 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
-        //let bank = Bank::new(&app);
-
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create 3 accounts
         let users = [
             app.init_account(&[
+                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
                 Coin::new(
                     100_000_000_000_000_000_000_000_000_000_000_000_000,
                     DENOM_BASE,
@@ -354,6 +357,7 @@ mod tests {
             ])
             .unwrap(),
             app.init_account(&[
+                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
                 Coin::new(
                     100_000_000_000_000_000_000_000_000_000_000_000_000,
                     DENOM_BASE,
@@ -365,6 +369,7 @@ mod tests {
             ])
             .unwrap(),
             app.init_account(&[
+                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
                 Coin::new(
                     100_000_000_000_000_000_000_000_000_000_000_000_000,
                     DENOM_BASE,

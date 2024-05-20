@@ -2,12 +2,11 @@ use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::DEX_ROUTER;
+use crate::state::{
+    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM,
+};
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
-use crate::{
-    error::ContractResult,
-    state::{PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM},
-};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
@@ -75,11 +74,6 @@ pub struct DexRouterResponse {
     pub dex_router: String,
 }
 
-#[cw_serde]
-pub struct SharePriceResponse {
-    pub balances: Vec<Coin>,
-}
-
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
     verify_tick_exp_cache(deps.storage)
         .err()
@@ -93,16 +87,12 @@ pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, Co
         .unwrap_or(Ok(VerifyTickCacheResponse { result: Ok(()) }))
 }
 
-pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
+pub fn query_metadata(deps: Deps) -> Result<MetadataResponse, ContractError> {
     let metadata = METADATA.load(deps.storage)?;
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_supply = BankQuerier::new(&deps.querier)
-        .supply_of(vault_denom.clone())?
-        .amount
-        .unwrap()
-        .amount
-        .parse::<u128>()?
-        .into();
+    // Retrieve the total supply and parse it into the required type (u128).
+    let total_supply = query_total_vault_token_supply(deps)?.total;
+
     let admin = ADMIN_ADDRESS.load(deps.storage)?.to_string();
 
     Ok(MetadataResponse {
@@ -115,7 +105,7 @@ pub fn query_metadata(deps: Deps) -> ContractResult<MetadataResponse> {
     })
 }
 
-pub fn query_dex_router(deps: Deps) -> ContractResult<DexRouterResponse> {
+pub fn query_dex_router(deps: Deps) -> Result<DexRouterResponse, ContractError> {
     let dex_router = DEX_ROUTER.load(deps.storage)?;
 
     Ok(DexRouterResponse {
@@ -123,7 +113,7 @@ pub fn query_dex_router(deps: Deps) -> ContractResult<DexRouterResponse> {
     })
 }
 
-pub fn query_info(deps: Deps) -> ContractResult<VaultInfoResponse> {
+pub fn query_info(deps: Deps) -> Result<VaultInfoResponse, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let vault_token = VAULT_DENOM.load(deps.storage)?;
     Ok(VaultInfoResponse {
@@ -132,12 +122,12 @@ pub fn query_info(deps: Deps) -> ContractResult<VaultInfoResponse> {
     })
 }
 
-pub fn query_pool(deps: Deps) -> ContractResult<PoolResponse> {
+pub fn query_pool(deps: Deps) -> Result<PoolResponse, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     Ok(PoolResponse { pool_config })
 }
 
-pub fn query_position(deps: Deps) -> ContractResult<PositionResponse> {
+pub fn query_position(deps: Deps) -> Result<PositionResponse, ContractError> {
     let position_id = POSITION.load(deps.storage)?.position_id;
     Ok(PositionResponse {
         position_ids: vec![position_id],
@@ -148,7 +138,7 @@ pub fn query_assets_from_shares(
     deps: Deps,
     env: Env,
     shares: Uint128,
-) -> ContractResult<AssetsBalanceResponse> {
+) -> Result<AssetsBalanceResponse, ContractError> {
     let vault_supply = query_total_vault_token_supply(deps)?.total;
     let vault_assets = query_total_assets(deps, env)?;
 
@@ -166,14 +156,17 @@ pub fn query_user_assets(
     deps: Deps,
     env: Env,
     user: String,
-) -> ContractResult<AssetsBalanceResponse> {
+) -> Result<AssetsBalanceResponse, ContractError> {
     let user_shares = query_user_balance(deps, user)?.balance;
     let user_assets = query_assets_from_shares(deps, env, user_shares)?;
 
     Ok(user_assets)
 }
 
-pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserSharesBalanceResponse> {
+pub fn query_user_balance(
+    deps: Deps,
+    user: String,
+) -> Result<UserSharesBalanceResponse, ContractError> {
     let balance = SHARES
         .may_load(deps.storage, deps.api.addr_validate(&user)?)?
         .unwrap_or(Uint128::zero());
@@ -181,15 +174,16 @@ pub fn query_user_balance(deps: Deps, user: String) -> ContractResult<UserShares
 }
 
 /// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users
-pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsResponse> {
+pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let unused_balance = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let unused_balance = get_unused_balances(&deps.querier, &env)?;
 
     // add token0 unused balance to what's in the position
     let mut token0 = position
         .asset0
-        .map(|c| c.try_into().unwrap())
+        .map(|c| c.try_into())
+        .transpose()?
         .unwrap_or(coin(0, pool.token0));
 
     token0 = Coin {
@@ -201,7 +195,8 @@ pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsRes
 
     let mut token1 = position
         .asset1
-        .map(|c| c.try_into().unwrap())
+        .map(|c| c.try_into())
+        .transpose()?
         .unwrap_or(coin(0, pool.token1));
 
     token1 = Coin {
@@ -214,7 +209,9 @@ pub fn query_total_assets(deps: Deps, env: Env) -> ContractResult<TotalAssetsRes
     Ok(TotalAssetsResponse { token0, token1 })
 }
 
-pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTokenSupplyResponse> {
+pub fn query_total_vault_token_supply(
+    deps: Deps,
+) -> Result<TotalVaultTokenSupplyResponse, ContractError> {
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total = bq
@@ -225,20 +222,4 @@ pub fn query_total_vault_token_supply(deps: Deps) -> ContractResult<TotalVaultTo
         .parse::<u128>()?
         .into();
     Ok(TotalVaultTokenSupplyResponse { total })
-}
-
-/// Share price is total assets in vault vs total supply
-/// Number of shares is added here as there might be times when the number corresponding to 1 share
-/// might be zero, so in order to get a more precise price, multiple of shares can be in 10s, 100s,
-/// 1000s to get an accurate price
-pub fn query_share_price(
-    deps: Deps,
-    env: Env,
-    shares: Uint128,
-) -> ContractResult<SharePriceResponse> {
-    let user_assets = query_assets_from_shares(deps, env, shares)?.balances;
-
-    Ok(SharePriceResponse {
-        balances: user_assets,
-    })
 }

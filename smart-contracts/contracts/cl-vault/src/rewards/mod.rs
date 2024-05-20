@@ -1,4 +1,3 @@
-pub mod autocompound;
 mod distribution;
 mod helpers;
 

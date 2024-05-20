@@ -16,6 +16,7 @@ mod tests {
 
     use crate::query::AssetsBalanceResponse;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
+    use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -313,7 +314,7 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                        max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         recommended_swap_route: None,
@@ -464,8 +465,8 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
-                // TODO: evaluate using default_init() here
+            let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
+                // TODO: evaluate using fixture_default() here
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(340282366920938463463374607431768211455, "uosmo"),

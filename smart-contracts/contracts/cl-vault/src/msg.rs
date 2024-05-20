@@ -6,41 +6,52 @@ use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        SharePriceResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+        UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
 };
+
+#[cw_serde]
+pub struct SwapAsset {
+    pub token_in_denom: String,
+    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
+    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
+}
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
+    /// An interface of certain vault interaction with forced values for authz
+    Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
-    /// provides an entry point for redepositing funds to position
-    Redeposit {},
+    /// provides an entry point for autocompounding idle funds to current position
+    Autocompound {},
     /// Distribute any rewards over all users
     CollectRewards {},
-    /// Claim rewards belonging to a single user
-    AutoCompoundRewards {
-        force_swap_route: bool,
-        swap_routes: Vec<AutoCompoundAsset>,
-    },
     /// Build tick exponent cache
     BuildTickCache {},
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
+    /// SwapNonVaultFunds
+    SwapNonVaultFunds {
+        force_swap_route: bool,
+        swap_routes: Vec<SwapAsset>,
+    },
 }
 
+/// Extension messages for Authz. This interface basically reexports certain vault functionality
+/// but sets recipient forcibly to None
 #[cw_serde]
-pub struct AutoCompoundAsset {
-    pub token_in_denom: String,
-    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
-    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
+pub enum AuthzExtension {
+    ExactDeposit {},
+    AnyDeposit {},
+    Redeem { amount: Uint128 },
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -71,14 +82,8 @@ pub enum AdminExtensionExecuteMsg {
         /// The new dex router address.
         address: Option<String>,
     },
-    ClaimStrategistRewards {},
     /// Build tick exponent cache
     BuildTickCache {},
-    /// Update the auto compound admin
-    UpdateAutoCompoundAdmin {
-        /// The new admin address.
-        address: String,
-    },
 }
 
 #[cw_serde]
@@ -142,8 +147,6 @@ pub enum ClQueryMsg {
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
-    #[returns(SharePriceResponse)]
-    SharePrice { shares: Uint128 },
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
@@ -180,5 +183,4 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub struct MigrateMsg {
     pub dex_router: Addr,
-    pub auto_compound_admin: Addr,
 }
