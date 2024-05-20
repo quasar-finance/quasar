@@ -56,26 +56,6 @@ pub fn _extract_attribute_value_by_ty_and_key(
         })
 }
 
-// pub fn adjust_deposit_amounts(
-//     initial_amount0: u128,
-//     initial_amount1: u128,
-//     deposit_ratio: f64,
-// ) -> (u128, u128) {
-//     if deposit_ratio < 0.5 {
-//         // More token1 to be deposited, reduce token0 amount
-//         let adjusted_amount0 = ((1.0 - deposit_ratio) * initial_amount0 as f64) as u128;
-//         println!("adjusted_amount0: {:?}", adjusted_amount0);
-//         (adjusted_amount0, initial_amount1)
-//     } else if deposit_ratio > 0.5 {
-//         // More token0 to be deposited, reduce token1 amount
-//         let adjusted_amount1 = (deposit_ratio * initial_amount1 as f64) as u128;
-//         (initial_amount0, adjusted_amount1)
-//     } else {
-//         // Balanced deposit
-//         (initial_amount0, initial_amount1)
-//     }
-// }
-
 pub fn calculate_expected_refunds(
     initial_amount0: u128,
     initial_amount1: u128,
