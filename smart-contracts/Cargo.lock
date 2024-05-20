@@ -259,6 +259,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "burn_coins"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "itertools 0.12.1",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

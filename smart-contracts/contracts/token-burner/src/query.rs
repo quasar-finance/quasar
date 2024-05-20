@@ -1,19 +1,21 @@
+use crate::BurnErrors;
 use cosmwasm_std::{Coin, Deps, Order, StdResult};
 
 use crate::msg::TotalBurntResponse;
 use crate::state::AMOUNT_BURNT;
 
 pub fn query_total_burn(deps: Deps) -> StdResult<TotalBurntResponse> {
-    let mut total_burn_amount: Vec<Coin> = vec![];
-
-    for res in AMOUNT_BURNT.range(deps.storage, None, None, Order::Ascending) {
-        let denom = res.as_ref().unwrap().0.clone();
-        let amount = res.as_ref().unwrap().1;
-        total_burn_amount.push(Coin { denom, amount });
-    }
+    let total_burn_amount: Result<Vec<Coin>, BurnErrors> = AMOUNT_BURNT
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|result| {
+            result
+                .map_err(BurnErrors::from)
+                .map(|(denom, amount)| Coin { denom, amount })
+        })
+        .collect();
 
     Ok(TotalBurntResponse {
-        amount: total_burn_amount,
+        amount: total_burn_amount.unwrap(),
     })
 }
 
@@ -26,7 +28,7 @@ mod tests {
     #[test]
     fn test_query_total_burn_empty() {
         // Create a mock dependency with empty storage
-        let mut deps = mock_dependencies();
+        let deps = mock_dependencies();
 
         // Call the query function
         let res = query_total_burn(deps.as_ref()).unwrap();

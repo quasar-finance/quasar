@@ -11,7 +11,7 @@ use crate::state::AMOUNT_BURNT;
 use crate::BurnErrors;
 
 // version info for migration info
-const CONTRACT_NAME: &str = "burn_coins";
+const CONTRACT_NAME: &str = "token-burner";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -36,7 +36,7 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, BurnErrors> {
     match msg {
-        ExecuteMsg::Burn {} => execute_coins_burn(deps, info),
+        ExecuteMsg::Burn {} => execute_burn(deps, info),
     }
 }
 
@@ -52,7 +52,7 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, 
     Ok(Response::new().add_attribute("migrate", "successful"))
 }
 
-pub fn execute_coins_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, BurnErrors> {
+pub fn execute_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, BurnErrors> {
     if info.funds.is_empty() {
         return Err(BurnErrors::ZeroAmount {});
     }
@@ -62,15 +62,14 @@ pub fn execute_coins_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, 
         amount: info.clone().funds,
     });
 
-    for fund in info.funds {
-        if let Some(mut total_burn_amount) =
-            AMOUNT_BURNT.may_load(deps.storage, fund.clone().denom)?
-        {
-            total_burn_amount += fund.clone().amount;
-            AMOUNT_BURNT.save(deps.storage, fund.clone().denom, &total_burn_amount)?;
-        } else {
-            AMOUNT_BURNT.save(deps.storage, fund.clone().denom, &fund.clone().amount)?;
-        }
+    for fund in &info.funds {
+        let denom = &fund.denom;
+        let amount = &fund.amount;
+        let mut total_burn_amount = AMOUNT_BURNT
+            .may_load(deps.storage, denom.clone())?
+            .unwrap_or_default();
+        total_burn_amount += amount;
+        AMOUNT_BURNT.save(deps.storage, denom.clone(), &total_burn_amount)?;
     }
 
     // Return a response with the burn message
@@ -81,7 +80,7 @@ pub fn execute_coins_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, 
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_info};
-    use cosmwasm_std::{coin, BankMsg, Coin, CosmosMsg, SubMsg, Uint128};
+    use cosmwasm_std::{coin, BankMsg, CosmosMsg, SubMsg, Uint128};
 
     #[test]
     fn test_execute_coins_burn() {
@@ -90,7 +89,7 @@ mod tests {
         let info = mock_info("sender", &[coin(100, "denom1"), coin(50, "denom2")]);
 
         // Act
-        let res = execute_coins_burn(deps.as_mut(), info.clone()).unwrap();
+        let res = execute_burn(deps.as_mut(), info.clone()).unwrap();
 
         // Assert
         // Ensure the response contains a BankMsg::Burn message
@@ -113,7 +112,7 @@ mod tests {
 
         // Additional test scenario: test when there's already existing burn amounts
         let info = mock_info("sender", &[coin(200, "denom1"), coin(30, "denom3")]);
-        let res = execute_coins_burn(deps.as_mut(), info.clone()).unwrap();
+        let res = execute_burn(deps.as_mut(), info.clone()).unwrap();
         assert_eq!(
             res.messages,
             vec![SubMsg::new(CosmosMsg::Bank(BankMsg::Burn {

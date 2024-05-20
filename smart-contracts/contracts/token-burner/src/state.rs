@@ -7,8 +7,6 @@ pub const AMOUNT_BURNT: Map<String, Uint128> = Map::new("burnt_coins");
 mod tests {
     use super::*;
     use cosmwasm_std::testing::mock_dependencies;
-    use cosmwasm_std::Coin;
-
     #[test]
     fn test_burnt_amount() {
         let mut deps = mock_dependencies();
@@ -21,11 +19,6 @@ mod tests {
                 .unwrap()
         );
 
-        // Update amount and check
-        let coins = vec![
-            Coin::new(1_000_000, "denom1"),
-            Coin::new(10_000_000, "denom2"),
-        ];
         AMOUNT_BURNT
             .save(
                 deps.as_mut().storage,
