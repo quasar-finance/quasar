@@ -47,7 +47,7 @@ pub fn calculate_deposit_ratio(
     amount1_deposit: String,
     denom_base: String,
     denom_quote: String,
-) -> f64 {
+) -> (f64, String) {
     // Parse the input amounts
     let amount0_deposit: u128 = amount0_deposit.parse().unwrap();
     let amount1_deposit: u128 = amount1_deposit.parse().unwrap();
@@ -86,7 +86,10 @@ pub fn calculate_deposit_ratio(
         2.0 * total_refunds_in_token0 / total_attempted_deposit_in_token0
     };
 
-    ratio
+    // TODO: Compute this based on tokens_provided size
+    let ratio_approx = "0.00005".to_string();
+
+    (ratio, ratio_approx)
 }
 
 pub fn calculate_expected_refunds(

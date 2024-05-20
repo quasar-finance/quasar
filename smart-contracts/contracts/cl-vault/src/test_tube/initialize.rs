@@ -45,7 +45,7 @@ pub mod initialize {
     pub const MAX_SLIPPAGE_HIGH: u64 = 9000; // this should be inline with the pool spread_factor
 
     pub const DENOM_BASE: &str = "uatom";
-    pub const DENOM_QUOTE: &str = "uosmo";
+    pub const DENOM_QUOTE: &str = "ubtc";
     pub const DENOM_REWARD: &str = "ustrd";
 
     pub const ACCOUNTS_NUM: u64 = 10;
@@ -56,10 +56,11 @@ pub mod initialize {
 
     // Fixtures: Default variants
 
-    pub fn fixture_default() -> (OsmosisTestApp, Addr, u64, SigningAccount, f64) {
+    pub fn fixture_default() -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
@@ -90,10 +91,12 @@ pub mod initialize {
         )
     }
 
-    pub fn fixture_default_less_slippage() -> (OsmosisTestApp, Addr, u64, SigningAccount, f64) {
+    pub fn fixture_default_less_slippage(
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
@@ -124,11 +127,20 @@ pub mod initialize {
         )
     }
 
-    pub fn fixture_cw_dex_router() -> (OsmosisTestApp, Addr, Addr, Vec<u64>, SigningAccount, f64) {
+    pub fn fixture_cw_dex_router() -> (
+        OsmosisTestApp,
+        Addr,
+        Addr,
+        Vec<u64>,
+        SigningAccount,
+        f64,
+        String,
+    ) {
         init_test_contract_with_dex_router_and_swap_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             "./test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm",
             &[
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_REWARD),
@@ -172,7 +184,7 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
-    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64) {
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let pm = PoolManager::new(&app);
@@ -240,7 +252,7 @@ pub mod initialize {
             .unwrap();
         assert_eq!(spot_price.spot_price, "1.000000000000000000");
 
-        let deposit_ratio = calculate_deposit_ratio(
+        let (deposit_ratio, deposit_ratio_approx) = calculate_deposit_ratio(
             spot_price.spot_price,
             tokens_provided,
             create_position.data.amount0,
@@ -290,6 +302,7 @@ pub mod initialize {
             vault_pool.id,
             admin,
             deposit_ratio,
+            deposit_ratio_approx,
         )
     }
 
@@ -303,7 +316,15 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
-    ) -> (OsmosisTestApp, Addr, Addr, Vec<u64>, SigningAccount, f64) {
+    ) -> (
+        OsmosisTestApp,
+        Addr,
+        Addr,
+        Vec<u64>,
+        SigningAccount,
+        f64,
+        String,
+    ) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
         let pm = PoolManager::new(&app);
@@ -424,7 +445,7 @@ pub mod initialize {
             .unwrap();
         assert_eq!(spot_price.spot_price, "1.000000000000000000");
 
-        let deposit_ratio = calculate_deposit_ratio(
+        let (deposit_ratio, deposit_ratio_approx) = calculate_deposit_ratio(
             spot_price.spot_price,
             tokens_provided,
             create_position.data.amount0,
@@ -496,6 +517,7 @@ pub mod initialize {
             lp_pools,
             admin,
             deposit_ratio,
+            deposit_ratio_approx,
         )
     }
 
@@ -566,7 +588,8 @@ pub mod initialize {
     #[test]
     #[ignore]
     fn fixture_default_works() {
-        let (app, contract_address, cl_pool_id, admin, _deposit_ratio) = fixture_default();
+        let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default();
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
@@ -605,6 +628,7 @@ pub mod initialize {
         // Create Alice account
         let alice = app
             .init_account(&[
+                Coin::new(1_000_000_000_000, "uosmo"),
                 Coin::new(1_000_000_000_000, DENOM_BASE),
                 Coin::new(1_000_000_000_000, DENOM_QUOTE),
             ])

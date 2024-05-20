@@ -465,7 +465,7 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio) = init_test_contract(
+            let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
                 // TODO: evaluate using fixture_default() here
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[

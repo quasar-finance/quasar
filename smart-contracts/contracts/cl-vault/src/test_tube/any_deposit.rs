@@ -16,7 +16,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_any_deposit() {
-        let (app, contract_address, cl_pool_id, admin, _deposit_ratio) =
+        let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
             fixture_default_less_slippage();
 
         let wasm = Wasm::new(&app);
@@ -25,6 +25,7 @@ mod tests {
         let accounts = app
             .init_accounts(
                 &[
+                    Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
                 ],

@@ -18,12 +18,14 @@ mod tests {
     #[test]
     #[ignore]
     fn deposit_withdraw_equal() {
-        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
         let alice = app
             .init_account(&[
+                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
