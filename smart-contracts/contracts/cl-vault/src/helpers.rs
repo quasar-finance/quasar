@@ -224,7 +224,7 @@ pub fn get_depositable_tokens(
         }
         // (true, true) => {
         _ => {
-            return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
+            Err(ContractError::InvalidRatioOfSwappableFundsToUse {})
         }
     }
 }

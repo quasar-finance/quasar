@@ -37,7 +37,7 @@ pub fn execute_autocompound(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let balance = get_unused_balances(&deps.querier, &env)?;
+    let balance = get_unused_balances(&deps.querier, env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
 
     let (token0, token1) =
@@ -54,7 +54,7 @@ pub fn execute_autocompound(
 
     let create_position_msg = create_position(
         deps,
-        &env,
+        env,
         position.lower_tick,
         position.upper_tick,
         coins_to_send,

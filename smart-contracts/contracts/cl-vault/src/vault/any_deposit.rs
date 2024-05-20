@@ -97,7 +97,7 @@ pub fn execute_any_deposit(
         )?;
 
         // rest minting logic remains same
-        return Ok(Response::new()
+        Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
                 swap_msg,
                 Replies::AnyDepositSwap.into(),
@@ -105,7 +105,7 @@ pub fn execute_any_deposit(
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
             .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
-            .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
+            .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
     } else if !swappable_amount.1.is_zero() {
         let (swap_amount, swap_direction) = (
             // current tick is above range
@@ -155,7 +155,7 @@ pub fn execute_any_deposit(
             .add_message(mint_msg)
             .add_attribute("mint_shares_amount", user_shares)
             .add_attribute("receiver", recipient.as_str()));
-    };
+    }
 }
 
 /// Handles the reply from a swap operation during any deposit.
@@ -305,7 +305,7 @@ fn swap_msg_token_in_out_amounts(
 ) -> Result<(CosmosMsg, String, Uint128), ContractError> {
     // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     // TODO check on the twap_window_seconds (taking hardcoded value for now)
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
             SwapDirection::ZeroToOne => (
@@ -342,7 +342,7 @@ fn swap_msg_token_in_out_amounts(
     // pool on which the vault is running
     let swap_msg = swap_msg(
         deps,
-        &env,
+        env,
         SwapParams {
             token_in_amount: swap_amount,
             token_out_min_amount,

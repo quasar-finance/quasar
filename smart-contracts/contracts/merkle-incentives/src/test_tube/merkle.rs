@@ -37,26 +37,26 @@ mod tests {
 
         // get all eligible claimers
         let leaves_str = vec![
-            format!("{}900000000ugauge", accounts[0].address().to_string()).to_string(),
-            format!("{}9000000000ugauge", accounts[0].address().to_string()).to_string(),
-            format!("{}90000000000ugauge", accounts[0].address().to_string()).to_string(),
-            format!("{}900000000000ugauge", accounts[0].address().to_string()).to_string(),
-            format!("{}9000000000000ugauge", accounts[0].address().to_string()).to_string(),
-            format!("{}90000000000000ugauge", accounts[0].address().to_string()).to_string(),
-            format!("{}900000000000000ugauge", accounts[0].address().to_string()).to_string(),
+            format!("{}900000000ugauge", accounts[0].address()).to_string(),
+            format!("{}9000000000ugauge", accounts[0].address()).to_string(),
+            format!("{}90000000000ugauge", accounts[0].address()).to_string(),
+            format!("{}900000000000ugauge", accounts[0].address()).to_string(),
+            format!("{}9000000000000ugauge", accounts[0].address()).to_string(),
+            format!("{}90000000000000ugauge", accounts[0].address()).to_string(),
+            format!("{}900000000000000ugauge", accounts[0].address()).to_string(),
             format!(
                 "{}9000000000900000ugauge",
-                accounts[0].address().to_string()
+                accounts[0].address()
             )
             .to_string(),
             format!(
                 "{}90000000009000000ugauge",
-                accounts[0].address().to_string()
+                accounts[0].address()
             )
             .to_string(),
             format!(
                 "{}900000000090000000ugauge",
-                accounts[0].address().to_string()
+                accounts[0].address()
             )
             .to_string(),
         ];
@@ -167,7 +167,7 @@ mod tests {
             for proof in &claim_account.proof {
                 if proof.len() == 32 {
                     let mut arr = [0u8; 32];
-                    arr.copy_from_slice(&proof);
+                    arr.copy_from_slice(proof);
                     proof_hashes.push(arr);
                 } else {
                     eprintln!("Error: Hash is not 32 bytes.");
@@ -187,7 +187,7 @@ mod tests {
                         // total_leaves_count: claim_accounts.len(), // TODO: reimplement this with all 10 users claiming
                     }),
                     &[],
-                    &accounts.get(index).unwrap(),
+                    accounts.get(index).unwrap(),
                 )
                 .unwrap();
 
@@ -202,8 +202,7 @@ mod tests {
                 address_balance.balance.unwrap().amount,
                 claim_account
                     .coins
-                    .coins()
-                    .get(0)
+                    .coins().first()
                     .unwrap()
                     .amount
                     .to_string()

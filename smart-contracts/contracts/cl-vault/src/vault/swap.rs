@@ -358,15 +358,15 @@ fn generate_swap_message(
     };
 
     // Execute swap operations once with the determined route
-    let swap_msg = get_execute_swap_operations_msg(
+    
+
+    get_execute_swap_operations_msg(
         dex_router_addr,
         route,
         Uint128::zero(),
-        &token_in_denom,
+        token_in_denom,
         token_in_amount,
-    );
-
-    swap_msg
+    )
 }
 
 fn get_execute_swap_operations_msg(
