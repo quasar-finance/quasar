@@ -14,52 +14,54 @@ mod test {
         },
     };
     use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
+    use prost::Message;
 
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
-        test_tube::initialize::initialize::init_test_contract,
+        test_tube::initialize::initialize::{
+            init_test_contract, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+        },
     };
-
-    use prost::Message;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
     const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
 
     #[test]
     #[ignore]
     fn move_range_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
-            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            21205000,
-            27448000,
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+        // TODO: Evaluate creating a fixture_default() variant i.e. out_of_range_init()
+        let (app, contract, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            init_test_contract(
+                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+                &[
+                    Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+                ],
+                MsgCreateConcentratedPool {
+                    sender: "overwritten".to_string(),
+                    denom0: DENOM_BASE.to_string(),
+                    denom1: DENOM_QUOTE.to_string(),
+                    tick_spacing: 100,
+                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
                 },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+                21205000,
+                27448000,
+                vec![
+                    v1beta1::Coin {
+                        denom: DENOM_BASE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    },
+                ],
+                Uint128::zero(),
+                Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT,
+            );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
 
@@ -89,6 +91,7 @@ mod test {
 
         let alice = app
             .init_account(&[
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
@@ -132,9 +135,12 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("400").unwrap(),
                         upper_price: Decimal::from_str("1466").unwrap(),
-                        max_slippage: Decimal::bps(9500),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        recommended_swap_route: None,
+                        force_swap_route: false,
+                        claim_after: None,
                     },
                 )),
                 &[],
@@ -155,35 +161,38 @@ mod test {
     #[test]
     #[ignore]
     fn move_range_same_single_side_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
-            // TODO: Evaluate creating a default_init() variant i.e. out_of_range_init()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            21205000,
-            27448000,
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+        let (app, contract, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            init_test_contract(
+                // TODO: Evaluate creating a fixture_default() variant i.e. out_of_range_init()
+                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+                &[
+                    Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+                ],
+                MsgCreateConcentratedPool {
+                    sender: "overwritten".to_string(),
+                    denom0: DENOM_BASE.to_string(),
+                    denom1: DENOM_QUOTE.to_string(),
+                    tick_spacing: 100,
+                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
                 },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+                21205000,
+                27448000,
+                vec![
+                    v1beta1::Coin {
+                        denom: DENOM_BASE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+                    },
+                ],
+                Uint128::zero(),
+                Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT,
+            );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let pm = PoolManager::new(&app);
@@ -214,6 +223,7 @@ mod test {
 
         let alice = app
             .init_account(&[
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
@@ -247,9 +257,12 @@ mod test {
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("20.71").unwrap(),
                         upper_price: Decimal::from_str("45").unwrap(),
-                        max_slippage: Decimal::bps(9500),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        recommended_swap_route: None,
+                        force_swap_route: false,
+                        claim_after: None,
                     },
                 )),
                 &[],
@@ -272,37 +285,41 @@ mod test {
     #[test]
     #[ignore]
     fn test_swap_math_poc() {
-        let (app, _contract, _cl_pool_id, _admin) = init_test_contract(
-            // TODO: Evaluate using default_init()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),  //token0 is uatom
-                denom1: DENOM_QUOTE.to_string(), //token1 is uosmo
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            30500000, // 4500
-            31500000, // 5500
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: "1000000".to_string(),
+        let (app, _contract, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            init_test_contract(
+                // TODO: Evaluate using fixture_default()
+                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+                &[
+                    Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+                ],
+                MsgCreateConcentratedPool {
+                    sender: "overwritten".to_string(),
+                    denom0: DENOM_BASE.to_string(),  //token0 is uatom
+                    denom1: DENOM_QUOTE.to_string(), //token1 is uosmo
+                    tick_spacing: 100,
+                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
                 },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "1000000".to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
+                30500000, // 4500
+                31500000, // 5500
+                vec![
+                    v1beta1::Coin {
+                        denom: DENOM_BASE.to_string(),
+                        amount: "1000000".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: "1000000".to_string(),
+                    },
+                ],
+                Uint128::zero(),
+                Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT,
+            );
         let alice = app
             .init_account(&[
+                Coin::new(1_000_000_000_000, "uosmo"),
                 Coin::new(1_000_000_000_000, DENOM_BASE),
                 Coin::new(1_000_000_000_000, DENOM_QUOTE),
             ])

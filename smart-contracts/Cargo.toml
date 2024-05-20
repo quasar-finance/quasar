@@ -1,16 +1,58 @@
 [workspace]
+resolver = "2"
 
 members = [
-  "contracts/airdrop",
-  "contracts/lp-strategy",
-  "contracts/basic-vault",
-  "contracts/burn_coins",
-  "contracts/vault-rewards",
-  "contracts/multihop-router",
+  # "contracts/icq",
+  # "contracts/ibc-transfer",
+  # "contracts/intergamm-bindings-test",
+  # "contracts/airdrop",
+  # "contracts/lp-strategy",
+  # "contracts/basic-vault",
+  # "contracts/vault-rewards",
+  # "contracts/multihop-router",
+  # "packages/quasar-types",
+  # "packages/intergamm-bindings",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
-  "packages/quasar-types"
+  "contracts/range-middleware",
+  "contracts/burn_coins",
 ]
 
 [workspace.dependencies]
-cw-multi-test = {git = "https://github.com/njerschow/cw-multi-test.git"}
+# CosmWasm
+cosmwasm-std = "1.5.4"
+cosmwasm-schema = "1.5.4"
+cosmwasm-storage = "1.5.2"
+cw-storage-plus = "1.2.0"
+cw-controllers = "1.1.2"
+cw-utils = "1.0.3"
+cw-asset = "3.0"
+cw2 = "1.1.2"
+cw20 = "1.1.2"
+cw20-base = {version = "1.1.2", features = ["library"]}
+cw20-staking = "0.11.1"
+apollo-cw-asset = "0.1.2"
+cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
+
+# SDK
+cosmos-sdk-proto = {version = "0.21.1", default-features = false}
+
+# Osmosis
+osmosis-std = "0.24.0"
+osmosis-std-derive = "0.20.1"
+
+# Serialization & Tools
+schemars = "0.8.16"
+serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.113" , default-features = false, features = ["alloc"]}
+thiserror = { version = "1.0.56" }
+prost = {version = "0.12.3", default-features = false, features = ["std"]}
+serde-json-wasm = {version = "1.0.1", default-features = false}
+itertools = "0.12.1"
+num_enum = "0.7.2"
+base64 = "0.22.0"
+
+# Testing
+cw-multi-test = "1.1.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}
+osmosis-test-tube = "24.0.1"
+proptest = "1.2.0"

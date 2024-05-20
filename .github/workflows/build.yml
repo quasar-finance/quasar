@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - fix/*
   push:
     branches:
       - main
+      - fix/*
   workflow_dispatch:
 
 concurrency:
@@ -60,6 +62,9 @@ jobs:
       matrix:
         arch: [ amd64, arm64 ]
         targetos: [ linux ]
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -70,9 +75,18 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
+      - name: Install just via cargo
+        run: cargo install just
+      - name: Download smart contracts dependencies
+        if: env.GIT_DIFF
+        run: |
+          cd smart-contracts
+          just download-deps
       - name: Build smart contracts
         if: env.GIT_DIFF
-        run: make compile-wasm-artifacts
+        run: |
+          cd smart-contracts
+          just workspace-optimize
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
@@ -95,21 +109,33 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
+          
       - name: Download contracts
         if: env.GIT_DIFF
         uses: actions/download-artifact@v3
         with:
           name:
             smart-contracts
+
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install just via cargo
+        run: cargo install just
+      
       # This is the new one
       - name: Move smart contracts
         if: env.GIT_DIFF
         run: |
           find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); dir_name=$(echo "$contract_name" | sed "s/_/-/g"); mkdir -p "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
+
+      - name: Download smart contracts dependencies
+        if: env.GIT_DIFF
+        run: |
+          cd smart-contracts
+          just download-deps
+
 
       - name: Run test-tube tests
         if: env.GIT_DIFF

@@ -2,9 +2,9 @@ use core::panic;
 use std::{marker::PhantomData, str::FromStr};
 
 use cosmwasm_std::{
-    coins, from_binary,
+    coins, from_json,
     testing::{mock_dependencies, mock_env, mock_info, MockApi, MockStorage},
-    to_binary, Addr, Attribute, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult,
+    to_json_binary, Addr, Attribute, BankMsg, Binary, Coin, ContractInfoResponse, ContractResult,
     CosmosMsg, Decimal, DepsMut, Empty, Env, Fraction, MessageInfo, OwnedDeps, Querier,
     QuerierResult, QueryRequest, Reply, Response, StdError, StdResult, SubMsgResponse,
     SubMsgResult, Timestamp, Uint128, WasmMsg,
@@ -65,7 +65,7 @@ impl QuasarQuerier {
         new_states
             .into_iter()
             .for_each(|(address, shares, balance)| {
-                let mut val = self
+                let val = self
                     .primitive_states
                     .iter_mut()
                     .find(|(prim_addr, _, _, _)| prim_addr == address)
@@ -125,18 +125,20 @@ impl QuasarQuerier {
 
 impl Querier for QuasarQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
-        let request: QueryRequest<Empty> = from_binary(&Binary::from(bin_request)).unwrap();
+        let request: QueryRequest<Empty> = from_json(&Binary::from(bin_request)).unwrap();
         match request {
             QueryRequest::Wasm(wasm_query) => match wasm_query {
                 cosmwasm_std::WasmQuery::Smart { contract_addr, msg } => {
-                    let primitive_query = from_binary::<lp_strategy::msg::QueryMsg>(&msg).unwrap();
+                    let primitive_query = from_json::<lp_strategy::msg::QueryMsg>(&msg).unwrap();
 
                     let (this_denom, total_share, total_balance) =
                         self.find_states_for_primitive(contract_addr.clone());
                     match primitive_query {
                         lp_strategy::msg::QueryMsg::PrimitiveShares {} => {
                             let response = PrimitiveSharesResponse { total: total_share };
-                            QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                            QuerierResult::Ok(ContractResult::Ok(
+                                to_json_binary(&response).unwrap(),
+                            ))
                         }
                         lp_strategy::msg::QueryMsg::IcaBalance {} => {
                             let response = IcaBalanceResponse {
@@ -145,7 +147,9 @@ impl Querier for QuasarQuerier {
                                     amount: total_balance,
                                 },
                             };
-                            QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                            QuerierResult::Ok(ContractResult::Ok(
+                                to_json_binary(&response).unwrap(),
+                            ))
                         }
                         lp_strategy::msg::QueryMsg::Config {} => {
                             let config = Config {
@@ -160,7 +164,7 @@ impl Querier for QuasarQuerier {
                                 expected_connection: "connection-0".to_string(),
                             };
                             QuerierResult::Ok(ContractResult::Ok(
-                                to_binary(&ConfigResponse { config }).unwrap(),
+                                to_json_binary(&ConfigResponse { config }).unwrap(),
                             ))
                         }
                         lp_strategy::msg::QueryMsg::UnbondingClaim { addr: _, id } => {
@@ -168,7 +172,7 @@ impl Querier for QuasarQuerier {
                                 self.get_unbonding_claim_for_primitive(contract_addr);
                             QuerierResult::Ok(match query_result {
                                 Ok((unlock_time, attempted)) => ContractResult::Ok(
-                                    to_binary(&UnbondingClaimResponse {
+                                    to_json_binary(&UnbondingClaimResponse {
                                         unbond: Some(Unbond {
                                             lp_shares: Uint128::from(1u128),
                                             unlock_time,
@@ -186,7 +190,9 @@ impl Querier for QuasarQuerier {
                             let response = BalanceResponse {
                                 balance: total_share,
                             };
-                            QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                            QuerierResult::Ok(ContractResult::Ok(
+                                to_json_binary(&response).unwrap(),
+                            ))
                         }
                         _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                             kind: format!("Unmocked primitive query type: {primitive_query:?}"),
@@ -196,7 +202,7 @@ impl Querier for QuasarQuerier {
                 cosmwasm_std::WasmQuery::ContractInfo { contract_addr: _ } => {
                     let mut response = ContractInfoResponse::default();
                     response.admin = Some(TEST_ADMIN.to_string());
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&response).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(to_json_binary(&response).unwrap()))
                 }
                 _ => QuerierResult::Err(cosmwasm_std::SystemError::UnsupportedRequest {
                     kind: format!("Unmocked wasm query type: {wasm_query:?}"),
@@ -206,7 +212,7 @@ impl Querier for QuasarQuerier {
                 kind: format!("Unmocked query type: {request:?}"),
             }),
         }
-        // QuerierResult::Ok(ContractResult::Ok(to_binary(&"hello").unwrap()))
+        // QuerierResult::Ok(ContractResult::Ok(to_json_binary(&"hello").unwrap()))
     }
 }
 
@@ -350,7 +356,7 @@ fn proper_initialization() {
         assert_eq!(0, funds.len());
         assert_eq!(admin.clone().unwrap(), TEST_CREATOR);
         assert_eq!(label, "vault-rewards");
-        let msg: vault_rewards::msg::InstantiateMsg = from_binary(msg).unwrap();
+        let msg: vault_rewards::msg::InstantiateMsg = from_json(msg).unwrap();
         assert_eq!(
             Uint128::from(1000u128),
             msg.distribution_schedules[0].amount
@@ -603,7 +609,7 @@ fn test_get_deposit_amount_weights() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let weights =
         get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives).unwrap();
@@ -672,7 +678,7 @@ fn test_get_token_amount_weights() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let _weights =
         get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives).unwrap();
@@ -767,7 +773,7 @@ fn test_get_max_bond() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let weights =
         get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives).unwrap();
@@ -879,7 +885,7 @@ fn test_get_deposit_and_remainder_for_ratio() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let _weights =
         get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives).unwrap();
@@ -1033,7 +1039,7 @@ fn test_get_deposit_and_remainder_for_ratio_three_primitives() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let weights =
         get_deposit_amount_weights(&deps.as_ref(), &investment_response.info.primitives).unwrap();
@@ -1171,7 +1177,7 @@ fn test_may_pay_with_one_primitive() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let funds = &[Coin {
         denom: "ibc/uosmo".to_string(),
@@ -1209,7 +1215,7 @@ fn test_may_pay_with_even_ratio() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let (coins, remainder) =
         may_pay_with_ratio(&deps.as_ref(), &even_deposit(), investment_response.info).unwrap();
@@ -1273,7 +1279,7 @@ fn test_may_pay_with_uneven_ratio() {
     let invest_query = crate::msg::QueryMsg::Investment {};
     let query_res = query(deps.as_ref(), env, invest_query).unwrap();
 
-    let investment_response: InvestmentResponse = from_binary(&query_res).unwrap();
+    let investment_response: InvestmentResponse = from_json(&query_res).unwrap();
 
     let funds = &[
         Coin {
@@ -1340,7 +1346,7 @@ fn proper_bond() {
         assert_eq!(funds.len(), 1);
         assert_eq!(funds[0].denom, "ibc/uosmo");
         assert_eq!(funds[0].amount, Uint128::from(99u128));
-        if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
+        if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_json(msg).unwrap() {
             assert_eq!(id, "1")
         } else {
             panic!("expected Bond msg")
@@ -1359,7 +1365,7 @@ fn proper_bond() {
         assert_eq!(funds.len(), 1);
         assert_eq!(funds[0].denom, "ibc/uosmo");
         assert_eq!(funds[0].amount, Uint128::from(99u128));
-        if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
+        if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_json(msg).unwrap() {
             assert_eq!(id, "1")
         } else {
             panic!("expected Bond msg")
@@ -1378,7 +1384,7 @@ fn proper_bond() {
         assert_eq!(funds.len(), 1);
         assert_eq!(funds[0].denom, "ibc/uosmo");
         assert_eq!(funds[0].amount, Uint128::from(99u128));
-        if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_binary(msg).unwrap() {
+        if let lp_strategy::msg::ExecuteMsg::Bond { id } = from_json(msg).unwrap() {
             assert_eq!(id, "1")
         } else {
             panic!("expected Bond msg")
@@ -1574,7 +1580,7 @@ fn proper_bond_response_callback_single_token() {
         address: TEST_DEPOSITOR.to_string(),
     };
     let balance_res = query(deps.as_ref(), env, balance_query).unwrap();
-    let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+    let balance: BalanceResponse = from_json(&balance_res).unwrap();
 
     assert_eq!(balance.balance, Uint128::from(297u128));
 }
@@ -1650,7 +1656,7 @@ fn proper_bond_response_callback_single_token() {
 //         address: TEST_DEPOSITOR.to_string(),
 //     };
 //     let balance_res = query(deps.as_ref(), env, balance_query).unwrap();
-//     let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+//     let balance: BalanceResponse = from_json(&balance_res).unwrap();
 
 //     assert_eq!(balance.balance, Uint128::from(300u128));
 // }
@@ -1727,7 +1733,7 @@ fn proper_unbond() {
         assert_eq!(contract_addr, "vault_rewards_addr");
         if let vault_rewards::msg::ExecuteMsg::Vault(
             vault_rewards::msg::VaultExecuteMsg::UpdateUserRewardIndex(user_reward_index),
-        ) = from_binary(msg).unwrap()
+        ) = from_json(msg).unwrap()
         {
             assert_eq!(user_reward_index, TEST_DEPOSITOR);
         } else {
@@ -1741,7 +1747,7 @@ fn proper_unbond() {
         address: TEST_DEPOSITOR.to_string(),
     };
     let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
-    let balance: BalanceResponse = from_binary(&balance_res).unwrap();
+    let balance: BalanceResponse = from_json(&balance_res).unwrap();
 
     assert_eq!(balance.balance, Uint128::from(297u128));
 
@@ -1767,7 +1773,7 @@ fn proper_unbond() {
         assert_eq!(contract_addr, "quasar123");
         assert!(funds.is_empty());
         if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-            from_binary(msg).unwrap()
+            from_json(msg).unwrap()
         {
             assert_eq!(id, "2");
             assert_eq!(share_amount, Uint128::from(100u128));
@@ -1786,7 +1792,7 @@ fn proper_unbond() {
         assert_eq!(contract_addr, "quasar124");
         assert!(funds.is_empty());
         if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-            from_binary(msg).unwrap()
+            from_json(msg).unwrap()
         {
             assert_eq!(id, "2");
             assert_eq!(share_amount, Uint128::from(100u128));
@@ -1805,7 +1811,7 @@ fn proper_unbond() {
         assert_eq!(contract_addr, "quasar125");
         assert!(funds.is_empty());
         if let lp_strategy::msg::ExecuteMsg::StartUnbond { id, share_amount } =
-            from_binary(msg).unwrap()
+            from_json(msg).unwrap()
         {
             assert_eq!(id, "2");
             assert_eq!(share_amount, Uint128::from(100u128));
@@ -1825,7 +1831,7 @@ fn proper_unbond() {
         assert!(funds.is_empty());
         if let vault_rewards::msg::ExecuteMsg::Vault(
             vault_rewards::msg::VaultExecuteMsg::UpdateUserRewardIndex(user_addr),
-        ) = from_binary(msg).unwrap()
+        ) = from_json(msg).unwrap()
         {
             assert_eq!(user_addr, TEST_DEPOSITOR);
         } else {
@@ -1935,7 +1941,7 @@ fn proper_unbond() {
     {
         assert_eq!(contract_addr, "quasar123");
         assert!(funds.is_empty());
-        if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
+        if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_json(msg).unwrap() {
             assert_eq!(id, "2");
         } else {
             panic!("expected unbond")
@@ -1951,7 +1957,7 @@ fn proper_unbond() {
     {
         assert_eq!(contract_addr, "quasar124");
         assert!(funds.is_empty());
-        if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
+        if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_json(msg).unwrap() {
             assert_eq!(id, "2");
         } else {
             panic!("expected unbond")
@@ -1999,7 +2005,7 @@ fn proper_unbond() {
         // todo: This assertion will change because we should ideally only expect one here, pending arch discussions
         assert_eq!(contract_addr, "quasar125");
         assert!(funds.is_empty());
-        if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_binary(msg).unwrap() {
+        if let lp_strategy::msg::ExecuteMsg::Unbond { id } = from_json(msg).unwrap() {
             assert_eq!(id, "2");
         } else {
             panic!("expected unbond")
@@ -2122,7 +2128,7 @@ fn test_dup_token_deposits() {
 
     for deposit_amount in deposit_amounts {
         // test params
-        let weights = vec![
+        let weights = [
             Decimal::from_str("0.2").unwrap(),
             Decimal::from_str("0.3").unwrap(),
             Decimal::from_str("0.5").unwrap(),

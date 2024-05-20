@@ -3,10 +3,8 @@ use num_enum::{FromPrimitive, IntoPrimitive};
 #[derive(FromPrimitive, IntoPrimitive)]
 #[repr(u64)]
 pub enum Replies {
-    // handles position creation for a user deposit
-    DepositCreatePosition = 1,
     // create the initial position while instantiating the contract
-    InstantiateCreatePosition,
+    InstantiateCreatePosition = 1,
     // when handling rewards, we first collect incentives, then collect rewards
     CollectIncentives,
     // after gathering rewards, we divide them over share holders
@@ -31,6 +29,10 @@ pub enum Replies {
     WithdrawMerge,
     // create a new singular position in the merge, used internally for merging
     CreatePositionMerge,
+    /// reply for final swap success in auto compound
+    Autocompound,
+    /// handle exact deposit swap reply
+    AnyDepositSwap,
     #[default]
     Unknown,
 }

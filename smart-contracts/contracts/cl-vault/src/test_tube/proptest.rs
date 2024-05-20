@@ -16,6 +16,7 @@ mod tests {
 
     use crate::query::AssetsBalanceResponse;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
+    use crate::test_tube::initialize::initialize::{MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -107,7 +108,7 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit.rs::execute_exact_deposit
+                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit::execute_exact_deposit
                 account,
             )
             .unwrap();
@@ -313,9 +314,12 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                        max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
+                        recommended_swap_route: None,
+                        force_swap_route: false,
+                        claim_after: None,
                     },
                 )),
                 &[],
@@ -461,8 +465,8 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, _cl_pool_id, admin_account) = init_test_contract(
-                // TODO: evaluate using default_init() here
+            let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
+                // TODO: evaluate using fixture_default() here
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(340282366920938463463374607431768211455, "uosmo"),
@@ -490,6 +494,7 @@ mod tests {
                 ],
                 Uint128::zero(),
                 Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT
             );
             let wasm = Wasm::new(&app);
             let cl = ConcentratedLiquidity::new(&app);

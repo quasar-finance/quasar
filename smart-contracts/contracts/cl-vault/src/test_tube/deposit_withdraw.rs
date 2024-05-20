@@ -7,22 +7,27 @@ mod tests {
     use crate::{
         msg::{ExecuteMsg, ExtensionQueryMsg, QueryMsg},
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
-        test_tube::initialize::initialize::default_init,
+        test_tube::{
+            helpers::get_event_attributes_by_ty_and_key,
+            initialize::initialize::{
+                fixture_default, DENOM_BASE, DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,
+            },
+        },
     };
 
-    const INITIAL_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const DENOM_BASE: &str = "uatom";
-    const DENOM_QUOTE: &str = "uosmo";
+    const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
 
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
         let alice = app
             .init_account(&[
+                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
@@ -32,17 +37,73 @@ mod tests {
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
             .unwrap();
 
+        // Get user_assets for Alice from vault contract and assert
+        let _user_assets: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: alice.address(),
+                    },
+                )),
+            )
+            .unwrap();
+
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
-        wasm.execute(
-            contract_address.as_str(),
-            &ExecuteMsg::ExactDeposit { recipient: None },
-            &[
-                Coin::new(1_000_000_000_000_000, DENOM_BASE),
-                Coin::new(1_000_000_000_000_000, DENOM_QUOTE),
-            ],
-            &alice,
-        )
-        .unwrap();
+        /*
+        user:assets: AssetsBalanceResponse { balances: [Coin { 281243579389884 "uatom" }, Coin { 448554353093648 "uosmo" }] }
+        1_000_000_000_000_000
+        0_448_554_353_093_648
+        0_281_243_579_389_884
+        so these tokens could 2x easily
+         */
+
+        let deposit0 = 1_000_000_000_000_000;
+        let deposit1 = 1_000_000_000_000_000;
+
+        let response = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::ExactDeposit { recipient: None },
+                &[
+                    Coin::new(deposit0, DENOM_BASE),
+                    Coin::new(deposit1, DENOM_QUOTE),
+                ],
+                &alice,
+            )
+            .unwrap();
+
+        let _vault_assets_after: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
+
+        // assert that the refund + used funds are equal to what we deposited
+        let refund0: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund0_amount"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
+        let refund1: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund1_amount"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
+
+        let deposited0: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
+        let deposited1: u128 =
+            get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"])
+                .get(0)
+                .map(|attr| attr.value.parse().unwrap())
+                .unwrap_or(0);
+
+        assert_eq!(
+            deposit0 + deposit1,
+            refund0 + refund1 + deposited0 + deposited1
+        );
 
         // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
@@ -57,6 +118,27 @@ mod tests {
             .unwrap();
         assert!(!shares.balance.is_zero());
 
+        // TODO should we calc from shares or userAssetsBalance
+        let user_value: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::ConvertToAssets {
+                    amount: shares.balance,
+                },
+            )
+            .unwrap();
+
+        assert_approx_eq!(
+            user_value.balances[0].amount,
+            Uint128::from(deposited0),
+            "0.000001"
+        );
+        assert_approx_eq!(
+            user_value.balances[1].amount,
+            Uint128::from(deposited1),
+            "0.000001"
+        );
+
         // Get user_assets for Alice from vault contract and assert
         let user_assets: AssetsBalanceResponse = wasm
             .query(
@@ -69,18 +151,20 @@ mod tests {
             )
             .unwrap();
 
-        // Assert Alice has been refunded, so we only expect around 500 to deposit here
+        // assert the token0 deposited by alice by checking the balance of alice
+        // we expect sent - refunded here, or 627_000_000_000_000
+        // TODO, The UserAssetsBalance query here returns too little, so either we mint too little or the query works incorrect
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(600_000_000_000_000u128), // TODO: remove hardcoded
-            "0.1"
+            Uint128::from(deposited0),
+            "0.000001"
         );
 
-        // Assert Alice as
+        // assert the token1 deposited by alice
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(1_000_000_000_000_000u128), // TODO: remove hardcoded
-            "0.001"
+            Uint128::from(deposited1),
+            "0.000001"
         );
 
         // Get vault assets and assert
@@ -92,9 +176,9 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(600_000_000_000_000u128)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(deposited0)) // TODO: remove hardcoded
                 .unwrap(),
-            "0.1"
+            "0.000001"
         );
 
         // Assert vault assets taking in account the refunded amount to Alice, so we only expect around 500 to deposit here
@@ -103,9 +187,9 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(1_000_000_000_000_000u128)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(deposited1)) // TODO: remove hardcoded
                 .unwrap(),
-            "0.001"
+            "0.000001"
         );
 
         let _withdraw = wasm
@@ -126,12 +210,14 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
         let alice = app
             .init_account(&[
+                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
                 Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
             ])
@@ -254,14 +340,14 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
-        //let bank = Bank::new(&app);
-
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create 3 accounts
         let users = [
             app.init_account(&[
+                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
                 Coin::new(
                     100_000_000_000_000_000_000_000_000_000_000_000_000,
                     DENOM_BASE,
@@ -273,6 +359,7 @@ mod tests {
             ])
             .unwrap(),
             app.init_account(&[
+                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
                 Coin::new(
                     100_000_000_000_000_000_000_000_000_000_000_000_000,
                     DENOM_BASE,
@@ -284,6 +371,7 @@ mod tests {
             ])
             .unwrap(),
             app.init_account(&[
+                Coin::new(100_000_000_000_000_000_000_000_000_000_000_000_000, "uosmo"),
                 Coin::new(
                     100_000_000_000_000_000_000_000_000_000_000_000_000,
                     DENOM_BASE,

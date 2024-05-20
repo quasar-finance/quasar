@@ -1,13 +1,15 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint128};
+use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
 use crate::{
     query::{
         AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserRewardsResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
+        UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
+    vault::autocompound::SwapAsset,
 };
 
 /// Extension execute messages for an apollo autocompounding vault
@@ -15,17 +17,33 @@ use crate::{
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
+    /// An interface of certain vault interaction with forced values for authz
+    Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
-    /// Collect any rewards from Osmosis to the Vault
-    CollectRewards { amount_of_users: Uint128 },
+    /// provides an entry point for autocompounding idle funds to current position
+    Autocompound {},
     /// Distribute any rewards over all users
-    DistributeRewards { amount_of_users: Uint128 },
-    /// Claim rewards belonging to a single user
-    ClaimRewards {},
+    CollectRewards {},
+    /// MigrationStep
+    MigrationStep { amount_of_users: Uint128 },
+    /// SwapNonVaultFunds
+    SwapNonVaultFunds {
+        force_swap_route: bool,
+        swap_routes: Vec<SwapAsset>,
+    },
+}
+
+/// Extension messages for Authz. This interface basically reexports certain vault functionality
+/// but sets recipient forcibly to None
+#[cw_serde]
+pub enum AuthzExtension {
+    ExactDeposit {},
+    AnyDeposit { max_slippage: Decimal },
+    Redeem { amount: Uint128 },
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -51,7 +69,11 @@ pub enum AdminExtensionExecuteMsg {
         /// The metadata updates.
         updates: Metadata,
     },
-    ClaimStrategistRewards {},
+    /// Update the dex router address.
+    UpdateDexRouter {
+        /// The new dex router address.
+        address: Option<String>,
+    },
     /// Build tick exponent cache
     BuildTickCache {},
 }
@@ -68,6 +90,12 @@ pub struct ModifyRangeMsg {
     pub ratio_of_swappable_funds_to_use: Decimal,
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
+    /// recommended swap route to take
+    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
+    /// whether or not to force the swap route
+    pub force_swap_route: bool,
+    /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
+    pub claim_after: Option<u64>,
 }
 
 #[cw_serde]
@@ -84,6 +112,8 @@ pub enum ExtensionQueryMsg {
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
+    /// Query the DexRouter address
+    DexRouter {},
 }
 
 /// Extension query messages for user balance related queries
@@ -94,8 +124,6 @@ pub enum UserBalanceQueryMsg {
     UserSharesBalance { user: String },
     #[returns(AssetsBalanceResponse)]
     UserAssetsBalance { user: String },
-    #[returns(UserRewardsResponse)]
-    UserRewards { user: String },
 }
 
 /// Extension query messages for related concentrated liquidity
@@ -143,4 +171,6 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub dex_router: Addr,
+}

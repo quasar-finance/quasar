@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, to_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
+    coins, to_json_binary, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult,
     Uint128,
 };
 use cw2::set_contract_version;
@@ -346,32 +346,32 @@ pub fn execute_burn_from(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Balance { address } => to_binary(&query_balance(deps, address)?),
-        QueryMsg::TokenInfo {} => to_binary(&query_token_info(deps)?),
-        QueryMsg::Minter {} => to_binary(&query_minter(deps)?),
+        QueryMsg::Balance { address } => to_json_binary(&query_balance(deps, address)?),
+        QueryMsg::TokenInfo {} => to_json_binary(&query_token_info(deps)?),
+        QueryMsg::Minter {} => to_json_binary(&query_minter(deps)?),
         QueryMsg::Allowance { owner, spender } => {
-            to_binary(&query_allowance(deps, owner, spender)?)
+            to_json_binary(&query_allowance(deps, owner, spender)?)
         }
         QueryMsg::AllAllowances {
             owner,
             start_after,
             limit,
-        } => to_binary(&query_all_allowances(deps, owner, start_after, limit)?),
+        } => to_json_binary(&query_all_allowances(deps, owner, start_after, limit)?),
         QueryMsg::AllAccounts { start_after, limit } => {
-            to_binary(&query_all_accounts(deps, start_after, limit)?)
+            to_json_binary(&query_all_accounts(deps, start_after, limit)?)
         }
-        QueryMsg::MarketingInfo {} => to_binary(&query_marketing_info(deps)?),
-        QueryMsg::DownloadLogo {} => to_binary(&query_download_logo(deps)?),
-        QueryMsg::Asset {} => to_binary(&query_asset(deps)?),
-        QueryMsg::TotalAssets {} => to_binary(&query_total_assets(deps, env)?),
-        QueryMsg::ConvertToShares { assets } => to_binary(&query_convert_to_shares(deps, assets)?),
-        QueryMsg::ConvertToAssets { shares } => to_binary(&query_convert_to_assets(deps, shares)?),
+        QueryMsg::MarketingInfo {} => to_json_binary(&query_marketing_info(deps)?),
+        QueryMsg::DownloadLogo {} => to_json_binary(&query_download_logo(deps)?),
+        QueryMsg::Asset {} => to_json_binary(&query_asset(deps)?),
+        QueryMsg::TotalAssets {} => to_json_binary(&query_total_assets(deps, env)?),
+        QueryMsg::ConvertToShares { assets } => to_json_binary(&query_convert_to_shares(deps, assets)?),
+        QueryMsg::ConvertToAssets { shares } => to_json_binary(&query_convert_to_assets(deps, shares)?),
         QueryMsg::MaxDeposit {
             receiver: _receiver,
         } => {
             // max deposit needs to check the underlying cw-20 token for the maximum supply, convert that
             // to the amount
-            to_binary(&query_max_deposit(deps)?)
+            to_json_binary(&query_max_deposit(deps)?)
         }
         QueryMsg::PreviewDeposit { .. } => {
             todo!()
@@ -394,7 +394,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PreviewRedeem { .. } => {
             todo!()
         }
-        QueryMsg::VaultInfo {} => to_binary(&query_vault_info(deps)?),
+        QueryMsg::VaultInfo {} => to_json_binary(&query_vault_info(deps)?),
     }
 }
 

@@ -127,6 +127,7 @@ impl From<cw20_base::ContractError> for ContractError {
                 ContractError::CannotSetOwnAccount {}
             }
             cw20_base::ContractError::InvalidExpiration {} => ContractError::InvalidExpiration {},
+            #[allow(deprecated)]
             cw20_base::ContractError::InvalidZeroAmount {} => ContractError::InvalidZeroAmount {},
             cw20_base::ContractError::Expired {} => ContractError::Expired {},
             cw20_base::ContractError::NoAllowance {} => ContractError::NoAllowance {},
