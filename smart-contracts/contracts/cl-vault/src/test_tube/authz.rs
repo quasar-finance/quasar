@@ -15,7 +15,9 @@ mod tests {
 
     const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
 
-    // check that the authz interface returns the exact same response as the
+    // check that the authz interface returns the exact same response as
+    // the regular interface. Thus the actual authz functionality is out of
+    // scope but contract functionality is in scope here
     #[test]
     #[ignore]
     fn deposit_withdraw_equal() {
@@ -72,7 +74,6 @@ mod tests {
                 .find(|e| e.ty == "wasm".to_string())
         );
 
-        // Get shares for Alice from vault contract and assert
         let shares: UserSharesBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
@@ -122,7 +123,5 @@ mod tests {
                 .iter()
                 .find(|e| e.ty == "wasm".to_string())
         );
-
-        // TODO: verify the correct execution
     }
 }
