@@ -1,5 +1,5 @@
 use crate::ContractError;
-use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, Uint512};
+use cosmwasm_std::{Decimal, Decimal256, OverflowError, StdError, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn _liquidity0(
@@ -33,9 +33,11 @@ pub fn _liquidity0(
     let result_bytes: [u8; 64] = result.to_le_bytes();
     for b in result_bytes[32..64].iter() {
         if *b != 0_u8 {
-            return Err(ContractError::Std(StdError::generic_err(
-                "Invalid truncation; non-zero bytes found",
-            )));
+            return Err(ContractError::OverflowError(OverflowError {
+                operation: cosmwasm_std::OverflowOperation::Mul, // this is just a mock
+                operand1: result.to_string(),
+                operand2: "Conversion to Decimal".to_string(), // this too as we have no operand2 on this conversion step
+            }));
         }
     }
 
