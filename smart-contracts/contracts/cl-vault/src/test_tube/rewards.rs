@@ -21,7 +21,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_collect_rewards_with_rewards_works() {
-        let (app, contract_address, cl_pool_id, admin) = fixture_default();
+        let (app, contract_address, cl_pool_id, admin, _deposit_ratio) = fixture_default();
 
         // Initialize accounts
         let utility_account = app
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     #[ignore]
     fn test_collect_rewards_no_rewards_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = fixture_default();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
 
         // Initialize accounts
         let accounts = app

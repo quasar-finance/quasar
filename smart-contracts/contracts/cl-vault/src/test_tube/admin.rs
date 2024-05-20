@@ -9,14 +9,14 @@ mod tests {
     #[test]
     #[ignore]
     fn range_admin_update_works() {
-        let (_app, _contract_address, _cl_pool_id, _admin) = fixture_default();
+        let (_app, _contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
         // change the range admin and verify that it works
     }
 
     #[test]
     #[ignore]
     fn admin_build_tick_cache_works() {
-        let (app, contract_address, _cl_pool_id, admin) = fixture_default();
+        let (app, contract_address, _cl_pool_id, admin, _deposit_ratio) = fixture_default();
         let wasm = Wasm::new(&app);
 
         // When we will implement this entrypoint, if we do, purge it first

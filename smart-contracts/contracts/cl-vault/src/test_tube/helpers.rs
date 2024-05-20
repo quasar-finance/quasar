@@ -1,9 +1,6 @@
-use std::str::FromStr;
-
-use cosmwasm_std::{Attribute, Coin, Uint128};
+use cosmwasm_std::Attribute;
 use osmosis_std::types::{
-    cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1},
-    cosmwasm::wasm::v1::MsgExecuteContractResponse,
+    cosmos::bank::v1beta1::QueryBalanceRequest, cosmwasm::wasm::v1::MsgExecuteContractResponse,
 };
 use osmosis_test_tube::{Bank, ExecuteResponse, Module, OsmosisTestApp};
 
@@ -57,4 +54,46 @@ pub fn _extract_attribute_value_by_ty_and_key(
                 .find(|attr| attr.key == key)
                 .map(|attr| attr.value.clone())
         })
+}
+
+// pub fn adjust_deposit_amounts(
+//     initial_amount0: u128,
+//     initial_amount1: u128,
+//     deposit_ratio: f64,
+// ) -> (u128, u128) {
+//     if deposit_ratio < 0.5 {
+//         // More token1 to be deposited, reduce token0 amount
+//         let adjusted_amount0 = ((1.0 - deposit_ratio) * initial_amount0 as f64) as u128;
+//         println!("adjusted_amount0: {:?}", adjusted_amount0);
+//         (adjusted_amount0, initial_amount1)
+//     } else if deposit_ratio > 0.5 {
+//         // More token0 to be deposited, reduce token1 amount
+//         let adjusted_amount1 = (deposit_ratio * initial_amount1 as f64) as u128;
+//         (initial_amount0, adjusted_amount1)
+//     } else {
+//         // Balanced deposit
+//         (initial_amount0, initial_amount1)
+//     }
+// }
+
+pub fn calculate_expected_refunds(
+    initial_amount0: u128,
+    initial_amount1: u128,
+    deposit_ratio: f64,
+) -> (u128, u128) {
+    if deposit_ratio < 0.5 {
+        // More token1 to be deposited, so token0 has a higher refund
+        let adjusted_amount0 = ((1.0 - deposit_ratio) * initial_amount0 as f64) as u128;
+        let expected_refund0 = initial_amount0 - adjusted_amount0;
+        (expected_refund0, 0)
+    } else if deposit_ratio > 0.5 {
+        // More token0 to be deposited, so token1 has a higher refund
+        let adjusted_amount1 =
+            ((1.0 - (deposit_ratio - 0.5) * 2.0) * initial_amount1 as f64) as u128;
+        let expected_refund1 = initial_amount1 - adjusted_amount1;
+        (0, expected_refund1)
+    } else {
+        // Balanced deposit, no refunds expected
+        (0, 0)
+    }
 }

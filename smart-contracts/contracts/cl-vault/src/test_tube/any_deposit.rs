@@ -16,7 +16,8 @@ mod tests {
     #[test]
     #[ignore]
     fn test_any_deposit() {
-        let (app, contract_address, cl_pool_id, admin) = fixture_default_less_slippage();
+        let (app, contract_address, cl_pool_id, admin, _deposit_ratio) =
+            fixture_default_less_slippage();
 
         let wasm = Wasm::new(&app);
 

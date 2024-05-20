@@ -18,7 +18,7 @@ mod tests {
     #[test]
     #[ignore]
     fn single_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = fixture_default();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -206,7 +206,7 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = fixture_default();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -334,9 +334,7 @@ mod tests {
     #[test]
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = fixture_default();
-        //let bank = Bank::new(&app);
-
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create 3 accounts
