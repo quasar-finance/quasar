@@ -1,4 +1,5 @@
 use cosmwasm_std::Attribute;
+use osmosis_std::types::cosmos::base::v1beta1;
 use osmosis_std::types::{
     cosmos::bank::v1beta1::QueryBalanceRequest, cosmwasm::wasm::v1::MsgExecuteContractResponse,
 };
@@ -39,21 +40,53 @@ pub fn get_amount_from_denom(value: &String) -> u128 {
     numeric_part.parse::<u128>().unwrap()
 }
 
-pub fn _extract_attribute_value_by_ty_and_key(
-    events: Vec<cosmwasm_std::Event>,
-    ty: &str,
-    key: &str,
-) -> Option<String> {
-    events
-        .iter()
-        .find(|event| event.ty == ty)
-        .and_then(|event| {
-            event
-                .attributes
-                .iter()
-                .find(|attr| attr.key == key)
-                .map(|attr| attr.value.clone())
-        })
+pub fn calculate_deposit_ratio(
+    spot_price: String,
+    tokens_provided: Vec<v1beta1::Coin>,
+    amount0_deposit: String,
+    amount1_deposit: String,
+    denom_base: String,
+    denom_quote: String,
+) -> f64 {
+    // Parse the input amounts
+    let amount0_deposit: u128 = amount0_deposit.parse().unwrap();
+    let amount1_deposit: u128 = amount1_deposit.parse().unwrap();
+
+    // Find the attempted amounts from the tokens_provided
+    let mut provided_amount0 = 0u128;
+    let mut provided_amount1 = 0u128;
+
+    for coin in &tokens_provided {
+        if coin.denom == denom_base {
+            provided_amount0 = coin.amount.parse().unwrap();
+        } else if coin.denom == denom_quote {
+            provided_amount1 = coin.amount.parse().unwrap();
+        }
+    }
+
+    // Calculate refunds
+    let token0_refund = provided_amount0.saturating_sub(amount0_deposit);
+    let token1_refund = provided_amount1.saturating_sub(amount1_deposit);
+
+    // Convert token1 refund into token0 equivalent using spot price
+    let spot_price_value = spot_price.parse::<f64>().unwrap();
+    let token1_refund_in_token0 = (token1_refund as f64) / spot_price_value;
+
+    // Calculate total refunds in terms of token0
+    let total_refunds_in_token0 = token0_refund as f64 + token1_refund_in_token0;
+
+    // Calculate total attempted deposits in terms of token0
+    let total_attempted_deposit_in_token0 =
+        provided_amount0 as f64 + (provided_amount1 as f64 / spot_price_value);
+
+    // Calculate the ratio of total refunds in terms of token0 to total attempted deposits in terms of token0
+    let ratio = if total_attempted_deposit_in_token0 == 0.0 {
+        0.5 // Balanced deposit
+    } else {
+        2.0 * total_refunds_in_token0 / total_attempted_deposit_in_token0
+    };
+
+    ratio
 }
 
 pub fn calculate_expected_refunds(

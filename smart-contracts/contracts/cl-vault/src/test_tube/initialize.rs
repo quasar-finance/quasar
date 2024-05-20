@@ -31,6 +31,7 @@ pub mod initialize {
     };
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
+    use crate::test_tube::helpers::calculate_deposit_ratio;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
     pub const PERFORMANCE_FEE: u64 = 20;
@@ -244,6 +245,8 @@ pub mod initialize {
             tokens_provided,
             create_position.data.amount0,
             create_position.data.amount1,
+            DENOM_BASE.to_string(),
+            DENOM_QUOTE.to_string(),
         );
 
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
@@ -426,6 +429,8 @@ pub mod initialize {
             tokens_provided,
             create_position.data.amount0,
             create_position.data.amount1,
+            DENOM_BASE.to_string(),
+            DENOM_QUOTE.to_string(),
         );
 
         // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
@@ -492,53 +497,6 @@ pub mod initialize {
             admin,
             deposit_ratio,
         )
-    }
-
-    fn calculate_deposit_ratio(
-        spot_price: String,
-        tokens_provided: Vec<v1beta1::Coin>,
-        amount0_deposit: String,
-        amount1_deposit: String,
-    ) -> f64 {
-        // Parse the input amounts
-        let amount0_deposit: u128 = amount0_deposit.parse().unwrap();
-        let amount1_deposit: u128 = amount1_deposit.parse().unwrap();
-
-        // Find the attempted amounts from the tokens_provided
-        let mut provided_amount0 = 0u128;
-        let mut provided_amount1 = 0u128;
-
-        for coin in &tokens_provided {
-            if coin.denom == DENOM_BASE {
-                provided_amount0 = coin.amount.parse().unwrap();
-            } else if coin.denom == DENOM_QUOTE {
-                provided_amount1 = coin.amount.parse().unwrap();
-            }
-        }
-
-        // Calculate refunds
-        let token0_refund = provided_amount0.saturating_sub(amount0_deposit);
-        let token1_refund = provided_amount1.saturating_sub(amount1_deposit);
-
-        // Convert token1 refund into token0 equivalent using spot price
-        let spot_price_value = spot_price.parse::<f64>().unwrap();
-        let token1_refund_in_token0 = (token1_refund as f64) / spot_price_value;
-
-        // Calculate total refunds in terms of token0
-        let total_refunds_in_token0 = token0_refund as f64 + token1_refund_in_token0;
-
-        // Calculate total attempted deposits in terms of token0
-        let total_attempted_deposit_in_token0 =
-            provided_amount0 as f64 + (provided_amount1 as f64 / spot_price_value);
-
-        // Calculate the ratio of total refunds in terms of token0 to total attempted deposits in terms of token0
-        let ratio = if total_attempted_deposit_in_token0 == 0.0 {
-            0.5 // Balanced deposit
-        } else {
-            2.0 * total_refunds_in_token0 / total_attempted_deposit_in_token0
-        };
-
-        ratio
     }
 
     fn set_dex_router_paths(
