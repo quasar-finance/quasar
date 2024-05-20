@@ -1,16 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{assert_approx_eq, Coin, Uint128};
+    use cosmwasm_std::Coin;
 
     use osmosis_test_tube::{Account, Module, Wasm};
 
     use crate::{
         msg::{AuthzExtension, ExecuteMsg, ExtensionQueryMsg, QueryMsg},
-        query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
-        test_tube::{
-            helpers::get_event_attributes_by_ty_and_key,
-            initialize::initialize::{fixture_default, DENOM_BASE, DENOM_QUOTE},
-        },
+        query::UserSharesBalanceResponse,
+        test_tube::initialize::initialize::{fixture_default, DENOM_BASE, DENOM_QUOTE},
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
