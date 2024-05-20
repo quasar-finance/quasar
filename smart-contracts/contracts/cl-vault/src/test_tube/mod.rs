@@ -1,5 +1,6 @@
 mod admin;
 mod any_deposit;
+mod authz;
 mod autocompound;
 mod deposit_withdraw;
 pub mod helpers;
