@@ -18,7 +18,7 @@ mod tests {
     #[test]
     #[ignore]
     fn deposit_withdraw_equal() {
-        let (app, contract_address, _cl_pool_id, _admin) = fixture_default();
+        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio) = fixture_default();
         let wasm = Wasm::new(&app);
 
         // Create Alice account

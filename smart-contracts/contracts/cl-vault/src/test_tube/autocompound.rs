@@ -489,6 +489,8 @@ mod tests {
                         .unwrap()
                         > DEPOSIT_AMOUNT
                 );
+            } else {
+                panic!("User has no shares to redeem")
             }
         }
 
