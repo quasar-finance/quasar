@@ -87,10 +87,10 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::Authz(msg) => match msg {
                     crate::msg::AuthzExtension::ExactDeposit {} => {
-                        execute_any_deposit(deps, env, info, None)
+                        execute_exact_deposit(deps, env, info, None)
                     }
                     crate::msg::AuthzExtension::AnyDeposit {} => {
-                        execute_exact_deposit(deps, env, info, None)
+                        execute_any_deposit(deps, env, info, None)
                     }
                     crate::msg::AuthzExtension::Redeem { amount } => prepend_claim_msg(
                         &env,
