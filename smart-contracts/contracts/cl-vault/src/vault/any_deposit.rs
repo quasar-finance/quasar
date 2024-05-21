@@ -1,6 +1,6 @@
 use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
-    coin, Addr, Coin, CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    coin, Addr, Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
 use cw_dex::Pool::Osmosis;
@@ -49,6 +49,7 @@ pub fn execute_any_deposit(
     env: Env,
     info: MessageInfo,
     recipient: Option<String>,
+    max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
     // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
@@ -93,6 +94,7 @@ pub fn execute_any_deposit(
             swap_amount,
             swappable_amount,
             deposit_amount_in_ratio,
+            max_slippage,
             &recipient,
         )?;
 
@@ -129,6 +131,7 @@ pub fn execute_any_deposit(
             swap_amount,
             swappable_amount,
             deposit_amount_in_ratio,
+            max_slippage,
             &recipient,
         )?;
 
@@ -301,6 +304,7 @@ fn swap_msg_token_in_out_amounts(
     swap_amount: Uint128,
     swappable_amount: (Uint128, Uint128),
     deposit_amount_in_ratio: (Uint128, Uint128),
+    max_slippage: Decimal,
     recipient: &Addr,
 ) -> Result<(CosmosMsg, String, Uint128), ContractError> {
     // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
@@ -334,9 +338,8 @@ fn swap_msg_token_in_out_amounts(
         ),
     )?;
 
-    // todo change this later as it hardcoded as of now
-    let token_out_min_amount =
-        token_out_ideal_amount?.checked_multiply_ratio(Uint128::new(197), Uint128::new(200))?;
+    let token_out_min_amount = token_out_ideal_amount?
+        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
 
     // generate a swap message with recommended path as the current
     // pool on which the vault is running
