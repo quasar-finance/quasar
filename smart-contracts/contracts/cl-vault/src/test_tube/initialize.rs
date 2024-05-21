@@ -138,7 +138,7 @@ pub mod initialize {
     ) {
         init_test_contract_with_dex_router_and_swap_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            "./test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm",
+            "../../artifacts/cw_dex_router.wasm",
             &[
                 Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),

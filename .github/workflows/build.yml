@@ -76,7 +76,14 @@ jobs:
         run: cargo install just
       - name: Build smart contracts
         if: env.GIT_DIFF
-        run: cd smart-contracts && just workspace-optimize
+        run: |
+          cd smart-contracts
+          just workspace-optimize
+      - name: Download smart contracts dependencies
+        if: env.GIT_DIFF
+        run: |
+          cd smart-contracts
+          just download-deps
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
