@@ -54,7 +54,7 @@ pub fn execute_withdraw(
     // get the dust amounts belonging to the user
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
-    let unused_balances = get_unused_balances(&deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, env)?;
     let dust0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
@@ -86,7 +86,7 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw_msg(deps, &env, shares_to_withdraw_u128)?;
+    let withdraw_msg = withdraw_msg(deps, env, shares_to_withdraw_u128)?;
 
     let collect_rewards_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
@@ -162,6 +162,7 @@ fn withdraw_msg(
 
 #[cfg(test)]
 mod tests {
+    #[allow(deprecated)]
     use crate::{
         // rewards::CoinList,
         rewards::CoinList,
@@ -188,6 +189,7 @@ mod tests {
         let env = mock_env();
 
         // TODO: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
+        #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::new())
             .unwrap();

@@ -4,11 +4,10 @@ mod tests {
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::{AssetsBalanceResponse, UserSharesBalanceResponse};
     use crate::test_tube::initialize::initialize::{
-        fixture_default_less_slippage, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
-        DENOM_QUOTE, DEPOSIT_AMOUNT,
+        fixture_default_less_slippage, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
     };
-    use cosmwasm_std::{assert_approx_eq, Coin, Fraction};
-    use cosmwasm_std::{Decimal, Uint128};
+    use cosmwasm_std::Decimal;
+    use cosmwasm_std::{Coin, Fraction};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
     use osmosis_test_tube::{Account, Module, PoolManager, Wasm};
@@ -35,7 +34,7 @@ mod tests {
 
         for account in &accounts {
             let pm = PoolManager::new(&app);
-            let spot_price: Decimal = pm
+            let _spot_price: Decimal = pm
                 .query_spot_price(&SpotPriceRequest {
                     pool_id: cl_pool_id,
                     base_asset_denom: DENOM_BASE.to_string(),
@@ -111,7 +110,7 @@ mod tests {
                 .parse()
                 .unwrap();
 
-            let total1 = asset_balance.balances[0]
+            let _total1 = asset_balance.balances[0]
                 .amount
                 .checked_add(
                     asset_balance.balances[1]

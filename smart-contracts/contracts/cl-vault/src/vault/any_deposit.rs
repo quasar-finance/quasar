@@ -27,23 +27,6 @@ use crate::{
     ContractError,
 };
 
-/// Executes any deposit operation for the CL vault, facilitating swapping and minting of shares
-/// without refunds. This swaps the extra funds sent by the users.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies for interacting with the contract.
-/// * `env` - Environment for fetching contract address.
-/// * `info` - Message information including sender.
-/// * `recipient` - Optional recipient address; if `None`, uses sender's address.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns a `Response` containing the result of the deposit operation.
 pub fn execute_any_deposit(
     mut deps: DepsMut,
     env: Env,
@@ -158,21 +141,6 @@ pub fn execute_any_deposit(
     };
 }
 
-/// Handles the reply from a swap operation during any deposit.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies for interacting with the contract.
-/// * `env` - Environment for fetching contract address.
-/// * `data` - Result of the swap operation.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns a `Response` containing the result of the swap operation and minting of shares.
 pub fn handle_any_deposit_swap_reply(
     mut deps: DepsMut,
     env: Env,
@@ -293,6 +261,7 @@ fn mint_msg_user_shares(
     Ok((mint_msg, user_shares))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn swap_msg_token_in_out_amounts(
     deps: DepsMut,
     env: &Env,
@@ -305,7 +274,7 @@ fn swap_msg_token_in_out_amounts(
 ) -> Result<(CosmosMsg, String, Uint128), ContractError> {
     // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     // TODO check on the twap_window_seconds (taking hardcoded value for now)
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
             SwapDirection::ZeroToOne => (
@@ -342,7 +311,7 @@ fn swap_msg_token_in_out_amounts(
     // pool on which the vault is running
     let swap_msg = swap_msg(
         deps,
-        &env,
+        env,
         SwapParams {
             token_in_amount: swap_amount,
             token_out_min_amount,

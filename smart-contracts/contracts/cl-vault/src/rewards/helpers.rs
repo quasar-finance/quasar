@@ -28,7 +28,7 @@ pub fn prepend_claim_msg(env: &Env, response: Response) -> Result<Response, Cont
 
 /// Prepend a msg to the start of the messages in a response
 fn prepend_msg(mut response: Response, msg: SubMsg) -> Response {
-    response.messages.splice(0..0, vec![msg.into()]);
+    response.messages.splice(0..0, vec![msg]);
     response
 }
 

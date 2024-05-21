@@ -21,6 +21,7 @@ use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
 };
+#[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
@@ -246,6 +247,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     let mut response = Response::new().add_attribute("migrate", "successful");
 
     // Conditionally add a bank send message if the strategist rewards state is not empty
+    #[allow(deprecated)]
     let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
     if !strategist_rewards.is_empty() {
         let bank_send_msg = BankMsg::Send {
@@ -255,6 +257,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         response = response.add_message(bank_send_msg);
     }
     // Remove the state
+    #[allow(deprecated)]
     STRATEGIST_REWARDS.remove(deps.storage);
 
     Ok(response)
@@ -270,6 +273,7 @@ mod tests {
     use prost::Message;
     use std::str::FromStr;
 
+    #[allow(deprecated)]
     use crate::{
         rewards::CoinList, state::USER_REWARDS,
         test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
@@ -322,6 +326,7 @@ mod tests {
         assert_eq!(migration_status, MigrationStatus::Open);
 
         // Assert STRATEGIST_REWARDS state have been correctly removed by unwrapping the error
+        #[allow(deprecated)]
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
 
         // Execute one migration step and assert the correct behavior
@@ -359,6 +364,7 @@ mod tests {
             coin(1000u128, DENOM_REWARD),
         ];
         for i in 0..10 {
+            #[allow(deprecated)]
             USER_REWARDS
                 .save(
                     deps.as_mut().storage,
@@ -368,6 +374,7 @@ mod tests {
                 .unwrap();
         }
         // Mock STRATEGIST_REWARDS in order to have something to distribute
+        #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
@@ -395,6 +402,7 @@ mod tests {
         }
 
         // Assert USER_REWARDS state have been correctly removed by unwrapping the error
+        #[allow(deprecated)]
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
 
         // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
@@ -440,6 +448,7 @@ mod tests {
 
         // Assert USER_REWARDS state have been correctly removed by unwrapping the error
         for i in 0..10 {
+            #[allow(deprecated)]
             USER_REWARDS
                 .load(deps.as_mut().storage, Addr::unchecked(format!("user{}", i)))
                 .unwrap_err();
