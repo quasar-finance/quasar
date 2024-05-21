@@ -80,7 +80,7 @@ pub fn execute_any_deposit(
         )?;
 
         // rest minting logic remains same
-        return Ok(Response::new()
+        Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
                 swap_msg,
                 Replies::AnyDepositSwap.into(),
@@ -88,7 +88,7 @@ pub fn execute_any_deposit(
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
             .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
-            .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
+            .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
     } else if !swappable_amount.1.is_zero() {
         let (swap_amount, swap_direction) = (
             // current tick is above range
@@ -116,7 +116,7 @@ pub fn execute_any_deposit(
         )?;
 
         // rest minting logic remains same
-        return Ok(Response::new()
+        Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
                 swap_msg,
                 Replies::AnyDepositSwap.into(),
@@ -124,21 +124,21 @@ pub fn execute_any_deposit(
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
             .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
-            .add_attribute("token_out_min", format!("{}", token_out_min_amount)));
+            .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
     } else {
         // TODO: I dont like this early return here and the fact that this function is or finishing here, or going to invoke an async reply.
         let (mint_msg, user_shares) =
             mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
 
-        return Ok(Response::new()
+        Ok(Response::new()
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
             .add_attribute("amount0", deposit_amount_in_ratio.0)
             .add_attribute("amount1", deposit_amount_in_ratio.1)
             .add_message(mint_msg)
             .add_attribute("mint_shares_amount", user_shares)
-            .add_attribute("receiver", recipient.as_str()));
-    };
+            .add_attribute("receiver", recipient.as_str()))
+    }
 }
 
 pub fn handle_any_deposit_swap_reply(
