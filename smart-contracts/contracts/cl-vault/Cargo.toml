@@ -58,7 +58,7 @@ apollo-cw-asset = { workspace = true }
 cw-dex = { workspace = true }
 
 cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", features = ["library", "osmosis"]}
-cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
 
 [dev-dependencies]
 osmosis-test-tube = { workspace = true }
