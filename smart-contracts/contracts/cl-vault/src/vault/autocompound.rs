@@ -11,6 +11,7 @@ use crate::helpers::{get_unused_balances, must_pay_one_or_two_from_balance};
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 use crate::rewards::CoinList;
+#[allow(deprecated)]
 use crate::state::USER_REWARDS;
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
@@ -37,7 +38,7 @@ pub fn execute_autocompound(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let balance = get_unused_balances(&deps.querier, &env)?;
+    let balance = get_unused_balances(&deps.querier, env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
 
     let (token0, token1) =
@@ -54,7 +55,7 @@ pub fn execute_autocompound(
 
     let create_position_msg = create_position(
         deps,
-        &env,
+        env,
         position.lower_tick,
         position.upper_tick,
         coins_to_send,
@@ -124,6 +125,7 @@ pub fn execute_migration_step(
     let mut total_amount = CoinList::new();
 
     // Iterate user rewards in a paginated fashion
+    #[allow(deprecated)]
     for item in USER_REWARDS
         .range(deps.storage, None, None, Order::Ascending)
         .take(amount_of_users.u128() as usize)
@@ -139,11 +141,13 @@ pub fn execute_migration_step(
     }
 
     // Remove processed rewards in a separate iteration.
+    #[allow(deprecated)]
     for addr in addresses {
         USER_REWARDS.remove(deps.storage, addr);
     }
 
     // Check if this is the last execution.
+    #[allow(deprecated)]
     let is_last_execution = USER_REWARDS
         .range(deps.storage, None, None, Order::Ascending)
         .next()

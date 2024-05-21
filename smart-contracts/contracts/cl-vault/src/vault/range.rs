@@ -374,6 +374,7 @@ pub fn do_swap_deposit_merge(
     Ok(response)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn calculate_swap_amount(
     deps: DepsMut,
     env: Env,
