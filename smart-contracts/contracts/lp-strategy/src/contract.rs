@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, QuerierWrapper,
-    Reply, Response, Storage, Uint128,
+    from_json, Attribute, DepsMut, Env, IbcMsg, IbcPacketAckMsg, MessageInfo, Order,
+    QuerierWrapper, Reply, Response, Storage, Uint128,
 };
 use cw2::set_contract_version;
 use cw_utils::{must_pay, nonpayable};
@@ -11,9 +11,11 @@ use quasar_types::ibc::IcsAck;
 
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
-use crate::error::ContractError;
+use crate::error::{ContractError, Trap};
 use crate::execute::{execute_retry, execute_transfer_airdrop};
-use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
+use crate::helpers::{
+    create_callback_submsg, is_contract_admin, lock_try_icq, IbcMsgKind, SubMsgKind,
+};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
 use crate::ibc_util::{do_ibc_join_pool_swap_extern_amount_in, do_transfer};
@@ -24,7 +26,7 @@ use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
     ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
-    UNBOND_QUEUE,
+    TRAPS, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -271,6 +273,20 @@ pub fn execute_try_icq(deps: DepsMut, env: Env) -> Result<Response, ContractErro
     } else {
         res = res.add_attribute("IBC_LOCK", "locked");
     }
+
+    #[allow(clippy::type_complexity)]
+    let traps: Result<Vec<((u64, String), Trap)>, ContractError> = TRAPS
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|result| result.map_err(ContractError::from))
+        .collect();
+
+    // if all the icq are cleared then get rid of the ones we don't need anymore to be stored
+    for ((k1, k2), trap) in traps.unwrap() {
+        if trap.step == IbcMsgKind::Icq {
+            TRAPS.remove(deps.storage, (k1, k2));
+        }
+    }
+
     Ok(res)
 }
 
@@ -507,6 +523,8 @@ mod tests {
     };
     use cw_utils::PaymentError;
 
+    use crate::helpers::IcaMessages;
+    use crate::state::PendingBond;
     use crate::{
         bond::Bond,
         state::{Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
@@ -514,6 +532,58 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_execute_try_icq_trap_removal() {
+        let mut deps = mock_dependencies();
+
+        let mock_lock = Lock::new().lock_bond().lock_start_unbond().lock_unbond();
+        IBC_LOCK.save(&mut deps.storage, &mock_lock).unwrap();
+
+        // Populate TRAPS with test data
+        TRAPS
+            .save(
+                &mut deps.storage,
+                (1, "denom1".to_string()),
+                &Trap {
+                    error: "abcd".to_string(),
+                    step: IbcMsgKind::Icq,
+                    last_succesful: false,
+                },
+            )
+            .unwrap();
+        TRAPS
+            .save(
+                &mut deps.storage,
+                (2, "denom2".to_string()),
+                &Trap {
+                    error: "efgh".to_string(),
+                    step: IbcMsgKind::Ica(IcaMessages::BankSend(Addr::unchecked("test"), vec![])),
+                    last_succesful: false,
+                },
+            )
+            .unwrap();
+
+        // Call the function
+        let env = mock_env();
+        let info = mock_info("sender", &[]);
+        let res = execute_try_icq(deps.as_mut(), env).unwrap();
+
+        // Check that the trap with IbcMsgKind::Icq has been removed
+        assert!(TRAPS
+            .may_load(&deps.storage, (1, "denom1".to_string()))
+            .unwrap()
+            .is_none());
+        // Check that the trap with other kind has not been removed
+        assert!(TRAPS
+            .may_load(&deps.storage, (2, "denom2".to_string()))
+            .unwrap()
+            .is_some());
+
+        // You can also check the response attributes if necessary
+        let expected_attributes = vec![attr("IBC_LOCK", "locked")];
+        assert_eq!(res.attributes, expected_attributes);
+    }
 
     #[test]
     fn test_execute_try_icq_ibc_locked() {
