@@ -50,7 +50,7 @@ pub enum ExtensionExecuteMsg {
 #[cw_serde]
 pub enum AuthzExtension {
     ExactDeposit {},
-    AnyDeposit {},
+    AnyDeposit { max_slippage: Decimal },
     Redeem { amount: Uint128 },
 }
 

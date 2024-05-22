@@ -71,7 +71,8 @@ pub fn execute(
             amount: _,
             asset: _,
             recipient,
-        } => execute_any_deposit(deps, env, info, recipient),
+            max_slippage,
+        } => execute_any_deposit(deps, env, info, recipient, max_slippage),
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
             execute_exact_deposit(deps, env, info, recipient)
         }
@@ -90,8 +91,8 @@ pub fn execute(
                     crate::msg::AuthzExtension::ExactDeposit {} => {
                         execute_exact_deposit(deps, env, info, None)
                     }
-                    crate::msg::AuthzExtension::AnyDeposit {} => {
-                        execute_any_deposit(deps, env, info, None)
+                    crate::msg::AuthzExtension::AnyDeposit { max_slippage } => {
+                        execute_any_deposit(deps, env, info, None, max_slippage)
                     }
                     crate::msg::AuthzExtension::Redeem { amount } => prepend_claim_msg(
                         &env,
