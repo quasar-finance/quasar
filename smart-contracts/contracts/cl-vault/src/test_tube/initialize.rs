@@ -36,9 +36,9 @@ pub mod initialize {
     const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
     pub const PERFORMANCE_FEE: u64 = 20;
 
-    const TOKENS_PROVIDED_AMOUNT_LOW: &str = "1000000000000000";
-    const SPREAD_FACTOR_LOW: &str = "0.01";
-    pub const _MAX_SLIPPAGE_LOW: u64 = 9900; // this should be inline with the pool spread_factor
+    // const _TOKENS_PROVIDED_AMOUNT_LOW: &str = "1000000000000000";
+    // const _SPREAD_FACTOR_LOW: &str = "0.01";
+    // pub const _MAX_SLIPPAGE_LOW: u64 = 9900; // this should be inline with the pool spread_factor
 
     const TOKENS_PROVIDED_AMOUNT_HIGH: &str = "100000000000000000000";
     pub const SPREAD_FACTOR_HIGH: &str = "0.1";
@@ -91,41 +91,41 @@ pub mod initialize {
         )
     }
 
-    pub fn fixture_default_less_slippage(
-    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
-        init_test_contract(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),
-                denom1: DENOM_QUOTE.to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str(SPREAD_FACTOR_LOW)
-                    .unwrap()
-                    .atomics()
-                    .to_string(),
-            },
-            -5000000, // 0.5 spot price
-            500000,   // 1.5 spot price
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        )
-    }
+    // pub fn _fixture_default_less_slippage(
+    // ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
+    //     init_test_contract(
+    //         "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+    //         &[
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+    //         ],
+    //         MsgCreateConcentratedPool {
+    //             sender: "overwritten".to_string(),
+    //             denom0: DENOM_BASE.to_string(),
+    //             denom1: DENOM_QUOTE.to_string(),
+    //             tick_spacing: 100,
+    //             spread_factor: Decimal::from_str(SPREAD_FACTOR_LOW)
+    //                 .unwrap()
+    //                 .atomics()
+    //                 .to_string(),
+    //         },
+    //         -5000000, // 0.5 spot price
+    //         500000,   // 1.5 spot price
+    //         vec![
+    //             v1beta1::Coin {
+    //                 denom: DENOM_BASE.to_string(),
+    //                 amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
+    //             },
+    //             v1beta1::Coin {
+    //                 denom: DENOM_QUOTE.to_string(),
+    //                 amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
+    //             },
+    //         ],
+    //         Uint128::zero(),
+    //         Uint128::zero(),
+    //     )
+    // }
 
     pub fn fixture_cw_dex_router() -> (
         OsmosisTestApp,

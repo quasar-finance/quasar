@@ -7,7 +7,6 @@ mod tests {
         fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
         MAX_SLIPPAGE_HIGH,
     };
-    use crate::ContractError;
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{
         QueryAllBalancesRequest, QueryAllBalancesResponse,
@@ -28,7 +27,7 @@ mod tests {
         ];
 
         for (_asset, amount_base, amount_quote) in test_cases {
-            let (app, contract_address, _dex_router_addr, vault_pool_id, pools_ids, admin, _, _) =
+            let (app, contract_address, _dex_router_addr, vault_pool_id, _pools_ids, admin, _, _) =
                 fixture_cw_dex_router();
 
             do_and_verify_any_deposit(
@@ -205,10 +204,10 @@ mod tests {
         ];
 
         for (_asset, amount_base, amount_quote) in test_cases {
-            let (app, contract_address, _dex_router_addr, _vault_pool_id, pools_ids, admin, _, _) =
+            let (app, contract_address, _dex_router_addr, _vault_pool_id, _pools_ids, _admin, _, _) =
                 fixture_cw_dex_router();
 
-            let err = do_any_deposit(
+            do_any_deposit(
                 &app,
                 &contract_address,
                 amount_base,
