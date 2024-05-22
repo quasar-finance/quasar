@@ -8,7 +8,7 @@ use crate::{
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub incentive_admin: String,
+    pub incentives_admin: String,
 }
 
 #[cw_serde]

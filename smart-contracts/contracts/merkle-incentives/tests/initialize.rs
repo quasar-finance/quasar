@@ -43,7 +43,7 @@ pub fn init_test_contract(
         .instantiate(
             code_id,
             &InstantiateMsg {
-                incentive_admin: incentive_admin.address(),
+                incentives_admin: incentive_admin.address(),
             },
             Some(admin.address().as_str()),
             Some("merkle-incentives"),

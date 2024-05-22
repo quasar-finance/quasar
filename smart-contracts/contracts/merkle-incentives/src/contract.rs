@@ -24,9 +24,9 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    INCENTIVES_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.incentive_admin)?)?;
+    INCENTIVES_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.incentives_admin)?)?;
 
-    Ok(Response::default().add_attribute("incentive_admin", msg.incentive_admin))
+    Ok(Response::default().add_attribute("incentive_admin", msg.incentives_admin))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
