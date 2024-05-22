@@ -77,17 +77,16 @@ jobs:
             .github/workflows/build.yml
       - name: Install just via cargo
         run: cargo install just
+      - name: Download smart contracts dependencies
+        if: env.GIT_DIFF
+        run: |
+          cd smart-contracts
+          just download-deps
       - name: Build smart contracts
         if: env.GIT_DIFF
         run: |
           cd smart-contracts
           just workspace-optimize
-      - name: Download smart contracts dependencies
-        if: env.GIT_DIFF
-        run: |
-          cd smart-contracts
-          chmod 755 artifacts
-          just download-deps
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
