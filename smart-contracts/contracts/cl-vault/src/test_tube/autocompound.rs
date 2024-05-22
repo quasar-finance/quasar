@@ -42,6 +42,7 @@ mod tests {
             app,
             contract_address,
             _dex_router_addr,
+            _vault_pool_id,
             pools_ids,
             admin,
             deposit_ratio,

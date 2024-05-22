@@ -5,6 +5,7 @@ mod tests {
     use crate::msg::ExecuteMsg;
     use crate::test_tube::initialize::initialize::{
         fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
+        MAX_SLIPPAGE_HIGH,
     };
     use crate::ContractError;
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
@@ -13,32 +14,31 @@ mod tests {
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
     use osmosis_test_tube::{
-        Account, Bank, Module, OsmosisTestApp, PoolManager, RunnerError, RunnerExecuteResult, SigningAccount, Wasm
+        Account, Bank, Module, OsmosisTestApp, PoolManager, RunnerError, SigningAccount, Wasm,
     };
-
-    const MAX_SLIPPAGE: f64 = 0.1;
 
     #[test]
     fn test_any_deposit() {
         let test_cases = vec![
-            (DENOM_BASE, Uint128::new(10000000), Uint128::zero()),
-            (DENOM_QUOTE, Uint128::new(5000000), Uint128::zero()),
-            (DENOM_BASE, Uint128::new(20000000), Uint128::zero()),
-            (DENOM_QUOTE, Uint128::new(15000000), Uint128::zero()),
-            (DENOM_BASE, Uint128::new(10000000), Uint128::new(5000000)),
+            (DENOM_BASE, Uint128::new(10000), Uint128::zero()),
+            (DENOM_QUOTE, Uint128::new(5000), Uint128::zero()),
+            (DENOM_BASE, Uint128::new(2000), Uint128::zero()),
+            (DENOM_QUOTE, Uint128::new(1500), Uint128::zero()),
+            (DENOM_BASE, Uint128::new(1000), Uint128::new(500)),
         ];
 
         for (_asset, amount_base, amount_quote) in test_cases {
-            let (app, contract_address, _dex_router_addr, pools_ids, admin, _, _) =
+            let (app, contract_address, _dex_router_addr, vault_pool_id, pools_ids, admin, _, _) =
                 fixture_cw_dex_router();
+
             do_and_verify_any_deposit(
                 app,
                 contract_address.clone(),
-                pools_ids.clone(),
+                vault_pool_id,
                 admin,
                 amount_base,
                 amount_quote,
-                Decimal::bps(9000)
+                Decimal::bps(MAX_SLIPPAGE_HIGH),
             );
         }
     }
@@ -46,14 +46,20 @@ mod tests {
     fn do_and_verify_any_deposit(
         app: OsmosisTestApp,
         contract_address: Addr,
-        _pool_ids: Vec<u64>,
+        vault_pool_id: u64,
         _admin: SigningAccount,
         amount_base: Uint128,
         amount_quote: Uint128,
         max_slippage: Decimal,
     ) {
-        let (initial_balance, deposit_coins) = do_any_deposit(&app, &contract_address, amount_base, amount_quote, max_slippage).unwrap();
-        
+        let (initial_balance, deposit_coins) = do_any_deposit(
+            &app,
+            &contract_address,
+            amount_base,
+            amount_quote,
+            max_slippage,
+        )
+        .unwrap();
         let bm = Bank::new(&app);
         let pm = PoolManager::new(&app);
 
@@ -68,7 +74,7 @@ mod tests {
             //Get Spot Price
             let spot_price = pm
                 .query_spot_price(&SpotPriceRequest {
-                    pool_id: 1,
+                    pool_id: vault_pool_id,
                     base_asset_denom: DENOM_BASE.to_string(),
                     quote_asset_denom: DENOM_QUOTE.to_string(),
                 })
@@ -121,8 +127,8 @@ mod tests {
 
             let deposit_in_base = deposit_base_in_base + deposit_quote_in_base;
 
-            let allowable_diff =
-                (initial_total_in_base + deposit_in_base).u128() as f64 * MAX_SLIPPAGE;
+            let allowable_diff = (initial_total_in_base + deposit_in_base).u128() as f64
+                * (1.0 - (MAX_SLIPPAGE_HIGH as f64 / 10_000.0));
 
             let total_diff = ((initial_total_in_base + deposit_in_base).u128() as f64
                 - final_total_in_base.u128() as f64)
@@ -136,10 +142,16 @@ mod tests {
         }
     }
 
-    fn do_any_deposit(app: &OsmosisTestApp, contract_address: &Addr, amount_base: Uint128, amount_quote: Uint128, max_slippage: Decimal) -> Result<(QueryAllBalancesResponse, Vec<Coin>), RunnerError>{
+    fn do_any_deposit(
+        app: &OsmosisTestApp,
+        contract_address: &Addr,
+        amount_base: Uint128,
+        amount_quote: Uint128,
+        max_slippage: Decimal,
+    ) -> Result<(QueryAllBalancesResponse, Vec<Coin>), RunnerError> {
         let bm = Bank::new(app);
         let wasm = Wasm::new(app);
-    
+
         // Initialize accounts
         let accounts = app
             .init_accounts(
@@ -151,14 +163,14 @@ mod tests {
                 ACCOUNTS_NUM,
             )
             .unwrap();
-    
+
         let initial_balance: QueryAllBalancesResponse = bm
             .query_all_balances(&QueryAllBalancesRequest {
                 address: contract_address.clone().into_string(),
                 pagination: None,
             })
             .unwrap();
-    
+
         // Simulate a deposit
         let mut deposit_coins = vec![];
         if amount_base > Uint128::zero() {
@@ -167,37 +179,43 @@ mod tests {
         if amount_quote > Uint128::zero() {
             deposit_coins.push(Coin::new(amount_quote.u128(), DENOM_QUOTE));
         }
-    
-        let _ = wasm
-                .execute(
-                    contract_address.clone().as_str(),
-                    &ExecuteMsg::AnyDeposit {
-                        amount: amount_base,
-                        asset: DENOM_BASE.to_string(),
-                        recipient: Some(accounts[0].address()),
-                        max_slippage,
-                    },
-                    &deposit_coins,
-                    &accounts[0],
-                )?;
+
+        let _ = wasm.execute(
+            contract_address.clone().as_str(),
+            &ExecuteMsg::AnyDeposit {
+                amount: amount_base,
+                asset: DENOM_BASE.to_string(),
+                recipient: Some(accounts[0].address()),
+                max_slippage,
+            },
+            &deposit_coins,
+            &accounts[0],
+        )?;
         Ok((initial_balance, deposit_coins))
     }
-    
+
     #[test]
     fn test_any_deposit_slippage_fails() {
         let test_cases = vec![
-            (DENOM_BASE, Uint128::new(10000000), Uint128::zero()),
-            (DENOM_QUOTE, Uint128::new(5000000), Uint128::zero()),
-            (DENOM_BASE, Uint128::new(20000000), Uint128::zero()),
-            (DENOM_QUOTE, Uint128::new(15000000), Uint128::zero()),
-            (DENOM_BASE, Uint128::new(10000000), Uint128::new(5000000)),
+            (DENOM_BASE, Uint128::new(10000), Uint128::zero()),
+            (DENOM_QUOTE, Uint128::new(5000), Uint128::zero()),
+            (DENOM_BASE, Uint128::new(2000), Uint128::zero()),
+            (DENOM_QUOTE, Uint128::new(1500), Uint128::zero()),
+            (DENOM_BASE, Uint128::new(1000), Uint128::new(500)),
         ];
 
         for (_asset, amount_base, amount_quote) in test_cases {
-            let (app, contract_address, _dex_router_addr, pools_ids, admin, _, _) =
-            fixture_cw_dex_router();
+            let (app, contract_address, _dex_router_addr, _vault_pool_id, pools_ids, admin, _, _) =
+                fixture_cw_dex_router();
 
-            let err = do_any_deposit(&app, &contract_address, amount_base, amount_quote, Decimal::zero()).unwrap_err();
+            let err = do_any_deposit(
+                &app,
+                &contract_address,
+                amount_base,
+                amount_quote,
+                Decimal::zero(),
+            )
+            .unwrap_err();
         }
     }
 }
