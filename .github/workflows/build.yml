@@ -86,6 +86,7 @@ jobs:
         if: env.GIT_DIFF
         run: |
           cd smart-contracts
+          chmod 755 artifacts
           just download-deps
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
