@@ -135,7 +135,6 @@ jobs:
         run: |
           cd smart-contracts
           just download-deps
-          mv artifacts/cw_dex_router.wasm contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm
 
 
       - name: Run test-tube tests
