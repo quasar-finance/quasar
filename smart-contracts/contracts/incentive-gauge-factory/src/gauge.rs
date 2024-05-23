@@ -1,7 +1,5 @@
-use std::ops::Add;
-
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Addr, Coin, Decimal, Fraction, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use quasar_types::coinlist::CoinList;
 
 #[cw_serde]
@@ -12,7 +10,7 @@ pub struct Gauge {
     pub total_incentives: Vec<Coin>,
     // TODO remove the fee from the gauge and move it to a secondary map so we can effciently update the fee on claiming
     pub fee: Fee,
-    pub r#type: GaugeType,
+    pub kind: GaugeKind,
 }
 
 impl Gauge {
@@ -23,7 +21,7 @@ impl Gauge {
         total_incentives: Vec<Coin>,
         fee: Decimal,
         fee_address: Addr,
-        r#type: GaugeType,
+        kind: GaugeKind,
     ) -> Gauge {
         let fee = Fee::new(fee_address, fee, CoinList::new(total_incentives.clone()));
 
@@ -33,7 +31,7 @@ impl Gauge {
             expiration_block,
             total_incentives,
             fee,
-            r#type,
+            kind,
         }
     }
 }
@@ -63,24 +61,41 @@ impl Fee {
 /// Each kind of gauge is created in the incentive gauge factory
 /// The offchain infrastructure picks up the settings from the onchain created gauge
 #[cw_serde]
-pub enum GaugeType {
-    /// The gauge type to incentivize a Quasar vault. 
+pub enum GaugeKind {
+    /// The gauge type to incentivize a Quasar vault.
     /// address is the contract address of the corresponding Quasar vault to incentivize
     /// blacklist gives support to blacklist certain addresses, such as contracts that deposit into the vault but do not have the capability to claim any incentives
     /// min_shares is an optional setting to define a minimum amount of shares needed to earn any incentives
     /// max_shares is an optional setting to define a maximum amount of shares a user can earn any incentives over, any users over the max amount are given rewards according to the max_shares amount
-    Vault { address: Addr, blacklist: Option<Vec<Addr>>, min_shares: Option<Uint128>, max_shares: Option<Uint128> },
-}
+    Vault {
+        address: Addr,
+        blacklist: Option<Vec<Addr>>,
+        shares: Option<VaultConfig>,
+    },
 
-impl GaugeType {
-    pub fn new_vault_incentives(address: Addr, blacklist: Option<Vec<Addr>>, min_shares: Option<Uint128>, max_shares: Option<Uint128> ) -> GaugeType {
-        return GaugeType::Vault { address, blacklist, min_shares, max_shares };
+    Pool {
+        address: Addr,
     }
 }
 
+impl GaugeKind {
+    pub fn new_vault_incentives(
+        address: Addr,
+        blacklist: Option<Vec<Addr>>,
+        shares: Option<VaultConfig>,
+    ) -> GaugeKind {
+        GaugeKind::Vault {
+            address,
+            blacklist,
+            shares,
+        }
+    }
+}
+
+#[cw_serde]
 pub struct VaultConfig {
-    // a mint amount of shares needed to receive incentives
-    minimum_shares: Option<Uint128>,
-    // a maximum amount of shares
-    maximum_shares: Option<Uint128>,
+    /// a mint amount of shares needed to receive incentives
+    min: Option<Uint128>,
+    /// a maximum amount of shares
+    max: Option<Uint128>,
 }

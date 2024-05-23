@@ -1,12 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, Env, Fraction, MessageInfo, Response, StdError,
+    to_json_binary, Addr, BankMsg, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult,
 };
 // use cw2::set_contract_version;
 
-use crate::error::{ContractError, ContractResult};
+use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::queries;
 use crate::state::GAUGES;
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:multihop-router";
@@ -27,14 +29,14 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::CreateIncentiveGauge { r#type, gauge } => todo!(),
-        ExecuteMsg::ClaimGaugeFees { gauge_address } => todo!(),
+        ExecuteMsg::CreateIncentiveGauge { kind: _, gauge: _ } => todo!(),
+        ExecuteMsg::ClaimGaugeFees { gauge_address: _ } => todo!(),
     }
 }
 
@@ -62,16 +64,19 @@ pub fn execute_claim_fees(
 
     // calculate what % of the gauge has passed
     let elapsed_ratio = Decimal::from_ratio(elapsed_blocks, total_blocks);
-    let claimable_until_now = fees
+    let claimable_until_now = fees.total_fees.mul_ratio(elapsed_ratio);
+
+    let claimed = fees
         .total_fees
-        .mul_ratio(elapsed_ratio);
-
-
-    let claimed = fees.total_fees.checked_sub(&fees.remaining_fees).map_err(StdError::overflow)?;
+        .checked_sub(&fees.remaining_fees)
+        .map_err(StdError::overflow)?;
 
     // calculate the difference between what fees were already paid out and what is claimable
     let to_receive = claimable_until_now.clone() - claimed;
-    let new_remaining_fees = fees.total_fees.checked_sub(&claimable_until_now).map_err(StdError::overflow)?;
+    let new_remaining_fees = fees
+        .total_fees
+        .checked_sub(&claimable_until_now)
+        .map_err(StdError::overflow)?;
 
     fees.remaining_fees = new_remaining_fees;
     gauge.fee = fees.clone();
@@ -86,8 +91,16 @@ pub fn execute_claim_fees(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> ContractResult<Binary> {
-    match msg {}
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::Gauge { address } => to_json_binary(&queries::query_gauge(
+            deps,
+            deps.api.addr_validate(&address)?,
+        )?),
+        QueryMsg::ListGauges { start_after, limit } => {
+            to_json_binary(&queries::query_gauge_list(deps, start_after, limit)?)
+        }
+    }
 }
 
 #[cfg(test)]
