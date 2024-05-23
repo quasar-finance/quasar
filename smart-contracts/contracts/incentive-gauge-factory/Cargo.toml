@@ -51,6 +51,7 @@ cw2 = "1.0.1"
 schemars = "0.8.10"
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
+semver = "1.0.20"
 
 [dev-dependencies]
 serde-json-wasm = "0.5"

@@ -3,6 +3,18 @@ use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use quasar_types::coinlist::CoinList;
 
 #[cw_serde]
+pub struct GaugesCodes {
+    /// vault incentives
+    pub vault: u64,
+
+    /// pool with volume incentives
+    pub volume: u64,
+
+    /// pool with liquidity incentives
+    pub liquidity: u64,
+}
+
+#[cw_serde]
 pub struct Gauge {
     pub start_block: u64,
     pub end_block: u64,
@@ -38,23 +50,29 @@ impl Gauge {
 
 #[cw_serde]
 pub struct Fee {
-    pub fee_address: Addr,
-    pub fee_ratio: Decimal,
-    pub total_fees: CoinList,
-    pub remaining_fees: CoinList,
+    pub address: Addr,
+    pub ratio: Decimal,
+    pub total: CoinList,
+    pub remaining: CoinList,
 }
 
 impl Fee {
-    pub fn new(fee_address: Addr, fee_ratio: Decimal, total_incentives: CoinList) -> Fee {
-        let total_fees = total_incentives.mul_ratio(fee_ratio);
+    pub fn new(address: Addr, ratio: Decimal, total_incentives: CoinList) -> Fee {
+        let total = total_incentives.mul_ratio(ratio);
 
         Fee {
-            fee_address,
-            fee_ratio,
-            total_fees: total_fees.clone(),
-            remaining_fees: total_fees,
+            address,
+            ratio,
+            total: total.clone(),
+            remaining: total,
         }
     }
+}
+
+#[cw_serde]
+pub enum PoolKind {
+    Volume,
+    Liquidity
 }
 
 /// The different kinds of incentive gauges supported by Quasar
@@ -75,7 +93,10 @@ pub enum GaugeKind {
 
     Pool {
         address: Addr,
-    }
+        kind: PoolKind,
+        denom_a: String,
+        denom_b: String,
+    },
 }
 
 impl GaugeKind {
@@ -83,11 +104,25 @@ impl GaugeKind {
         address: Addr,
         blacklist: Option<Vec<Addr>>,
         shares: Option<VaultConfig>,
-    ) -> GaugeKind {
+    ) -> Self {
         GaugeKind::Vault {
             address,
             blacklist,
             shares,
+        }
+    }
+
+    pub fn new_pool(
+        address: Addr,
+        kind: PoolKind,
+        denom_a: String,
+        denom_b: String,
+    ) -> Self {
+        GaugeKind::Pool {
+            address,
+            kind,
+            denom_a,
+            denom_b,
         }
     }
 }

@@ -1,7 +1,12 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
 
-use crate::gauge::{Gauge, GaugeKind};
+use crate::types::{Gauge, GaugeKind, GaugesCodes};
+
+#[cw_serde]
+pub struct MigrateMsg {
+    pub version: String,
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -9,7 +14,8 @@ pub struct InstantiateMsg {}
 #[cw_serde]
 pub enum ExecuteMsg {
     CreateIncentiveGauge { kind: GaugeKind, gauge: Gauge },
-    ClaimGaugeFees { gauge_address: Addr },
+    ClaimGaugeFees { address: Addr },
+    SetGaugeCodes { codes: GaugesCodes }
 }
 
 #[cw_serde]
