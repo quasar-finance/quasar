@@ -134,7 +134,7 @@ jobs:
         if: env.GIT_DIFF
         run: |
           find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); dir_name=$(echo "$contract_name" | sed "s/_/-/g"); mkdir -p "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
-          mv ./artifacts/cw_dex_router.wasm ./contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm
+          mv smart-contracts/artifacts/cw_dex_router.wasm smart-contracts/contracts/cl-vault/test-tube-build/wasm32-unknown-unknown/release/cw_dex_router.wasm
 
       - name: Run test-tube tests
         if: env.GIT_DIFF
