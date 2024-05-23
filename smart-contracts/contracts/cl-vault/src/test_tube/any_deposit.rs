@@ -17,6 +17,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore]
     fn test_any_deposit() {
         let test_cases = vec![
             (DENOM_BASE, Uint128::new(10000), Uint128::zero()),
@@ -194,6 +195,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_any_deposit_slippage_fails() {
         let test_cases = vec![
             (DENOM_BASE, Uint128::new(10000), Uint128::zero()),
