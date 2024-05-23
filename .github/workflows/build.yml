@@ -109,15 +109,25 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
+          
       - name: Download contracts
         if: env.GIT_DIFF
         uses: actions/download-artifact@v3
         with:
           name:
             smart-contracts
+
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install just via cargo
+        run: cargo install just
+      - name: Download smart contracts dependencies
+        if: env.GIT_DIFF
+        run: |
+          cd smart-contracts
+          just download-deps
 
       # This is the new one
       - name: Move smart contracts
