@@ -69,7 +69,7 @@ impl CoinList {
     pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
         if ratio == Decimal::zero() {
             // Return an empty list if the ratio is zero.
-            return CoinList(Vec::new());
+            return CoinList::new();
         }
 
         CoinList(
