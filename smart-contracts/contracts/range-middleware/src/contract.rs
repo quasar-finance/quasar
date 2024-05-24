@@ -7,7 +7,7 @@ use cw2::set_contract_version;
 use crate::admin::execute::execute_admin_msg;
 use crate::admin::query::query_admin;
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::range::execute::execute_range_msg;
 use crate::range::query::query_range;
 use crate::state::{RANGE_EXECUTOR_ADMIN, RANGE_SUBMITTER_ADMIN};
@@ -56,6 +56,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::RangeQuery(range_query) => query_range(deps, env, range_query),
         QueryMsg::AdminQuery(admin_query) => query_admin(deps, env, admin_query),
     }
+}
+
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new().add_attribute("migrate", "succesful"))
 }
 
 #[cfg(test)]
