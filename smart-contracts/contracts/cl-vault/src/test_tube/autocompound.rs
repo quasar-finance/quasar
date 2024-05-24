@@ -18,7 +18,6 @@ mod tests {
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
     use crate::msg::QueryMsg;
-    use crate::msg::SwapAsset;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::AssetsBalanceResponse;
@@ -32,6 +31,7 @@ mod tests {
         fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
         DENOM_REWARD, DEPOSIT_AMOUNT,
     };
+    use crate::vault::autocompound::SwapAsset;
 
     const DENOM_REWARD_AMOUNT: u128 = 100000000000;
 

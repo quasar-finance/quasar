@@ -9,14 +9,8 @@ use crate::{
         UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
+    vault::autocompound::SwapAsset,
 };
-
-#[cw_serde]
-pub struct SwapAsset {
-    pub token_in_denom: String,
-    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
-    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
-}
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
