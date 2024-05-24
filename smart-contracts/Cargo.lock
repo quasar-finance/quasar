@@ -63,7 +63,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e669b1a4c378832d63a87b3ca2efafc6f4881a61af5dd3e5a6b222c54f2a02ec"
 dependencies = [
  "apollo-cw-asset",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw20",
  "regex",
@@ -289,7 +289,7 @@ name = "cl-vault"
 version = "0.1.0"
 dependencies = [
  "apollo-cw-asset",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-dex-router",
  "cw-storage-plus",
@@ -401,7 +401,20 @@ version = "1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8467874827d384c131955ff6f4d47d02e72a956a08eb3c0ff24f8c903a5517b4"
 dependencies = [
- "cosmwasm-schema-derive",
+ "cosmwasm-schema-derive 1.5.4",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-schema"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d403dea1175a5b20fd2d29dda180fa9f1391dd46f354a8639391d1e549a99e5e"
+dependencies = [
+ "cosmwasm-schema-derive 2.0.3",
  "schemars",
  "serde",
  "serde_json",
@@ -413,6 +426,17 @@ name = "cosmwasm-schema-derive"
 version = "1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6db85d98ac80922aef465e564d5b21fa9cfac5058cb62df7f116c3682337393"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "cosmwasm-schema-derive"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3c3153038e91080ded2e2554689e802be2a34a24c6e49c039ae94810c99a680"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -504,7 +528,7 @@ version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57de8d3761e46be863e3ac1eba8c8a976362a48c6abf240df1e26c3e421ee9e8"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw-utils",
@@ -521,7 +545,7 @@ checksum = "cd655e137d57d6c77696247d2417cfee75b15d027b1465741f45fa88bfcbf1b7"
 dependencies = [
  "apollo-cw-asset",
  "apollo-utils",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-utils",
  "cw20",
@@ -536,7 +560,7 @@ source = "git+https://github.com/quasar-finance/cw-dex-router?branch=master#2d67
 dependencies = [
  "apollo-cw-asset",
  "apollo-utils",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-controllers",
  "cw-dex",
@@ -583,7 +607,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c4a657e5caacc3a0d00ee96ca8618745d050b8f757c709babafb81208d4239c"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw2",
  "schemars",
@@ -595,9 +619,21 @@ dependencies = [
 [[package]]
 name = "cw-vault-multi-standard"
 version = "0.3.0"
-source = "git+https://github.com/quasar-finance/cw-vault-standard#5d66e887a3abf107e58f3cdab7ac0c683fc0deec"
+source = "git+https://github.com/quasar-finance/cw-vault-standard#2da85996ead32d50d58eecc8f1d5d245bab0383c"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
+ "cosmwasm-std",
+ "cw-utils",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "cw-vault-standard"
+version = "0.3.0"
+source = "git+https://github.com/quasar-finance/cw-vault-standard#2da85996ead32d50d58eecc8f1d5d245bab0383c"
+dependencies = [
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-utils",
  "schemars",
@@ -610,7 +646,7 @@ version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6c120b24fbbf5c3bedebb97f2cc85fbfa1c3287e09223428e7e597b5293c1fa"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-storage-plus",
  "schemars",
@@ -625,7 +661,7 @@ version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "526e39bb20534e25a1cd0386727f0038f4da294e5e535729ba3ef54055246abd"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-utils",
  "schemars",
@@ -1237,7 +1273,7 @@ name = "merkle-incentives"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.0",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-storage-plus",
  "cw2",
@@ -1658,6 +1694,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "provault"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 2.0.3",
+ "cosmwasm-std",
+ "cw-controllers",
+ "cw-storage-plus",
+ "cw-utils",
+ "cw-vault-standard",
+ "cw2",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1722,7 +1775,7 @@ name = "range-middleware"
 version = "0.1.0"
 dependencies = [
  "cl-vault",
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-dex-router",
  "cw-multi-test",
@@ -2036,9 +2089,9 @@ checksum = "b97ed7a9823b74f99c7742f5336af7be5ecd3eeafcb1507d1fa93347b1d589b0"
 
 [[package]]
 name = "serde"
-version = "1.0.196"
+version = "1.0.202"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "870026e60fa08c69f064aa766c10f10b1d62db9ccd4d0abb206472bee0ce3b32"
+checksum = "226b61a0d411b2ba5ff6d7f73a476ac4f8bb900373459cd00fab8512828ba395"
 dependencies = [
  "serde_derive",
 ]
@@ -2081,9 +2134,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.196"
+version = "1.0.202"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33c85360c95e7d137454dc81d9a4ed2b8efd8fbe19cee57357b32b9771fccb67"
+checksum = "6048858004bcff69094cd972ed40a32500f153bd3be9f716b2eed2e8217c4838"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2103,9 +2156,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.113"
+version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69801b70b1c3dac963ecb03a364ba0ceda9cf60c71cfe475e99864759c8b8a79"
+checksum = "455182ea6142b14f93f4bc5320a2b31c1f266b66a4a5c858b013302a5d8cbfc3"
 dependencies = [
  "itoa",
  "ryu",

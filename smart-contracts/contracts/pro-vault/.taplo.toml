@@ -1,0 +1,7 @@
+[schema]
+path = "https://json.schemastore.org/cargo.json"
+
+[formatting]
+align_entries  = true
+reorder_arrays = true
+reorder_keys   = true
