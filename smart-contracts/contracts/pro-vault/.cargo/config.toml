@@ -1,0 +1,15 @@
+[alias]
+coverage         = "tarpaulin"
+fmt-check        = "fmt --all -- --check"
+integration-test = "test --test integration"
+lint             = "clippy -- -D warnings"
+schema           = "run schema"
+wasm             = "build --release --lib --target wasm32-unknown-unknown --locked"
+wasm-debug       = "build --lib --target wasm32-unknown-unknown --locked"
+
+
+[build]
+rustflags = ["-Awarnings"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=-s"]

@@ -1,0 +1,42 @@
+[package]
+authors      = ["quasar labs team <quasar.fi>"]
+categories   = ["wasm"]
+description  = "provault"
+edition      = "2021"
+homepage     = "https://github.com/quasar-finance/quasar"
+keywords     = ["cosmos", "osmosis", "vault", "provault"]
+license      = "MIT OR Apache-2.0"
+name         = "provault"
+publish      = false
+readme       = "README.md"
+repository   = "https://github.com/quasar-finance/quasar"
+resolver     = "2"
+rust-version = "1.78.0"
+version      = "0.1.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+backtraces = ["cosmwasm-std/backtraces"]
+library    = []
+
+[dependencies]
+cosmwasm-schema = "2.0.0"
+cosmwasm-std    = "1.5.3"
+cw-controllers  = "1.1.2"
+#cw-storage-plus = "1.1.0"
+cw-storage-plus = "1.2.0"
+cw-utils        = "1.0.3"
+cw2             = "1.1.2"
+#osmosis-std     = "0.22.0"
+serde           = "1.0.197"
+serde_json      = "1.0.115"
+schemars = "0.8.10"
+thiserror = { version = "1.0.31" }
+cw-vault-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+
+[dev-dependencies]
+#cw-vault-standard = "0.4.0"
+#cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+#osmosis-test-tube = "22.1.0"
