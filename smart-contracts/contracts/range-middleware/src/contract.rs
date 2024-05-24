@@ -65,4 +65,27 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cw2::{get_contract_version, ContractVersion};
+
+    use super::*;
+
+    #[test]
+    fn migrate_works() {
+        let mut deps = mock_dependencies();
+        set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.1.0").unwrap();
+
+        let env = mock_env();
+        let msg = MigrateMsg {};
+
+        migrate(deps.as_mut(), env, msg).unwrap();
+        assert_eq!(
+            get_contract_version(deps.as_ref().storage).unwrap(),
+            ContractVersion {
+                contract: CONTRACT_NAME.into(),
+                version: CONTRACT_VERSION.into()
+            }
+        )
+    }
+}
