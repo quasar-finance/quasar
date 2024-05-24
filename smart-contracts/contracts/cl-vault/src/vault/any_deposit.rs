@@ -168,25 +168,23 @@ pub fn handle_any_deposit_swap_reply(
             left_over_amount,
         ),
     };
-    // Create the position after swapped the leftovers based on swap direction
-    let mut coins_to_mint_for = vec![];
-    if !balance0.is_zero() || !deposit_amount_in_ratio.0.is_zero() {
-        coins_to_mint_for.push(Coin {
+
+    // Create the tuple for minting coins
+    let coins_to_mint_for = (
+        Coin {
             denom: pool_config.token0.clone(),
             amount: balance0 + deposit_amount_in_ratio.0,
-        });
-    }
-    if !balance1.is_zero() || !deposit_amount_in_ratio.1.is_zero() {
-        coins_to_mint_for.push(Coin {
+        },
+        Coin {
             denom: pool_config.token1.clone(),
             amount: balance1 + deposit_amount_in_ratio.1,
-        });
-    }
+        },
+    );
 
     let (mint_msg, user_shares) = mint_msg_user_shares(
         deps.branch(),
         &env,
-        &(coins_to_mint_for[0].amount, coins_to_mint_for[1].amount),
+        &(coins_to_mint_for.0.amount, coins_to_mint_for.1.amount),
         &recipient,
     )?;
 
