@@ -20,7 +20,7 @@ mod test {
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
         test_tube::initialize::initialize::{
-            init_test_contract, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH,
+            init_test_contract, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
         },
     };
 
@@ -60,6 +60,7 @@ mod test {
                 ],
                 Uint128::zero(),
                 Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT,
             );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
@@ -190,6 +191,7 @@ mod test {
                 ],
                 Uint128::zero(),
                 Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT,
             );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
@@ -313,6 +315,7 @@ mod test {
                 ],
                 Uint128::zero(),
                 Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT,
             );
         let alice = app
             .init_account(&[

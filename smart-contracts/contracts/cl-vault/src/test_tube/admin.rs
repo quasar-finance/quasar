@@ -3,14 +3,15 @@ mod tests {
     use osmosis_test_tube::{Module, Wasm};
 
     use crate::{
-        query::VerifyTickCacheResponse, test_tube::initialize::initialize::fixture_default,
+        query::VerifyTickCacheResponse,
+        test_tube::initialize::initialize::{fixture_default, PERFORMANCE_FEE_DEFAULT},
     };
 
     #[test]
     #[ignore]
     fn range_admin_update_works() {
         let (_app, _contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         // change the range admin and verify that it works
     }
 
@@ -18,7 +19,7 @@ mod tests {
     #[ignore]
     fn admin_build_tick_cache_works() {
         let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // When we will implement this entrypoint, if we do, purge it first

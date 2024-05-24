@@ -16,7 +16,7 @@ mod tests {
 
     use crate::query::AssetsBalanceResponse;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
-    use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
+    use crate::test_tube::initialize::initialize::{MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
     use crate::{
         helpers::sort_tokens,
         math::tick::tick_to_price,
@@ -494,6 +494,7 @@ mod tests {
                 ],
                 Uint128::zero(),
                 Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT
             );
             let wasm = Wasm::new(&app);
             let cl = ConcentratedLiquidity::new(&app);

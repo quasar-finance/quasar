@@ -34,7 +34,7 @@ pub mod initialize {
     use crate::test_tube::helpers::calculate_deposit_ratio;
 
     const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
-    pub const PERFORMANCE_FEE: u64 = 20;
+    pub const PERFORMANCE_FEE_DEFAULT: u64 = 20;
 
     // const _TOKENS_PROVIDED_AMOUNT_LOW: &str = "1000000000000000";
     // const _SPREAD_FACTOR_LOW: &str = "0.01";
@@ -56,7 +56,9 @@ pub mod initialize {
 
     // Fixtures: Default variants
 
-    pub fn fixture_default() -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
+    pub fn fixture_default(
+        performance_fee: u64,
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
@@ -88,6 +90,7 @@ pub mod initialize {
             ],
             Uint128::zero(),
             Uint128::zero(),
+            performance_fee,
         )
     }
 
@@ -127,7 +130,9 @@ pub mod initialize {
     //     )
     // }
 
-    pub fn fixture_cw_dex_router() -> (
+    pub fn fixture_cw_dex_router(
+        performance_fee: u64,
+    ) -> (
         OsmosisTestApp,
         Addr,
         Addr,
@@ -170,6 +175,7 @@ pub mod initialize {
             ],
             Uint128::zero(),
             Uint128::zero(),
+            performance_fee,
         )
     }
 
@@ -185,6 +191,7 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
+        performance_fee: u64,
     ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
         // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
@@ -273,7 +280,7 @@ pub mod initialize {
                     admin: admin.address(),
                     pool_id: vault_pool.id,
                     config: VaultConfig {
-                        performance_fee: Decimal::percent(20),
+                        performance_fee: Decimal::percent(performance_fee),
                         treasury: Addr::unchecked(admin.address()),
                         swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         dex_router: Addr::unchecked(admin.address()), // Just to fulfill bech32 requirement
@@ -317,6 +324,7 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
+        performance_fee: u64,
     ) -> (
         OsmosisTestApp,
         Addr,
@@ -488,7 +496,7 @@ pub mod initialize {
                     admin: admin.address(),
                     pool_id: vault_pool.id,
                     config: VaultConfig {
-                        performance_fee: Decimal::percent(PERFORMANCE_FEE),
+                        performance_fee: Decimal::percent(performance_fee),
                         treasury: Addr::unchecked(admin.address()),
                         swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         dex_router: Addr::unchecked(contract_dex_router.clone().data.address),
@@ -592,7 +600,7 @@ pub mod initialize {
     #[ignore]
     fn fixture_default_works() {
         let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);

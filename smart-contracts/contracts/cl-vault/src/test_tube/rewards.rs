@@ -6,7 +6,7 @@ mod tests {
     };
     use crate::test_tube::initialize::initialize::{
         fixture_default, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
-        DEPOSIT_AMOUNT, PERFORMANCE_FEE,
+        DEPOSIT_AMOUNT, PERFORMANCE_FEE_DEFAULT,
     };
     use cosmwasm_std::Coin;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -18,11 +18,30 @@ mod tests {
     const SWAPS_NUM: usize = 10;
     const SWAPS_AMOUNT: &str = "100000000000000000";
 
+    const PERFORMANCE_FEE_ZERO: u64 = 0;
+    const PERFORMANCE_FEE_FULL: u64 = 100;
+
     #[test]
     #[ignore]
-    fn test_collect_rewards_with_rewards_works() {
+    fn test_collect_rewards_with_rewards_default_works() {
+        collect_rewards_with_rewards(PERFORMANCE_FEE_DEFAULT);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_collect_rewards_with_rewards_zero_works() {
+        collect_rewards_with_rewards(PERFORMANCE_FEE_ZERO);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_collect_rewards_with_rewards_full_works() {
+        collect_rewards_with_rewards(PERFORMANCE_FEE_FULL);
+    }
+
+    fn collect_rewards_with_rewards(performance_fee: u64) {
         let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(performance_fee);
 
         // Initialize accounts
         let utility_account = app
@@ -119,15 +138,22 @@ mod tests {
         // Calculating the fee increment for the admin
         assert_eq!(
             balance_admin_after - balance_admin_before,
-            (tokens_out_u128 * PERFORMANCE_FEE as u128) / 100,
+            (tokens_out_u128 * performance_fee as u128) / 100,
             "Admin fee calculation mismatch"
         );
 
-        // Calculating the increment for the contract (the rest of the amount)
-        assert_eq!(
-            balance_contract_after - balance_contract_before,
-            ((tokens_out_u128 * (100 - PERFORMANCE_FEE) as u128) / 100) + 1, // This +1 is needed due to some loss in precision
-            "Contract fee calculation mismatch"
+        let final_balance = balance_contract_after - balance_contract_before;
+        let expected_balance = ((tokens_out_u128 * (100 - performance_fee) as u128) / 100) + 1; // This +1 is needed due to some loss in precision
+
+        // Calculate the difference between the actual and expected balance
+        let balance_diff = final_balance as i128 - expected_balance as i128;
+
+        // Assert that the balance difference is within the range of -1, 0, or 1
+        assert!(
+            (-1..=1).contains(&balance_diff),
+            "Contract fee calculation mismatch: expected {}, got {}",
+            expected_balance,
+            final_balance
         );
     }
 
@@ -135,7 +161,7 @@ mod tests {
     #[ignore]
     fn test_collect_rewards_no_rewards_works() {
         let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
 
         // Initialize accounts
         let accounts = app

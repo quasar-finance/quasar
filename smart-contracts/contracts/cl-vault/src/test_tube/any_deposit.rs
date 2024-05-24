@@ -5,7 +5,7 @@ mod tests {
     use crate::msg::ExecuteMsg;
     use crate::test_tube::initialize::initialize::{
         fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
-        MAX_SLIPPAGE_HIGH,
+        MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
     };
     use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{
@@ -29,7 +29,7 @@ mod tests {
 
         for (_asset, amount_base, amount_quote) in test_cases {
             let (app, contract_address, _dex_router_addr, vault_pool_id, _pools_ids, admin, _, _) =
-                fixture_cw_dex_router();
+                fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
 
             do_and_verify_any_deposit(
                 app,
@@ -207,7 +207,7 @@ mod tests {
 
         for (_asset, amount_base, amount_quote) in test_cases {
             let (app, contract_address, _dex_router_addr, _vault_pool_id, _pools_ids, _admin, _, _) =
-                fixture_cw_dex_router();
+                fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
 
             do_any_deposit(
                 &app,

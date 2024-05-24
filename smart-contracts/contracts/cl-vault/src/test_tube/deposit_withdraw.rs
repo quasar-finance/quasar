@@ -9,7 +9,9 @@ mod tests {
         query::{AssetsBalanceResponse, TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::{
             helpers::get_event_attributes_by_ty_and_key,
-            initialize::initialize::{fixture_default, DENOM_BASE, DENOM_QUOTE},
+            initialize::initialize::{
+                fixture_default, DENOM_BASE, DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,
+            },
         },
     };
 
@@ -19,7 +21,7 @@ mod tests {
     #[ignore]
     fn single_deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -209,7 +211,7 @@ mod tests {
     #[ignore]
     fn multiple_deposit_withdraw_works() {
         let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -339,7 +341,7 @@ mod tests {
     #[ignore]
     fn multiple_deposit_withdraw_unused_funds_works() {
         let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create 3 accounts

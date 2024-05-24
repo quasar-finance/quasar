@@ -9,7 +9,9 @@ mod tests {
         query::UserSharesBalanceResponse,
         test_tube::{
             helpers::get_amount_from_denom,
-            initialize::initialize::{fixture_default, DENOM_BASE, DENOM_QUOTE},
+            initialize::initialize::{
+                fixture_default, DENOM_BASE, DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,
+            },
         },
     };
 
@@ -23,7 +25,7 @@ mod tests {
     #[ignore]
     fn exact_deposit_withdraw_equal() {
         let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
@@ -132,7 +134,7 @@ mod tests {
     #[ignore]
     fn any_deposit_withdraw_equal() {
         let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-            fixture_default();
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         // Create Alice account
