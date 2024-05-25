@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Addr;
+// use cosmwasm_std::Addr;
 
-use crate::types::{Gauge, GaugeKind, GaugesCodes};
+use crate::types::{Fee, Gauge, GaugeKind};
 
 #[cw_serde]
 pub struct MigrateMsg {
@@ -9,13 +9,62 @@ pub struct MigrateMsg {
 }
 
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub admin: Option<String>,
+}
+
+#[cw_serde]
+pub enum FeeMsg {
+    /// addr is the gauge contract
+    Distribute {
+        addr: String,
+    },
+
+    /// addr is the gauge contract
+    Update {
+        addr: String,
+        fees: Fee,
+    },
+}
+
+#[cw_serde]
+pub enum GaugeMsg {
+    CodeUpdate {
+        code: u64,
+    },
+
+    Create {
+        kind: GaugeKind,
+        gauge: Gauge,
+        fee: Fee,
+    },
+
+    /// addr is the gauge contract
+    Update {
+        addr: String,
+        gauge: Gauge,
+        fees: Option<Fee>,
+        kind: Option<GaugeKind>,
+    },
+
+    /// addr is the gauge contract
+    MerkleUpdate {
+        addr: String,
+        merkle: String,
+    },
+    // addr is the gauge contract
+    // GaugePause { addr: String },
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    CreateIncentiveGauge { kind: GaugeKind, gauge: Gauge },
-    ClaimGaugeFees { address: Addr },
-    SetGaugeCodes { codes: GaugesCodes }
+    GaugeMsg(GaugeMsg),
+
+    FeeMsg(FeeMsg),
+
+    AdminUpdate {
+        addr: String,
+    },
 }
 
 #[cw_serde]
@@ -26,7 +75,7 @@ pub enum QueryMsg {
 
     #[returns(ListGaugesResponse)]
     ListGauges {
-        start_after: Option<Addr>,
+        start_after: Option<String>,
         limit: Option<u32>,
     },
 }

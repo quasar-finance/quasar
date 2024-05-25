@@ -674,6 +674,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-controllers"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57de8d3761e46be863e3ac1eba8c8a976362a48c6abf240df1e26c3e421ee9e8"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw-multi-test"
 version = "0.16.2-alpha.0"
 source = "git+https://github.com/njerschow/cw-multi-test.git#4cc9cc2dfb61f0f7f4edee38d6b56c25e424c68d"
@@ -1510,10 +1525,13 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
+ "cw-controllers 1.1.2",
  "cw-multi-test 0.16.5",
  "cw-storage-plus 1.2.0",
+ "cw-utils 1.0.3",
  "cw2 1.1.1",
  "derivative",
+ "merkle-incentives",
  "proptest",
  "quasar-types",
  "schemars",

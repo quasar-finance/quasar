@@ -3,65 +3,65 @@ use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use quasar_types::coinlist::CoinList;
 
 #[cw_serde]
-pub struct GaugesCodes {
-    /// vault incentives
-    pub vault: u64,
+pub struct BlockPeriod {
+    pub start: u64,
+    pub end: u64,
+    pub expiry: u64,
+}
 
-    /// pool with volume incentives
-    pub volume: u64,
-
-    /// pool with liquidity incentives
-    pub liquidity: u64,
+#[cw_serde]
+pub struct GaugeInProcess {
+    pub gauge: Gauge,
+    pub kind: GaugeKind,
+    pub fee: Fee,
 }
 
 #[cw_serde]
 pub struct Gauge {
-    pub start_block: u64,
-    pub end_block: u64,
-    pub expiration_block: u64,
-    pub total_incentives: Vec<Coin>,
-    // TODO remove the fee from the gauge and move it to a secondary map so we can effciently update the fee on claiming
-    pub fee: Fee,
+    pub period: BlockPeriod,
+    pub incentives: Vec<Coin>,
     pub kind: GaugeKind,
+    pub clawback: String,
 }
 
 impl Gauge {
     pub fn new(
-        start_block: u64,
-        end_block: u64,
-        expiration_block: u64,
-        total_incentives: Vec<Coin>,
-        fee: Decimal,
-        fee_address: Addr,
+        period: BlockPeriod,
+        incentives: Vec<Coin>,
         kind: GaugeKind,
-    ) -> Gauge {
-        let fee = Fee::new(fee_address, fee, CoinList::new(total_incentives.clone()));
-
-        Gauge {
-            start_block,
-            end_block,
-            expiration_block,
-            total_incentives,
-            fee,
+        clawback: String,
+    ) -> Self {
+        // let fee = Fee::new(fee_address, fee, CoinList::new(total_incentives.clone()));
+        Self {
+            period,
+            incentives,
             kind,
+            clawback,
         }
     }
 }
 
 #[cw_serde]
 pub struct Fee {
-    pub address: Addr,
+    /// this is the address that is configured to recieve the fee
+    pub reciever: Addr,
+
+    /// ratio to charge
     pub ratio: Decimal,
+
+    /// total calculated fees
     pub total: CoinList,
+
+    /// remaining fees to be collected
     pub remaining: CoinList,
 }
 
 impl Fee {
-    pub fn new(address: Addr, ratio: Decimal, total_incentives: CoinList) -> Fee {
+    pub fn new(reciever: Addr, ratio: Decimal, total_incentives: CoinList) -> Self {
         let total = total_incentives.mul_ratio(ratio);
 
-        Fee {
-            address,
+        Self {
+            reciever,
             ratio,
             total: total.clone(),
             remaining: total,
@@ -71,8 +71,8 @@ impl Fee {
 
 #[cw_serde]
 pub enum PoolKind {
-    Volume,
-    Liquidity
+    Volume = 1,
+    Liquidity,
 }
 
 /// The different kinds of incentive gauges supported by Quasar
@@ -88,7 +88,8 @@ pub enum GaugeKind {
     Vault {
         address: Addr,
         blacklist: Option<Vec<Addr>>,
-        shares: Option<VaultConfig>,
+        min_shares: Option<Uint128>,
+        max_shares: Option<Uint128>,
     },
 
     Pool {
@@ -100,24 +101,21 @@ pub enum GaugeKind {
 }
 
 impl GaugeKind {
-    pub fn new_vault_incentives(
+    pub fn new_vault(
         address: Addr,
         blacklist: Option<Vec<Addr>>,
-        shares: Option<VaultConfig>,
+        min_shares: Option<Uint128>,
+        max_shares: Option<Uint128>,
     ) -> Self {
         GaugeKind::Vault {
             address,
             blacklist,
-            shares,
+            min_shares,
+            max_shares,
         }
     }
 
-    pub fn new_pool(
-        address: Addr,
-        kind: PoolKind,
-        denom_a: String,
-        denom_b: String,
-    ) -> Self {
+    pub fn new_pool(address: Addr, kind: PoolKind, denom_a: String, denom_b: String) -> Self {
         GaugeKind::Pool {
             address,
             kind,
@@ -127,10 +125,3 @@ impl GaugeKind {
     }
 }
 
-#[cw_serde]
-pub struct VaultConfig {
-    /// a mint amount of shares needed to receive incentives
-    min: Option<Uint128>,
-    /// a maximum amount of shares
-    max: Option<Uint128>,
-}

@@ -3,8 +3,8 @@ use cosmwasm_std::Addr;
 use cosmwasm_std::Event;
 
 use crate::msg::InstantiateMsg;
-use crate::multitest::common::*;
-use crate::multitest::suite::*;
+use crate::tests::common::*;
+use crate::tests::suite::*;
 
 // #[test]
 // fn route_lifecycle_works() {
