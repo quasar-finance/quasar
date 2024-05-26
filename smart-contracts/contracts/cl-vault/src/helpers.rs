@@ -15,8 +15,7 @@ use cosmwasm_std::{
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
-/// returns the Coin of the needed denoms in the order given in denoms
-
+/// Returns the Coin of the needed denoms in the order given in denoms
 pub(crate) fn must_pay_one_or_two(
     info: &MessageInfo,
     denoms: (String, String),
@@ -43,21 +42,6 @@ pub(crate) fn must_pay_one_or_two(
 }
 
 /// Calculate the total value of two assets in asset0.
-///
-/// # Arguments
-///
-/// * `storage` - Storage instance for accessing contract data.
-/// * `querier` - QuerierWrapper instance for querying external data.
-/// * `token0` - Amount of the first token.
-/// * `token1` - Amount of the second token.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns the total value of the two assets in asset0.
 pub fn get_asset0_value(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
@@ -141,20 +125,6 @@ pub fn get_twap_price(
 }
 
 /// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies for interacting with the contract.
-/// * `token0` - Coin representing the first token.
-/// * `token1` - Coin representing the second token.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns a tuple containing the depositable amounts of token0 and token1, and amounts that need to be refunded.
 #[allow(clippy::type_complexity)]
 pub fn get_depositable_tokens(
     deps: DepsMut,
@@ -228,20 +198,6 @@ pub fn get_depositable_tokens(
 }
 
 /// Generate a bank message and attributes for refunding tokens to a recipient.
-///
-/// # Arguments
-///
-/// * `receiver` - Address of the recipient.
-/// * `refund0` - Optional coin for the first token refund.
-/// * `refund1` - Optional coin for the second token refund.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns an optional tuple containing the bank message and attributes if refunds are necessary.
 pub fn refund_bank_msg(
     receiver: Addr,
     refund0: Option<Coin>,

@@ -13,21 +13,6 @@ use crate::{
 
 /// Try to deposit as much user funds as we can in the current ratio of the vault and
 /// refund the rest to the caller.
-///
-/// # Arguments
-///
-/// * `deps` - Dependencies for interacting with the contract.
-/// * `env` - Environment for fetching contract address.
-/// * `info` - Message information including sender.
-/// * `recipient` - Optional recipient address; if `None`, uses sender's address.
-///
-/// # Errors
-///
-/// Returns a `ContractError` if the operation fails.
-///
-/// # Returns
-///
-/// Returns a `Response` containing the result of the deposit operation and any refunds.
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
     env: Env,
