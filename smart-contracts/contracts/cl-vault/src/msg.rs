@@ -28,8 +28,6 @@ pub enum ExtensionExecuteMsg {
     Autocompound {},
     /// Distribute any rewards over all users
     CollectRewards {},
-    /// Build tick exponent cache
-    BuildTickCache {},
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
     /// SwapNonVaultFunds
@@ -159,8 +157,6 @@ pub struct InstantiateMsg {
     pub admin: String,
     /// Address that is allowed to update range.
     pub range_admin: String,
-    /// Address that is allowed to auto compound
-    pub auto_compound_admin: String,
     /// The ID of the pool that this vault will autocompound.
     pub pool_id: u64,
     /// Configurable parameters for the contract.

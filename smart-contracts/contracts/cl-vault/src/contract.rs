@@ -26,7 +26,7 @@ use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
 };
-use crate::vault::admin::{execute_admin, execute_build_tick_exp_cache};
+use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
@@ -134,9 +134,6 @@ pub fn execute(
                     force_swap_route,
                     swap_routes,
                 } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
-                crate::msg::ExtensionExecuteMsg::BuildTickCache {} => {
-                    execute_build_tick_exp_cache(deps, info)
-                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
