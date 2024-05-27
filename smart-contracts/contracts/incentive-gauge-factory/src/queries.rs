@@ -4,14 +4,18 @@ use cw_storage_plus::Bound;
 
 use crate::{
     state::{GAUGES, GAUGE_FEES, GAUGE_KINDS},
-    types::{Fee, Gauge, GaugeKind, GaugeListResponse},
+    types::{Fee, Gauge, GaugeKind, GaugeListResponse, GaugeResponse},
 };
 
 pub const PAGINATION_MAX_LIMIT: u32 = 100;
 pub const PAGINATION_DEFAULT_LIMIT: u32 = 32;
 
-pub fn query_gauge(deps: Deps, addr: Addr) -> StdResult<Gauge> {
-    GAUGES.load(deps.storage, addr)
+pub fn query_gauge(deps: Deps, addr: Addr) -> StdResult<GaugeResponse> {
+    Ok(GaugeResponse {
+        gauge: GAUGES.load(deps.storage, addr.clone())?,
+        kind: GAUGE_KINDS.load(deps.storage, addr.clone())?,
+        fee: GAUGE_FEES.load(deps.storage, addr)?,
+    })
 }
 
 pub fn query_gauge_list(

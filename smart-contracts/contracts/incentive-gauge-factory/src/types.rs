@@ -1,12 +1,45 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Env, Uint128};
 use quasar_types::coinlist::CoinList;
+
+use crate::ContractError;
 
 #[cw_serde]
 pub struct BlockPeriod {
+    /// start of the period
     pub start: u64,
+
+    /// end of the period
     pub end: u64,
+
+    /// expiration of the period
     pub expiry: u64,
+}
+
+impl BlockPeriod {
+    pub fn check_conf(&self, env: Env) -> Result<(), ContractError> {
+        if env.block.height.ge(&self.start)  {
+            return Err(ContractError::StartTimeMustBeAhead)
+        }
+
+        if env.block.height.ge(&self.end)  {
+            return Err(ContractError::EndTimeMustBeAhead)
+        }
+
+        if env.block.height.ge(&self.expiry)  {
+            return Err(ContractError::ExpiryTimeMustBeAhead)
+        }
+
+        if self.end.le(&self.start) {
+            return Err(ContractError::EndTimeBiggerThanStart)
+        }
+
+        if self.expiry.le(&self.start) {
+            return Err(ContractError::ExpiryTimeBiggerThanStart)
+        }
+
+        Ok(())
+    }
 }
 
 #[cw_serde]
@@ -92,11 +125,14 @@ pub enum GaugeKind {
         max_shares: Option<Uint128>,
     },
 
+    /// Pool guage incentivization.
+    /// There are two types of [PoolKind] PoolKind::Volume and PoolKind::Liquidity.
+    /// To incentivize a specific token or both use denom_a and denom_b for the names of the tokens.
     Pool {
         address: Addr,
         kind: PoolKind,
         denom_a: String,
-        denom_b: String,
+        denom_b: Option<String>,
     },
 }
 
@@ -115,7 +151,7 @@ impl GaugeKind {
         }
     }
 
-    pub fn new_pool(address: Addr, kind: PoolKind, denom_a: String, denom_b: String) -> Self {
+    pub fn new_pool(address: Addr, kind: PoolKind, denom_a: String, denom_b: Option<String>) -> Self {
         GaugeKind::Pool {
             address,
             kind,
@@ -125,9 +161,19 @@ impl GaugeKind {
     }
 }
 
+/// This is used to when quering for the list of the gauges
+/// from JavaScript this can be accessed like this:
+/// const gauge = { gauge: list.gauges[0], kind: list.kinds[0], fee: list.fees[0] }
 #[cw_serde]
 pub struct GaugeListResponse {
     pub gauges: Vec<Gauge>,
     pub kinds: Vec<GaugeKind>,
     pub fees: Vec<Fee>,
+}
+
+#[cw_serde]
+pub struct GaugeResponse {
+    pub gauge: Gauge,
+    pub kind: GaugeKind,
+    pub fee: Fee,
 }

@@ -3,7 +3,7 @@ use cosmwasm_std::{testing::mock_env, Addr};
 pub use derivative::Derivative;
 use quasar_types::coinlist::CoinList;
 
-use crate::types::{BlockPeriod, Fee, Gauge, GaugeKind};
+use crate::types::{BlockPeriod, Fee, Gauge, GaugeKind, PoolKind};
 pub use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -78,6 +78,33 @@ pub fn get_creat_gauge_msg() -> crate::msg::ExecuteMsg {
             None,
             Some(Uint128::zero()),
             Some(Uint128::one()),
+        ),
+        gauge: Gauge {
+            period: BlockPeriod {
+                start: env.block.height + 1u64,
+                end: env.block.height + 10u64,
+                expiry: env.block.height + 100u64,
+            },
+            incentives: vec![coin(1000, "ucosm")],
+            clawback: "clawback_addr".to_string(),
+        },
+        fee: Fee::new(
+            "reciever".to_string(),
+            Decimal::from_ratio(Uint128::from(500u16), Uint128::one()),
+            CoinList::new(vec![coin(100, "ucosm")]),
+        ),
+    })
+}
+
+pub fn get_creat_gauge_pool_msg() -> crate::msg::ExecuteMsg {
+    let env = mock_env();
+
+    crate::msg::ExecuteMsg::GaugeMsg(crate::msg::GaugeMsg::Create {
+        kind: GaugeKind::new_pool(
+            Addr::unchecked("pool_addr"),
+            PoolKind::Liquidity,
+            "ucosm".to_string(),
+            Some("uatom".to_string()),
         ),
         gauge: Gauge {
             period: BlockPeriod {

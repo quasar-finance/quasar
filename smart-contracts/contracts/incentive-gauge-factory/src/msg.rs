@@ -82,15 +82,26 @@ pub enum QueryMsg {
     #[returns(GaugeResponse)]
     Gauge { address: String },
 
-    #[returns(ListGaugesResponse)]
+    #[returns(GaugeListResponse)]
     ListGauges {
         start_after: Option<String>,
         limit: Option<u32>,
     },
 }
 
+/// This is used to when quering for the list of the gauges
+/// from JavaScript this can be accessed like this:
+/// const gauge = { gauge: list.gauges[0], kind: list.kinds[0], fee: list.fees[0] }
 #[cw_serde]
-pub struct GaugeResponse {}
+pub struct GaugeListResponse {
+    pub gauges: Vec<Gauge>,
+    pub kinds: Vec<GaugeKind>,
+    pub fees: Vec<Fee>,
+}
 
 #[cw_serde]
-pub struct ListGaugesResponse {}
+pub struct GaugeResponse {
+    pub gauge: Gauge,
+    pub kind: GaugeKind,
+    pub fee: Fee,
+}

@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    helpers::check_time_conf, msg::GaugeMsg, replies::REPLY_ON_GAUGE_INIT, state::{ADMIN, GAUGES, GAUGE_CODE, GAUGE_FEES, GAUGE_IN_PROCESS, GAUGE_KINDS}, types::{Fee, Gauge, GaugeInProcess, GaugeKind}, ContractError
+    msg::GaugeMsg, replies::REPLY_ON_GAUGE_INIT, state::{ADMIN, GAUGES, GAUGE_CODE, GAUGE_FEES, GAUGE_IN_PROCESS, GAUGE_KINDS}, types::{Fee, Gauge, GaugeInProcess, GaugeKind}, ContractError
 };
 
 pub fn handle_execute_gauge(
@@ -66,7 +66,7 @@ fn create(
     let code_id = GAUGE_CODE.load(deps.storage)?;
     let factory = env.contract.address.clone();
 
-    check_time_conf(env, &gauge.period)?;
+    gauge.period.check_conf(env)?;
 
     let msg = merkle_incentives::msg::InstantiateMsg {
         config: merkle_incentives::state::Config {
@@ -115,7 +115,7 @@ fn update(
 
     check_gauge_exists(deps.as_ref(), addr.clone())?;
 
-    check_time_conf(env, &new_gauge.period)?;
+    new_gauge.period.check_conf(env)?;
 
     GAUGES.save(deps.storage, addr.clone(), &new_gauge)?;
 
