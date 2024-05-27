@@ -44,7 +44,7 @@ impl Gauge {
 #[cw_serde]
 pub struct Fee {
     /// this is the address that is configured to recieve the fee
-    pub reciever: Addr,
+    pub reciever: String,
 
     /// ratio to charge
     pub ratio: Decimal,
@@ -57,7 +57,7 @@ pub struct Fee {
 }
 
 impl Fee {
-    pub fn new(reciever: Addr, ratio: Decimal, total_incentives: CoinList) -> Self {
+    pub fn new(reciever: String, ratio: Decimal, total_incentives: CoinList) -> Self {
         let total = total_incentives.mul_ratio(ratio);
 
         Self {

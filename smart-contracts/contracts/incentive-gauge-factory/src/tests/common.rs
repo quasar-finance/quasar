@@ -11,7 +11,6 @@ pub use crate::{
 pub use cosmwasm_std::{coin, BlockInfo, Coin, Decimal, Empty, StdResult, Uint128};
 pub use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 
-
 // pub const USER: &str = "user";
 // pub const DEPLOYER: &str = "deployer";
 // pub const EXECUTOR: &str = "executor";
@@ -25,7 +24,8 @@ pub fn contract() -> Box<dyn Contract<Empty>> {
         crate::contract::execute,
         crate::contract::instantiate,
         crate::contract::query,
-    ).with_reply(crate::contract::reply);
+    )
+    .with_reply(crate::contract::reply);
 
     Box::new(contract)
 }
@@ -65,9 +65,7 @@ pub fn contract_init(
     ))
 }
 
-pub fn merkle_incentives_upload(
-    app: &mut App,
-) -> u64 {
+pub fn merkle_incentives_upload(app: &mut App) -> u64 {
     app.store_code(incentives_contract())
 }
 
@@ -83,18 +81,17 @@ pub fn get_creat_gauge_msg() -> crate::msg::ExecuteMsg {
         ),
         gauge: Gauge {
             period: BlockPeriod {
-                start: env.block.height,
+                start: env.block.height + 1u64,
                 end: env.block.height + 10u64,
                 expiry: env.block.height + 100u64,
             },
             incentives: vec![coin(1000, "ucosm")],
             clawback: "clawback_addr".to_string(),
         },
-        fee: Fee {
-            reciever: Addr::unchecked("reciever"),
-            ratio: Decimal::from_ratio(Uint128::from(500u16), Uint128::one()),
-            total: CoinList::new(vec![coin(100, "ucosm")]),
-            remaining: CoinList::new(vec![coin(100, "ucosm")]),
-        },
+        fee: Fee::new(
+            "reciever".to_string(),
+            Decimal::from_ratio(Uint128::from(500u16), Uint128::one()),
+            CoinList::new(vec![coin(100, "ucosm")]),
+        ),
     })
 }

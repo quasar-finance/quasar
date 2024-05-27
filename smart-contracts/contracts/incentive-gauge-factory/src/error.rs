@@ -25,14 +25,20 @@ pub enum ContractError {
     #[error("Gauge don't exists: {addr}")]
     NoSuchGauge{ addr: String },
 
-    #[error("Start time must be ahead")]
+    #[error("Start time must be ahead of current block height")]
     StartTimeMustBeAhead,
 
-    #[error("End time must be ahead")]
+    #[error("End time must be ahead of current block height")]
     EndTimeMustBeAhead,
 
-    #[error("End time must be ahead")]
+    #[error("Expiration time must be ahead of current block height")]
+    ExpiryTimeMustBeAhead,
+
+    #[error("End time must bigger than start")]
     EndTimeBiggerThanStart,
+
+    #[error("Expiration time must be bigger than start")]
+    ExpiryTimeBiggerThanStart,
 
     #[error("Parsing previous version error")]
     ParsingPrevVersion,

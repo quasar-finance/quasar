@@ -3,11 +3,7 @@ use cosmwasm_std::{
 };
 
 use crate::{
-    msg::GaugeMsg,
-    replies::REPLY_ON_GAUGE_INIT,
-    state::{ADMIN, GAUGES, GAUGE_CODE, GAUGE_FEES, GAUGE_IN_PROCESS, GAUGE_KINDS},
-    types::{Fee, Gauge, GaugeInProcess, GaugeKind},
-    ContractError,
+    helpers::check_time_conf, msg::GaugeMsg, replies::REPLY_ON_GAUGE_INIT, state::{ADMIN, GAUGES, GAUGE_CODE, GAUGE_FEES, GAUGE_IN_PROCESS, GAUGE_KINDS}, types::{Fee, Gauge, GaugeInProcess, GaugeKind}, ContractError
 };
 
 pub fn handle_execute_gauge(
@@ -29,7 +25,7 @@ pub fn handle_execute_gauge(
             gauge,
             fees,
             kind,
-        } => update(deps, info, addr, gauge, fees, kind),
+        } => update(deps, env, info, addr, gauge, fees, kind),
 
         GaugeMsg::Remove { addr } => remove(deps, info, addr),
 
@@ -38,12 +34,14 @@ pub fn handle_execute_gauge(
     }
 }
 
+/// write the code for the guage contract
 fn code_update(deps: DepsMut, info: MessageInfo, code: u64) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     GAUGE_CODE.save(deps.storage, &code)?;
     Ok(Response::default().add_attribute("action", "code_update"))
 }
 
+/// verify that the guage exists in our map
 fn check_gauge_exists(deps: Deps, contract_addr: Addr) -> Result<(), ContractError> {
     if !GAUGES.has(deps.storage, contract_addr.clone()) {
         return Err(ContractError::NoSuchGauge {
@@ -68,6 +66,8 @@ fn create(
     let code_id = GAUGE_CODE.load(deps.storage)?;
     let factory = env.contract.address.clone();
 
+    check_time_conf(env, &gauge.period)?;
+
     let msg = merkle_incentives::msg::InstantiateMsg {
         config: merkle_incentives::state::Config {
             clawback_address: deps.api.addr_validate(&gauge.clawback)?,
@@ -77,6 +77,11 @@ fn create(
         },
     };
 
+    // check fee reciever is a valid address
+    deps.api.addr_validate(&fee.reciever)?;
+
+    // pre save the gauge data
+    // it will be copied to the relevant maps when the gauge contract replies on init
     GAUGE_IN_PROCESS.save(deps.storage, &GaugeInProcess { gauge, kind, fee })?;
 
     Ok(Response::default()
@@ -97,6 +102,7 @@ fn create(
 /// NOTE: this might need more work
 fn update(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     addr: String,
     new_gauge: Gauge,
@@ -108,6 +114,8 @@ fn update(
     let addr = deps.api.addr_validate(&addr)?;
 
     check_gauge_exists(deps.as_ref(), addr.clone())?;
+
+    check_time_conf(env, &new_gauge.period)?;
 
     GAUGES.save(deps.storage, addr.clone(), &new_gauge)?;
 
