@@ -104,6 +104,9 @@ pub enum ContractError {
     #[error("Migration status is closed")]
     MigrationStatusClosed {},
 
+    #[error("Migration status is open")]
+    MigrationStatusOpen {},
+
     #[error("Vault is not distributing rewards, claiming is needed first")]
     IsNotDistributing {},
 

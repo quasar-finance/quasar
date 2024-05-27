@@ -5,7 +5,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 };
 
 use crate::helpers::sort_tokens;
-use crate::state::POSITION;
+use crate::state::{MigrationStatus, MIGRATION_STATUS, POSITION};
 use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
 
 use super::helpers::CoinList;
@@ -13,6 +13,11 @@ use super::{get_collect_incentives_msg, get_collect_spread_rewards_msg};
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
+
+    if matches!(migration_status, MigrationStatus::Open) {
+        return Err(ContractError::MigrationStatusOpen {});
+    }
     let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
 
     Ok(Response::new()
