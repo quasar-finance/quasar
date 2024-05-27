@@ -13,7 +13,7 @@ use super::{get_collect_incentives_msg, get_collect_spread_rewards_msg};
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
+    let migration_status = MIGRATION_STATUS.load(deps.storage)?;
 
     if matches!(migration_status, MigrationStatus::Open) {
         return Err(ContractError::MigrationStatusOpen {});
