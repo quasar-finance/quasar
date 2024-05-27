@@ -4,7 +4,8 @@ use cw_storage_plus::Bound;
 
 use crate::{
     state::{GAUGES, GAUGE_FEES, GAUGE_KINDS},
-    types::{Fee, Gauge, GaugeKind, GaugeListResponse, GaugeResponse},
+    types::{Fee, Gauge, GaugeKind},
+    msg::{GaugeListResponse, GaugeResponse}
 };
 
 pub const PAGINATION_MAX_LIMIT: u32 = 100;

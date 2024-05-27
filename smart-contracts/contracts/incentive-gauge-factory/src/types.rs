@@ -160,20 +160,3 @@ impl GaugeKind {
         }
     }
 }
-
-/// This is used to when quering for the list of the gauges
-/// from JavaScript this can be accessed like this:
-/// const gauge = { gauge: list.gauges[0], kind: list.kinds[0], fee: list.fees[0] }
-#[cw_serde]
-pub struct GaugeListResponse {
-    pub gauges: Vec<Gauge>,
-    pub kinds: Vec<GaugeKind>,
-    pub fees: Vec<Fee>,
-}
-
-#[cw_serde]
-pub struct GaugeResponse {
-    pub gauge: Gauge,
-    pub kind: GaugeKind,
-    pub fee: Fee,
-}
