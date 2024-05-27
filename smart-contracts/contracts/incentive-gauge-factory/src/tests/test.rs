@@ -1,7 +1,7 @@
 use crate::{
+    msg::GaugeListResponse,
     tests::common::*,
     types::{BlockPeriod, Fee, Gauge, GaugeKind, PoolKind},
-    msg::GaugeListResponse
 };
 use cosmwasm_std::{coins, testing::mock_env, Addr};
 use quasar_types::coinlist::CoinList;
@@ -19,6 +19,8 @@ fn update_codeid() -> Result<(), anyhow::Error> {
         admin.to_string(),
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
+
+    reset_time(&mut app);
 
     let res = app.execute_contract(
         Addr::unchecked(admin),
@@ -65,6 +67,8 @@ fn create_gauge_vault() -> Result<(), anyhow::Error> {
         admin.to_string(),
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
+
+    reset_time(&mut app);
 
     let res = app.execute_contract(
         Addr::unchecked(admin),
@@ -117,6 +121,8 @@ fn update_gauge() -> Result<(), anyhow::Error> {
         admin.to_string(),
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
+
+    reset_time(&mut app);
 
     let res = app.execute_contract(
         Addr::unchecked(admin),
@@ -177,6 +183,8 @@ fn remove_gauge() -> Result<(), anyhow::Error> {
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
 
+    reset_time(&mut app);
+
     let res = app.execute_contract(
         Addr::unchecked(admin),
         contract_addr.clone(),
@@ -213,6 +221,8 @@ fn update_merkle() -> Result<(), anyhow::Error> {
         admin.to_string(),
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
+
+    reset_time(&mut app);
 
     let res = app.execute_contract(
         Addr::unchecked(admin),
@@ -252,6 +262,8 @@ fn update_admin() -> Result<(), anyhow::Error> {
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
 
+    reset_time(&mut app);
+
     let res = app.execute_contract(
         Addr::unchecked(admin),
         contract_addr.clone(),
@@ -287,6 +299,100 @@ fn update_admin() -> Result<(), anyhow::Error> {
 }
 
 #[test]
+fn fees_update() -> Result<(), anyhow::Error> {
+    let admin = "admin";
+
+    let mut app = App::default();
+
+    let gauge_codeid = merkle_incentives_upload(&mut app);
+
+    let (_, contract_addr) = contract_init(
+        &mut app,
+        admin.to_string(),
+        new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
+    )?;
+
+    reset_time(&mut app);
+
+    let res = app.execute_contract(
+        Addr::unchecked(admin),
+        contract_addr.clone(),
+        &get_creat_gauge_pool_msg(),
+        &[],
+    );
+
+    assert!(res.is_ok());
+
+    let res = app.execute_contract(
+        Addr::unchecked(admin),
+        contract_addr,
+        &crate::msg::ExecuteMsg::FeeMsg(crate::msg::FeeMsg::Update {
+            addr: "contract1".to_string(),
+            fees: Fee::new(
+                "reciever".to_string(),
+                Decimal::from_ratio(Uint128::from(500u16), Uint128::one()),
+                CoinList::new(vec![coin(100, "ucosm")]),
+            ),
+        }),
+        &[],
+    );
+
+    assert!(res.is_ok());
+
+    Ok(())
+}
+
+#[test]
+fn fees_distribute() -> Result<(), anyhow::Error> {
+    let admin = "admin";
+
+    let mut app = App::default();
+
+    let gauge_codeid = merkle_incentives_upload(&mut app);
+
+    let (_, contract_addr) = contract_init(
+        &mut app,
+        admin.to_string(),
+        new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
+    )?;
+
+    reset_time(&mut app);
+
+    let res = app.execute_contract(
+        Addr::unchecked(admin),
+        contract_addr.clone(),
+        &get_creat_gauge_pool_msg(),
+        &[],
+    );
+
+    assert!(res.is_ok());
+
+    mint_native(
+        &mut app,
+        "contract0".to_string(),
+        "ucosm".to_string(),
+        1_000_000_000u128,
+    );
+
+    app.update_block(|block| {
+        block.height = 210;
+    });
+
+    let res = app.execute_contract(
+        Addr::unchecked(admin),
+        contract_addr,
+        &crate::msg::ExecuteMsg::FeeMsg(crate::msg::FeeMsg::Distribute {
+            addr: "contract1".to_string(),
+        }),
+        &[],
+    );
+
+    assert!(res.is_ok());
+
+    Ok(())
+}
+
+#[test]
 fn query_gauge_list() -> Result<(), anyhow::Error> {
     let admin = "admin";
 
@@ -299,6 +405,8 @@ fn query_gauge_list() -> Result<(), anyhow::Error> {
         admin.to_string(),
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
+
+    reset_time(&mut app);
 
     for _ in 0..10 {
         let res = app.execute_contract(

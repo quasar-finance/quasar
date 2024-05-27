@@ -1,5 +1,5 @@
 pub use anyhow::Result;
-use cosmwasm_std::{testing::mock_env, Addr};
+use cosmwasm_std::{Addr, Timestamp};
 pub use derivative::Derivative;
 use quasar_types::coinlist::CoinList;
 
@@ -17,7 +17,26 @@ pub use cw_multi_test::{App, AppResponse, Contract, ContractWrapper, Executor};
 // pub const DENOM: &str = "uosmo";
 // pub const LOCAL_DENOM: &str = "ibc/ilovemymom";
 
-// let ADMIN = app.api.addr_make("admin");
+/// mint tokens in the app
+pub fn mint_native(app: &mut App, recipient: String, denom: String, amount: u128) {
+    app.sudo(cw_multi_test::SudoMsg::Bank(
+        cw_multi_test::BankSudo::Mint {
+            to_address: recipient,
+            amount: vec![coin(amount, denom)],
+        },
+    ))
+    .unwrap();
+}
+
+/// hard resets the time to 1_000 and height 200
+pub fn reset_time(app: &mut App) {
+    const DEFAULT_TIME: u64 = 1_000;
+
+    app.update_block(|block| {
+        block.time = Timestamp::default().plus_seconds(DEFAULT_TIME);
+        block.height = DEFAULT_TIME / 5;
+    });
+}
 
 pub fn contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
@@ -70,8 +89,6 @@ pub fn merkle_incentives_upload(app: &mut App) -> u64 {
 }
 
 pub fn get_creat_gauge_msg() -> crate::msg::ExecuteMsg {
-    let env = mock_env();
-
     crate::msg::ExecuteMsg::GaugeMsg(crate::msg::GaugeMsg::Create {
         kind: GaugeKind::new_vault(
             Addr::unchecked("vault_addr"),
@@ -81,9 +98,9 @@ pub fn get_creat_gauge_msg() -> crate::msg::ExecuteMsg {
         ),
         gauge: Gauge {
             period: BlockPeriod {
-                start: env.block.height + 1u64,
-                end: env.block.height + 10u64,
-                expiry: env.block.height + 100u64,
+                start: 205u64,
+                end: 304u64,
+                expiry: 304u64,
             },
             incentives: vec![coin(1000, "ucosm")],
             clawback: "clawback_addr".to_string(),
@@ -97,8 +114,6 @@ pub fn get_creat_gauge_msg() -> crate::msg::ExecuteMsg {
 }
 
 pub fn get_creat_gauge_pool_msg() -> crate::msg::ExecuteMsg {
-    let env = mock_env();
-
     crate::msg::ExecuteMsg::GaugeMsg(crate::msg::GaugeMsg::Create {
         kind: GaugeKind::new_pool(
             Addr::unchecked("pool_addr"),
@@ -108,9 +123,9 @@ pub fn get_creat_gauge_pool_msg() -> crate::msg::ExecuteMsg {
         ),
         gauge: Gauge {
             period: BlockPeriod {
-                start: env.block.height + 1u64,
-                end: env.block.height + 10u64,
-                expiry: env.block.height + 100u64,
+                start: 201u64,
+                end: 304u64,
+                expiry: 304u64,
             },
             incentives: vec![coin(1000, "ucosm")],
             clawback: "clawback_addr".to_string(),

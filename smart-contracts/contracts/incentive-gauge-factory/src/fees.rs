@@ -44,6 +44,9 @@ fn distribute(deps: DepsMut, env: Env, gauge_addr: String) -> Result<Response, C
 
     let mut fees = GAUGE_FEES.load(deps.storage, gauge_addr.clone())?;
 
+    println!("{:#?}", env.block.height);
+    println!("{:#?}", gauge.period.start);
+
     let elapsed_time = env.block.height - gauge.period.start;
     let total_time = gauge.period.end - gauge.period.start;
 

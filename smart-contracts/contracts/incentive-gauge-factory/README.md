@@ -51,9 +51,9 @@ crate::msg::ExecuteMsg::GaugeMsg(crate::msg::GaugeMsg::Create {
     ),
     gauge: Gauge {
         period: BlockPeriod {
-            start: env.block.height + 1u64,
-            end: env.block.height + 10u64,
-            expiry: env.block.height + 100u64,
+            start: 201u64,
+            end: 304u64,
+            expiry: 304u64,
         },
         incentives: vec![coin(1000, "ucosm")],
         clawback: "clawback_addr".to_string(),
