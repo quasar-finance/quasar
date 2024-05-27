@@ -26,6 +26,7 @@ pub enum RangeExecuteMsg {
         twap_window_seconds: u64,
         recommended_swap_route: SwapOperationsListUnchecked,
         force_swap_route: bool,
+        claim_after: Option<u64>,
     },
 }
 
@@ -36,6 +37,7 @@ pub struct RangeExecutionParams {
     pub twap_window_seconds: u64,
     pub recommended_swap_route: SwapOperationsListUnchecked,
     pub force_swap_route: bool,
+    pub claim_after: Option<u64>,
 }
 
 pub fn execute_range_msg(
@@ -55,6 +57,7 @@ pub fn execute_range_msg(
             twap_window_seconds,
             recommended_swap_route,
             force_swap_route,
+            claim_after,
         } => execute_new_range(
             deps,
             env,
@@ -66,6 +69,7 @@ pub fn execute_range_msg(
                 twap_window_seconds,
                 recommended_swap_route,
                 force_swap_route,
+                claim_after,
             },
         ),
     }
@@ -150,6 +154,7 @@ pub fn execute_new_range(
                 twap_window_seconds: params.twap_window_seconds,
                 force_swap_route: params.force_swap_route,
                 recommended_swap_route: Some(params.recommended_swap_route),
+                claim_after: params.claim_after,
             }),
         ))?,
 
