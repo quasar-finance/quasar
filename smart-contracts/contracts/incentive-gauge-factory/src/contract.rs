@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
-    state::ADMIN,
+    state::{ADMIN, GAUGE_CODE},
 };
 
 // version info for migration info
@@ -18,14 +18,20 @@ pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    if let Some(codeid) = msg.gauge_codeid {
+        GAUGE_CODE.save(deps.storage, &codeid)?;
+    }
+
     if let Some(admin) = msg.admin {
         let admin = deps.api.addr_validate(&admin)?;
         ADMIN.set(deps, Some(admin))?;
+    } else {
+        ADMIN.set(deps, Some(info.sender))?;
     }
 
     Ok(Response::new()
@@ -77,6 +83,3 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
         _ => Err(ContractError::UnknownReply {}),
     }
 }
-
-#[cfg(test)]
-mod tests {}

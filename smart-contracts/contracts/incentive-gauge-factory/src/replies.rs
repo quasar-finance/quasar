@@ -2,15 +2,18 @@ use cosmwasm_std::{DepsMut, Reply, Response};
 // use cw_utils::{parse_reply_execute_data, parse_reply_instantiate_data};
 use cw_utils::parse_reply_instantiate_data;
 
-use crate::{state::{GAUGES, GAUGE_FEES, GAUGE_IN_PROCESS, GAUGE_KINDS}, ContractError};
+use crate::{
+    state::{GAUGES, GAUGE_FEES, GAUGE_IN_PROCESS, GAUGE_KINDS},
+    ContractError,
+};
 
 pub const REPLY_ON_GAUGE_INIT: u64 = 0;
 
 pub fn gauge_init_success(deps: DepsMut, reply: Reply) -> Result<Response, ContractError> {
     let res = parse_reply_instantiate_data(reply);
 
-    if res.is_err() {
-        return Err(res.unwrap_err().into());
+    if let Err(err) = res {
+        return Err(err.into());
     }
 
     // after this point we are sure that the gauge contract started correctly
@@ -23,5 +26,5 @@ pub fn gauge_init_success(deps: DepsMut, reply: Reply) -> Result<Response, Contr
     GAUGE_KINDS.save(deps.storage, gauge_address.clone(), &gauge.kind)?;
     GAUGE_FEES.save(deps.storage, gauge_address, &gauge.fee)?;
 
-    Ok(Response::default())
+    Ok(Response::default().add_attribute("action", "reply_init_success"))
 }

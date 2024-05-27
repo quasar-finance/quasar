@@ -10,7 +10,11 @@ pub struct MigrateMsg {
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    /// contract admin (defaults to sender during initilization)
     pub admin: Option<String>,
+
+    /// guage contract code id (can be set later on)
+    pub gauge_codeid: Option<u64>,
 }
 
 #[cw_serde]
@@ -47,6 +51,10 @@ pub enum GaugeMsg {
         kind: Option<GaugeKind>,
     },
 
+    Remove {
+        addr: String
+    },
+
     /// addr is the gauge contract
     MerkleUpdate {
         addr: String,
@@ -56,6 +64,7 @@ pub enum GaugeMsg {
     // GaugePause { addr: String },
 }
 
+#[allow(clippy::large_enum_variant)]
 #[cw_serde]
 pub enum ExecuteMsg {
     GaugeMsg(GaugeMsg),

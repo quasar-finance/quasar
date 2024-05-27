@@ -20,7 +20,7 @@ pub struct GaugeInProcess {
 pub struct Gauge {
     pub period: BlockPeriod,
     pub incentives: Vec<Coin>,
-    pub kind: GaugeKind,
+    // pub kind: GaugeKind,
     pub clawback: String,
 }
 
@@ -28,14 +28,14 @@ impl Gauge {
     pub fn new(
         period: BlockPeriod,
         incentives: Vec<Coin>,
-        kind: GaugeKind,
+        // kind: GaugeKind,
         clawback: String,
     ) -> Self {
         // let fee = Fee::new(fee_address, fee, CoinList::new(total_incentives.clone()));
         Self {
             period,
             incentives,
-            kind,
+            // kind,
             clawback,
         }
     }
@@ -125,3 +125,9 @@ impl GaugeKind {
     }
 }
 
+#[cw_serde]
+pub struct GaugeListResponse {
+    pub gauges: Vec<Gauge>,
+    pub kinds: Vec<GaugeKind>,
+    pub fees: Vec<Fee>,
+}

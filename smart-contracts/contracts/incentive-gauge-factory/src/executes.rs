@@ -9,7 +9,10 @@ pub fn update_admin(
     new_admin: String,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+
+    // set the admin
     let new_admin = deps.api.addr_validate(&new_admin)?;
     ADMIN.set(deps.branch(), Some(new_admin))?;
+
     Ok(Response::new().add_attributes(vec![("action", "update_admin")]))
 }

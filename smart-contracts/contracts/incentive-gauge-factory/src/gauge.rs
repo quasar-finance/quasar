@@ -1,4 +1,6 @@
-use cosmwasm_std::{to_json_binary, DepsMut, Empty, Env, MessageInfo, Response, SubMsg, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, Deps, DepsMut, Empty, Env, MessageInfo, Response, SubMsg, WasmMsg,
+};
 
 use crate::{
     msg::GaugeMsg,
@@ -19,7 +21,7 @@ pub fn handle_execute_gauge(
         GaugeMsg::CodeUpdate { code } => code_update(deps, info, code),
 
         // initialize a new gauge contract
-        GaugeMsg::Create { kind, gauge, fee } => gauge_create(deps, env, info, gauge, fee, kind),
+        GaugeMsg::Create { kind, gauge, fee } => create(deps, env, info, gauge, fee, kind),
 
         // update the info for the gauge contract
         GaugeMsg::Update {
@@ -27,7 +29,9 @@ pub fn handle_execute_gauge(
             gauge,
             fees,
             kind,
-        } => gauge_update(deps, info, addr, gauge, fees, kind),
+        } => update(deps, info, addr, gauge, fees, kind),
+
+        GaugeMsg::Remove { addr } => remove(deps, info, addr),
 
         // send a new merkle to the gauge contract
         GaugeMsg::MerkleUpdate { addr, merkle } => merkle_update(deps, info, addr, merkle),
@@ -40,8 +44,17 @@ fn code_update(deps: DepsMut, info: MessageInfo, code: u64) -> Result<Response, 
     Ok(Response::default().add_attribute("action", "code_update"))
 }
 
+fn check_gauge_exists(deps: Deps, contract_addr: Addr) -> Result<(), ContractError> {
+    if !GAUGES.has(deps.storage, contract_addr.clone()) {
+        return Err(ContractError::NoSuchGauge {
+            addr: contract_addr.into_string(),
+        });
+    }
+    Ok(())
+}
+
 /// initializes a gauge contract
-fn gauge_create(
+fn create(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -82,7 +95,7 @@ fn gauge_create(
 
 /// primarly updates the gauge information locally
 /// NOTE: this might need more work
-fn gauge_update(
+fn update(
     deps: DepsMut,
     info: MessageInfo,
     addr: String,
@@ -93,6 +106,8 @@ fn gauge_update(
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
 
     let addr = deps.api.addr_validate(&addr)?;
+
+    check_gauge_exists(deps.as_ref(), addr.clone())?;
 
     GAUGES.save(deps.storage, addr.clone(), &new_gauge)?;
 
@@ -107,6 +122,21 @@ fn gauge_update(
     Ok(Response::default().add_attribute("action", "gauge_update"))
 }
 
+/// validates gauge exists and then removes it and its dependencies
+fn remove(deps: DepsMut, info: MessageInfo, addr: String) -> Result<Response, ContractError> {
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+
+    let contract_addr = deps.api.addr_validate(&addr)?;
+
+    check_gauge_exists(deps.as_ref(), contract_addr.clone())?;
+
+    GAUGES.remove(deps.storage, contract_addr.clone());
+    GAUGE_KINDS.remove(deps.storage, contract_addr.clone());
+    GAUGE_FEES.remove(deps.storage, contract_addr);
+
+    Ok(Response::default().add_attribute("action", "gauge_remove"))
+}
+
 /// sends a merkle root to the gauge if the gauge exists
 fn merkle_update(
     deps: DepsMut,
@@ -118,19 +148,17 @@ fn merkle_update(
 
     let contract_addr = deps.api.addr_validate(&addr)?;
 
-    if GAUGES.has(deps.storage, contract_addr) {
-        return Ok(Response::default()
-            .add_attribute("action", "merkle_update")
-            .add_message(WasmMsg::Execute {
-                contract_addr: addr.clone(),
-                msg: to_json_binary(
-                    &merkle_incentives::admin::execute::AdminExecuteMsg::UpdateMerkleRoot {
-                        new_root: merkle,
-                    },
-                )?,
-                funds: vec![],
-            }));
-    }
+    check_gauge_exists(deps.as_ref(), contract_addr)?;
 
-    Err(ContractError::NoSuchGauge { addr })
+    Ok(Response::default()
+        .add_attribute("action", "merkle_update")
+        .add_message(WasmMsg::Execute {
+            contract_addr: addr.clone(),
+            msg: to_json_binary(&merkle_incentives::msg::ExecuteMsg::AdminMsg(
+                merkle_incentives::admin::execute::AdminExecuteMsg::UpdateMerkleRoot {
+                    new_root: merkle,
+                },
+            ))?,
+            funds: vec![],
+        }))
 }
