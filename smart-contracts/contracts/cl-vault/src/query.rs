@@ -1,16 +1,17 @@
 use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
-use crate::state::DEX_ROUTER;
+use crate::state::{Position, DEX_ROUTER, POSITIONS};
 use crate::state::{
-    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM,
+    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Order, StdError, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{ConcentratedliquidityQuerier, FullPositionBreakdown};
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -33,9 +34,19 @@ pub struct PoolResponse {
     pub pool_config: PoolConfig,
 }
 
+pub struct PositionsResponse {
+    pub positions: Vec<Position>,
+}
+
 #[cw_serde]
-pub struct PositionResponse {
-    pub position_ids: Vec<u64>,
+pub struct FullPositionsResponse {
+    pub positions: Vec<FullPosition>,
+}
+
+#[cw_serde]
+pub struct FullPosition {
+    pub position: Position,
+    pub full_breakdown: FullPositionBreakdown,
 }
 
 #[cw_serde]
@@ -127,10 +138,39 @@ pub fn query_pool(deps: Deps) -> Result<PoolResponse, ContractError> {
     Ok(PoolResponse { pool_config })
 }
 
-pub fn query_position(deps: Deps) -> Result<PositionResponse, ContractError> {
-    let position_id = POSITION.load(deps.storage)?.position_id;
-    Ok(PositionResponse {
-        position_ids: vec![position_id],
+pub fn query_positions(deps: Deps) -> Result<PositionsResponse, ContractError> {
+    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(PositionsResponse {
+        positions: positions?.into_iter().map(|(_, p)| p).collect(),
+    })
+}
+
+pub fn query_full_positions(deps: Deps) -> Result<FullPositionsResponse, ContractError> {
+    let ps: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    let positions = ps?;
+    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+
+    let full_positions: Result<Vec<FullPosition>, ContractError> = positions
+        .into_iter()
+        .map(|(id, position)| {
+            let fp = cl_querier.position_by_id(id)?;
+
+            let full_position = fp.position.unwrap();
+
+            Ok(FullPosition {
+                position,
+                full_breakdown: full_position,
+            })
+        })
+        .collect();
+
+    Ok(FullPositionsResponse {
+        positions: full_positions?,
     })
 }
 
