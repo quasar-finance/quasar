@@ -1,8 +1,61 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction};
+use cosmwasm_std::{
+    coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
+    Response, SubMsg, Uint128,
+};
+use osmosis_std::types::{
+    cosmos::base::v1beta1::Coin as OsmoCoin,
+    osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
+};
 
-use crate::{error::ContractResult, helpers::sort_tokens};
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+use crate::{helpers::sort_tokens, msg::ExecuteMsg, state::POSITION, ContractError};
+
+/// Prepends a callback to the contract to claim any rewards, used to
+/// enforce the claiming of rewards before any action that might
+/// cause Osmosis to collect rewards anyway, such as fully withdrawing a position
+/// or adding funds into a position
+pub fn prepend_claim_msg(env: &Env, response: Response) -> Result<Response, ContractError> {
+    let claim_msg = CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+        contract_addr: env.contract.address.to_string(),
+        msg: to_json_binary(&ExecuteMsg::VaultExtension(
+            crate::msg::ExtensionExecuteMsg::CollectRewards {},
+        ))?,
+        funds: vec![],
+    });
+
+    Ok(prepend_msg(response, SubMsg::new(claim_msg)))
+}
+
+/// Prepend a msg to the start of the messages in a response
+fn prepend_msg(mut response: Response, msg: SubMsg) -> Response {
+    response.messages.splice(0..0, vec![msg]);
+    response
+}
+
+pub fn get_collect_incentives_msg(
+    deps: Deps,
+    env: Env,
+) -> Result<MsgCollectIncentives, ContractError> {
+    let position = POSITION.load(deps.storage)?;
+    Ok(MsgCollectIncentives {
+        position_ids: vec![position.position_id],
+        sender: env.contract.address.into(),
+    })
+}
+
+pub fn get_collect_spread_rewards_msg(
+    deps: Deps,
+    env: Env,
+) -> Result<MsgCollectSpreadRewards, ContractError> {
+    let position = POSITION.load(deps.storage)?;
+    Ok(MsgCollectSpreadRewards {
+        position_ids: vec![position.position_id],
+        sender: env.contract.address.into(),
+    })
+}
+
+/// COIN LIST
+
 #[cw_serde]
 #[derive(Default)]
 pub struct CoinList(Vec<Coin>);
@@ -14,6 +67,11 @@ impl CoinList {
 
     /// calculates the ratio of the current rewards
     pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
+        if ratio == Decimal::zero() {
+            // Return an empty list if the ratio is zero.
+            return CoinList::new();
+        }
+
         CoinList(
             self.0
                 .iter()
@@ -34,8 +92,8 @@ impl CoinList {
     }
 
     /// merge any values already in Rewards and append any others
-    pub fn update_rewards(&mut self, rewards: &[OsmoCoin]) -> ContractResult<()> {
-        let parsed_rewards: ContractResult<Vec<Coin>> = rewards
+    pub fn update_rewards(&mut self, rewards: &[OsmoCoin]) -> Result<(), ContractError> {
+        let parsed_rewards: Result<Vec<Coin>, ContractError> = rewards
             .iter()
             .map(|c| Ok(coin(c.amount.parse()?, c.denom.clone())))
             .collect();
@@ -45,13 +103,26 @@ impl CoinList {
         Ok(())
     }
 
-    /// add rewards to self and mutate self
-    pub fn add(mut self, rewards: CoinList) -> ContractResult<Self> {
-        self.merge(rewards.coins())?;
-        Ok(self)
+    // TODO: Cant we get Coins from a coinlist and use above function?
+    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> Result<(), ContractError> {
+        let parsed_rewards: Result<Vec<Coin>, ContractError> = rewards
+            .coins()
+            .into_iter()
+            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
+            .collect();
+
+        // Append and merge to
+        self.merge(parsed_rewards?)?;
+        Ok(())
     }
 
-    pub fn merge(&mut self, coins: Vec<Coin>) -> ContractResult<()> {
+    /// add rewards to self and mutate self
+    pub fn add(&mut self, rewards: CoinList) -> Result<(), ContractError> {
+        self.merge(rewards.coins())?;
+        Ok(())
+    }
+
+    pub fn merge(&mut self, coins: Vec<Coin>) -> Result<(), ContractError> {
         for c in coins {
             let same = self.0.iter_mut().find(|c2| c.denom == c2.denom);
             if let Some(c2) = same {
@@ -63,23 +134,32 @@ impl CoinList {
         Ok(())
     }
 
-    /// substract a percentage from self, mutate self and return the subtracted rewards
-    pub fn sub_ratio(&mut self, ratio: Decimal) -> ContractResult<CoinList> {
+    /// Subtracts a percentage from self, mutate self and return the subtracted rewards,
+    /// excluding any coins with zero amounts.
+    pub fn sub_ratio(&mut self, ratio: Decimal) -> Result<CoinList, ContractError> {
         let to_sub = self.mul_ratio(ratio);
 
-        // actually subtract the funds
+        // Actually subtract the funds
         self.sub(&to_sub)?;
-        Ok(to_sub)
+
+        // Return only coins with non-zero amounts, filtering out any zeros that might result from the subtraction.
+        Ok(CoinList(
+            to_sub
+                .0
+                .into_iter()
+                .filter(|c| c.amount != Uint128::zero())
+                .collect(),
+        ))
     }
 
     /// subtract to_sub from self, ignores any coins in to_sub that don't exist in self and vice versa
     /// every item in self is expected to be greater or equal to the amount of the coin with the same denom
     /// in to_sub
-    pub fn sub(&mut self, to_sub: &CoinList) -> ContractResult<()> {
+    pub fn sub(&mut self, to_sub: &CoinList) -> Result<(), ContractError> {
         to_sub
             .0
             .iter()
-            .try_for_each(|sub_coin| -> ContractResult<()> {
+            .try_for_each(|sub_coin| -> Result<(), ContractError> {
                 let coin = self.0.iter_mut().find(|coin| sub_coin.denom == coin.denom);
                 if let Some(c) = coin {
                     c.amount = c.amount.checked_sub(sub_coin.amount)?;
@@ -88,7 +168,7 @@ impl CoinList {
             })
     }
 
-    pub fn claim(&mut self, recipient: &str) -> ContractResult<CosmosMsg> {
+    pub fn claim(&mut self, recipient: &str) -> Result<CosmosMsg, ContractError> {
         let rewards = sort_tokens(self.coins());
         self.0.clear();
 
@@ -131,9 +211,62 @@ impl CoinList {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint128;
+    use cosmwasm_std::{testing::mock_env, Uint128};
 
     use super::*;
+
+    #[test]
+    fn test_prepend_msg_with_empty_response() {
+        let response = Response::default();
+        let msg = CosmosMsg::Bank(BankMsg::Burn {
+            amount: vec![coin(100, "stake")],
+        });
+
+        let updated_response = prepend_msg(response, SubMsg::new(msg.clone()));
+        assert_eq!(updated_response.messages.len(), 1);
+        assert_eq!(updated_response.messages[0].msg, msg);
+    }
+
+    #[test]
+    fn test_prepend_msg_with_non_empty_response() {
+        let existing_msg = CosmosMsg::Bank(BankMsg::Send {
+            to_address: "bob".to_string(),
+            amount: vec![coin(100, "stake")],
+        });
+        let new_msg = CosmosMsg::Bank(BankMsg::Burn {
+            amount: vec![coin(100, "stake")],
+        });
+
+        let response = Response::new().add_message(existing_msg.clone());
+
+        let updated_response = prepend_msg(response.clone(), SubMsg::new(new_msg.clone()));
+        assert_eq!(updated_response.messages.len(), 2);
+        assert_eq!(updated_response.messages[0].msg, new_msg);
+        assert_eq!(updated_response.messages[1].msg, existing_msg);
+    }
+
+    #[test]
+    fn test_prepend_claim_msg_normal_operation() {
+        let env = mock_env();
+        let msg = CosmosMsg::Bank(BankMsg::Burn {
+            amount: vec![coin(100, "stake")],
+        });
+        let response = Response::new().add_message(msg.clone());
+
+        let claim_msg = CosmosMsg::Wasm(cosmwasm_std::WasmMsg::Execute {
+            contract_addr: env.contract.address.to_string(),
+            msg: to_json_binary(&ExecuteMsg::VaultExtension(
+                crate::msg::ExtensionExecuteMsg::CollectRewards {},
+            ))
+            .unwrap(),
+            funds: vec![],
+        });
+
+        let updated_response = prepend_claim_msg(&env, response).unwrap();
+        assert_eq!(updated_response.messages.len(), 2);
+        assert_eq!(updated_response.messages[0].msg, claim_msg);
+        assert_eq!(updated_response.messages[1].msg, msg);
+    }
 
     #[test]
     fn sub_works() {
@@ -292,7 +425,7 @@ mod tests {
                 },
             ])
             .unwrap();
-        rewards = rewards
+        rewards
             .add(CoinList::from_coins(vec![
                 coin(2000, "uosmo"),
                 coin(2000, "uatom"),

@@ -7,7 +7,10 @@ use cosmwasm_std::{
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::{PoolResponse, SpotPriceResponse};
+use osmosis_std::types::osmosis::poolmanager::{
+    v1beta1::{PoolResponse, SpotPriceResponse},
+    v2::SpotPriceResponse as V2SpotPriceResponse,
+};
 use osmosis_std::types::osmosis::twap::v1beta1::ArithmeticTwapToNowResponse;
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -17,7 +20,9 @@ use osmosis_std::types::{
 };
 
 use crate::math::tick::tick_to_price;
-use crate::state::{PoolConfig, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG};
+use crate::state::{
+    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
+};
 
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
@@ -124,6 +129,14 @@ impl Querier for QuasarQuerier {
                         .unwrap(),
                     ))
                 }
+                "/osmosis.poolmanager.v2.Query/SpotPriceV2" => {
+                    QuerierResult::Ok(CwContractResult::Ok(
+                        to_json_binary(&V2SpotPriceResponse {
+                            spot_price: tick_to_price(self.current_tick).unwrap().to_string(),
+                        })
+                        .unwrap(),
+                    ))
+                }
                 "/osmosis.twap.v1beta1.Query/ArithmeticTwapToNow" => {
                     QuerierResult::Ok(CwContractResult::Ok(
                         to_json_binary(&ArithmeticTwapToNowResponse {
@@ -210,11 +223,19 @@ pub fn mock_deps_with_querier_with_balance(
                 performance_fee: Decimal::zero(),
                 treasury: Addr::unchecked("treasure"),
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                dex_router: Addr::unchecked("dex_router"),
             },
         )
         .unwrap();
     POSITION
-        .save(storage, &crate::state::Position { position_id: 1 })
+        .save(
+            storage,
+            &crate::state::Position {
+                position_id: 1,
+                join_time: 0,
+                claim_after: None,
+            },
+        )
         .unwrap();
 
     deps
@@ -223,13 +244,15 @@ pub fn mock_deps_with_querier_with_balance(
 pub fn mock_deps_with_querier(
     info: &MessageInfo,
 ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+    let position_id = 1;
+
     let mut deps = OwnedDeps {
         storage: MockStorage::default(),
         api: MockApi::default(),
         querier: QuasarQuerier::new(
             FullPositionBreakdown {
                 position: Some(OsmoPosition {
-                    position_id: 1,
+                    position_id,
                     address: MOCK_CONTRACT_ADDR.to_string(),
                     pool_id: 1,
                     lower_tick: 100,
@@ -265,6 +288,17 @@ pub fn mock_deps_with_querier(
 
     let storage = &mut deps.storage;
 
+    POSITION
+        .save(
+            storage,
+            &Position {
+                position_id,
+                join_time: 0,
+                claim_after: None,
+            },
+        )
+        .unwrap();
+
     RANGE_ADMIN.save(storage, &info.sender).unwrap();
     POOL_CONFIG
         .save(
@@ -283,11 +317,19 @@ pub fn mock_deps_with_querier(
                 performance_fee: Decimal::zero(),
                 treasury: Addr::unchecked("treasure"),
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                dex_router: Addr::unchecked("dex_router"),
             },
         )
         .unwrap();
     POSITION
-        .save(storage, &crate::state::Position { position_id: 1 })
+        .save(
+            storage,
+            &crate::state::Position {
+                position_id: 1,
+                join_time: 0,
+                claim_after: None,
+            },
+        )
         .unwrap();
 
     deps

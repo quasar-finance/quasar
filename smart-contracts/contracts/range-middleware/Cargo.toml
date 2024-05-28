@@ -2,7 +2,7 @@
 authors = ["Nikita (rizz) <nj18@nyu.edu>"]
 edition = "2021"
 name = "range-middleware"
-version = "0.1.0"
+version = "0.3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -43,7 +43,7 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 
 cl-vault = {path = "../cl-vault", features = ["library"]}
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "master", feature = ["library"]}
+cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", feature = ["library"]}
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
