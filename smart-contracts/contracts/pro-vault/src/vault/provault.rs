@@ -3,43 +3,43 @@ use cosmwasm_std::{
     StdResult, Binary, to_json_binary,};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
-use crate::ownership::ownership::{OwnerProposal, Ownership, query_owner, query_ownership_proposal, 
-    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection};
-//use crate::errors::ContractError;
-use crate::error::ContractError;
-use crate::strategy::strategy::{Strategy, STRATEGY};
-use crate::msg::StrategyInfoResponse;
+
 use serde::{Serialize,Deserialize};
 use schemars::JsonSchema;
-use crate::msg::VaultRunningStateResponse;
+
+use crate::vault::query::{VaultRunningStateResponse, StrategyInfoResponse};
+use crate::error::ContractError;
+use crate::strategy::strategy::{Strategy, STRATEGY}; 
+use crate::ownership::ownership::{OwnerProposal, Ownership, query_owner, query_ownership_proposal, 
+    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection};
+
 
 // Constants for the provault
-pub const MAX_DURATION: u64 = 604800u64;
 pub const VAULT_OWNER: Admin = Admin::new("vault_owner");
-//pub const ADAPTER_OWNER: Admin = Admin::new("adapter_owner");
-//pub const STRATEGY_OWNER: Admin = Admin::new("strategy_owner");
 pub const VAULT_PROPOSAL: Item<OwnerProposal> = Item::new("vault_proposal");
-//pub const ADAPTER_PROPOSAL: Item<OwnerProposal> = Item::new("adapter_proposal");
-//pub const STRATEGY_PROPOSAL: Item<OwnerProposal> = Item::new("strategy_proposal");
 pub const VAULT_STATE: Item<Vault> = Item::new("vault_state");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum VaultRunningState {
-    Init,
-    Running,
-    Paused,
-    Terminated,
+    // Initalized, and waiting come Normal once vault is ready to accept deposit. 
+    Init, 
+    // Normal operating mode
+    Running, 
+    // Temporary halted
+    Paused, 
+    // Terminated forever 
+    Terminated, 
 }
 
-
+// Pro vault state struct with last updated block height.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Vault {
-    state: VaultRunningState,
-    last_statechange_bh: u64, // last statechange block height
+    pub state: VaultRunningState,
+    pub last_statechange_bh: u64, // last statechange block height
 }
 
   
-
+// Vault method implementations
 impl Vault {
      pub fn new() -> Self {
         Vault {
@@ -124,28 +124,3 @@ impl Ownership for Vault {
     }
 }
 
-////////////////////////////////////////////////////////////////
-//////////////////////// VAULT QUERIES /////////////////////////
-////////////////////////////////////////////////////////////////
-
-// query to return the running state of the pro Vault
-pub fn query_vault_running_state(deps: Deps) -> StdResult<Binary> {
-    let vault = VAULT_STATE.load(deps.storage)?;
-    to_json_binary(&VaultRunningStateResponse {
-        state: vault.state,
-        last_statechange_bh: vault.last_statechange_bh,
-    })
-}
-// Ideally it should be zero or one for the initial phase.
-// Vec is added for a potential design enhancement for the future.
-pub fn query_all_strategies(deps: Deps) -> StdResult<Binary> {
- 
-    let strategies: StdResult<Vec<Strategy>> = STRATEGY
-        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-        .map(|item| item.map(|(_, strategy)| strategy))
-        .collect();
-
-        to_json_binary(&StrategyInfoResponse {
-        strategies: strategies?,
-    })
-}

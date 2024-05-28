@@ -8,14 +8,20 @@ use cosmwasm_std::{DepsMut, Uint128, Uint64};
 
 pub const VAULT_CONFIG: Item<Config> = Item::new("vault_config");
 
-use crate::msg::VaultConfigResponse;
+// use crate::msg::VaultConfigResponse;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct VaultConfigResponse {
+    pub config: Config,
+}
+/* 
 pub fn query_vault_config(deps: Deps) -> StdResult<Binary> {
     let config = VAULT_CONFIG.load(deps.storage)?;
     to_json_binary(&VaultConfigResponse {
         config,
     })
 }
+*/
 
 // Pro vault level config parameters. 
 // Config will be created during the initialisation.

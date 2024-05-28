@@ -1,7 +1,9 @@
 use cosmwasm_std::{DepsMut, StdResult, Storage, Addr};
-use crate::msg::StrategyAction;
 use serde::{Serialize,Deserialize};
 use cw_storage_plus::{Item, Map};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Uint128;
+use schemars::JsonSchema;
 
 
 const ADAPTERS: Map<&str, bool> = Map::new("adapters");
@@ -17,6 +19,20 @@ impl StrategyKey {
         id.to_be_bytes().to_vec()
     }
 }
+
+
+
+#[cw_serde]
+pub enum StrategyAction {
+    DistributeFundWithPresetAdaptorRatio, // Distributing funds across adaptors as per preset ratios
+    DistributeFundWithCustomAdaptorRatios { custom_ratios: String }, // CustomAdaptorRatio (A1:R1, A2:R2, A3:R3)
+    RemoveAdaptor { adaptor: String }, // Remove Adaptor Ai
+    AddNewAdaptor { adaptor: String }, // Add a new adaptor of type Ai. Should fail if already one is present of type A1.
+    UpdateStrategyParams,
+    UpdateAdaptorRunningState { adaptor: String },
+    UpdateStrategyRunningState,
+}
+
 
 // TODO - Impl ownership to the strategy.
 

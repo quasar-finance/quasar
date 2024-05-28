@@ -1,13 +1,15 @@
-//use crate::config::MyConfig;
-use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg, StrategyAction};
+use crate::error::ContractError;
+
+use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg};
 use crate::msg::ProExtensionExecuteMsg;
 use crate::msg::ExtensionExecuteMsg;
-use crate::strategy::strategy::{Strategy, StrategyKey, STRATEGY};
-//use crate::state::MyState;
-use crate::error::ContractError;
-use crate::vault::provault::{VaultRunningState, VAULT_STATE, VAULT_OWNER,
-    query_all_strategies, query_vault_running_state, Vault};
-use crate::vault::config::{query_vault_config, VAULT_CONFIG, Config};
+
+use crate::strategy::strategy::{Strategy, StrategyKey, STRATEGY, StrategyAction};
+
+use crate::vault::provault::{VaultRunningState, VAULT_STATE, VAULT_OWNER, Vault};
+use crate::vault::config::{VAULT_CONFIG, Config};
+use crate::vault::query::{VaultQueryMsg, query_vault_config, 
+    query_vault_running_state, query_all_strategies};
 
 use cosmwasm_std::{
     entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, 
@@ -97,8 +99,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
     match msg {
         QueryMsg::GetAllStrategies {} => query_all_strategies(deps),
-        QueryMsg::GetVaultConfig {} => query_vault_config(deps),
-        QueryMsg::GetVaultRunningState {} => query_vault_running_state(deps),
+        QueryMsg::VaultQuery(vault_msg) => {
+            match vault_msg {
+                VaultQueryMsg::GetVaultConfig {} => query_vault_config(deps),
+                VaultQueryMsg::GetVaultRunningState {} => query_vault_running_state(deps),
+            }
+        }
         // Handle other queries ...
     }
 
@@ -113,12 +119,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
      Ok(binary_response)
      */
 }
-/* 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    // MyVault.query(deps, env, msg)
-}
-*/
+ 
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
