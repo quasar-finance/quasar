@@ -81,8 +81,10 @@ pub struct Position {
     pub claim_after: Option<u64>, // this should be off chain computed and set in order to avoid forfeiting incentives
 }
 
-pub const POSITION: Item<Position> = Item::new("position");
-
+// positions in the contract, the key should be the same as the position's id in Osmosis
+pub const POSITIONS: Map<u64, Position> = Map::new("positions");
+// pub const POSITION: Item<Position> = Item::new("position");
+    
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 /// The merge of positions currently being executed
