@@ -17,8 +17,7 @@ use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
-    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, METADATA, MIGRATION_STATUS,
-    POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM,
+    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, METADATA, MIGRATION_STATUS, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM
 };
 use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
@@ -120,8 +119,9 @@ pub fn handle_instantiate_create_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = data.try_into()?;
-    POSITION.save(
+    POSITIONS.save(
         deps.storage,
+        response.position_id,
         &Position {
             position_id: response.position_id,
             join_time: env.block.time.seconds(),
