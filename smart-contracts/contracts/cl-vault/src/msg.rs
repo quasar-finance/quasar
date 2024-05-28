@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
@@ -21,7 +21,7 @@ pub enum ExtensionExecuteMsg {
     Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
-    ModifyRange(ModifyRangeMsg),
+    ModifyRange(ModifyRange),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
     /// provides an entry point for autocompounding idle funds to current position
@@ -78,8 +78,61 @@ pub enum AdminExtensionExecuteMsg {
     BuildTickCache {},
 }
 
+/// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position
+/// increasing or decreasing the relative percentage a position has in the vault and creating and deleting a position.
+/// Decreasing the percentage of a position to 0 is not allowed. DeletePosition should be used there.
 #[cw_serde]
-pub struct ModifyRangeMsg {
+pub enum ModifyRange {
+    /// Move the range of a current position
+    MovePosition(MovePosition),
+    /// Increase the ratio a position has within the total positions of the vault
+    AddRatio {
+        /// the position_id of the position to change percentage of
+        position_id: u64,
+        /// The old percentage at which the position was set, this might be different from the actual current percentage
+        /// of that position due to IL
+        old_ratio: Uint128,
+        /// The new percentage to set the position at, Increasing requires free balance in the contract.
+        /// Decreasing generates free balance in the contract
+        new_ratio: Uint128,
+    },
+    /// Increase or Decrease which percentage of the vault a range is
+    LowerRatio {
+        /// the position_id of the position to change percentage of
+        position_id: u64,
+        /// The old percentage at which the position was set, this might be different from the actual current percentage
+        /// of that position due to IL
+        old_ratio: Uint128,
+        /// The new percentage to set the position at, Increasing requires free balance in the contract.
+        /// Decreasing generates free balance in the contract
+        new_ratio: Uint128,
+    },
+    IncreaseFunds {
+        position_id: u64,
+        token0: Coin,
+        token1: Coin,
+    },
+    DecreaseFunds {
+        position_id: u64,
+        liquidity: Decimal256,
+    },
+    /// Create a new position. This consumes all free balance up to max_percentage current free balance
+     CreatePosition {
+        /// The lower price of the new position
+        lower_price: Decimal,
+        /// The upper price of the new position
+        upper_price: Decimal,
+        /// the ratio that this new position can take
+        ratio: Uint128,
+    },
+    DeletePosition {
+        /// delete the position under position_id
+        position_id: u64,
+    },
+}
+
+#[cw_serde]
+pub struct MovePosition {
     /// The new lower bound of the range, this is converted to an 18 precision digit decimal
     pub lower_price: Decimal,
     /// The new upper bound of the range, this is converted to an 18 precision digit decimal
