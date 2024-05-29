@@ -1,6 +1,6 @@
 use crate::rewards::CoinList;
 use crate::vault::merge::CurrentMergeWithdraw;
-use crate::vault::range::SwapDirection;
+use crate::vault::range::move_position::SwapDirection;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
@@ -83,7 +83,7 @@ pub struct Position {
 
 // positions in the contract, the key should be the same as the position's id in Osmosis
 pub const POSITIONS: Map<u64, Position> = Map::new("positions");
-// pub const POSITION: Item<Position> = Item::new("position");
+pub const MAIN_POSITION: Item<u64> = Item::new("main_position");
     
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
@@ -148,6 +148,8 @@ pub struct ModifyRangeState {
     pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
     // whether or not to force the swap route
     pub force_swap_route: bool,
+    // only claim the created position after claim_after amount of seconds
+    pub claim_after: u64,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
