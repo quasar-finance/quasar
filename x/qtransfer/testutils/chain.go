@@ -36,7 +36,7 @@ func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 }
 
 // GetQuasarApp returns the current chain's app as an QuasarApp
-func (chain *TestChain) GetQuasarApp() *app.App {
-	v, _ := chain.App.(*app.App)
+func (chain *TestChain) GetQuasarApp() *app.QuasarApp {
+	v, _ := chain.App.(*app.QuasarApp)
 	return v
 }
