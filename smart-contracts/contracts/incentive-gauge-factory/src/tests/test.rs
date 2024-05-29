@@ -96,6 +96,8 @@ fn create_gauge_pool() -> Result<(), anyhow::Error> {
         new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
     )?;
 
+    reset_time(&mut app);
+
     let res = app.execute_contract(
         Addr::unchecked(admin),
         contract_addr,
