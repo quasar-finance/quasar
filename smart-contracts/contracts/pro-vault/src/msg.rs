@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use cosmwasm_std::Uint128;
-use crate::vault::provault::VaultRunningState;
+use crate::vault::provault::{VaultRunningState, VaultAction};
 use crate::vault::config::Config;
 use crate::strategy::strategy::{Strategy, StrategyKey, StrategyAction}; 
 use serde::{Serialize, Deserialize};
@@ -34,6 +34,7 @@ pub enum ProExtensionExecuteMsg {
         amount: Uint128,
         recipient: Option<String>,
     },
+    /*
     UpdateRunningState {
         new_state: VaultRunningState,
     },
@@ -43,6 +44,10 @@ pub enum ProExtensionExecuteMsg {
         name: String,
         description: String,
     },
+    */
+    ExecVaultActions {
+        action: VaultAction,
+    }, 
     ExecStrategyActions {
         action: StrategyAction,
     },

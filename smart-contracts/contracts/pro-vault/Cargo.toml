@@ -1,5 +1,5 @@
 [package]
-authors      = ["quasar labs team <quasar.fi>"]
+authors      = ["AK <ak@quasar.fi>"]
 categories   = ["wasm"]
 description  = "provault"
 edition      = "2021"

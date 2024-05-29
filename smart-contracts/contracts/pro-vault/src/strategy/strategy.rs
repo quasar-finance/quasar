@@ -52,9 +52,7 @@ impl Strategy {
     pub fn execute_action(storage: &mut dyn Storage, action: StrategyAction) -> StdResult<()> {
         match action {
             StrategyAction::DistributeFundWithPresetAdaptorRatio => {
-                // TODO 
-                // Implementation for distributing funds with preset ratios
-                Ok(())
+               todo!()
             }
             StrategyAction::DistributeFundWithCustomAdaptorRatios { custom_ratios } => {
                 Self::distribute_funds_with_custom_ratios(storage, custom_ratios)
@@ -70,18 +68,14 @@ impl Strategy {
             }
             StrategyAction::UpdateStrategyParams => {
                 // Placeholder for updating strategy parameters
-                // TODO - 
-                Ok(())
+                todo!()
             }
             StrategyAction::UpdateAdaptorRunningState { adaptor } => {
                 // Placeholder for updating adaptor running state
-                // TODO -
-                Ok(())
+                todo!()
             }
             StrategyAction::UpdateStrategyRunningState => {
-                // TODO - 
-                // Placeholder for updating strategy running state
-                Ok(())
+                todo!()
             }
         }
     }
@@ -95,7 +89,7 @@ impl Strategy {
             Err(cosmwasm_std::StdError::generic_err("Adapter already exists"))
         } else {
             ADAPTERS.save(storage, adapter.as_str(), &true)?;
-            Ok(())
+            todo!()
         }
     }
 
@@ -105,7 +99,7 @@ impl Strategy {
         // Use the position manager module to check available fund in the provault treasury. 
         // Use the adaptor list and ratio to do the calculation. 
         // Update the shares allocated to each adaptors on successful execution on each adaptor 
-        Ok(())
+        todo!()
     }
 
     pub fn distribute_funds(total_funds: u128, ratios: Vec<u128>) -> Vec<u128> {
@@ -114,3 +108,32 @@ impl Strategy {
         ratios.iter().map(|r| total_funds * r / sum_ratios).collect()
     }
 }
+
+
+
+// Helpers methods for execute entry points
+/* 
+fn try_add_strategy_adapter(
+    deps: DepsMut,
+    adapter: String,
+) -> Result<Response, ContractError> {
+    let adapter_addr = deps.api.addr_validate(&adapter)?;
+    let added = Strategy::add_adapter(deps.storage, adapter_addr)?;
+    let status = if added { "adapter added" } else { "adapter already exists" };
+
+    Ok(Response::new()
+        .add_attribute("method", "try_add_strategy_adapter")
+        .add_attribute("status", status))
+}
+
+fn try_distribute_strategy_funds(
+    deps: DepsMut,
+    total_funds: u128,
+    ratios: Vec<u128>,
+) -> Result<Response, ContractError> {
+    let distributions = Strategy::distribute_funds(total_funds, ratios);
+    Ok(Response::new()
+        .add_attribute("method", "try_distribute_strategy_funds")
+        .add_attribute("distributions", format!("{:?}", distributions)))
+}
+*/
