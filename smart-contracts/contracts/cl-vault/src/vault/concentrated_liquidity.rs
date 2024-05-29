@@ -8,7 +8,7 @@ use prost::Message;
 
 use crate::{
     helpers::{round_up_to_nearest_multiple, sort_tokens},
-    state::{POOL_CONFIG, POSITION},
+    state::POOL_CONFIG,
     ContractError,
 };
 
@@ -64,13 +64,11 @@ pub fn withdraw_from_position(
 }
 
 pub fn get_position(
-    storage: &dyn Storage,
     querier: &QuerierWrapper,
+    position_id: u64,
 ) -> Result<FullPositionBreakdown, ContractError> {
-    let position = POSITION.load(storage)?;
-
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
-    let position = cl_querier.position_by_id(position.position_id)?;
+    let position = cl_querier.position_by_id(position_id)?;
     position.position.ok_or(ContractError::PositionNotFound)
 }
 
