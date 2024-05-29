@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
-use cw2::set_contract_version;
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage};
+use cw2::{get_contract_version, set_contract_version};
+use semver::Version;
 
 use crate::admin::execute::handle_execute_admin;
 use crate::admin::query::handle_query_admin;
@@ -54,9 +55,40 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    Ok(Response::new().add_attribute("migrate", "successful"))
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    migrate_contract(deps, env, msg)
+}
+
+fn migrate_contract(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let (version_previous, version_new) = get_versions(deps.storage, msg)?;
+
+    if version_new >= version_previous {
+        set_contract_version(deps.storage, CONTRACT_NAME, version_new.to_string())?;
+    }
+
+    Ok(Response::new().add_attribute("action", "migrate"))
+}
+
+fn get_versions(
+    storage: &dyn Storage,
+    msg: MigrateMsg,
+) -> Result<(Version, Version), ContractError> {
+    let version_previous: Version = get_contract_version(storage)?
+        .version
+        .parse()
+        .map_err(|_| ContractError::ParsingPrevVersion)?;
+
+    let version_new: Version = env!("CARGO_PKG_VERSION")
+        .parse()
+        .map_err(|_| ContractError::ParsingNewVersion)?;
+
+    if version_new.to_string() != msg.version {
+        Err(ContractError::ImproperMsgVersion)?;
+    }
+
+    Ok((version_previous, version_new))
 }
 
 #[cfg(test)]

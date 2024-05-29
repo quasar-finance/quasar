@@ -29,4 +29,13 @@ pub enum ContractError {
 
     #[error("Expiration block height reached")]
     ExpirationHeightReached,
+
+    #[error("Parsing previous version error")]
+    ParsingPrevVersion,
+
+    #[error("Parsing new version error")]
+    ParsingNewVersion,
+
+    #[error("Msg version is not equal contract new version")]
+    ImproperMsgVersion,
 }

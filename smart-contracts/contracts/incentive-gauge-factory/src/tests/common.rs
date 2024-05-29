@@ -44,7 +44,8 @@ pub fn contract() -> Box<dyn Contract<Empty>> {
         crate::contract::instantiate,
         crate::contract::query,
     )
-    .with_reply(crate::contract::reply);
+    .with_reply(crate::contract::reply)
+    .with_migrate(crate::contract::migrate);
 
     Box::new(contract)
 }
@@ -54,7 +55,8 @@ pub fn incentives_contract() -> Box<dyn Contract<Empty>> {
         merkle_incentives::contract::execute,
         merkle_incentives::contract::instantiate,
         merkle_incentives::contract::query,
-    );
+    ).with_migrate(merkle_incentives::contract::migrate);
+
     Box::new(contract)
 }
 

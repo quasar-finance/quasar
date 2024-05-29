@@ -431,3 +431,48 @@ fn query_gauge_list() -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+
+#[test]
+fn gauge_migrate() -> Result<(), anyhow::Error> {
+    let admin = "admin";
+
+    let mut app = App::default();
+
+    let gauge_codeid = merkle_incentives_upload(&mut app);
+
+    let (_, contract_addr) = contract_init(
+        &mut app,
+        admin.to_string(),
+        new_init_msg(Some(admin.to_string()), Some(gauge_codeid)),
+    )?;
+
+    reset_time(&mut app);
+
+    let res = app.execute_contract(
+        Addr::unchecked(admin),
+        contract_addr.clone(),
+        &get_creat_gauge_msg(),
+        &[],
+    );
+
+    assert!(res.is_ok());
+
+    let new_gauge_codeid = merkle_incentives_upload(&mut app);
+
+    let res = app.execute_contract(
+        Addr::unchecked(admin),
+        contract_addr,
+        &crate::msg::ExecuteMsg::GaugeMsg(crate::msg::GaugeMsg::Migrate {
+            addr: "contract1".to_string(),
+            code_id: new_gauge_codeid,
+            version: "0.1.0".to_string(),
+        }),
+        &[],
+    );
+
+    assert!(res.is_ok());
+
+    Ok(())
+}
+

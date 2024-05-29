@@ -1,5 +1,4 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-// use cosmwasm_std::Addr;
 
 use crate::types::{Fee, Gauge, GaugeKind};
 
@@ -60,8 +59,16 @@ pub enum GaugeMsg {
         addr: String,
         merkle: String,
     },
+
     // addr is the gauge contract
     // GaugePause { addr: String },
+
+    /// addr is the gauge contract
+    Migrate {
+        addr: String,
+        code_id: u64,
+        version: String
+    },
 }
 
 #[allow(clippy::large_enum_variant)]
