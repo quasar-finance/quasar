@@ -17,7 +17,7 @@ use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
-    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, METADATA, MIGRATION_STATUS, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM
+    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, MAIN_POSITION, METADATA, MIGRATION_STATUS, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM
 };
 use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
@@ -128,8 +128,9 @@ pub fn handle_instantiate_create_position_reply(
             claim_after: None,
         },
     )?;
+    MAIN_POSITION.save(deps.storage, &response.position_id)?;
 
-    let position_info = get_position(deps.storage, &deps.querier)?;
+    let position_info = get_position(&deps.querier, response.position_id)?;
     // Check if asset0 and asset1 are present, and handle the case where they are not.
     let asset0 = position_info
         .asset0
