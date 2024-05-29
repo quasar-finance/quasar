@@ -1,16 +1,9 @@
 use crate::{
-    helpers::{extract_attribute_value_by_ty_and_key, get_twap_price, get_unused_balances},
-    helpers::{
-        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
-    },
+    helpers::{extract_attribute_value_by_ty_and_key, get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances},
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::CURRENT_BALANCE,
-    state::{
-        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
-        POOL_CONFIG, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
-    },
+    state::{ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE},
     vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
@@ -220,12 +213,9 @@ pub fn handle_withdraw_position_reply(
         do_swap_deposit_merge(
             deps,
             env,
-            modify_range_state.lower_tick,
-            modify_range_state.upper_tick,
+            modify_range_state,
             (amount0, amount1),
             None, // we just withdrew our only position
-            modify_range_state.ratio_of_swappable_funds_to_use,
-            modify_range_state.twap_window_seconds,
         )
     } else {
         // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
@@ -283,12 +273,9 @@ pub fn handle_initial_create_position_reply(
     do_swap_deposit_merge(
         deps,
         env,
-        target_lower_tick,
-        target_upper_tick,
+        modify_range_state,
         refunded_amounts,
         Some(create_position_message.position_id),
-        modify_range_state.ratio_of_swappable_funds_to_use,
-        modify_range_state.twap_window_seconds,
     )
 }
 
@@ -299,16 +286,19 @@ pub fn handle_initial_create_position_reply(
 pub fn do_swap_deposit_merge(
     deps: DepsMut,
     env: Env,
-    target_lower_tick: i64,
-    target_upper_tick: i64,
+    modify_range_state: ModifyRangeState,
     refunded_amounts: (Uint128, Uint128),
     position_id: Option<u64>,
-    ratio_of_swappable_funds_to_use: Decimal,
-    twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
     if SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?.is_some() {
         return Err(ContractError::SwapInProgress {});
     }
+
+    let target_lower_tick = modify_range_state.lower_tick;
+    let target_upper_tick = modify_range_state.upper_tick;
+    let ratio_of_swappable_funds_to_use = modify_range_state.ratio_of_swappable_funds_to_use;
+    let twap_window_seconds = modify_range_state.twap_window_seconds;
+    let claim_after = modify_range_state.claim_after;
 
     let (balance0, balance1) = (
         refunded_amounts.0.checked_multiply_ratio(
@@ -369,7 +359,22 @@ pub fn do_swap_deposit_merge(
             format!("{}", calculated.token_out_min_amount),
         );
     } else {
-        // If no swap message, add a new position attribute
+        // if we have not tokens to swap, that means all tokens we correctly used in the create position
+        // this means we can save the position id of the first create_position
+        POSITIONS.save(
+            deps.storage,
+            position_id.unwrap(),
+            &Position {
+                // if position not found, then we should panic here anyway ?
+                position_id: position_id.expect("position id should be set if no swap is needed"),
+                join_time: env.block.time.seconds(),
+                claim_after: Some(modify_range_state.claim_after),
+            },
+        )?;
+        
+        // cleanup
+        SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
+
         response = response.add_attribute("new_position", position_id.unwrap().to_string());
     }
 
@@ -423,24 +428,8 @@ pub fn calculate_swap_amount(
             SwapDirection::OneToZero,
         )
     } else {
-        // TODO handle the edge case for an unknown position id here
-        // Load the current Position to extract join_time and claim_after which is unchangeable in this context
-        let position = POSITION.load(deps.storage)?;
-
-        // if we have not tokens to swap, that means all tokens we correctly used in the create position
-        // this means we can save the position id of the first create_position
-        POSITION.save(
-            deps.storage,
-            &Position {
-                // if position not found, then we should panic here anyway ?
-                position_id: position_id.expect("position id should be set if no swap is needed"),
-                join_time: position.join_time,
-                claim_after: position.claim_after,
-            },
-        )?;
-
-        SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
-
+        // if we do not swap, we only need to save the position and related data such as claim_after
+        // this is left up to the caller of calculate_swap_amount
         return Ok(None);
     };
 
@@ -730,6 +719,7 @@ mod tests {
             deps.as_mut(),
             &env,
             info,
+            1,
             lower_price,
             upper_price,
             max_slippage,
@@ -827,6 +817,7 @@ mod tests {
                     twap_window_seconds: 45,
                     recommended_swap_route: None,
                     force_swap_route: false,
+                    claim_after: 0,
                 }),
             )
             .unwrap();
