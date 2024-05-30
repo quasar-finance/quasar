@@ -10,11 +10,9 @@ use crate::helpers::sort_tokens;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool, query_positions, query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -36,11 +34,9 @@ use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
 };
-use crate::vault::range::{
-    execute_update_range, get_range_admin, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
-    handle_withdraw_position_reply,
-};
+use crate::vault::range::modify_position_funds::handle_range_add_to_position_reply;
+use crate::vault::range::move_position::{get_range_admin, handle_initial_create_position_reply, handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply};
+use crate::vault::range::update_range::execute_update_range;
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 
@@ -105,31 +101,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Autocompound {} => {
                     prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?)
                 }
-                crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
-                    lower_price,
-                    upper_price,
-                    max_slippage,
-                    ratio_of_swappable_funds_to_use,
-                    twap_window_seconds,
-                    recommended_swap_route,
-                    force_swap_route,
-                    claim_after,
-                }) => prepend_claim_msg(
-                    &env,
-                    execute_update_range(
-                        deps,
-                        &env,
-                        info,
-                        lower_price,
-                        upper_price,
-                        max_slippage,
-                        ratio_of_swappable_funds_to_use,
-                        twap_window_seconds,
-                        recommended_swap_route,
-                        force_swap_route,
-                        claim_after,
-                    )?,
-                ),
+                crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => prepend_claim_msg(&env, execute_update_range(deps, env, info, msg)?),
                 crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     force_swap_route,
                     swap_routes,
@@ -184,7 +156,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Position {} => Ok(to_json_binary(&query_position(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => Ok(to_json_binary(&query_positions(deps)?)?),
                 crate::msg::ClQueryMsg::RangeAdmin {} => {
                     let range_admin = get_range_admin(deps)?;
                     Ok(to_json_binary(&RangeAdminResponse {
@@ -214,6 +186,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::RangeIterationCreatePosition => {
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
+        Replies::RangeAddToPosition => handle_range_add_to_position_reply(deps, env, msg.result),
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
