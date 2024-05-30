@@ -34,6 +34,7 @@ pub struct PoolResponse {
     pub pool_config: PoolConfig,
 }
 
+#[cw_serde]
 pub struct PositionsResponse {
     pub positions: Vec<Position>,
 }
