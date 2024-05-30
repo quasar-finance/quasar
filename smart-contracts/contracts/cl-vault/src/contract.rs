@@ -34,6 +34,7 @@ use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
 };
+use crate::vault::range::create_position::handle_range_new_create_position;
 use crate::vault::range::modify_position_funds::handle_range_add_to_position_reply;
 use crate::vault::range::move_position::{get_range_admin, handle_initial_create_position_reply, handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply};
 use crate::vault::range::update_range::execute_update_range;
@@ -186,6 +187,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::RangeIterationCreatePosition => {
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
+        Replies::RangeNewCreatePosition => handle_range_new_create_position(deps, env, msg.result),
         Replies::RangeAddToPosition => handle_range_add_to_position_reply(deps, env, msg.result),
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
