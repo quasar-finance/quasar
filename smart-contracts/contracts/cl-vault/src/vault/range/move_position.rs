@@ -48,7 +48,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 /// * how much of each asset do we need to move to get to new range
 /// * deposit up to max liq we can right now, then swap remaining over and deposit again
 #[allow(clippy::too_many_arguments)]
-pub fn execute_move_range(
+pub fn execute_move_position(
     deps: DepsMut,
     env: &Env,
     info: MessageInfo,
@@ -715,7 +715,7 @@ mod tests {
         let upper_price = Decimal::from_str("100.20").unwrap();
         let max_slippage = Decimal::from_str("0.5").unwrap();
 
-        let res = super::execute_move_range(
+        let res = super::execute_move_position(
             deps.as_mut(),
             &env,
             info,
