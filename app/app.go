@@ -41,10 +41,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
-	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
@@ -53,10 +51,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
@@ -76,17 +72,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/keeper"
-	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
-	icahost "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host"
-	icahostkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
-	"github.com/cosmos/ibc-go/v7/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v7/modules/core"
-	ibcporttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	"github.com/quasarlabs/quasarnode/app/keepers"
@@ -97,25 +85,10 @@ import (
 
 	// Quasar imports
 	"github.com/quasarlabs/quasarnode/docs"
-	owasm "github.com/quasarlabs/quasarnode/wasmbinding"
-	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
-	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
-	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	qosmo "github.com/quasarlabs/quasarnode/x/qoracle/osmosis"
-	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
-	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/quasarlabs/quasarnode/x/qtransfer"
-	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
-	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
-	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
-	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
-	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 	"github.com/spf13/cast"
 )
@@ -244,7 +217,7 @@ func New(
 	appOpts servertypes.AppOptions,
 	// wasmEnabledProposals []wasm.ProposalType,
 	wasmEnabledProposals []wasmtypes.ProposalType,
-	wasmOpts []wasm.Option,
+	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *QuasarApp {
 	overrideWasmVariables()
@@ -272,7 +245,6 @@ func New(
 		invCheckPeriod:    invCheckPeriod,
 	}
 
-	callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.QTransferKeeper.GetQTransferAcc())
 	dataDir := filepath.Join(homePath, "data")
 	wasmDir := filepath.Join(homePath, "wasm")
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
@@ -308,242 +280,7 @@ func New(
 	)
 	// this line is used by starport scaffolding # stargate/app/scopedKeeper
 
-	// add keepers
-	// SDK47 Auth Keeper signature change.
-	/*
-		app.AccountKeeper = authkeeper.NewAccountKeeper(
-			appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
-		)
-	*/
-
-	// SDK47
-	/*
-		app.BankKeeper = bankkeeper.NewBaseKeeper(
-			appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedModuleAccountAddrs(),
-		)
-	*/
-
-	// ... other modules keepers
-
-	// todo - in sdk47 this seems to be not needed anymore
-	//if len(wasmEnabledProposals) != 0 {
-	//	govRouter.AddRoute(wasm.RouterKey, wasm.NewWasmProposalHandler(&app.WasmKeeper, wasmEnabledProposals))
-	//}
-
-	// IBC Modules & Keepers
-
-	// transferModule := transfer.NewAppModule(app.TransferKeeper)
-	// TODO_IMPORTANT
-	// transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
-	app.RawIcs20TransferAppModule = transfer.NewAppModule(app.TransferKeeper)
-	transferIbcModule := transfer.NewIBCModule(app.TransferKeeper)
-	// Hooks Middleware
-	hooksTransferModule := qtransfer.NewIBCMiddleware(&transferIbcModule, &app.HooksICS4Wrapper)
-	app.TransferStack = &hooksTransferModule
-
-	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
-		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.ScopedICAControllerKeeper, app.MsgServiceRouter(),
-	)
-	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec,
-		keys[icahosttypes.StoreKey],
-		app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeper, // ICS4Wrapper - SDK47
-		&app.IBCKeeper.PortKeeper,
-		app.AccountKeeper,
-		app.ScopedICAHostKeeper,
-		app.MsgServiceRouter(),
-	)
-
-	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
-
-	// icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, intergammIBCModule)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
-
-	// TODO AUDIT Above lines
-
-	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
-	evidenceKeeper := evidencekeeper.NewKeeper(
-		appCodec, keys[evidencetypes.StoreKey], app.StakingKeeper, app.SlashingKeeper,
-	)
-	// If evidence needs to be handled for the app, set routes in router here and seal
-	app.EvidenceKeeper = *evidenceKeeper
-
-	app.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, keys[epochsmoduletypes.StoreKey])
-	epochsModule := epochsmodule.NewAppModule(appCodec, app.EpochsKeeper)
-
-	app.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
-		appCodec,
-		keys[qoraclemoduletypes.StoreKey],
-		memKeys[qoraclemoduletypes.MemStoreKey],
-		tkeys[qoraclemoduletypes.TStoreKey],
-		app.GetSubspace(qoraclemoduletypes.ModuleName),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
-	app.QOsmosisKeeper = qosmokeeper.NewKeeper(
-		appCodec,
-		keys[qosmotypes.StoreKey],
-		app.GetSubspace(qosmotypes.SubModuleName),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		app.IBCKeeper.ClientKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.ScopedQOracleKeeper,
-		app.QOracleKeeper,
-	)
-	qosmoIBCModule := qosmo.NewIBCModule(app.QOsmosisKeeper)
-
-	app.QOracleKeeper.RegisterPoolOracle(app.QOsmosisKeeper)
-	app.QOracleKeeper.Seal()
-	qoracleModule := qoraclemodule.NewAppModule(appCodec, app.QOracleKeeper, app.QOsmosisKeeper)
-
-	app.QTransferKeeper = qtransferkeeper.NewKeeper(
-		appCodec,
-		keys[qtransfertypes.ModuleName],
-		app.GetSubspace(qtransfertypes.ModuleName),
-		app.AccountKeeper,
-	)
-	qtranserModule := qtransfer.NewAppModule(app.QTransferKeeper)
-
-	app.QVestingKeeper = *qvestingmodulekeeper.NewKeeper(
-		appCodec,
-		keys[qvestingmoduletypes.StoreKey],
-		keys[qvestingmoduletypes.MemStoreKey],
-		app.GetSubspace(qvestingmoduletypes.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-	)
-
-	qvestingModule := qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper)
-
-	// Authz
-	app.AuthzKeeper = authzkeeper.NewKeeper(
-		app.keys[authzkeeper.StoreKey],
-		appCodec,
-		bApp.MsgServiceRouter(),
-		app.AccountKeeper,
-	)
-
-	// Set epoch hooks
-	app.EpochsKeeper.SetHooks(
-		epochsmoduletypes.NewMultiEpochHooks(
-			app.QOsmosisKeeper.EpochHooks(),
-		),
-	)
-
-	/// Token factory Module
-	app.TfKeeper = tfkeeper.NewKeeper(keys[tftypes.StoreKey],
-		app.GetSubspace(tftypes.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.DistrKeeper,
-	)
-	tfModule := tfmodule.NewAppModule(app.TfKeeper,
-		app.AccountKeeper,
-		app.BankKeeper,
-	)
-
-	// create the wasm callback plugin
-	// TODO_IMPORTANT - CALL BACK ACCOUNT
-
-	// callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.OrionKeeper.GetOrionAcc())
-	// var tmpacc sdk.AccAddress
-	// callback := owasm.NewCallbackPlugin(&app.WasmKeeper, tmpacc)
-
-	callback := owasm.NewCallbackPlugin(&app.WasmKeeper, app.QTransferKeeper.GetQTransferAcc())
-	wasmDir := filepath.Join(homePath, "wasm")
-	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
-	if err != nil {
-		panic(fmt.Sprintf("error while reading wasm config: %s", err))
-	}
-
-	// AUDIT CHECK IS THIS TYPE ASSERTION FOR TYPE CASTING INTERFACE TO STRUCT SAFE?
-	tmpBankBaseKeeper := app.BankKeeper.(bankkeeper.BaseKeeper)
-
-	wasmOpts = append(wasmOpts, owasm.RegisterCustomPlugins(app.QOracleKeeper, &tmpBankBaseKeeper, callback)...)
-	wasmOpts = append(wasmOpts, tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &app.TfKeeper)...)
-
-	// The last arguments can contain custom message handlers, and custom query handlers,
-	// if we want to allow any custom callbacks
-	supportedFeatures := "iterator,staking,stargate"
-
-	app.WasmKeeper = wasmkeeper.NewKeeper(
-		appCodec,
-		app.keys[wasmtypes.StoreKey],
-		// app.GetSubspace(wasm.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		distrkeeper.NewQuerier(app.DistrKeeper),
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.ScopedWasmKeeper,
-		app.TransferKeeper,
-		app.MsgServiceRouter(),
-		app.GRPCQueryRouter(),
-		wasmDir,
-		wasmConfig,
-		supportedFeatures,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		wasmOpts...,
-	)
-
-	/*
-		// TODO_IMPORTANT - add qtransfer module
-		var decoratedTransferIBCModule ibcporttypes.IBCModule
-		decoratedTransferIBCModule = decorators.NewIBCTransferIntergammDecorator(
-			app.IntergammKeeper,
-			transferIbcModule,
-		)
-		decoratedTransferIBCModule = decorators.NewIBCTransferWasmDecorator(
-			&app.WasmKeeper,
-			decoratedTransferIBCModule,
-		)
-	*/
-	// Set Intergamm hooks
-
-	// IBC
-
-	// Osmosis
-
-	// this line is used by starport scaffolding # stargate/app/keeperDefinition
-
-	// Create static IBC router, add transfer route, then set and seal it
-	ibcRouter := ibcporttypes.NewRouter()
-
-	wasmHooks := qtransfer.NewWasmHooks(app.QTransferKeeper, app.WasmKeeper)
-	app.Ics20WasmHooks = &wasmHooks
-	app.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
-		app.IBCKeeper.ChannelKeeper,
-		app.Ics20WasmHooks,
-	)
-	// Register host and authentication routes
-	// TODO_IMPORTANT - addition of qtransfer module
-	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper))
-	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)).
-		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, app.TransferStack).
-		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
-		// AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
-		AddRoute(qosmotypes.SubModuleName, qosmoIBCModule)
-	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
-
-	/*
-		ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule).
-			AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper)).
-			AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-			AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
-			AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
-			AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
-	*/
-
-	app.IBCKeeper.SetRouter(ibcRouter)
+	// todo : continue on refactoring code after this
 
 	/****  Module Options ****/
 
@@ -791,7 +528,6 @@ func New(
 		}
 	}
 
-	// app.ScopedIntergammKeeper = scopedIntergammKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	fmt.Printf("APP TESTING - maccPerms=%v\n", maccPerms)
