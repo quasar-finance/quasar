@@ -16,6 +16,10 @@ pub enum Replies {
     RangeInitialCreatePosition,
     // create position in the modify range iteration step
     RangeIterationCreatePosition,
+    // create a new position from free funds
+    RangeNewCreatePosition,
+    // Add funds to a position
+    RangeAddToPosition,
     // swap
     Swap,
     /// Merge positions, used to merge positions

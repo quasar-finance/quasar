@@ -213,6 +213,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::RangeIterationCreatePosition => {
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
+        Replies::RangeNewCreatePosition => handle_range_new_create_position(deps, env, msg.result),
         Replies::RangeAddToPosition => handle_range_add_to_position_reply(deps, env, msg.result),
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
