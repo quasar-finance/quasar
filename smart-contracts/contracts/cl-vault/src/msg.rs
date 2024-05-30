@@ -6,7 +6,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     query::{
-        AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
+        AssetsBalanceResponse, PoolResponse, PositionsResponse, RangeAdminResponse,
         UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
@@ -82,28 +82,6 @@ pub enum AdminExtensionExecuteMsg {
 pub enum ModifyRange {
     /// Move the range of a current position
     MovePosition(MovePosition),
-    /// Increase the ratio a position has within the total positions of the vault
-    AddRatio {
-        /// the position_id of the position to change percentage of
-        position_id: u64,
-        /// The old percentage at which the position was set, this might be different from the actual current percentage
-        /// of that position due to IL
-        old_ratio: Uint128,
-        /// The new percentage to set the position at, Increasing requires free balance in the contract.
-        /// Decreasing generates free balance in the contract
-        new_ratio: Uint128,
-    },
-    /// Increase or Decrease which percentage of the vault a range is
-    LowerRatio {
-        /// the position_id of the position to change percentage of
-        position_id: u64,
-        /// The old percentage at which the position was set, this might be different from the actual current percentage
-        /// of that position due to IL
-        old_ratio: Uint128,
-        /// The new percentage to set the position at, Increasing requires free balance in the contract.
-        /// Decreasing generates free balance in the contract
-        new_ratio: Uint128,
-    },
     IncreaseFunds {
         position_id: u64,
         token0: Coin,
@@ -119,8 +97,8 @@ pub enum ModifyRange {
         lower_price: Decimal,
         /// The upper price of the new position
         upper_price: Decimal,
-        /// the ratio that this new position can take
-        ratio: Uint128,
+        /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
+        claim_after: Option<u64>,
     },
     DeletePosition {
         /// delete the position under position_id
@@ -130,6 +108,8 @@ pub enum ModifyRange {
 
 #[cw_serde]
 pub struct MovePosition {
+    /// the id of the position to move
+    pub position_id: u64,
     /// The new lower bound of the range, this is converted to an 18 precision digit decimal
     pub lower_price: Decimal,
     /// The new upper bound of the range, this is converted to an 18 precision digit decimal
@@ -149,6 +129,7 @@ pub struct MovePosition {
 #[cw_serde]
 pub struct MergePositionMsg {
     pub position_ids: Vec<u64>,
+    pub main_position: bool,
 }
 
 // struct used by swap.rs on swap non vault funds
@@ -191,8 +172,8 @@ pub enum ClQueryMsg {
     /// Get the underlying pool of the vault
     #[returns(PoolResponse)]
     Pool {},
-    #[returns(PositionResponse)]
-    Position {},
+    #[returns(PositionsResponse)]
+    Positions {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
