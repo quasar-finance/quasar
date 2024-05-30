@@ -13,11 +13,9 @@ use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool, query_positions, query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse
 };
 use crate::reply::Replies;
 #[allow(deprecated)]
@@ -131,9 +129,10 @@ pub fn execute(
                         claim_after,
                     )?,
                 ),
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_operations } => {
-                    execute_swap_non_vault_funds(deps, env, info, swap_operations)
-                }
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
+                    force_swap_route,
+                    swap_routes,
+                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -184,7 +183,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Position {} => Ok(to_json_binary(&query_position(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => Ok(to_json_binary(&query_positions(deps)?)?),
                 crate::msg::ClQueryMsg::RangeAdmin {} => {
                     let range_admin = get_range_admin(deps)?;
                     Ok(to_json_binary(&RangeAdminResponse {
@@ -214,6 +213,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::RangeIterationCreatePosition => {
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
+        Replies::RangeAddToPosition => handle_range_add_to_position_reply(deps, env, msg.result),
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
