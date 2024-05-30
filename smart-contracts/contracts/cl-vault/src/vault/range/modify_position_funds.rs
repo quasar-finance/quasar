@@ -8,78 +8,10 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
-    state::{Position, CURRENT_POSITION_ID, POOL_CONFIG, POSITIONS},
+    state::{CURRENT_POSITION_ID, MAIN_POSITION, POOL_CONFIG, POSITIONS},
     vault::concentrated_liquidity::{create_position, get_position, withdraw_from_position},
     ContractError,
 };
-
-/// increase the ratio that a position has in the vault for depositors
-pub fn add_ratio(
-    deps: DepsMut,
-    position_id: u64,
-    old_ratio: Uint128,
-    new_ratio: Uint128,
-) -> Result<Response, ContractError> {
-    // check that our exisiting position is what we are moving
-    let position = POSITIONS.load(deps.storage, position_id)?;
-    if position.ratio != old_ratio {
-        return Err(ContractError::BadOldRatio {
-            actual: old_ratio,
-            expected: position.ratio,
-        });
-    }
-
-    if old_ratio >= new_ratio {
-        // return error
-        return Err(ContractError::IncorrectRatioChange {});
-    }
-
-    // set and save the new ratio
-    POSITIONS.save(
-        deps.storage,
-        position.position_id,
-        &Position {
-            position_id,
-            ratio: new_ratio,
-        },
-    )?;
-
-    Ok(Response::new())
-}
-
-/// lower the ratio that a position has in the vault for depositors. To completely remove a position, use delete_position
-pub fn lower_ratio(
-    deps: DepsMut,
-    position_id: u64,
-    old_ratio: Uint128,
-    new_ratio: Uint128,
-) -> Result<Response, ContractError> {
-    // check that for sure our exisiting position is what we are moving
-    let position = POSITIONS.load(deps.storage, position_id)?;
-    if position.ratio != old_ratio {
-        return Err(ContractError::BadOldRatio {
-            actual: old_ratio,
-            expected: position.ratio,
-        });
-    }
-
-    if old_ratio <= new_ratio {
-        // return error
-        return Err(ContractError::IncorrectRatioChange {});
-    }
-
-    // set and save the new ratio
-    POSITIONS.save(
-        deps.storage,
-        position.position_id,
-        &Position {
-            position_id,
-            ratio: new_ratio,
-        },
-    )?;
-
-    Ok(Response::new())
-}
 
 /// increase the amount of funds in a position. These funds have to be part of the free funds
 /// Any refund is then again ignored
@@ -90,11 +22,11 @@ pub fn increase_position_funds(
     token0: Coin,
     token1: Coin,
 ) -> Result<Response, ContractError> {
+    let current_id = CURRENT_POSITION_ID.save(deps.storage, &position_id)?;
     let position = get_position(&deps.querier, position_id)?.position.unwrap();
-    CURRENT_POSITION_ID.save(deps.storage, &position.position_id)?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let unused_balances = get_unused_balances(deps.storage, &deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, &env)?;
     let (unused0, unused1) = get_one_or_two(&unused_balances.coins(), (pool.token0, pool.token1))?;
 
     if unused0.amount < token0.amount || unused1.amount < token1.amount {
@@ -127,15 +59,16 @@ pub fn handle_range_add_to_position_reply(
     let response: MsgCreatePositionResponse = result.try_into()?;
 
     let current_id = CURRENT_POSITION_ID.load(deps.storage)?;
-    let ratio = POSITIONS.load(deps.storage, current_id)?.ratio;
+
+    // create the main
+    let main_position = current_id == MAIN_POSITION.load(deps.storage)?;
 
     let merge_msg =
-        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::CallbackExecuteMsg(
-            crate::msg::CallbackExecuteMsg::Merge(MergePositionMsg {
+        ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
                 position_ids: vec![current_id, response.position_id],
-                ratio,
-            }),
-        ));
+                main_position,
+        })
+        );
 
     // merge the positions
     let msg = SubMsg::reply_on_success(
@@ -153,7 +86,7 @@ pub fn handle_range_add_to_position_reply(
 /// decrease the amount of funds in a position, these funds are returned to the vaults free balance.
 /// To completely withdraw a position, use delete position
 pub fn decrease_position_funds(
-    _deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     position_id: u64,
     liquidity: Decimal256,
