@@ -23,19 +23,47 @@ pub(crate) fn must_pay_one_or_two(
     if info.funds.len() != 2 && info.funds.len() != 1 {
         return Err(ContractError::IncorrectAmountFunds);
     }
+    
+    get_one_or_two(&info.funds, denoms)
+}
 
-    let token0 = info
-        .funds
-        .clone()
-        .into_iter()
+pub(crate) fn get_one_or_two_coins(
+    tokens: &[Coin],
+    denoms: (String, String),
+) -> Result<Vec<Coin>, ContractError> {
+    let (token0, token1) = get_one_or_two(tokens, denoms)?;
+
+    let mut tokens = vec![];
+
+    if token0.amount > Uint128::zero() {
+        tokens.push(token0)
+    }
+
+    if token1.amount > Uint128::zero() {
+        tokens.push(token1)
+    }
+
+    if tokens.is_empty() {
+        return Err(ContractError::IncorrectAmountFunds);
+    }
+
+    Ok(tokens)
+}
+
+pub(crate) fn get_one_or_two(
+    tokens: &[Coin],
+    denoms: (String, String),
+) -> Result<(Coin, Coin), ContractError> {
+    let token0 = tokens
+        .iter()
         .find(|coin| coin.denom == denoms.0)
+        .cloned()
         .unwrap_or(coin(0, denoms.0));
 
-    let token1 = info
-        .funds
-        .clone()
-        .into_iter()
+    let token1 = tokens
+        .iter()
         .find(|coin| coin.denom == denoms.1)
+        .cloned()
         .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
