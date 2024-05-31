@@ -3,7 +3,7 @@ use crate::{
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::{ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE},
+    state::{ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP, MAIN_POSITION, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE},
     vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
@@ -598,10 +598,14 @@ pub fn handle_iteration_create_position_reply(
         .target_range_position_ids
         .push(create_position_message.position_id);
 
+    let main = MAIN_POSITION.load(deps.storage)?;
+    let main_position = swap_deposit_merge_state.target_range_position_ids.iter().any(|p| p == &main);
+
     // call merge
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
+            main_position,
         }));
     // merge our position with the main position
     let merge_submsg = SubMsg::reply_on_success(
