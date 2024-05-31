@@ -86,23 +86,6 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
     }
 }
 
-pub fn _may_get_position(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    _env: &Env,
-) -> Result<Option<FullPositionBreakdown>, ContractError> {
-    let position = POSITION.may_load(storage)?;
-    if let Some(position) = position {
-        let cl_querier = ConcentratedliquidityQuerier::new(querier);
-        let position = cl_querier.position_by_id(position.position_id)?;
-        Ok(Some(
-            position.position.ok_or(ContractError::PositionNotFound)?,
-        ))
-    } else {
-        Ok(None)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
