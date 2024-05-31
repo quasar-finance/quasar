@@ -65,10 +65,9 @@ pub fn handle_range_add_to_position_reply(
 
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-                position_ids: vec![current_id, response.position_id],
-                main_position,
-        })
-        );
+            position_ids: vec![current_id, response.position_id],
+            main_position,
+        }));
 
     // merge the positions
     let msg = SubMsg::reply_on_success(

@@ -4,7 +4,10 @@ use cw_utils::nonpayable;
 use crate::{msg::ModifyRange, state::RANGE_ADMIN, ContractError};
 
 use super::{
-    create_position::create_new_position, delete_position::delete_position, modify_position_funds::{decrease_position_funds, increase_position_funds}, move_position::{self, execute_move_position}
+    create_position::create_new_position,
+    delete_position::delete_position,
+    modify_position_funds::{decrease_position_funds, increase_position_funds},
+    move_position::{self, execute_move_position},
 };
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
@@ -37,7 +40,7 @@ pub fn execute_update_range(
             msg.twap_window_seconds,
             msg.recommended_swap_route,
             msg.force_swap_route,
-            msg.claim_after
+            msg.claim_after,
         ),
         ModifyRange::IncreaseFunds {
             position_id,
