@@ -2,16 +2,15 @@ use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::state::{Position, DEX_ROUTER, POSITIONS};
-use crate::state::{
-    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, SHARES, VAULT_DENOM,
-};
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Order, StdError, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{ConcentratedliquidityQuerier, FullPositionBreakdown};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    ConcentratedliquidityQuerier, FullPositionBreakdown,
+};
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -214,40 +213,43 @@ pub fn query_user_balance(
     Ok(UserSharesBalanceResponse { balance })
 }
 
-/// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users
+/// query_total_assets returns all assets currently in positions and all
 pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, ContractError> {
-    let position = get_position(deps.storage, &deps.querier)?;
+    let positions = query_full_positions(deps)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
     let unused_balance = get_unused_balances(&deps.querier, &env)?;
 
-    // add token0 unused balance to what's in the position
-    let mut token0 = position
-        .asset0
-        .map(|c| c.try_into())
-        .transpose()?
-        .unwrap_or(coin(0, pool.token0));
+    // TODO would be nice to remove the unwraps here, although the unwraps are not awful since something is clearly
+    // terribly wrong if Osmosis returns non uints in the amounts field
+    let (amount0, amount1) = positions.positions.iter().fold(
+        (Uint128::zero(), Uint128::zero()),
+        |(acc0, acc1), fp| {
+            (
+                acc0 + fp
+                    .full_breakdown
+                    .asset0
+                    .map(|c| c.amount.parse().unwrap())
+                    .unwrap_or(Uint128::zero()),
+                acc1 + fp
+                    .full_breakdown
+                    .asset1
+                    .map(|c| c.amount.parse().unwrap())
+                    .unwrap_or(Uint128::zero()),
+            )
+        },
+    );
 
-    token0 = Coin {
-        denom: token0.denom.clone(),
-        amount: token0
-            .amount
-            .checked_add(unused_balance.find_coin(token0.denom).amount)?,
-    };
+    let free0 = deps
+        .querier
+        .query_balance(env.contract.address, pool.token0)?;
+    let free1 = deps
+        .querier
+        .query_balance(env.contract.address, pool.token1)?;
 
-    let mut token1 = position
-        .asset1
-        .map(|c| c.try_into())
-        .transpose()?
-        .unwrap_or(coin(0, pool.token1));
-
-    token1 = Coin {
-        denom: token1.denom.clone(),
-        amount: token1
-            .amount
-            .checked_add(unused_balance.find_coin(token1.denom).amount)?,
-    };
-
-    Ok(TotalAssetsResponse { token0, token1 })
+    Ok(TotalAssetsResponse {
+        token0: coin((amount0 + free0.amount).u128(), free0.denom),
+        token1: coin((amount0 + free0.amount).u128(), free1.denom),
+    })
 }
 
 pub fn query_total_vault_token_supply(
