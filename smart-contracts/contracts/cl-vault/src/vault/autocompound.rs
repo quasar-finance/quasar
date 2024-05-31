@@ -15,7 +15,7 @@ use crate::reply::Replies;
 use crate::rewards::CoinList;
 #[allow(deprecated)]
 use crate::state::USER_REWARDS;
-use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
+use crate::state::{MigrationStatus, MAIN_POSITION, MIGRATION_STATUS, POOL_CONFIG, POSITIONS};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
 
@@ -31,7 +31,7 @@ pub fn execute_autocompound(
     env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let position_state = POSITION.load(deps.storage)?;
+    let position_state = POSITIONS.load(deps.storage ,MAIN_POSITION.load(deps.storage)?)?;
 
     // If the position claim after timestamp is not reached yet, return an error
     if position_state.claim_after.is_some()
@@ -92,12 +92,13 @@ pub fn handle_autocompound_reply(
 ) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
 
-    // set claim after
-    let position_id = (POSITION.load(deps.storage)?).position_id;
+    let main_position = MAIN_POSITION.load(deps.storage)?;
+
     // call merge
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
-            position_ids: vec![position_id, create_position_message.position_id],
+            position_ids: vec![main_position, create_position_message.position_id],
+            main_position: true,
         }));
 
     Ok(Response::new()
