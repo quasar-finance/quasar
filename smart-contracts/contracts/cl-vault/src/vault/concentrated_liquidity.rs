@@ -48,15 +48,14 @@ pub fn create_position(
 
 // TODO verify that liquidity amount should be Decimal256
 pub fn withdraw_from_position(
-    storage: &dyn Storage,
     env: &Env,
+    position_id: u64,
     liquidity_amount: Decimal256,
 ) -> Result<MsgWithdrawPosition, ContractError> {
     let sender = env.contract.address.to_string();
-    let position = POSITION.load(storage)?;
 
     let withdraw_position = MsgWithdrawPosition {
-        position_id: position.position_id,
+        position_id,
         sender,
         liquidity_amount: liquidity_amount.atomics().to_string(),
     };
