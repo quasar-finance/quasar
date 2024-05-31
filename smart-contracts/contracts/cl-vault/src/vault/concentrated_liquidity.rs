@@ -88,7 +88,7 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
 #[cfg(test)]
 mod tests {
     use crate::{
-        state::{PoolConfig, Position},
+        state::{PoolConfig, Position, MAIN_POSITION, POSITIONS},
         test_helpers::QuasarQuerier,
     };
     use cosmwasm_std::{
@@ -180,9 +180,10 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        POSITION
-            .save(
+        MAIN_POSITION.save(deps.as_mut().storage, &position_id).unwrap();
+            POSITIONS.save(
                 deps.as_mut().storage,
+                position_id,
                 &Position {
                     position_id,
                     join_time: 0,
@@ -191,7 +192,7 @@ mod tests {
             )
             .unwrap();
 
-        let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
+        let result = withdraw_from_position(&env, position_id, liquidity_amount).unwrap();
 
         assert_eq!(
             result,
