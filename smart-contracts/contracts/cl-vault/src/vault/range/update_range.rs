@@ -51,8 +51,8 @@ pub fn execute_update_range(
         ModifyRange::CreatePosition {
             lower_price,
             upper_price,
-            ratio,
-        } => create_new_position(deps, env, lower_price, upper_price),
+            claim_after,
+        } => create_new_position(deps, env, lower_price, upper_price, claim_after),
         ModifyRange::DeletePosition { position_id } => delete_position(deps, env, position_id),
     }
 }
