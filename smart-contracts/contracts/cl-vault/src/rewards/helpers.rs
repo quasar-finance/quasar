@@ -1,14 +1,14 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
-    Response, SubMsg, Uint128,
+    coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction, Order,
+    Response, StdError, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
 };
 
-use crate::{helpers::sort_tokens, msg::ExecuteMsg, state::POSITION, ContractError};
+use crate::{helpers::sort_tokens, msg::ExecuteMsg, state::{Position, POSITIONS}, ContractError};
 
 /// Prepends a callback to the contract to claim any rewards, used to
 /// enforce the claiming of rewards before any action that might
@@ -35,23 +35,46 @@ fn prepend_msg(mut response: Response, msg: SubMsg) -> Response {
 pub fn get_collect_incentives_msg(
     deps: Deps,
     env: Env,
-) -> Result<MsgCollectIncentives, ContractError> {
-    let position = POSITION.load(deps.storage)?;
-    Ok(MsgCollectIncentives {
-        position_ids: vec![position.position_id],
-        sender: env.contract.address.into(),
-    })
+) -> Result<Vec<MsgCollectIncentives>, ContractError> {
+    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    
+    let msgs: Vec<MsgCollectIncentives> = positions?.iter()
+        .filter_map(|p| {
+            // TODO test this if statement correctly filters, also if there is no claim after set
+            if p.1.claim_after.unwrap_or(0) + env.block.time.seconds() > env.block.time.seconds() {
+                None
+            } else {
+                Some(MsgCollectIncentives {
+                    position_ids: vec![p.0],
+                    sender: env.contract.address.into(),
+                })
+            }
+        })
+        .collect();
+
+    Ok(msgs)
 }
 
-pub fn get_collect_spread_rewards_msg(
+/// Get collect_spread_reward messages for all open positions
+/// This dispatches one collect message per positon in order to
+/// ensure that each positions collected rewards are tracked seperately in different events
+pub fn get_collect_spread_rewards_msgs(
     deps: Deps,
     env: Env,
-) -> Result<MsgCollectSpreadRewards, ContractError> {
-    let position = POSITION.load(deps.storage)?;
-    Ok(MsgCollectSpreadRewards {
-        position_ids: vec![position.position_id],
-        sender: env.contract.address.into(),
-    })
+) -> Result<Vec<MsgCollectSpreadRewards>, ContractError> {
+    let msgs: Result<Vec<MsgCollectSpreadRewards>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|p| {
+            Ok(MsgCollectSpreadRewards {
+                position_ids: vec![p?.0],
+                sender: env.contract.address.into(),
+            })
+        })
+        .collect();
+
+    Ok(msgs?)
 }
 
 /// COIN LIST
