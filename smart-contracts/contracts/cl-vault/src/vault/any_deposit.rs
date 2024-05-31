@@ -13,10 +13,10 @@ use crate::helpers::getters::{
 use crate::helpers::msgs::swap_msg;
 use crate::query::query_total_vault_token_supply;
 use crate::reply::Replies;
-use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
+use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT, MAIN_POSITION};
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::range::SwapDirection;
-use crate::vault::swap::SwapParams;
+use crate::vault::range::move_position::SwapDirection;
+use crate::vault::swap::{swap_msg, SwapParams};
 use crate::{
     query::query_total_assets,
     state::{POOL_CONFIG, SHARES, VAULT_DENOM},
@@ -38,7 +38,8 @@ pub fn execute_any_deposit(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-    let position = get_position(deps.storage, &deps.querier)?
+    let main_position = MAIN_POSITION.load(deps.storage)?;
+    let position = get_position(&deps.querier, main_position)?
         .position
         .ok_or(ContractError::MissingPosition {})?;
 
