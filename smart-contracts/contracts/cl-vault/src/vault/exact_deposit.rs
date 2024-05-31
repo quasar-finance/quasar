@@ -119,9 +119,9 @@ mod tests {
         },
     };
 
-    use crate::helpers::get_depositable_tokens;
+    use crate::{helpers::get_depositable_tokens, state::{MAIN_POSITION, POSITIONS}};
     use crate::{
-        state::{Position, POSITION},
+        state::Position,
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };
 
@@ -277,30 +277,20 @@ mod tests {
         VAULT_DENOM
             .save(deps.as_mut().storage, &"money".to_string())
             .unwrap();
-        POSITION
+
+        let position_id = 1;
+        MAIN_POSITION.save(deps.as_mut().storage, &position_id).unwrap();
+        POSITIONS
             .save(
                 deps.as_mut().storage,
+                position_id,
                 &Position {
-                    position_id: 1,
+                    position_id,
                     join_time: 0,
                     claim_after: None,
                 },
             )
             .unwrap();
-
-        // STRATEGIST_REWARDS
-        //     .save(deps.as_mut().storage, &CoinList::new())
-        //     .unwrap();
-        // POOL_CONFIG
-        //     .save(
-        //         deps.as_mut().storage,
-        //         &PoolConfig {
-        //             pool_id: 1,
-        //             token0: "token0".to_string(),
-        //             token1: "token1".to_string(),
-        //         },
-        //     )
-        //     .unwrap();
 
         execute_exact_deposit(
             deps.as_mut(),
@@ -435,9 +425,12 @@ mod tests {
             ),
             custom_query_type: PhantomData,
         };
-        POSITION
+
+        MAIN_POSITION.save(deps.as_mut().storage, &position_id).unwrap();
+        POSITIONS
             .save(
                 deps.as_mut().storage,
+                position_id,
                 &Position {
                     position_id,
                     join_time: 0,
