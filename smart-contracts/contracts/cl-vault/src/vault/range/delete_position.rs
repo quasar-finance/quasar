@@ -12,7 +12,9 @@ pub fn delete_position(
     position_id: u64,
 ) -> Result<Response, ContractError> {
     if position_id == MAIN_POSITION.load(deps.storage)? {
-        return Err(ContractError::Std(StdError::generic_err("Cannot delete main position")));
+        return Err(ContractError::Std(StdError::generic_err(
+            "Cannot delete main position",
+        )));
     }
 
     // query the position

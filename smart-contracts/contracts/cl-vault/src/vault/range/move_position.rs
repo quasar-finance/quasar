@@ -1,9 +1,16 @@
 use crate::{
-    helpers::{extract_attribute_value_by_ty_and_key, get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances},
+    helpers::{
+        extract_attribute_value_by_ty_and_key, get_single_sided_deposit_0_to_1_swap_amount,
+        get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances,
+    },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::{ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP, MAIN_POSITION, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE},
+    state::{
+        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP,
+        MAIN_POSITION, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
+        SWAP_DEPOSIT_MERGE_STATE,
+    },
     vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
@@ -107,7 +114,6 @@ pub fn execute_move_range_ticks(
     modify_range_config: ModifyRangeState,
     claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
-
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
     // this will error if we dont have a position anyway
@@ -371,7 +377,7 @@ pub fn do_swap_deposit_merge(
                 claim_after: Some(modify_range_state.claim_after),
             },
         )?;
-        
+
         // cleanup
         SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
 
@@ -599,7 +605,10 @@ pub fn handle_iteration_create_position_reply(
         .push(create_position_message.position_id);
 
     let main = MAIN_POSITION.load(deps.storage)?;
-    let main_position = swap_deposit_merge_state.target_range_position_ids.iter().any(|p| p == &main);
+    let main_position = swap_deposit_merge_state
+        .target_range_position_ids
+        .iter()
+        .any(|p| p == &main);
 
     // call merge
     let merge_msg =

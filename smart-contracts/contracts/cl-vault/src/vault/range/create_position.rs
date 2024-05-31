@@ -3,7 +3,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositi
 
 use crate::{
     helpers::{get_one_or_two_coins, get_unused_balances},
-    math::tick::price_to_tick,  
+    math::tick::price_to_tick,
     reply::Replies,
     rewards::CoinList,
     state::{Position, CURRENT_CLAIM_AFTER, POOL_CONFIG, POSITIONS},
