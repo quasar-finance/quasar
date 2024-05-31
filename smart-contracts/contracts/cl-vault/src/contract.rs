@@ -2,6 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 
 use crate::error::ContractError;
 use crate::instantiate::{
@@ -18,7 +19,7 @@ use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
 };
-use crate::state::{Position, POSITION};
+use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
@@ -218,17 +219,87 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::Unknown => unimplemented!(),
     }
 }
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let old_position = POSITION.load(deps.storage)?;
+    let old_position = OLD_POSITION.load(deps.storage)?;
+
+    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+    let pos_response = cl_querier.position_by_id(old_position.position_id)?;
+
     let new_position: Position = Position {
         position_id: old_position.position_id,
-        join_time: 0,
-        claim_after: Some(0),
+        join_time: pos_response
+            .position
+            .unwrap()
+            .position
+            .unwrap()
+            .join_time
+            .unwrap()
+            .seconds
+            .unsigned_abs(),
+        claim_after: None,
     };
 
     POSITION.save(deps.storage, &new_position)?;
 
-    Ok(Response::new().add_attribute("migrate", "succesful"))
+    OLD_POSITION.remove(deps.storage);
+
+    Ok(Response::new().add_attribute("migrate", "successful"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MigrateMsg;
+    use crate::{
+        state::{OldPosition, Position, OLD_POSITION, POSITION},
+        ContractError,
+    };
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        DepsMut, Env, Response,
+    };
+
+    pub fn mock_migrate(
+        deps: DepsMut,
+        _env: Env,
+        _msg: MigrateMsg,
+    ) -> Result<Response, ContractError> {
+        let old_position = OLD_POSITION.load(deps.storage)?;
+
+        let new_position: Position = Position {
+            position_id: old_position.position_id,
+            join_time: 0,
+            claim_after: None,
+        };
+
+        POSITION.save(deps.storage, &new_position)?;
+
+        OLD_POSITION.remove(deps.storage);
+
+        Ok(Response::new().add_attribute("migrate", "successful"))
+    }
+
+    #[test]
+    fn test_migrate() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        OLD_POSITION
+            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
+            .unwrap();
+
+        let migrate_result = mock_migrate(deps.as_mut(), env, MigrateMsg {});
+        assert!(migrate_result.is_ok());
+
+        let loaded_position = POSITION.load(deps.as_mut().storage);
+        assert!(loaded_position.is_ok());
+
+        let position = loaded_position.unwrap();
+        assert_eq!(position.position_id, 1);
+        assert_eq!(position.join_time, 0);
+        assert!(position.claim_after.is_none());
+
+        let old_position = OLD_POSITION.may_load(deps.as_mut().storage);
+        assert!(old_position.unwrap().is_none());
+    }
 }
