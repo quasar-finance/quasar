@@ -8,7 +8,12 @@ use osmosis_std::types::{
     osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
 };
 
-use crate::{helpers::sort_tokens, msg::ExecuteMsg, state::{Position, POSITIONS}, ContractError};
+use crate::{
+    helpers::sort_tokens,
+    msg::ExecuteMsg,
+    state::{Position, POSITIONS},
+    ContractError,
+};
 
 /// Prepends a callback to the contract to claim any rewards, used to
 /// enforce the claiming of rewards before any action that might
@@ -39,8 +44,9 @@ pub fn get_collect_incentives_msg(
     let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
-    
-    let msgs: Vec<MsgCollectIncentives> = positions?.iter()
+
+    let msgs: Vec<MsgCollectIncentives> = positions?
+        .iter()
         .filter_map(|p| {
             // TODO test this if statement correctly filters, also if there is no claim after set
             if p.1.claim_after.unwrap_or(0) + env.block.time.seconds() > env.block.time.seconds() {
