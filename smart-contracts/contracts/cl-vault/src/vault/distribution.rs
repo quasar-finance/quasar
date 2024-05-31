@@ -1,7 +1,7 @@
 use cosmwasm_std::{BankMsg, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
+    MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards, MsgCollectSpreadRewardsResponse
 };
 
 use crate::helpers::coinlist::CoinList;
@@ -22,10 +22,8 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "collect_rewards")
-        .add_submessage(SubMsg::reply_on_success(
-            msg,
-            Replies::CollectSpreadRewards as u64,
-        )))
+        .add_submessages(spread_rewards)
+        .add_submessages(incentives))
 }
 
 pub fn handle_collect_spread_rewards_reply(
