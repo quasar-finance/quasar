@@ -193,6 +193,13 @@ impl CoinList {
         sort_tokens(self.0.clone())
     }
 
+    pub fn coins_only_positive(&self) -> Vec<Coin> {
+        sort_tokens(self.0.clone())
+            .into_iter()
+            .filter(|c| c.amount > Uint128::zero())
+            .collect()
+    }
+
     pub fn from_coins(coins: Vec<Coin>) -> Self {
         CoinList(coins)
     }
@@ -214,6 +221,60 @@ mod tests {
     use cosmwasm_std::{testing::mock_env, Uint128};
 
     use super::*;
+
+    #[test]
+    fn coins_works() {
+        let mut rewards = CoinList::new();
+        rewards
+            .update_rewards(&vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "uatom".into(),
+                    amount: "0".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+
+        let positive_coins = rewards.coins();
+        assert_eq!(
+            positive_coins,
+            vec![coin(0, "uatom"), coin(1000, "uosmo"), coin(3000, "uqsr"),]
+        );
+    }
+
+    #[test]
+    fn coins_only_positive_works() {
+        let mut rewards = CoinList::new();
+        rewards
+            .update_rewards(&vec![
+                OsmoCoin {
+                    denom: "uosmo".into(),
+                    amount: "1000".into(),
+                },
+                OsmoCoin {
+                    denom: "uatom".into(),
+                    amount: "0".into(),
+                },
+                OsmoCoin {
+                    denom: "uqsr".into(),
+                    amount: "3000".into(),
+                },
+            ])
+            .unwrap();
+
+        let positive_coins = rewards.coins_only_positive();
+        assert_eq!(
+            positive_coins,
+            vec![coin(1000, "uosmo"), coin(3000, "uqsr"),]
+        );
+    }
 
     #[test]
     fn test_prepend_msg_with_empty_response() {
