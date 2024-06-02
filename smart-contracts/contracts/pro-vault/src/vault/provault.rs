@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, ensure, ensure_eq, Addr, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError,
-    StdResult, Binary, to_json_binary, Storage};
+    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult, Storage};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use cosmwasm_schema::cw_serde;
@@ -8,9 +8,8 @@ use cosmwasm_schema::cw_serde;
 use serde::{Serialize,Deserialize};
 use schemars::JsonSchema;
 
-use crate::vault::query::{VaultRunningStateResponse, StrategyInfoResponse};
 use crate::error::ContractError;
-use crate::strategy::strategy::{Strategy, STRATEGY, StrategyAction, StrategyKey}; 
+use crate::strategy::strategy::{Strategy, STRATEGY, StrategyKey}; 
 use crate::ownership::ownership::{OwnerProposal, Ownership, query_owner, query_ownership_proposal, 
     handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection};
 
@@ -89,12 +88,30 @@ impl Vault {
             .add_attribute("last_statechange_bh", self.last_statechange_bh.to_string()))
     }
 
+    
+    fn update_state_internal(
+        &mut self,
+        storage: &mut dyn Storage,
+        new_state: VaultRunningState, 
+        bh:u64) -> Result<Response, ContractError> {
+            self.state = new_state;
+            self.last_statechange_bh = bh;
+            // Save the updated state
+            
+            VAULT_STATE.save(storage, self)?;
+            Ok(Response::new()
+            .add_attribute("action", "update_state")
+            .add_attribute("new_state", format!("{:?}", self.state))
+            .add_attribute("last_statechange_bh", self.last_statechange_bh.to_string()))
+    }
+     
+    // TODO - env to be also provided for block height
     pub fn execute_action(storage: &mut dyn Storage, action: VaultAction) -> StdResult<()> {
         match action {
             VaultAction::CreateStrategy { name, description } => {
                 todo!();
                 // try_create_strategy(deps, env, info, name, description)
-                Self::try_create_strategy_2(storage, name, description);
+                let _ = Self::try_create_strategy_2(storage, name, description);
 
             }
             VaultAction::UpdateRunningState { new_state } => {
@@ -113,7 +130,7 @@ impl Vault {
         deps: DepsMut, env: Env, info: MessageInfo, new_state: VaultRunningState) 
         -> Result<Response, ContractError> {
         let mut vault = VAULT_STATE.load(deps.storage)?;
-        vault.update_state(deps, env, info, new_state);
+        let _ = vault.update_state(deps, env, info, new_state);
     
         Ok(Response::new()
             .add_attribute("method", "try_update_running_state"))

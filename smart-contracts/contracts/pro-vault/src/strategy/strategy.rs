@@ -1,13 +1,9 @@
-use cosmwasm_std::{DepsMut, StdResult, Storage, Addr};
+use cosmwasm_std::{StdResult, Storage, Addr};
 use serde::{Serialize,Deserialize};
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::{Map};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::Uint128;
-use schemars::JsonSchema;
-
 
 const ADAPTERS: Map<&str, bool> = Map::new("adapters");
-const PRESET_RATIOS: Map<&str, u128> = Map::new("preset_ratios"); // TODO
 pub const STRATEGY: Map<&[u8], Strategy> = Map::new("strategy");
 
 // Strategy Key 

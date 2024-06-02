@@ -1,10 +1,7 @@
-use crate::msg::InstantiateMsg;
-use cosmwasm_schema::cw_serde;
-use serde::{de::DeserializeOwned, Serialize, Deserialize};
+use serde::{Serialize, Deserialize};
 use schemars::JsonSchema;
 use cw_storage_plus::Item;
-use cosmwasm_std::{Deps, StdResult, Binary, to_json_binary};
-use cosmwasm_std::{DepsMut, Uint128, Uint64};
+use cosmwasm_std::{Uint128, Uint64};
 
 pub const VAULT_CONFIG: Item<Config> = Item::new("vault_config");
 

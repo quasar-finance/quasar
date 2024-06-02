@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, StdResult, Binary, to_binary, to_json_binary};
+use cosmwasm_std::{Deps, StdResult, Binary, to_json_binary};
 use crate::vault::config::{Config, VAULT_CONFIG, VaultConfigResponse};
 use crate::vault::provault::{VaultRunningState, VAULT_STATE};
 use cosmwasm_schema::cw_serde;
@@ -11,22 +11,7 @@ pub enum VaultQueryMsg {
     GetVaultConfig {},
     GetVaultRunningState {},
 }
-
-/* 
-pub fn query_vault_config(deps: Deps) -> StdResult<Binary> {
-    let config = VAULT_CONFIG.load(deps.storage)?;
-    to_binary(&config)
-}
-*/
-
-/* 
-pub fn query_vault_running_state(deps: Deps) -> StdResult<Binary> {
-    let state = VAULT_STATE.load(deps.storage)?;
-    to_binary(&state)
-}
-*/
-
-
+ 
 pub fn query_vault_config(deps: Deps) -> StdResult<Binary> {
     let config = VAULT_CONFIG.load(deps.storage)?;
     to_json_binary(&VaultConfigResponse {

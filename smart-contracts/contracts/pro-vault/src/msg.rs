@@ -1,9 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
-use cosmwasm_std::Uint128;
-use crate::vault::provault::{VaultRunningState, VaultAction};
+use crate::vault::provault::VaultAction;
 use crate::vault::config::Config;
-use crate::strategy::strategy::{Strategy, StrategyKey, StrategyAction}; 
+use crate::strategy::strategy::StrategyAction; 
 use serde::{Serialize, Deserialize};
 use crate::vault::query::VaultQueryMsg; 
 
@@ -30,21 +29,6 @@ pub struct MigrateMsg {}
 
 #[cw_serde]
 pub enum ProExtensionExecuteMsg {
-    MyVariant1 {
-        amount: Uint128,
-        recipient: Option<String>,
-    },
-    /*
-    UpdateRunningState {
-        new_state: VaultRunningState,
-    },
-    UpdateVaultOwner {},
-    UpdateStrategyOwner {},
-    CreateStrategy {
-        name: String,
-        description: String,
-    },
-    */
     ExecVaultActions {
         action: VaultAction,
     }, 

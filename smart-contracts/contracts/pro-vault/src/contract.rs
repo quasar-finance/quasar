@@ -4,7 +4,7 @@ use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg};
 use crate::msg::ProExtensionExecuteMsg;
 use crate::msg::ExtensionExecuteMsg;
 
-use crate::strategy::strategy::{Strategy, StrategyKey, STRATEGY, StrategyAction};
+use crate::strategy::strategy::{Strategy, StrategyAction};
 
 use crate::vault::provault::{VaultRunningState, VAULT_STATE, VAULT_OWNER, Vault, VaultAction};
 use crate::vault::config::{VAULT_CONFIG, Config};
@@ -13,7 +13,7 @@ use crate::vault::query::{VaultQueryMsg, query_vault_config,
 
 use cosmwasm_std::{
     entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, 
-    StdResult, StdError,to_json_binary,Coin, Uint128, BankMsg,CosmosMsg, Storage
+    StdResult, StdError, Uint128, BankMsg,CosmosMsg,
     };
   
 // TODO - 
@@ -30,30 +30,18 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
 
     match msg {
+        // TODO - Error Handling and propagation.
         ExecuteMsg::Deposit { amount, recipient } => { 
-            try_deposit(deps, env, info, amount, recipient);},
+            let _ = try_deposit(deps, env, info, amount, recipient);},
         ExecuteMsg::Redeem { recipient, amount } => todo!(),
         ExecuteMsg::VaultExtension(extension_msg) => {
             match extension_msg {
                  ExtensionExecuteMsg::ProExtension(pro_msg) => {
                     match pro_msg {
-                        // MyVariant1 is a test one.
-                        ProExtensionExecuteMsg::MyVariant1{amount, recipient} => {
-                            try_my_variant1(deps, amount, recipient);},
-                        /* 
-                        ProExtensionExecuteMsg::CreateStrategy{name,description} => {
-                            try_create_strategy(deps, env, info, name, description); },
-                        ProExtensionExecuteMsg::UpdateRunningState{new_state} => {
-                            try_update_running_state(deps, env, info, new_state); },
-                        ProExtensionExecuteMsg::UpdateStrategyOwner{} => { 
-                            try_update_strategy_owner(deps); },
-                        ProExtensionExecuteMsg::UpdateVaultOwner{} => { 
-                            try_update_vault_owner(deps); },
-                        */
                         ProExtensionExecuteMsg::ExecVaultActions { action } => {
-                            try_exec_vault_actions(deps, action); }
+                            let _ = try_exec_vault_actions(deps, action); }
                         ProExtensionExecuteMsg::ExecStrategyActions{action} => { 
-                            try_exec_strategy_actions(deps, action); }
+                            let _ = try_exec_strategy_actions(deps, action); }
                     }
                 }
                 // Handle other possible ExtensionExecuteMsg variants here
@@ -138,21 +126,11 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
 }
 
 
-fn try_my_variant1(
-    deps: DepsMut,
-    amount: cosmwasm_std::Uint128,
-    recipient: Option<String>,
-) -> Result<Response, ContractError> {
-    // Implementation for MyVariant1
-    Ok(Response::new()
-        .add_attribute("method", "try_my_variant1"))
-}
-
 fn try_update_running_state(
     deps: DepsMut, env: Env, info: MessageInfo, new_state: VaultRunningState) 
     -> Result<Response, ContractError> {
     let mut vault = VAULT_STATE.load(deps.storage)?;
-    vault.update_state(deps, env, info, new_state);
+    let _ = vault.update_state(deps, env, info, new_state);
 
     Ok(Response::new()
         .add_attribute("method", "try_update_running_state"))
@@ -178,16 +156,10 @@ fn try_deposit(
         return Err(ContractError::Std(StdError::generic_err("Incorrect denom")));
     }
 
-    // Construct the bank message to transfer the funds to the contract's address
-    let bank_msg = BankMsg::Send {
-        to_address: env.contract.address.to_string(),
-        amount: vec![info.funds[0].clone()],
-    };
 
     // TODO - share calculation and allocation to be done on reply handler on successful deposit. 
 
     Ok(Response::new()
-        .add_message(CosmosMsg::Bank(bank_msg))
         .add_attribute("method", "try_deposit")
         .add_attribute("amount", amount.to_string())
         .add_attribute("sender", info.sender.to_string())
