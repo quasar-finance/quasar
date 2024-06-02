@@ -29,4 +29,16 @@ pub enum ContractError {
 
     #[error("{0}")]
     AdminError(#[from] AdminError),
+
+    #[error("Failed to set vault owner: {0}")]
+    SetVaultOwnerError(String),
+
+    #[error("Failed to save config: {0}")]
+    SaveConfigError(String),
+
+    #[error("Failed to update vault state: {0}")]
+    UpdateVaultStateError(String),
+
+    #[error("Admin and Vault Owner mismatch")]
+    AdminVaultOwnerMismatch {},
 }
