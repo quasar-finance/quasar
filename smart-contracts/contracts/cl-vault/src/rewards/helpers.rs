@@ -191,10 +191,6 @@ impl CoinList {
 
     pub fn coins(&self) -> Vec<Coin> {
         sort_tokens(self.0.clone())
-    }
-
-    pub fn coins_only_positive(&self) -> Vec<Coin> {
-        sort_tokens(self.0.clone())
             .into_iter()
             .filter(|c| c.amount > Uint128::zero())
             .collect()
@@ -233,7 +229,7 @@ mod tests {
                 },
                 OsmoCoin {
                     denom: "uatom".into(),
-                    amount: "0".into(),
+                    amount: "10".into(),
                 },
                 OsmoCoin {
                     denom: "uqsr".into(),
@@ -245,7 +241,7 @@ mod tests {
         let positive_coins = rewards.coins();
         assert_eq!(
             positive_coins,
-            vec![coin(0, "uatom"), coin(1000, "uosmo"), coin(3000, "uqsr"),]
+            vec![coin(10, "uatom"), coin(1000, "uosmo"), coin(3000, "uqsr"),]
         );
     }
 
@@ -269,7 +265,7 @@ mod tests {
             ])
             .unwrap();
 
-        let positive_coins = rewards.coins_only_positive();
+        let positive_coins = rewards.coins();
         assert_eq!(
             positive_coins,
             vec![coin(1000, "uosmo"), coin(3000, "uqsr"),]

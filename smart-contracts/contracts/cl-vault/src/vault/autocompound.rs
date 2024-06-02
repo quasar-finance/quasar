@@ -144,7 +144,7 @@ pub fn execute_migration_step(
         addresses.push(address.clone());
         outputs.push(Output {
             address: address.to_string(),
-            coins: cosmwasm_to_proto_coins(rewards.coins_only_positive().iter().cloned()),
+            coins: cosmwasm_to_proto_coins(rewards.coins().iter().cloned()),
         });
         total_amount.add(rewards)?;
     }
