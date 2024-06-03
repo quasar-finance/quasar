@@ -32,50 +32,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
-	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-
 	"github.com/cosmos/cosmos-sdk/x/crisis"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/x/params"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v7/modules/core"
-	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/openapiconsole"
@@ -85,11 +53,6 @@ import (
 
 	// Quasar imports
 	"github.com/quasarlabs/quasarnode/docs"
-	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
-	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 	"github.com/spf13/cast"
 )
 
@@ -120,10 +83,10 @@ var (
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
-	ModuleBasics = module.NewBasicManager(keepers.AppModuleBasics...)
+	ModuleBasics = module.NewBasicManager(AppModuleBasics...)
 
 	// module account permissions
-	maccPerms = moduleAccountPermissions
+	maccPerms = ModuleAccountPermissions
 
 	Upgrades = []upgrades.Upgrade{v0.Upgrade, v2.Upgrade}
 )
@@ -270,7 +233,7 @@ func New(
 		appCodec,
 		encodingConfig,
 		bApp,
-		moduleAccountPermissions,
+		maccPerms,
 		dataDir,
 		wasmDir,
 		wasmConfig,
@@ -278,160 +241,34 @@ func New(
 		app.BlockedModuleAccountAddrs(),
 		ibcWasmConfig,
 	)
-	// this line is used by starport scaffolding # stargate/app/scopedKeeper
-
-	// todo : continue on refactoring code after this
 
 	/****  Module Options ****/
 
-	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
-	// we prefer to be more strict in what arguments the modules expect.
-	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
-
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-
-	app.mm = module.NewManager(
-		genutil.NewAppModule(
-			app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx,
-			encodingConfig.TxConfig,
-		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
-		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
-		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		crisis.NewAppModule(app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
-		ibc.NewAppModule(app.IBCKeeper),
-		params.NewAppModule(app.ParamsKeeper),
-		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
-		app.RawIcs20TransferAppModule,
-		epochsModule,
-		qoracleModule,
-		qtranserModule,
-		icaModule,
-
-		tfModule,
-
-		qvestingModule,
-		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		// this line is used by starport scaffolding # stargate/app/appModule
-	)
+	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+	app.mm = module.NewManager(appModules(app, encodingConfig, skipGenesisInvariants)...)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
-	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName,
-		epochsmoduletypes.ModuleName,
-		capabilitytypes.ModuleName,
-		minttypes.ModuleName,
-		distrtypes.ModuleName,
-		slashingtypes.ModuleName,
-		evidencetypes.ModuleName,
-		stakingtypes.ModuleName,
-		ibchost.ModuleName,
-		feegrant.ModuleName,
-		// TODO check the order of the below
-		vestingtypes.ModuleName,
-		icatypes.ModuleName,
-		ibctransfertypes.ModuleName,
-		genutiltypes.ModuleName,
-		banktypes.ModuleName,
-		govtypes.ModuleName,
-		qoraclemoduletypes.ModuleName,
-		qtransfertypes.ModuleName,
-		crisistypes.ModuleName,
-		paramstypes.ModuleName,
-		authtypes.ModuleName,
-		wasmtypes.ModuleName,
+	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
+	// Tell the app's module manager how to set the order of BeginBlockers, which are run at the beginning of every block.
+	app.mm.SetOrderBeginBlockers(orderBeginBlockers()...)
 
-		tftypes.ModuleName,
-
-		qvestingmoduletypes.ModuleName,
-		authztypes.ModuleName,
-	)
-
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName,
-		govtypes.ModuleName,
-		stakingtypes.ModuleName,
-		qoraclemoduletypes.ModuleName,
-		qtransfertypes.ModuleName,
-		// TODO check the order of the below
-		evidencetypes.ModuleName,
-		ibchost.ModuleName,
-		feegrant.ModuleName,
-		minttypes.ModuleName,
-		slashingtypes.ModuleName,
-		ibctransfertypes.ModuleName,
-		vestingtypes.ModuleName,
-		capabilitytypes.ModuleName,
-		upgradetypes.ModuleName,
-		paramstypes.ModuleName,
-		authtypes.ModuleName,
-		banktypes.ModuleName,
-		distrtypes.ModuleName,
-		icatypes.ModuleName,
-		genutiltypes.ModuleName,
-		epochsmoduletypes.ModuleName,
-		wasmtypes.ModuleName,
-
-		tftypes.ModuleName,
-
-		qvestingmoduletypes.ModuleName,
-		authztypes.ModuleName,
-	)
+	app.mm.SetOrderEndBlockers(orderEndBlockers()...)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
+	// NOTE: The genutils module must also occur after auth so that it can access the params from auth.
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
-	// NOTE: wasm module should be at the end as it can call other module functionality direct or via message dispatching during
-	// genesis phase. For example bank transfer, auth account check, staking, ...
-	app.mm.SetOrderInitGenesis(
-		capabilitytypes.ModuleName,
-		authtypes.ModuleName,
-		banktypes.ModuleName,
-		distrtypes.ModuleName,
-		stakingtypes.ModuleName,
-		slashingtypes.ModuleName,
-		govtypes.ModuleName,
-		minttypes.ModuleName,
-		crisistypes.ModuleName,
-		ibchost.ModuleName,
-		genutiltypes.ModuleName,
-		evidencetypes.ModuleName,
-		ibctransfertypes.ModuleName,
-		qoraclemoduletypes.ModuleName,
-		icatypes.ModuleName,
-		// TODO check the order of the below
-		vestingtypes.ModuleName,
-		feegrant.ModuleName,
-		upgradetypes.ModuleName,
-		paramstypes.ModuleName,
-		epochsmoduletypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/initGenesis
-		// wasm after ibc transfer
-		wasmtypes.ModuleName,
-		qtransfertypes.ModuleName,
-		tftypes.ModuleName,
-
-		qvestingmoduletypes.ModuleName,
-		authztypes.ModuleName,
-	)
+	app.mm.SetOrderInitGenesis(orderInitBlockers()...)
 
 	app.mm.RegisterInvariants(app.CrisisKeeper)
-	// TODO - SDK47
-	// app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
 
@@ -445,6 +282,7 @@ func New(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
+	// todo : write upgrade handler
 	app.setupUpgradeHandlers()
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
@@ -486,9 +324,9 @@ func New(
 	app.sm.RegisterStoreDecoders()
 	*/
 	// initialize stores
-	app.MountKVStores(keys)
-	app.MountTransientStores(tkeys)
-	app.MountMemoryStores(memKeys)
+	app.MountKVStores(app.GetKVStoreKey())
+	app.MountTransientStores(app.GetTransientStoreKey())
+	app.MountMemoryStores(app.GetMemoryStoreKey())
 
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)

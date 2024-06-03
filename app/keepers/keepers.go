@@ -41,6 +41,7 @@ import (
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
+	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/keeper"
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
@@ -111,6 +112,7 @@ type AppKeepers struct {
 	IBCKeeper           *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper      evidencekeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
+	IBCWasmClientKeeper *ibcwasmkeeper.Keeper
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	WasmKeeper          *wasmkeeper.Keeper
 	QTransferKeeper     qtransferkeeper.Keeper
@@ -188,7 +190,7 @@ func (appKeepers *AppKeepers) InitSpecialKeepers(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String())
 }
 
-// InitNormalKeepers initializes all 'normal' keepers (account, app, bank, auth, staking, distribution, slashing, transfer, gamm, IBC router, pool incentives, governance, mint, txfees keepers).
+// InitNormalKeepers initializes all 'normal' keepers (account, app, bank, auth, staking, distribution, slashing, transfer, IBC router, governance, mint keepers).
 func (appKeepers *AppKeepers) InitNormalKeepers(
 	appCodec codec.Codec,
 	encodingConfig appparams.EncodingConfig,
@@ -287,6 +289,17 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.ScopedIBCKeeper,
 	)
 
+	ibcWasmClientKeeper := ibcwasmkeeper.NewKeeperWithConfig(
+		appCodec,
+		appKeepers.keys[ibcwasmtypes.StoreKey],
+		appKeepers.IBCKeeper.ClientKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		ibcWasmConfig,
+		bApp.GRPCQueryRouter(),
+	)
+
+	appKeepers.IBCWasmClientKeeper = &ibcWasmClientKeeper
+
 	transferKeeper := ibctransferkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[ibctransfertypes.StoreKey],
@@ -327,7 +340,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		bApp.MsgServiceRouter(),
 	)
 
-	//icaModule := ica.NewAppModule(&appKeepers.ICAControllerKeeper, &appKeepers.ICAHostKeeper)
+	//icaModule :=
 	//
 	//icaHostIBCModule := icahost.NewIBCModule(appKeepers.ICAHostKeeper)
 
@@ -365,9 +378,9 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	)
 
 	appKeepers.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, appKeepers.keys[epochsmoduletypes.StoreKey])
-	//epochsModule := epochsmodule.NewAppModule(appCodec, appKeepers.EpochsKeeper)
+	//epochsModule :=
 
-	//qoracleModule := qoraclemodule.NewAppModule(appCodec, appKeepers.QOracleKeeper, appKeepers.QOsmosisKeeper)
+	//qoracleModule :=
 
 	appKeepers.QTransferKeeper = qtransferkeeper.NewKeeper(
 		appCodec,
@@ -375,7 +388,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.GetSubspace(qtransfertypes.ModuleName),
 		appKeepers.AccountKeeper,
 	)
-	//qtranserModule := qtransfer.NewAppModule(app.QTransferKeeper)
+	//qtranserModule :=
 
 	appKeepers.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
 		appCodec,
@@ -421,7 +434,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.BankKeeper,
 	)
 
-	//qvestingModule := qvestingmodule.NewAppModule(appCodec, appKeepers.QVestingKeeper, appKeepers.AccountKeeper, appKeepers.BankKeeper)
+	//qvestingModule :=
 
 	// Authz
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
@@ -496,13 +509,10 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	// Register host and authentication routes
 	// TODO_IMPORTANT - addition of qtransfer module
-	// TODO_IMPORTANT - CROSS VERIFY wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper))
 	ibcRouter.
 		AddRoute(wasmtypes.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
 		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(appKeepers.ICAHostKeeper)).
 		AddRoute(ibctransfertypes.ModuleName, appKeepers.TransferStack).
-		// AddRoute(ibctransfertypes.ModuleName, decoratedTransferIBCModule).
-		// AddRoute(intergammmoduletypes.ModuleName, icaControllerIBCModule).
 		AddRoute(qosmotypes.SubModuleName, qosmo.NewIBCModule(appKeepers.QOsmosisKeeper))
 	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 
@@ -563,6 +573,7 @@ func KVStoreKeys() []string {
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		icqtypes.StoreKey,
+		ibcwasmtypes.StoreKey,
 		wasmtypes.StoreKey,
 		qtransfertypes.StoreKey,
 		tftypes.StoreKey,

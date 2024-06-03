@@ -5,6 +5,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
+	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
+	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
@@ -14,17 +18,9 @@ import (
 	//"github.com/osmosis-labs/osmosis/v20/app/upgrades"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
-	// SDK v47 modules
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
@@ -45,23 +41,6 @@ func CreateUpgradeHandler(
 
 			var keyTable paramstypes.KeyTable
 			switch subspace.Name() {
-			// sdk
-			case authtypes.ModuleName:
-				keyTable = authtypes.ParamKeyTable() //nolint:staticcheck
-			case banktypes.ModuleName:
-				keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
-			case stakingtypes.ModuleName:
-				keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
-			case minttypes.ModuleName:
-				keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
-			case distrtypes.ModuleName:
-				keyTable = distrtypes.ParamKeyTable() //nolint:staticcheck
-			case slashingtypes.ModuleName:
-				keyTable = slashingtypes.ParamKeyTable() //nolint:staticcheck
-			case govtypes.ModuleName:
-				keyTable = govv1.ParamKeyTable() //nolint:staticcheck
-			case crisistypes.ModuleName:
-				keyTable = crisistypes.ParamKeyTable() //nolint:staticcheck
 
 			// ibc types
 			case ibctransfertypes.ModuleName:
@@ -74,6 +53,17 @@ func CreateUpgradeHandler(
 			// wasm
 			case wasmtypes.ModuleName:
 				keyTable = wasmtypes.ParamKeyTable() //nolint:staticcheck
+
+			// quasar
+			case qoraclemoduletypes.ModuleName:
+				keyTable = qoraclemoduletypes.ParamKeyTable()
+			case qosmotypes.SubModuleName:
+				keyTable = qosmotypes.ParamKeyTable()
+			case qtransfertypes.ModuleName:
+				keyTable = qtransfertypes.ParamKeyTable()
+			case tftypes.ModuleName:
+				keyTable = tftypes.ParamKeyTable()
+			// qvesting does not have params
 
 			default:
 				continue

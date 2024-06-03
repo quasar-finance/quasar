@@ -5,7 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/address"
 )
 
-var (
+const (
 	// ModuleName is the name of the module
 	ModuleName = "qtransfer"
 
@@ -14,7 +14,9 @@ var (
 
 	// QuerierRoute is the querier route for the qtransfer module
 	QuerierRoute = ModuleName
+)
 
+var (
 	// IntermediateAccountAddress is the address of the intermediate account
 	IntermediateAccountAddress sdk.AccAddress = address.Module(ModuleName, []byte("wasm-hooks intermediate account"))
 )

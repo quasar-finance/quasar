@@ -18,7 +18,8 @@ var Upgrade = upgrades.Upgrade{
 		Added: []string{ // v47 modules
 			crisistypes.ModuleName,
 			consensustypes.ModuleName,
-			feegranttypes.ModuleName},
+			feegranttypes.ModuleName,
+		},
 		Deleted: []string{},
 	},
 }
