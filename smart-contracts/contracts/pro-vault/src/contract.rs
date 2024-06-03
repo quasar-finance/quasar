@@ -185,25 +185,6 @@ fn try_deposit(
         .add_attribute("recipient", env.contract.address.to_string()))
 }
 
-fn try_update_vault_owner(
-    deps: DepsMut,
-) -> Result<Response, ContractError> {
-    // Implementation for UpdateVaultOwner
-    Ok(Response::new()
-        .add_attribute("method", "try_update_vault_owner"))
-}
-
-/*
-fn try_exec_vault_actions(
-    deps: DepsMut,
-    action: VaultAction,
-) -> Result<Response, ContractError> {
-    Vault::execute_action(deps.storage, action)?;
-    Ok(Response::new()
-        .add_attribute("method", "try_exec_vault_actions"))
-}
-*/
-
 fn try_exec_strategy_actions(
     deps: DepsMut,
     action: StrategyAction,

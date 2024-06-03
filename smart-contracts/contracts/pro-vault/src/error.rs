@@ -2,8 +2,11 @@
 use cosmwasm_std::StdError;
 use thiserror::Error;
 use cw_controllers::AdminError;
-use crate::vault::error::VaultError; 
+use crate::vault::error::VaultError;
+use crate::ownership::error::OwnershipError;
 
+
+// TODO - All module errors to be re-structured, and localized.
 #[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
@@ -44,4 +47,7 @@ pub enum ContractError {
 
     #[error("Admin and Vault Owner mismatch")]
     AdminVaultOwnerMismatch {},
+
+    #[error("{0}")]
+    Ownership(#[from] OwnershipError),
 }

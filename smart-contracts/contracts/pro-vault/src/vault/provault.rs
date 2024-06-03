@@ -9,10 +9,11 @@ use serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
 use crate::error::ContractError;
+use crate::ownership;
 use crate::vault::error::VaultError;
 use crate::strategy::strategy::{Strategy, STRATEGY, StrategyKey};
 use crate::ownership::ownership::{
-    OwnerProposal, Ownership, query_owner, query_ownership_proposal,
+    OwnerProposal, Ownership, OwnershipActions, query_owner, query_ownership_proposal,
     handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection
 };
 
@@ -43,6 +44,8 @@ pub enum VaultAction {
         name: String,
         description: String,
     },
+    // Try Ownership extension.
+    Ownership(OwnershipActions),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -118,6 +121,17 @@ impl Vault {
             }
             VaultAction::UpdateVaultOwner {} => {
                 Self::try_update_vault_owner(deps)
+            }
+            VaultAction::Ownership(oa) => {
+                // Ownership actions 
+                match oa {
+                    OwnershipActions::ProposeNewOwner { new_owner, duration } => {                     
+                        handle_ownership_proposal(deps, info, env, new_owner, duration, 
+                            &VAULT_OWNER, &VAULT_PROPOSAL)
+                    }
+                    OwnershipActions::RejectOwnershipProposal {  } => {todo!()}
+                    OwnershipActions::ClaimOwnership {  } => {todo!()}
+                }
             }
         }
     }

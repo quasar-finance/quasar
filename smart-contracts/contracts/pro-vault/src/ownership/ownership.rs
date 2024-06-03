@@ -5,6 +5,11 @@ use cosmwasm_std::{Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, 
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use crate::error::ContractError;
+use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
+use crate::ownership::error::OwnershipError::{Std, 
+    Unauthorized, ProposalAlreadyExists, 
+    NoProposalExists, InvalidProposal};
 
 pub const MAX_DURATION: u64 = 604800u64; // One week in seconds
 
@@ -13,6 +18,14 @@ pub struct OwnerProposal {
     pub owner: Addr,
     pub expiry: u64,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub enum OwnershipActions {
+    ClaimOwnership {},
+    ProposeNewOwner { new_owner: String, duration: u64 },
+    RejectOwnershipProposal {},
+}
+
 pub trait Ownership {
     fn handle_ownership_proposal(
         &self,
@@ -92,7 +105,9 @@ pub fn handle_ownership_proposal(
         },
     )?;
 
-    let proposal_event = Event::new("propose_proposed_owner").add_attributes(vec![
+    let proposal_event = Event::new("ownership_proposal")
+    .add_attributes(vec![
+        attr("action", "propose_new_owner"),
         attr("proposed_owner", proposed_owner.to_string()),
         attr("expiry", expiry.to_string()),
     ]);
@@ -107,8 +122,15 @@ pub fn handle_ownership_proposal_rejection(
     proposal: &Item<OwnerProposal>,
 ) -> Result<Response, ContractError> {
     owner.assert_admin(deps.as_ref(), &info.sender)?;
+    if proposal.may_load(deps.storage)?.is_none() {
+        return Err(ContractError::ProposalNotFound {});
+    }
     proposal.remove(deps.storage);
-    let reject_proposal_event = Event::new("reject_ownership");
+    let reject_proposal_event = Event::new("ownership_proposal_rejection")
+        .add_attributes(vec![
+            attr("action", "reject_ownership_proposal"),
+            attr("sender", info.sender.to_string()),
+    ]);
     Ok(Response::new().add_event(reject_proposal_event))
 }
 
