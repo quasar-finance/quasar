@@ -141,7 +141,14 @@ pub fn execute_migration_step(
     {
         let (address, rewards) = item?;
 
+        // We always push the address in order to remove it later
         addresses.push(address.clone());
+
+        // If there are no rewards, we skip the address or we will get invalid_coins error
+        // This is because USER_REWARDS is holding 0 amount coins. rewards.coins() only returns a list of coins with non-zero amounts, which it could be empty
+        if rewards.coins().is_empty() {
+            continue;
+        }
         outputs.push(Output {
             address: address.to_string(),
             coins: cosmwasm_to_proto_coins(rewards.coins().iter().cloned()),
