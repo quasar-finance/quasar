@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	"io"
 	"net/http"
 	"os"
@@ -28,11 +30,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	quasarante "github.com/quasarlabs/quasarnode/app/ante"
 	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -178,7 +180,6 @@ func New(
 	invCheckPeriod uint,
 	encodingConfig appParams.EncodingConfig,
 	appOpts servertypes.AppOptions,
-	// wasmEnabledProposals []wasm.ProposalType,
 	wasmEnabledProposals []wasmtypes.ProposalType,
 	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
@@ -282,20 +283,7 @@ func New(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
-	// todo : write upgrade handler
-	app.setupUpgradeHandlers()
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
-	if err != nil {
-		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
-	}
-	if upgradeInfo.Name == v0.UpgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		storeUpgrades := v0.Upgrade.StoreUpgrades
-
-		// configure store loader that checks if version == upgradeHeight and applies store upgrades
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
-	}
-
-	/* TODO - SDK47
+	/* TODO - SDK47 keeing in pending for now. Add this once local testing is wrapped.
 	// app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	app.sm = module.NewSimulationManager(
@@ -323,37 +311,48 @@ func New(
 	)
 	app.sm.RegisterStoreDecoders()
 	*/
+
 	// initialize stores
 	app.MountKVStores(app.GetKVStoreKey())
 	app.MountTransientStores(app.GetTransientStoreKey())
 	app.MountMemoryStores(app.GetMemoryStoreKey())
 
-	// initialize BaseApp
-	app.SetInitChainer(app.InitChainer)
-	app.SetBeginBlocker(app.BeginBlocker)
-
-	anteHandler, err := ante.NewAnteHandler(
-		ante.HandlerOptions{
-			AccountKeeper:   app.AccountKeeper,
-			BankKeeper:      app.BankKeeper,
-			SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-			FeegrantKeeper:  app.FeeGrantKeeper,
-			SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+	anteHandler, err := quasarante.NewAnteHandler(
+		quasarante.HandlerOptions{
+			HandlerOptions: ante.HandlerOptions{
+				AccountKeeper:   app.AccountKeeper,
+				BankKeeper:      app.BankKeeper,
+				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
+				FeegrantKeeper:  app.FeeGrantKeeper,
+				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+			},
+			Codec:     appCodec,
+			IBCkeeper: app.IBCKeeper,
 		},
 	)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
 	}
 
 	app.SetAnteHandler(anteHandler)
+	app.SetInitChainer(app.InitChainer)
+	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	// must be before Loading version
-	// requires the snapshot store to be created and registered as a BaseAppOption
-	// see cmd/wasmd/root.go: 206 - 214 approx
+	app.setupUpgradeHandlers()
+	app.setupUpgradeStoreLoaders()
+
+	// Register snapshot extensions to enable state-sync for wasm.
 	if manager := app.SnapshotManager(); manager != nil {
 		err := manager.RegisterExtensions(
-			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), app.WasmKeeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+		}
+
+		err = manager.RegisterExtensions(
+			ibcwasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), app.IBCWasmClientKeeper),
 		)
 		if err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
@@ -364,12 +363,39 @@ func New(
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(err.Error())
 		}
+
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+
+		// Initialize pinned codes in wasmvm as they are not persisted there
+		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
+			tmos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
+		}
+
+		if err := ibcwasmkeeper.InitializePinnedCodes(ctx, appCodec); err != nil {
+			tmos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
+		}
 	}
 
-	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
-
-	fmt.Printf("APP TESTING - maccPerms=%v\n", maccPerms)
 	return app
+}
+
+func (app *QuasarApp) setupUpgradeStoreLoaders() {
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	for _, upgrade := range Upgrades {
+		upgrade := upgrade
+		if upgradeInfo.Name == upgrade.UpgradeName {
+			storeUpgrades := upgrade.StoreUpgrades
+			app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+		}
+	}
 }
 
 func (app *QuasarApp) setupUpgradeHandlers() {
@@ -459,27 +485,6 @@ func (app *QuasarApp) AppCodec() codec.Codec {
 // InterfaceRegistry returns an InterfaceRegistry
 func (app *QuasarApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
-}
-
-// GetKey returns the KVStoreKey for the provided store key.
-//
-// NOTE: This is solely to be used for testing purposes.
-func (app *QuasarApp) GetKey(storeKey string) *storetypes.KVStoreKey {
-	return app.keys[storeKey]
-}
-
-// GetTKey returns the TransientStoreKey for the provided store key.
-//
-// NOTE: This is solely to be used for testing purposes.
-func (app *QuasarApp) GetTKey(storeKey string) *storetypes.TransientStoreKey {
-	return app.tkeys[storeKey]
-}
-
-// GetMemKey returns the MemStoreKey for the provided mem key.
-//
-// NOTE: This is solely used for testing purposes.
-func (app *QuasarApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
-	return app.memKeys[storeKey]
 }
 
 // GetSubspace returns a param subspace for a given module name.

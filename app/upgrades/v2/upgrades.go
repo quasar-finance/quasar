@@ -41,6 +41,8 @@ func CreateUpgradeHandler(
 
 			var keyTable paramstypes.KeyTable
 			switch subspace.Name() {
+			// I think that we don't need to put sdk modules here as we can just call
+			//run migrations for them
 
 			// ibc types
 			case ibctransfertypes.ModuleName:
