@@ -1,36 +1,36 @@
 use cosmwasm_std::{
-    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Storage};
+    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, StdError,
+};
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
 use cosmwasm_schema::cw_serde;
 
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
 use crate::error::ContractError;
-use crate::strategy::strategy::{Strategy, STRATEGY, StrategyKey}; 
-use crate::ownership::ownership::{OwnerProposal, Ownership, query_owner, query_ownership_proposal, 
-    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection};
+use crate::vault::error::VaultError;
+use crate::strategy::strategy::{Strategy, STRATEGY, StrategyKey};
+use crate::ownership::ownership::{
+    OwnerProposal, Ownership, query_owner, query_ownership_proposal,
+    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection
+};
 
-
-// Constants for the provault
 pub const VAULT_OWNER: Admin = Admin::new("vault_owner");
 pub const VAULT_PROPOSAL: Item<OwnerProposal> = Item::new("vault_proposal");
 pub const VAULT_STATE: Item<Vault> = Item::new("vault_state");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)] 
 pub enum VaultRunningState {
-    // Initalized, and waiting come Normal once vault is ready to accept deposit. 
-    Init, 
-    // Normal operating mode
-    Running, 
-    // Temporary halted
-    Paused, 
-    // Terminated forever 
-    Terminated, 
+  // Initalized, and waiting come Normal once vault is ready to accept deposit. 
+  Init, 
+  // Normal operating mode
+  Running, 
+  // Temporary halted
+  Paused, 
+  // Terminated forever 
+  Terminated, 
 }
-
 
 #[cw_serde]
 pub enum VaultAction {
@@ -45,25 +45,20 @@ pub enum VaultAction {
     },
 }
 
-
-// Pro vault state struct with last updated block height.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Vault {
     pub state: VaultRunningState,
-    pub last_statechange_bh: u64, // last statechange block height
+    pub last_statechange_bh: u64,
 }
 
-  
-// Vault method implementations
 impl Vault {
-     pub fn new() -> Self {
+    pub fn new() -> Self {
         Vault {
             state: VaultRunningState::Init,
             last_statechange_bh: 0,
         }
     }
 
-    // To be called from update_vault_state entry point 
     pub fn update_state(
         &mut self,
         deps: DepsMut,
@@ -71,15 +66,12 @@ impl Vault {
         info: MessageInfo,
         new_state: VaultRunningState,
     ) -> Result<Response, ContractError> {
-        // Verify that the sender is the current vault owner
         let owner = VAULT_OWNER.get(deps.as_ref())?;
         ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
 
-        // Update the state and last state change block height
         self.state = new_state;
         self.last_statechange_bh = env.block.height;
 
-        // Save the updated state
         VAULT_STATE.save(deps.storage, self)?;
 
         Ok(Response::new()
@@ -88,50 +80,57 @@ impl Vault {
             .add_attribute("last_statechange_bh", self.last_statechange_bh.to_string()))
     }
 
-    
     fn update_state_internal(
         &mut self,
         storage: &mut dyn Storage,
-        new_state: VaultRunningState, 
-        bh:u64) -> Result<Response, ContractError> {
-            self.state = new_state;
-            self.last_statechange_bh = bh;
-            // Save the updated state
-            
-            VAULT_STATE.save(storage, self)?;
-            Ok(Response::new()
+        new_state: VaultRunningState,
+        bh: u64,
+    ) -> Result<Response, ContractError> {
+        self.state = new_state;
+        self.last_statechange_bh = bh;
+
+        VAULT_STATE.save(storage, self)?;
+        Ok(Response::new()
             .add_attribute("action", "update_state")
             .add_attribute("new_state", format!("{:?}", self.state))
             .add_attribute("last_statechange_bh", self.last_statechange_bh.to_string()))
     }
-     
-    // TODO - env to be also provided for block height
-    pub fn execute_action(storage: &mut dyn Storage, action: VaultAction) -> StdResult<()> {
+
+    pub fn execute_action(
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        action: VaultAction,
+    ) -> Result<Response, ContractError> {
+        let mut vault = VAULT_STATE.load(deps.storage)?;
+        // TODO - 
+        // 1. PROVAULT METHOD PROTECTION BY OWNER
+        // 2. STATE WISE ACTION PROTECTION, in which state what action can be performed.
         match action {
             VaultAction::CreateStrategy { name, description } => {
-                todo!();
-                // try_create_strategy(deps, env, info, name, description)
-                let _ = Self::try_create_strategy_2(storage, name, description);
-
+                Self::try_create_strategy(deps, env, info, name, description)
             }
             VaultAction::UpdateRunningState { new_state } => {
-                todo!()
+                Self::try_update_running_state(deps, env, info, new_state)
             }
-            VaultAction::UpdateStrategyOwner {  } => {
-                todo!()
+            VaultAction::UpdateStrategyOwner {} => {
+                Self::try_update_strategy_owner(deps)
             }
-            VaultAction::UpdateVaultOwner {  } => {
-                todo!()
+            VaultAction::UpdateVaultOwner {} => {
+                Self::try_update_vault_owner(deps)
             }
         }
     }
 
     fn try_update_running_state(
-        deps: DepsMut, env: Env, info: MessageInfo, new_state: VaultRunningState) 
-        -> Result<Response, ContractError> {
-        let mut vault = VAULT_STATE.load(deps.storage)?;
-        let _ = vault.update_state(deps, env, info, new_state);
-    
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        new_state: VaultRunningState,
+    ) -> Result<Response, ContractError> {
+        let mut vault: Vault = VAULT_STATE.load(deps.storage)?;
+        vault.update_state(deps, env, info, new_state)?;
+
         Ok(Response::new()
             .add_attribute("method", "try_update_running_state"))
     }
@@ -143,60 +142,42 @@ impl Vault {
         Ok(Response::new()
             .add_attribute("method", "try_update_strategy_owner"))
     }
-    // Function to create a strategy with ID 1
+
     pub fn try_create_strategy(
         deps: DepsMut,
-        _env: Env,
-        _info: MessageInfo,
+        env: Env,
+        info: MessageInfo,
         name: String,
         description: String,
-    ) -> StdResult<Response> {
-        // TODO - Validation checks to be added.
-        // Initially, for the simplicity only one instance of strategy should be supported 
-        // within one provault contract. 
-        // TODO - Other parameters to be added soon.
+    ) -> Result<Response, ContractError> {
+        if STRATEGY.has(deps.storage, &StrategyKey::new(1)) {
+            return Err(VaultError::StrategyAlreadyExists {}.into());
+        }
+
         let strategy = Strategy {
             id: 1,
-            name,
-            description,
+            name: name.clone(),
+            description: description.clone(),
         };
 
         STRATEGY.save(deps.storage, &StrategyKey::new(1), &strategy)?;
 
         Ok(Response::new()
             .add_attribute("action", "create_strategy")
-            .add_attribute("strategy_id", "1"))
-
+            .add_attribute("strategy_id", "1")
+            .add_attribute("strategy_name", name)
+            .add_attribute("strategy_description", description))
     }
-      // Function to create a strategy with ID 1
-    pub fn try_create_strategy_2(
-        storage: &mut dyn Storage,
-        name: String,
-        description: String,
-    ) -> StdResult<Response> {
-        // TODO - Validation checks to be added.
-        // Initially, for the simplicity only one instance of strategy should be supported 
-        // within one provault contract. 
-        // TODO - Other parameters to be added soon.
-        let strategy = Strategy {
-            id: 1,
-            name,
-            description,
-        };
 
-        STRATEGY.save(storage, &StrategyKey::new(1), &strategy)?;
-
+    fn try_update_vault_owner(
+        deps: DepsMut,
+    ) -> Result<Response, ContractError> {
+        // Implementation for UpdateVaultOwner
         Ok(Response::new()
-            .add_attribute("action", "create_strategy")
-            .add_attribute("strategy_id", "1"))
-
+            .add_attribute("method", "try_update_vault_owner"))
     }
-
-        
 }
 
-// Implement the Ownership trait for Vault so vault ownership can be updated
-// for performing operations.
 impl Ownership for Vault {
     fn handle_ownership_proposal(
         &self,
@@ -244,4 +225,3 @@ impl Ownership for Vault {
         query_owner(deps, owner)
     }
 }
-

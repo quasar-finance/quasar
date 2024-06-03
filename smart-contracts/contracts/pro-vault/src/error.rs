@@ -2,7 +2,7 @@
 use cosmwasm_std::StdError;
 use thiserror::Error;
 use cw_controllers::AdminError;
-
+use crate::vault::error::VaultError; 
 
 #[derive(Error, Debug)]
 pub enum ContractError {
@@ -29,6 +29,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     AdminError(#[from] AdminError),
+
+    #[error("{0}")]
+    Vault(#[from] VaultError),
 
     #[error("Failed to set vault owner: {0}")]
     SetVaultOwnerError(String),

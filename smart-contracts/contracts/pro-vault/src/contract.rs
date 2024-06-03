@@ -20,8 +20,6 @@ use cosmwasm_std::{
 // 1. Locality of local variables to be strucured, that will reduce number of imports from
 // other modules and will make the contract.rs cleaner, smaller, and easy to read and maintain.
 // 2. Stategy Actions to be added here in the match cases.
-
-#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -39,7 +37,7 @@ pub fn execute(
                  ExtensionExecuteMsg::ProExtension(pro_msg) => {
                     match pro_msg {
                         ProExtensionExecuteMsg::ExecVaultActions { action } => {
-                            let _ = try_exec_vault_actions(deps, action); }
+                            let _ = try_exec_vault_actions(deps, env, info, action);}
                         ProExtensionExecuteMsg::ExecStrategyActions{action} => { 
                             let _ = try_exec_strategy_actions(deps, action); }
                     }
@@ -195,7 +193,7 @@ fn try_update_vault_owner(
         .add_attribute("method", "try_update_vault_owner"))
 }
 
-
+/*
 fn try_exec_vault_actions(
     deps: DepsMut,
     action: VaultAction,
@@ -204,6 +202,7 @@ fn try_exec_vault_actions(
     Ok(Response::new()
         .add_attribute("method", "try_exec_vault_actions"))
 }
+*/
 
 fn try_exec_strategy_actions(
     deps: DepsMut,
@@ -215,6 +214,16 @@ fn try_exec_strategy_actions(
 }
 
  
+fn try_exec_vault_actions(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    action: VaultAction,
+) -> Result<Response, ContractError> {
+    Vault::execute_action(deps, env, info, action)?;
+    Ok(Response::new()
+        .add_attribute("method", "try_exec_vault_actions"))
+}
 
 #[cfg(test)]
 mod tests {
