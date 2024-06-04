@@ -355,6 +355,7 @@ mod tests {
 
         Ok(response)
     }
+
     #[test]
     fn test_migrate_position_state() {
         let mut deps = mock_dependencies();
@@ -362,39 +363,10 @@ mod tests {
 
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
 
+        // Mock a previous state item
         OLD_POSITION
             .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
             .unwrap();
-
-        let migrate_result = mock_migrate(
-            deps.as_mut(),
-            env,
-            MigrateMsg {
-                dex_router: new_dex_router,
-            },
-        );
-        assert!(migrate_result.is_ok());
-
-        let loaded_position = POSITION.load(deps.as_mut().storage);
-        assert!(loaded_position.is_ok());
-
-        let position = loaded_position.unwrap();
-        assert_eq!(position.position_id, 1);
-        assert_eq!(position.join_time, 0);
-        assert!(position.claim_after.is_none());
-
-        let old_position = OLD_POSITION.may_load(deps.as_mut().storage);
-        assert!(old_position.unwrap().is_none());
-    }
-    #[test]
-    fn test_migrate_no_rewards() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        // Declare new items for states
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-
-        // Mock a previous state item
         OLD_VAULT_CONFIG
             .save(
                 deps.as_mut().storage,
@@ -405,14 +377,65 @@ mod tests {
                 },
             )
             .unwrap();
+        #[allow(deprecated)]
+        STRATEGIST_REWARDS
+            .save(&mut deps.storage, &CoinList::new())
+            .unwrap();
 
-        let _ = migrate(
+        mock_migrate(
+            deps.as_mut(),
+            env,
+            MigrateMsg {
+                dex_router: new_dex_router,
+            },
+        )
+        .unwrap();
+
+        let position = POSITION.load(deps.as_mut().storage).unwrap();
+
+        assert_eq!(position.position_id, 1);
+        assert_eq!(position.join_time, 0);
+        assert!(position.claim_after.is_none());
+
+        let old_position = OLD_POSITION.may_load(deps.as_mut().storage).unwrap();
+        assert!(old_position.is_none());
+    }
+
+    #[test]
+    fn test_migrate_no_rewards() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        // Declare new items for states
+        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
+
+        // Mock a previous state item
+        OLD_POSITION
+            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
+            .unwrap();
+        OLD_VAULT_CONFIG
+            .save(
+                deps.as_mut().storage,
+                &OldVaultConfig {
+                    performance_fee: Decimal::from_str("0.2").unwrap(),
+                    treasury: Addr::unchecked("treasury"),
+                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                },
+            )
+            .unwrap();
+        #[allow(deprecated)]
+        STRATEGIST_REWARDS
+            .save(&mut deps.storage, &CoinList::new())
+            .unwrap();
+
+        mock_migrate(
             deps.as_mut(),
             env.clone(),
             MigrateMsg {
                 dex_router: new_dex_router.clone(),
             },
-        );
+        )
+        .unwrap();
 
         // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
         OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
@@ -494,6 +517,7 @@ mod tests {
             },
         )
         .unwrap();
+
         if let Some(SubMsg {
             msg: CosmosMsg::Bank(BankMsg::Send { to_address, amount }),
             ..
