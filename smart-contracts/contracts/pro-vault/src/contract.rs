@@ -39,7 +39,7 @@ pub fn execute(
                         ProExtensionExecuteMsg::ExecVaultActions { action } => {
                             let _ = try_exec_vault_actions(deps, env, info, action);}
                         ProExtensionExecuteMsg::ExecStrategyActions{action} => { 
-                            let _ = try_exec_strategy_actions(deps, action); }
+                            let _ = try_exec_strategy_actions(deps, env, info, action); }
                     }
                 }
                 // Handle other possible ExtensionExecuteMsg variants here
@@ -187,9 +187,11 @@ fn try_deposit(
 
 fn try_exec_strategy_actions(
     deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
     action: StrategyAction,
 ) -> Result<Response, ContractError> {
-    Strategy::execute_action(deps.storage, action)?;
+    Strategy::execute_action(deps, env, info, action)?;
     Ok(Response::new()
         .add_attribute("method", "try_exec_strategy_actions"))
 }

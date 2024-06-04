@@ -1,10 +1,25 @@
-use cosmwasm_std::{StdResult, Storage, Addr};
+use cosmwasm_std::{
+    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, StdError,
+};
 use serde::{Serialize,Deserialize};
-use cw_storage_plus::{Map};
+use cw_storage_plus::{Map, Item};
 use cosmwasm_schema::cw_serde;
+use cw_controllers::Admin;
+use crate::error::ContractError;
+use crate::strategy::error::StrategyError::AdaptorAlreadyExists;
+
+use crate::ownership::ownership::{
+    OwnerProposal, Ownership, OwnershipActions, query_owner, query_ownership_proposal,
+    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection
+};
+
+use super::error;
 
 const ADAPTERS: Map<&str, bool> = Map::new("adapters");
 pub const STRATEGY: Map<&[u8], Strategy> = Map::new("strategy");
+
+pub const STRATEGY_OWNER: Admin = Admin::new("strategy_owner");
+pub const STRATEGY_PROPOSAL: Item<OwnerProposal> = Item::new("strategy_proposal");
 
 // Strategy Key 
 pub struct StrategyKey;
@@ -27,6 +42,7 @@ pub enum StrategyAction {
     UpdateStrategyParams,
     UpdateAdaptorRunningState { adaptor: String },
     UpdateStrategyRunningState,
+    Ownership(OwnershipActions),
 }
 
 
@@ -45,22 +61,30 @@ pub struct Strategy {
 
 // TODO - Strategy actions to be protected by strategy owner
 impl Strategy {
-    pub fn execute_action(storage: &mut dyn Storage, action: StrategyAction) -> StdResult<()> {
+    // pub fn execute_action(storage: &mut dyn Storage, action: StrategyAction) -> StdResult<()> 
+    pub fn execute_action(
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        action: StrategyAction,
+    ) -> Result<Response, ContractError>
+    {
         match action {
             StrategyAction::DistributeFundWithPresetAdaptorRatio => {
                todo!()
             }
             StrategyAction::DistributeFundWithCustomAdaptorRatios { custom_ratios } => {
-                Self::distribute_funds_with_custom_ratios(storage, custom_ratios)
+                Self::distribute_funds_with_custom_ratios(deps.storage, custom_ratios)
             }
             StrategyAction::RemoveAdaptor { adaptor } => {
                 // TODO - Validation checks
-                ADAPTERS.remove(storage, adaptor.as_str());
-                Ok(())
-            }
+                ADAPTERS.remove(deps.storage, adaptor.as_str());
+                Ok(Response::new()
+                .add_attribute("action", "remove_adaptor"))
+             }
             StrategyAction::AddNewAdaptor { adaptor } => {
                 // TODO - Validation checks
-                Self::add_adapter(storage, Addr::unchecked(adaptor))
+                Self::add_adapter(deps.storage, Addr::unchecked(adaptor))
             }
             StrategyAction::UpdateStrategyParams => {
                 // Placeholder for updating strategy parameters
@@ -73,6 +97,18 @@ impl Strategy {
             StrategyAction::UpdateStrategyRunningState => {
                 todo!()
             }
+            StrategyAction::Ownership(oa) => {
+                // Ownership actions 
+                match oa {
+                    OwnershipActions::ProposeNewOwner { new_owner, duration } => 
+                    {                     
+                        handle_ownership_proposal(deps, info, env, new_owner, duration, 
+                            &STRATEGY_OWNER, &STRATEGY_PROPOSAL)
+                    }
+                    OwnershipActions::RejectOwnershipProposal { } => { todo!() }
+                    OwnershipActions::ClaimOwnership { } => { todo!() }
+                }
+             }
         }
     }
 
@@ -80,9 +116,12 @@ impl Strategy {
     // For simplification, there should be only one adaptor of one adaptor type. So maximum one
     // instance of CLVault, maximum one instance DebtMarket adaptor, and max one for the 
     // Swap Market. 
-    pub fn add_adapter(storage: &mut dyn Storage, adapter: Addr) -> StdResult<()> {
+    pub fn add_adapter(storage: &mut dyn Storage, 
+        adapter: Addr) -> Result<Response, ContractError> {
         if ADAPTERS.has(storage, adapter.as_str()) {
-            Err(cosmwasm_std::StdError::generic_err("Adapter already exists"))
+           // Err(cosmwasm_std::StdError::generic_err("Adapter already exists"))
+            Err(AdaptorAlreadyExists{}.into())
+
         } else {
             ADAPTERS.save(storage, adapter.as_str(), &true)?;
             todo!()
@@ -90,7 +129,8 @@ impl Strategy {
     }
 
     // To be triggered by strategy owner via strategy action entry point.
-    pub fn distribute_funds_with_custom_ratios(storage: &mut dyn Storage, custom_ratios: String) -> StdResult<()> {
+    pub fn distribute_funds_with_custom_ratios(storage: &mut dyn Storage, 
+        custom_ratios: String) -> Result<Response, ContractError> {
         // Parse custom_ratios and distribute funds accordingly
         // Use the position manager module to check available fund in the provault treasury. 
         // Use the adaptor list and ratio to do the calculation. 

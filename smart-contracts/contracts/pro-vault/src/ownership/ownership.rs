@@ -13,6 +13,13 @@ use crate::ownership::error::OwnershipError::{Std,
 
 pub const MAX_DURATION: u64 = 604800u64; // One week in seconds
 
+// TODO - Design improvement -> 
+// Add an optional proposer owner which could be different than the current execution owner.
+// the optional proposer owner should be able to propose the new execution owner. This could be then
+// proposer whitelist addresses with ownership change proposal capability. The new owner should be 
+// able to claim the execution and hence old owner will be removed. So either the current owner or 
+// a whitelist owner should be able to propose change ownership. 
+
 #[cw_serde]
 pub struct OwnerProposal {
     pub owner: Addr,

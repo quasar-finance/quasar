@@ -3,7 +3,9 @@ use cosmwasm_std::StdError;
 use thiserror::Error;
 use cw_controllers::AdminError;
 use crate::vault::error::VaultError;
-use crate::ownership::error::OwnershipError;
+use crate::ownership::error::{self, OwnershipError};
+use crate::strategy::error::StrategyError;
+
 
 
 // TODO - All module errors to be re-structured, and localized.
@@ -50,4 +52,7 @@ pub enum ContractError {
 
     #[error("{0}")]
     Ownership(#[from] OwnershipError),
+
+    #[error("{0}")]
+    Strategy(#[from] StrategyError)
 }
