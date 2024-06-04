@@ -75,13 +75,19 @@ pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 
 /// POSITION
 #[cw_serde]
+pub struct OldPosition {
+    pub position_id: u64,
+}
+
+#[cw_serde]
 pub struct Position {
     pub position_id: u64,
     pub join_time: u64, // env block time at time of creation, or taken by osmosis protocol response
     pub claim_after: Option<u64>, // this should be off chain computed and set in order to avoid forfeiting incentives
 }
 
-pub const POSITION: Item<Position> = Item::new("position");
+pub const OLD_POSITION: Item<OldPosition> = Item::new("position");
+pub const POSITION: Item<Position> = Item::new("position_v2");
 
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
