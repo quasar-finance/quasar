@@ -4,6 +4,7 @@ use cosmwasm_std::{
     to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
 };
 use cw2::set_contract_version;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 
 use crate::error::ContractError;
 use crate::helpers::sort_tokens;
@@ -26,6 +27,7 @@ use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
 };
+use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
@@ -258,32 +260,132 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     #[allow(deprecated)]
     STRATEGIST_REWARDS.remove(deps.storage);
 
+    //POSITION state migration
+    let old_position = OLD_POSITION.load(deps.storage)?;
+
+    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+    let pos_response = cl_querier.position_by_id(old_position.position_id)?;
+
+    let new_position: Position = Position {
+        position_id: old_position.position_id,
+        join_time: pos_response
+            .position
+            .unwrap()
+            .position
+            .unwrap()
+            .join_time
+            .unwrap()
+            .seconds
+            .unsigned_abs(),
+        claim_after: None,
+    };
+
+    POSITION.save(deps.storage, &new_position)?;
+    OLD_POSITION.remove(deps.storage);
+
     Ok(response)
 }
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{
-        coin,
-        testing::{mock_dependencies, mock_env},
-        Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
-    };
-    use prost::Message;
-    use std::str::FromStr;
-
+    use super::*;
     #[allow(deprecated)]
     use crate::{
         rewards::CoinList, state::USER_REWARDS,
         test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
     };
     use crate::{
-        state::OldVaultConfig,
+        state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_env},
+        Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
+    };
     use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
+    use prost::Message;
+    use std::str::FromStr;
 
-    use super::*;
+    pub fn mock_migrate(
+        deps: DepsMut,
+        _env: Env,
+        msg: MigrateMsg,
+    ) -> Result<Response, ContractError> {
+        let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
+        let new_vault_config = VaultConfig {
+            performance_fee: old_vault_config.performance_fee,
+            treasury: old_vault_config.treasury,
+            swap_max_slippage: old_vault_config.swap_max_slippage,
+            dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
+        };
 
+        OLD_VAULT_CONFIG.remove(deps.storage);
+        VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
+
+        MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
+
+        // Declare response object as mut
+        let mut response = Response::new().add_attribute("migrate", "successful");
+
+        // Conditionally add a bank send message if the strategist rewards state is not empty
+        #[allow(deprecated)]
+        let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
+        if !strategist_rewards.is_empty() {
+            let bank_send_msg = BankMsg::Send {
+                to_address: new_vault_config.treasury.to_string(),
+                amount: sort_tokens(strategist_rewards.coins()),
+            };
+            response = response.add_message(bank_send_msg);
+        }
+        // Remove the state
+        #[allow(deprecated)]
+        STRATEGIST_REWARDS.remove(deps.storage);
+        let old_position = OLD_POSITION.load(deps.storage)?;
+
+        let new_position: Position = Position {
+            position_id: old_position.position_id,
+            join_time: 0,
+            claim_after: None,
+        };
+
+        POSITION.save(deps.storage, &new_position)?;
+
+        OLD_POSITION.remove(deps.storage);
+
+        Ok(response)
+    }
+    #[test]
+    fn test_migrate_position_state() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
+
+        OLD_POSITION
+            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
+            .unwrap();
+
+        let migrate_result = mock_migrate(
+            deps.as_mut(),
+            env,
+            MigrateMsg {
+                dex_router: new_dex_router,
+            },
+        );
+        assert!(migrate_result.is_ok());
+
+        let loaded_position = POSITION.load(deps.as_mut().storage);
+        assert!(loaded_position.is_ok());
+
+        let position = loaded_position.unwrap();
+        assert_eq!(position.position_id, 1);
+        assert_eq!(position.join_time, 0);
+        assert!(position.claim_after.is_none());
+
+        let old_position = OLD_POSITION.may_load(deps.as_mut().storage);
+        assert!(old_position.unwrap().is_none());
+    }
     #[test]
     fn test_migrate_no_rewards() {
         let mut deps = mock_dependencies();
@@ -355,6 +457,8 @@ mod tests {
             )
             .unwrap();
 
+        OLD_POSITION.save(deps.as_mut().storage, &OldPosition { position_id: 1 });
+
         // Mock USER_REWARDS in order to have something to iterate over
         let rewards_coins = vec![
             coin(1000u128, DENOM_BASE),
@@ -380,7 +484,7 @@ mod tests {
             )
             .unwrap();
 
-        let migrate_resp = migrate(
+        let migrate_resp = mock_migrate(
             deps.as_mut(),
             env.clone(),
             MigrateMsg {
