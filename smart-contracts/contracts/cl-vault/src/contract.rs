@@ -457,7 +457,9 @@ mod tests {
             )
             .unwrap();
 
-        OLD_POSITION.save(deps.as_mut().storage, &OldPosition { position_id: 1 });
+        OLD_POSITION
+            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
+            .unwrap();
 
         // Mock USER_REWARDS in order to have something to iterate over
         let rewards_coins = vec![
