@@ -34,7 +34,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	quasarante "github.com/quasarlabs/quasarnode/app/ante"
+	quasarante "github.com/quasarlabs/quasarnode/ante"
 	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -163,7 +163,6 @@ func (app *QuasarApp) GetStakingKeeper() stakingkeeper.Keeper {
 	return *app.StakingKeeper
 }
 
-// SDK47
 // RegisterNodeService registers the node gRPC Query service.
 func (app *QuasarApp) RegisterNodeService(clientCtx client.Context) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
@@ -416,7 +415,7 @@ func (app *QuasarApp) setupUpgradeHandlers() {
 func (app *QuasarApp) Name() string { return app.BaseApp.Name() }
 
 // GetBaseApp returns the base app of the application
-func (app QuasarApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
+func (app *QuasarApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
 
 // BeginBlocker application updates every begin block
 func (app *QuasarApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
@@ -499,22 +498,15 @@ func (app *QuasarApp) GetSubspace(moduleName string) paramstypes.Subspace {
 // API server.
 func (app *QuasarApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	// TODO - SDK47
-	// rpc.RegisterRoutes(clientCtx, apiSvr.Router)
-	// Register legacy tx routes.
-	// authrest is deprecated. SDK47
-	// authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register legacy and grpc-gateway routes for all modules.
-	// TODO: SDK47, rest is deprecated
-	//ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
-
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
+	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// register app's OpenAPI routes.
 	apiSvr.Router.Handle("/static/openapi.yml", http.FileServer(http.FS(docs.Docs)))

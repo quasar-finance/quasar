@@ -5,6 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
@@ -19,8 +20,17 @@ import (
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
 
+	// SDK v47 modules
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
@@ -41,8 +51,23 @@ func CreateUpgradeHandler(
 
 			var keyTable paramstypes.KeyTable
 			switch subspace.Name() {
-			// I think that we don't need to put sdk modules here as we can just call
-			//run migrations for them
+			// sdk
+			case authtypes.ModuleName:
+				keyTable = authtypes.ParamKeyTable() //nolint:staticcheck
+			case banktypes.ModuleName:
+				keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
+			case stakingtypes.ModuleName:
+				keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
+			case minttypes.ModuleName:
+				keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
+			case distrtypes.ModuleName:
+				keyTable = distrtypes.ParamKeyTable() //nolint:staticcheck
+			case slashingtypes.ModuleName:
+				keyTable = slashingtypes.ParamKeyTable() //nolint:staticcheck
+			case govtypes.ModuleName:
+				keyTable = govv1.ParamKeyTable() //nolint:staticcheck
+			case crisistypes.ModuleName:
+				keyTable = crisistypes.ParamKeyTable() //nolint:staticcheck
 
 			// ibc types
 			case ibctransfertypes.ModuleName:
@@ -51,6 +76,8 @@ func CreateUpgradeHandler(
 				keyTable = icahosttypes.ParamKeyTable() //nolint:staticcheck
 			case icacontrollertypes.SubModuleName:
 				keyTable = icacontrollertypes.ParamKeyTable() //nolint:staticcheck
+			case icqtypes.ModuleName:
+				keyTable = icqtypes.ParamKeyTable() //nolint:staticcheck
 
 			// wasm
 			case wasmtypes.ModuleName:
@@ -78,7 +105,7 @@ func CreateUpgradeHandler(
 
 		// Migrate Tendermint consensus parameters from x/params module to a deprecated x/consensus module.
 		// The old params module is required to still be imported in your app.go in order to handle this migration.
-		baseapp.MigrateParams(ctx, baseAppLegacySS, &keepers.ConsensusParamsKeeper)
+		baseapp.MigrateParams(ctx, baseAppLegacySS, keepers.ConsensusParamsKeeper)
 
 		migrations, err := mm.RunMigrations(ctx, configurator, fromVM)
 		if err != nil {

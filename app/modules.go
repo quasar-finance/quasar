@@ -115,6 +115,7 @@ var AppModuleBasics = []module.AppModuleBasic{
 	tfmodule.AppModuleBasic{},
 	qvestingmodule.AppModuleBasic{},
 	authzmodule.AppModuleBasic{},
+	consensus.AppModuleBasic{},
 }
 
 func appModules(
@@ -149,7 +150,7 @@ func appModules(
 		app.RawIcs20TransferAppModule,
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
+		consensus.NewAppModule(appCodec, *app.ConsensusParamsKeeper),
 
 		// quasar modules
 		epochsmodule.NewAppModule(appCodec, app.EpochsKeeper),

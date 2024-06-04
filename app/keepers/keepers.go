@@ -89,7 +89,7 @@ type AppKeepers struct {
 	CapabilityKeeper      *capabilitykeeper.Keeper
 	CrisisKeeper          *crisiskeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
-	ConsensusParamsKeeper consensusparamkeeper.Keeper
+	ConsensusParamsKeeper *consensusparamkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -150,13 +150,13 @@ func (appKeepers *AppKeepers) InitSpecialKeepers(
 	appKeepers.GenerateKeys()
 	appKeepers.ParamsKeeper = appKeepers.initParamsKeeper(appCodec, cdc, appKeepers.keys[paramstypes.StoreKey], appKeepers.tkeys[paramstypes.TStoreKey])
 
-	// set the BaseApp's parameter store
-	appKeepers.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(
+	consensusParamsKeeper := consensusparamkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[consensusparamtypes.StoreKey],
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
-	bApp.SetParamStore(&appKeepers.ConsensusParamsKeeper)
+	appKeepers.ConsensusParamsKeeper = &consensusParamsKeeper
+	bApp.SetParamStore(appKeepers.ConsensusParamsKeeper)
 
 	// add capability keeper and ScopeToModule for ibc module
 	appKeepers.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, appKeepers.keys[capabilitytypes.StoreKey], appKeepers.memKeys[capabilitytypes.MemStoreKey])

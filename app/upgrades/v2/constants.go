@@ -4,7 +4,8 @@ import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	feegranttypes "github.com/cosmos/cosmos-sdk/x/feegrant"
+	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
+	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
 )
 
@@ -16,9 +17,10 @@ var Upgrade = upgrades.Upgrade{
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{ // v47 modules
-			crisistypes.ModuleName,
-			consensustypes.ModuleName,
-			feegranttypes.ModuleName,
+			crisistypes.StoreKey,
+			consensustypes.StoreKey,
+			ibcwasmtypes.StoreKey,
+			icqtypes.StoreKey,
 		},
 		Deleted: []string{},
 	},
