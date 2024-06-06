@@ -1,11 +1,11 @@
 use crate::math::tick::tick_to_price;
+use crate::vault::helpers::CoinList;
 use std::str::FromStr;
 
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
-use crate::rewards::CoinList;
 use crate::state::ADMIN_ADDRESS;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};

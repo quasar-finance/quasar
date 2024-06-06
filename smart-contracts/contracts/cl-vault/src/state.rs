@@ -1,6 +1,5 @@
-use crate::rewards::CoinList;
-use crate::vault::merge::CurrentMergeWithdraw;
 use crate::vault::range::SwapDirection;
+use crate::vault::{helpers::CoinList, merge::CurrentMergeWithdraw};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;

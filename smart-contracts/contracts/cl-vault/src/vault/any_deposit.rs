@@ -18,7 +18,7 @@ use crate::reply::Replies;
 use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
 use crate::vault::range::SwapDirection;
-use crate::vault::swap::{swap_msg, SwapParams};
+use crate::vault::swap::SwapParams;
 use crate::{
     helpers::must_pay_one_or_two,
     query::query_total_assets,
@@ -27,6 +27,7 @@ use crate::{
     ContractError,
 };
 
+use super::helpers::swap_msg;
 use super::swap::SwapCalculationResult;
 
 pub fn execute_any_deposit(

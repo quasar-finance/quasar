@@ -162,10 +162,10 @@ fn withdraw_msg(
 
 #[cfg(test)]
 mod tests {
+    use crate::vault::helpers::CoinList;
     #[allow(deprecated)]
     use crate::{
         // rewards::CoinList,
-        rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };

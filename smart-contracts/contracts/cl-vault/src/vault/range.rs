@@ -14,7 +14,6 @@ use crate::{
     vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
-        swap::swap_msg,
     },
     ContractError,
 };
@@ -34,6 +33,7 @@ use std::str::FromStr;
 
 use super::{
     concentrated_liquidity::get_cl_pool_info,
+    helpers::swap_msg,
     swap::{SwapCalculationResult, SwapParams},
 };
 

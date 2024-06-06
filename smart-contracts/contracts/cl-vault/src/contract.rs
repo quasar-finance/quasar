@@ -18,10 +18,6 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::{
-    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
-    prepend_claim_msg,
-};
 #[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
@@ -33,7 +29,11 @@ use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_rep
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
 };
+use crate::vault::distribution::{
+    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
+};
 use crate::vault::exact_deposit::execute_exact_deposit;
+use crate::vault::helpers::prepend_claim_msg;
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
@@ -290,13 +290,11 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 mod tests {
     use super::*;
     #[allow(deprecated)]
-    use crate::{
-        rewards::CoinList, state::USER_REWARDS,
-        test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
-    };
+    use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
     use crate::{
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
+        vault::helpers::CoinList,
     };
     use cosmwasm_std::{
         coin,
