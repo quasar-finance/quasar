@@ -55,7 +55,6 @@ impl CoinList {
         Ok(())
     }
 
-    // TODO: Cant we get Coins from a coinlist and use above function?
     pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> Result<(), ContractError> {
         let parsed_rewards: Result<Vec<Coin>, ContractError> = rewards
             .coins()

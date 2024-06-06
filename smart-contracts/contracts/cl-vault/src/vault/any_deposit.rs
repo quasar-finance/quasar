@@ -56,7 +56,7 @@ pub fn execute_any_deposit(
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
     // Swap logic
-    // TODO: This is clearer now but it could be optimized further enhancing this function readibility
+    // TODO_FUTURE: Optimize this if conditions
     if !swappable_amount.0.is_zero() {
         let (swap_amount, swap_direction) = (
             // range is above current tick
@@ -148,7 +148,6 @@ pub fn execute_any_deposit(
                 ),
             ]))
     } else {
-        // TODO: I dont like this early return here and the fact that this function is or finishing here, or going to invoke an async reply.
         let (mint_msg, user_shares) =
             mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
 

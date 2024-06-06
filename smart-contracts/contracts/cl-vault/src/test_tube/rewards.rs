@@ -82,7 +82,6 @@ mod tests {
 
         // Swaps to generate spread rewards on previously created user positions
         for _ in 0..SWAPS_NUM {
-            // TODO: This is not generating any spread_rewards
             PoolManager::new(&app)
                 .swap_exact_amount_in(
                     MsgSwapExactAmountIn {

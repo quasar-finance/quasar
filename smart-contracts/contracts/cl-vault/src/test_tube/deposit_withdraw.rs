@@ -176,7 +176,7 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(deposited0)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(deposited0))
                 .unwrap(),
             "0.000001"
         );
@@ -187,7 +187,7 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(deposited1)) // TODO: remove hardcoded
+                .checked_add(Uint128::from(deposited1))
                 .unwrap(),
             "0.000001"
         );

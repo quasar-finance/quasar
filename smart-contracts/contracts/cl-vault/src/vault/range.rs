@@ -508,7 +508,6 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // TODO: Remove handling of data. if we keep reply_on_success in the caller function
     match data.clone() {
         SubMsgResult::Ok(msg) => {
             let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();

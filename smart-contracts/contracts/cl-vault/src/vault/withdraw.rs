@@ -188,7 +188,7 @@ mod tests {
         );
         let env = mock_env();
 
-        // TODO: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
+        // TODO_FUTURE: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
         #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::new())
