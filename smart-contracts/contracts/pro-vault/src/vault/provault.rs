@@ -17,9 +17,17 @@ use crate::ownership::ownership::{
     handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection
 };
 
+
+// Vaule module state variables. VAULT_OWNER and VAULT_PROPOSAL state items are used by
+// ownership module which faciliate the ownership of the vault.
 pub const VAULT_OWNER: Admin = Admin::new("vault_owner");
 pub const VAULT_PROPOSAL: Item<OwnerProposal> = Item::new("vault_proposal");
+
+// Vault state indicate the running state of the Vault.state (VaultRunningState) , represented by 
+// Vault struct. Vault state is internally used to control which operations are allowed and 
+// which is not based on the current state of the 
 pub const VAULT_STATE: Item<Vault> = Item::new("vault_state");
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)] 
 pub enum VaultRunningState {
@@ -33,12 +41,13 @@ pub enum VaultRunningState {
   Terminated, 
 }
 
+// VaultAction is a set of actions that can be performed on the vault module. 
 #[cw_serde]
 pub enum VaultAction {
     UpdateRunningState {
         new_state: VaultRunningState,
     },
-    UpdateVaultOwner {},
+    // UpdateVaultOwner {},
     UpdateStrategyOwner {},
     CreateStrategy {
         name: String,
@@ -48,6 +57,8 @@ pub enum VaultAction {
     Ownership(OwnershipActions),
 }
 
+
+// Vault state wrapper, and abstraction for vault operations.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Vault {
     pub state: VaultRunningState,
@@ -72,6 +83,7 @@ impl Vault {
         let owner = VAULT_OWNER.get(deps.as_ref())?;
         ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
 
+        // TODO - State transition logic to be added.
         self.state = new_state;
         self.last_statechange_bh = env.block.height;
 
@@ -119,9 +131,6 @@ impl Vault {
             VaultAction::UpdateStrategyOwner {} => {
                 Self::try_update_strategy_owner(deps)
             }
-            VaultAction::UpdateVaultOwner {} => {
-                Self::try_update_vault_owner(deps)
-            }
             VaultAction::Ownership(oa) => {
                 // Ownership actions 
                 match oa {
@@ -142,20 +151,24 @@ impl Vault {
         info: MessageInfo,
         new_state: VaultRunningState,
     ) -> Result<Response, ContractError> {
+        // Ownership verification. 
+        let owner = VAULT_OWNER.get(deps.as_ref())?;
+        ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
+
+        // TODO - State transition verification logic to be added.
         let mut vault: Vault = VAULT_STATE.load(deps.storage)?;
-        vault.update_state(deps, env, info, new_state)?;
+
+        vault.state = new_state;
+        vault.last_statechange_bh = env.block.height;
+
+        VAULT_STATE.save(deps.storage, &vault)?;
 
         Ok(Response::new()
-            .add_attribute("method", "try_update_running_state"))
+            .add_attribute("action", "update_state")
+            .add_attribute("new_state", format!("{:?}", vault.state))
+            .add_attribute("last_statechange_bh", vault.last_statechange_bh.to_string()))
     }
-
-    fn try_update_strategy_owner(
-        deps: DepsMut,
-    ) -> Result<Response, ContractError> {
-        // Implementation for UpdateStrategyOwner
-        Ok(Response::new()
-            .add_attribute("method", "try_update_strategy_owner"))
-    }
+    
 
     pub fn try_create_strategy(
         deps: DepsMut,
@@ -164,10 +177,21 @@ impl Vault {
         name: String,
         description: String,
     ) -> Result<Response, ContractError> {
+        // Ownership verification. 
+        let owner = VAULT_OWNER.get(deps.as_ref())?;
+        ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
+
+
+        // Current implementation support only one strategy in one provault.
+        // This implentation can be enhanced to support multiple strategy in the single
+        // vault to support complex distribution. 
         if STRATEGY.has(deps.storage, &StrategyKey::new(1)) {
             return Err(VaultError::StrategyAlreadyExists {}.into());
         }
 
+        // TODO - Default strategy ownership to be added in the strategy message.
+        // which will added in the strategy::STRATEGY_OWNER via propose ownership.
+        // This will require strategy owner to first claim the owenership of the strategy actions. 
         let strategy = Strategy {
             id: 1,
             name: name.clone(),
@@ -183,59 +207,17 @@ impl Vault {
             .add_attribute("strategy_description", description))
     }
 
-    fn try_update_vault_owner(
+    // TODO - 
+    fn try_update_strategy_owner(
         deps: DepsMut,
     ) -> Result<Response, ContractError> {
-        // Implementation for UpdateVaultOwner
+        // Implementation for UpdateStrategyOwner. It should create a proposal to change the 
+        // strategy owner if sender has the authority to propose. In the current implementation
+        // only current owner can propose. A design enhancement is added in the comment section of the
+        // ownership module to have a whitelist authority for proposals, which most probablity should be 
+        // some dao dao account. 
         Ok(Response::new()
-            .add_attribute("method", "try_update_vault_owner"))
-    }
-}
-
-impl Ownership for Vault {
-    fn handle_ownership_proposal(
-        &self,
-        deps: DepsMut,
-        info: MessageInfo,
-        env: Env,
-        proposed_owner: String,
-        duration: u64,
-        owner: &Admin,
-        proposal: &Item<OwnerProposal>,
-    ) -> Result<Response, ContractError> {
-        handle_ownership_proposal(deps, info, env, proposed_owner, duration, owner, proposal)
+            .add_attribute("action", "update_strategy_owner"))
     }
 
-    fn handle_ownership_proposal_rejection(
-        &self,
-        deps: DepsMut,
-        info: MessageInfo,
-        owner: &Admin,
-        proposal: &Item<OwnerProposal>,
-    ) -> Result<Response, ContractError> {
-        handle_ownership_proposal_rejection(deps, info, owner, proposal)
-    }
-
-    fn handle_claim_ownership(
-        &self,
-        deps: DepsMut,
-        info: MessageInfo,
-        env: Env,
-        owner: &Admin,
-        proposal: &Item<OwnerProposal>,
-    ) -> Result<Response, ContractError> {
-        handle_claim_ownership(deps, info, env, owner, proposal)
-    }
-
-    fn query_ownership_proposal(
-        &self,
-        deps: Deps,
-        proposal: &Item<OwnerProposal>,
-    ) -> StdResult<OwnerProposal> {
-        query_ownership_proposal(deps, proposal)
-    }
-
-    fn query_owner(&self, deps: Deps, owner: &Admin) -> StdResult<Option<Addr>> {
-        query_owner(deps, owner)
-    }
 }

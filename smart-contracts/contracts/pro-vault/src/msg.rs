@@ -11,13 +11,17 @@ use schemars::JsonSchema;
 // Pro vault instantiate message structure
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    pub thesis: String,      // The general thesis of the vault
-    pub name: String,        // The name of the vault
-    pub provault_config: Config, // Config parameters for the vault
+    // The general thesis of the vault
+    pub thesis: String,      
+    // The name of the vault
+    pub name: String, 
+    // Config parameters for the vault       
+    pub provault_config: Config, 
 }
 
 
 // Pro vault query message enums types.
+// TODO - Extending the Vault standard query message
 #[cw_serde]
 pub enum QueryMsg {
     GetAllStrategies {},
@@ -27,6 +31,8 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct MigrateMsg {}
 
+
+// Pro vault extension execute messages 
 #[cw_serde]
 pub enum ProExtensionExecuteMsg {
     ExecVaultActions {
@@ -37,6 +43,7 @@ pub enum ProExtensionExecuteMsg {
     },
 }
 
+// Extending the vault standard execute message
 #[cw_serde]
 pub enum ExtensionExecuteMsg {
     ProExtension(ProExtensionExecuteMsg),
