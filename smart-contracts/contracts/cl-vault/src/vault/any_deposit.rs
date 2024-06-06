@@ -1,7 +1,7 @@
 use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult,
-    Uint128, Uint256,
+    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Uint256,
 };
 use cw_dex::Pool::Osmosis;
 use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -89,16 +89,18 @@ pub fn execute_any_deposit(
                 swap_calc_result.swap_msg,
                 Replies::AnyDepositSwap.into(),
             ))
-            .add_attribute("method", "execute")
-            .add_attribute("action", "any_deposit")
-            .add_attribute(
-                "token_in",
-                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-            )
-            .add_attribute(
-                "token_out_min",
-                format!("{}", swap_calc_result.token_out_min_amount),
-            ))
+            .add_attributes(vec![
+                attr("method", "execute"),
+                attr("action", "any_deposit"),
+                attr(
+                    "token_in",
+                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+                ),
+                attr(
+                    "token_out_min",
+                    format!("{}", swap_calc_result.token_out_min_amount),
+                ),
+            ]))
     } else if !swappable_amount.1.is_zero() {
         let (swap_amount, swap_direction) = (
             // current tick is above range
@@ -132,16 +134,18 @@ pub fn execute_any_deposit(
                 swap_calc_result.swap_msg,
                 Replies::AnyDepositSwap.into(),
             ))
-            .add_attribute("method", "execute")
-            .add_attribute("action", "any_deposit")
-            .add_attribute(
-                "token_in",
-                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-            )
-            .add_attribute(
-                "token_out_min",
-                format!("{}", swap_calc_result.token_out_min_amount),
-            ))
+            .add_attributes(vec![
+                attr("method", "execute"),
+                attr("action", "any_deposit"),
+                attr(
+                    "token_in",
+                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+                ),
+                attr(
+                    "token_out_min",
+                    format!("{}", swap_calc_result.token_out_min_amount),
+                ),
+            ]))
     } else {
         // TODO: I dont like this early return here and the fact that this function is or finishing here, or going to invoke an async reply.
         let (mint_msg, user_shares) =
