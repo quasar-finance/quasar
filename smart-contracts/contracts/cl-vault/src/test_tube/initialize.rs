@@ -25,7 +25,7 @@ pub mod initialize {
     };
     use std::str::FromStr;
 
-    use crate::helpers::sort_tokens;
+    use crate::helpers::generic::sort_tokens;
     use crate::msg::{
         ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
     };

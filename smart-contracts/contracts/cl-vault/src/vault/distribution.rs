@@ -4,11 +4,11 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
 
-use crate::helpers::sort_tokens;
+use crate::helpers::coinlist::CoinList;
+use crate::helpers::generic::sort_tokens;
+use crate::helpers::msgs::{collect_incentives_msg, collect_spread_rewards_msg};
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POSITION};
 use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
-
-use super::helpers::{collect_incentives_msg, collect_spread_rewards_msg, CoinList};
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {

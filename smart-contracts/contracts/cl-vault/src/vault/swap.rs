@@ -1,11 +1,12 @@
 use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
+use crate::helpers::msgs::swap_msg;
 use crate::state::POOL_CONFIG;
 use crate::{state::VAULT_CONFIG, ContractError};
 
+use super::autocompound::SwapAsset;
 use super::range::assert_range_admin;
-use super::{autocompound::SwapAsset, helpers::swap_msg};
 
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {

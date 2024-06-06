@@ -1,15 +1,18 @@
 use crate::{
-    helpers::{extract_attribute_value_by_ty_and_key, get_twap_price, get_unused_balances},
     helpers::{
-        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+        generic::extract_attribute_value_by_ty_and_key,
+        getters::{
+            get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances,
+        },
+        msgs::swap_msg,
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::CURRENT_BALANCE,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
-        POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP,
+        MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
         concentrated_liquidity::{create_position, get_position},
@@ -33,7 +36,6 @@ use std::str::FromStr;
 
 use super::{
     concentrated_liquidity::get_cl_pool_info,
-    helpers::swap_msg,
     swap::{SwapCalculationResult, SwapParams},
 };
 

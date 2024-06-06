@@ -8,7 +8,7 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::{get_unused_balances, sort_tokens},
+    helpers::{generic::sort_tokens, getters::get_unused_balances},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
@@ -162,7 +162,7 @@ fn withdraw_msg(
 
 #[cfg(test)]
 mod tests {
-    use crate::vault::helpers::CoinList;
+    use crate::helpers::coinlist::CoinList;
     #[allow(deprecated)]
     use crate::{
         // rewards::CoinList,

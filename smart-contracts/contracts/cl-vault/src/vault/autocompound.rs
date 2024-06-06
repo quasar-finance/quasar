@@ -9,7 +9,9 @@ use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
-use crate::helpers::{get_unused_balances, must_pay_one_or_two_from_balance};
+use crate::helpers::assert::must_pay_one_or_two_from_balance;
+use crate::helpers::coinlist::CoinList;
+use crate::helpers::getters::get_unused_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 #[allow(deprecated)]
@@ -17,8 +19,6 @@ use crate::state::USER_REWARDS;
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
-
-use super::helpers::CoinList;
 
 #[cw_serde]
 pub struct SwapAsset {

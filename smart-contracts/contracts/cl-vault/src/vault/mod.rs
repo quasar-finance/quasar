@@ -4,7 +4,6 @@ pub mod autocompound;
 pub mod concentrated_liquidity;
 pub mod distribution;
 pub mod exact_deposit;
-pub mod helpers;
 pub mod merge;
 pub mod range;
 pub mod swap;

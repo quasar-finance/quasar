@@ -7,7 +7,8 @@ use cw2::set_contract_version;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 
 use crate::error::ContractError;
-use crate::helpers::sort_tokens;
+use crate::helpers::generic::sort_tokens;
+use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
@@ -33,7 +34,6 @@ use crate::vault::distribution::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 use crate::vault::exact_deposit::execute_exact_deposit;
-use crate::vault::helpers::prepend_claim_msg;
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
@@ -289,13 +289,13 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[allow(deprecated)]
-    use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
     use crate::{
+        helpers::coinlist::CoinList,
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
-        vault::helpers::CoinList,
     };
+    #[allow(deprecated)]
+    use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},

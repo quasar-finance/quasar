@@ -6,8 +6,8 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
+use crate::helpers::generic::{round_up_to_nearest_multiple, sort_tokens};
 use crate::{
-    helpers::{round_up_to_nearest_multiple, sort_tokens},
     state::{POOL_CONFIG, POSITION},
     ContractError,
 };

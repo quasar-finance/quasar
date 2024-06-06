@@ -1,11 +1,11 @@
-use crate::helpers::get_unused_balances;
+use crate::helpers::coinlist::CoinList;
+use crate::helpers::getters::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::state::DEX_ROUTER;
 use crate::state::{
     PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::get_position;
-use crate::vault::helpers::CoinList;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};

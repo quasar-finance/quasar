@@ -14,11 +14,11 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::helpers::generic::sort_tokens;
     use crate::query::AssetsBalanceResponse;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::test_tube::initialize::initialize::{MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
     use crate::{
-        helpers::sort_tokens,
         math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PositionResponse, TotalVaultTokenSupplyResponse},
