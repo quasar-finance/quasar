@@ -27,7 +27,7 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// swap max slippage // TODO: This is unused
+    /// swap max slippage // TODO: This is unused. This should be used on any swap operations where we pass an offchain computed slippage parameter
     pub swap_max_slippage: Decimal,
     /// Dex router address
     pub dex_router: Addr,

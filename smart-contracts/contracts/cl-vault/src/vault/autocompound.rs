@@ -22,6 +22,8 @@ use crate::ContractError;
 #[cw_serde]
 pub struct SwapAsset {
     pub token_in_denom: String,
+    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
     pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
     pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
 }

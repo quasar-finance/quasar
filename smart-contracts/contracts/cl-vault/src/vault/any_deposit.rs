@@ -1,7 +1,7 @@
 use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
-    coin, Addr, Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Uint256,
+    coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult,
+    Uint128, Uint256,
 };
 use cw_dex::Pool::Osmosis;
 use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -26,6 +26,8 @@ use crate::{
     vault::concentrated_liquidity::get_position,
     ContractError,
 };
+
+use super::swap::SwapCalculationResult;
 
 pub fn execute_any_deposit(
     mut deps: DepsMut,
@@ -69,7 +71,7 @@ pub fn execute_any_deposit(
             },
             SwapDirection::ZeroToOne,
         );
-        let (swap_msg, token_in_denom, token_out_min_amount) = swap_msg_token_in_out_amounts(
+        let swap_calc_result = calculate_swap_amount(
             deps,
             &env,
             pool_config,
@@ -84,13 +86,19 @@ pub fn execute_any_deposit(
         // rest minting logic remains same
         Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
-                swap_msg,
+                swap_calc_result.swap_msg,
                 Replies::AnyDepositSwap.into(),
             ))
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
-            .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
-            .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
+            .add_attribute(
+                "token_in",
+                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+            )
+            .add_attribute(
+                "token_out_min",
+                format!("{}", swap_calc_result.token_out_min_amount),
+            ))
     } else if !swappable_amount.1.is_zero() {
         let (swap_amount, swap_direction) = (
             // current tick is above range
@@ -106,7 +114,7 @@ pub fn execute_any_deposit(
             },
             SwapDirection::OneToZero,
         );
-        let (swap_msg, token_in_denom, token_out_min_amount) = swap_msg_token_in_out_amounts(
+        let swap_calc_result = calculate_swap_amount(
             deps,
             &env,
             pool_config,
@@ -121,13 +129,19 @@ pub fn execute_any_deposit(
         // rest minting logic remains same
         Ok(Response::new()
             .add_submessage(SubMsg::reply_on_success(
-                swap_msg,
+                swap_calc_result.swap_msg,
                 Replies::AnyDepositSwap.into(),
             ))
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
-            .add_attribute("token_in", format!("{}{}", swap_amount, token_in_denom))
-            .add_attribute("token_out_min", format!("{}", token_out_min_amount)))
+            .add_attribute(
+                "token_in",
+                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+            )
+            .add_attribute(
+                "token_out_min",
+                format!("{}", swap_calc_result.token_out_min_amount),
+            ))
     } else {
         // TODO: I dont like this early return here and the fact that this function is or finishing here, or going to invoke an async reply.
         let (mint_msg, user_shares) =
@@ -263,35 +277,35 @@ fn mint_msg_user_shares(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn swap_msg_token_in_out_amounts(
+fn calculate_swap_amount(
     deps: DepsMut,
     env: &Env,
     pool_config: PoolConfig,
     swap_direction: SwapDirection,
-    swap_amount: Uint128,
+    token_in_amount: Uint128,
     swappable_amount: (Uint128, Uint128),
     deposit_amount_in_ratio: (Uint128, Uint128),
     max_slippage: Decimal,
     recipient: &Addr,
-) -> Result<(CosmosMsg, String, Uint128), ContractError> {
+) -> Result<SwapCalculationResult, ContractError> {
     // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     // TODO check on the twap_window_seconds (taking hardcoded value for now)
     let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
             SwapDirection::ZeroToOne => (
-                pool_config.token0,
-                pool_config.token1,
-                swap_amount
+                &pool_config.token0,
+                &pool_config.token1,
+                token_in_amount
                     .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-                swappable_amount.0.checked_sub(swap_amount)?,
+                swappable_amount.0.checked_sub(token_in_amount)?,
             ),
             SwapDirection::OneToZero => (
-                pool_config.token1,
-                pool_config.token0,
-                swap_amount
+                &pool_config.token1,
+                &pool_config.token0,
+                token_in_amount
                     .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-                swappable_amount.1.checked_sub(swap_amount)?,
+                swappable_amount.1.checked_sub(token_in_amount)?,
             ),
         };
 
@@ -308,13 +322,23 @@ fn swap_msg_token_in_out_amounts(
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
 
+    if !pool_config.pool_contains_token(token_in_denom) {
+        return Err(ContractError::InvalidSwapAssets {});
+        // TODO: Restore this error
+        // return Err(ContractError::BadTokenForSwap {
+        //     base_token: pool_config.token0,
+        //     quote_token: pool_config.token1,
+        // });
+    }
+
     // generate a swap message with recommended path as the current
     // pool on which the vault is running
     let swap_msg = swap_msg(
-        deps,
+        &deps,
         env,
         SwapParams {
-            token_in_amount: swap_amount,
+            pool_id: pool_config.pool_id,
+            token_in_amount,
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.clone(),
@@ -331,5 +355,11 @@ fn swap_msg_token_in_out_amounts(
         },
     )?;
 
-    Ok((swap_msg, token_in_denom, token_out_min_amount))
+    Ok(SwapCalculationResult {
+        swap_msg,
+        token_in_denom: token_in_denom.to_string(),
+        token_out_min_amount,
+        token_in_amount,
+        position_id: None,
+    })
 }

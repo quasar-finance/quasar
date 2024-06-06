@@ -20,8 +20,8 @@ use crate::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
+    attr, to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
+    MessageInfo, Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 use osmosis_std::types::osmosis::{
@@ -333,7 +333,7 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
-    let calculated_swap: Option<SwapCalculationResult> = calculate_swap_amount(
+    let swap_calc_result = calculate_swap_amount(
         deps,
         env,
         position_id,
@@ -345,37 +345,38 @@ pub fn do_swap_deposit_merge(
     )?;
 
     // Start constructing the response
-    let mut response = Response::new()
+    let response = Response::new()
         .add_attribute("method", "reply")
         .add_attribute("action", "do_swap_deposit_merge");
 
     // Check if there is a swap message and append accordingly
-    if let Some(calculated) = calculated_swap {
-        response = response.add_submessage(SubMsg::reply_on_success(
-            calculated.swap_msg,
-            Replies::Swap.into(),
-        ));
-        response = response.add_attribute(
-            "token_in",
-            format!(
-                "{}{}",
-                calculated.token_in_amount, calculated.token_in_denom
-            ),
-        );
-        response = response.add_attribute(
-            "token_out_min",
-            format!("{}", calculated.token_out_min_amount),
-        );
+    if let Some(calculated) = swap_calc_result {
+        Ok(response
+            .add_submessage(SubMsg::reply_on_success(
+                calculated.swap_msg,
+                Replies::Swap.into(),
+            ))
+            .add_attributes(vec![
+                attr(
+                    "token_in",
+                    format!(
+                        "{}{}",
+                        calculated.token_in_amount, calculated.token_in_denom
+                    ),
+                ),
+                attr(
+                    "token_out_min",
+                    format!("{}", calculated.token_out_min_amount),
+                ),
+            ]))
     } else {
         // If no swap message, add a new position attribute
-        response = response.add_attribute("new_position", position_id.unwrap().to_string());
+        Ok(response.add_attribute("new_position", position_id.unwrap().to_string()))
     }
-
-    Ok(response)
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn calculate_swap_amount(
+fn calculate_swap_amount(
     deps: DepsMut,
     env: Env,
     position_id: Option<u64>,
@@ -441,20 +442,20 @@ pub fn calculate_swap_amount(
         return Ok(None);
     };
 
-    // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
+    // TODO: check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
             SwapDirection::ZeroToOne => (
-                pool_config.token0,
-                pool_config.token1,
+                &pool_config.token0,
+                &pool_config.token1,
                 token_in_amount
                     .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
                 balance0.checked_sub(token_in_amount)?,
             ),
             SwapDirection::OneToZero => (
-                pool_config.token1,
-                pool_config.token0,
+                &pool_config.token1,
+                &pool_config.token0,
                 token_in_amount
                     .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
                 balance1.checked_sub(token_in_amount)?,
@@ -467,20 +468,32 @@ pub fn calculate_swap_amount(
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
 
-    let swap_params = SwapParams {
-        token_in_amount,
-        token_out_min_amount,
-        token_in_denom: token_in_denom.clone(),
-        token_out_denom,
-        recommended_swap_route: mrs.recommended_swap_route,
-        force_swap_route: mrs.force_swap_route,
-    };
+    if !pool_config.pool_contains_token(token_in_denom) {
+        return Err(ContractError::InvalidSwapAssets {});
+        // TODO: Restore this error
+        // return Err(ContractError::BadTokenForSwap {
+        //     base_token: pool_config.token0,
+        //     quote_token: pool_config.token1,
+        // });
+    }
 
-    let swap_msg = swap_msg(deps, &env, swap_params)?;
+    let swap_msg = swap_msg(
+        &deps,
+        &env,
+        SwapParams {
+            pool_id: pool_config.pool_id,
+            token_in_amount,
+            token_out_min_amount,
+            token_in_denom: token_in_denom.clone(),
+            token_out_denom: token_out_denom.to_string(),
+            recommended_swap_route: mrs.recommended_swap_route,
+            force_swap_route: mrs.force_swap_route,
+        },
+    )?;
 
     Ok(Some(SwapCalculationResult {
         swap_msg,
-        token_in_denom,
+        token_in_denom: token_in_denom.to_string(),
         token_in_amount,
         token_out_min_amount,
         position_id: None,
