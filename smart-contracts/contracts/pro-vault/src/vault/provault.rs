@@ -11,10 +11,11 @@ use schemars::JsonSchema;
 use crate::error::ContractError;
 use crate::ownership;
 use crate::vault::error::VaultError;
-use crate::strategy::strategy::{Strategy, STRATEGY, StrategyKey};
+use crate::strategy::strategy::{Strategy, StrategyKey, STRATEGY, STRATEGY_OWNER, STRATEGY_PROPOSAL};
 use crate::ownership::ownership::{
     OwnerProposal, Ownership, OwnershipActions, query_owner, query_ownership_proposal,
-    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection
+    handle_claim_ownership, handle_ownership_proposal, handle_ownership_proposal_rejection,
+    MAX_DURATION
 };
 
 
@@ -52,6 +53,7 @@ pub enum VaultAction {
     CreateStrategy {
         name: String,
         description: String,
+        owner: String,
     },
     // Try Ownership extension.
     Ownership(OwnershipActions),
@@ -122,8 +124,8 @@ impl Vault {
         // 1. PROVAULT METHOD PROTECTION BY OWNER
         // 2. STATE WISE ACTION PROTECTION, in which state what action can be performed.
         match action {
-            VaultAction::CreateStrategy { name, description } => {
-                Self::try_create_strategy(deps, env, info, name, description)
+            VaultAction::CreateStrategy { name, description, owner } => {
+                Self::try_create_strategy(deps, env, info, name, description, owner)
             }
             VaultAction::UpdateRunningState { new_state } => {
                 Self::try_update_running_state(deps, env, info, new_state)
@@ -135,11 +137,18 @@ impl Vault {
                 // Ownership actions 
                 match oa {
                     OwnershipActions::ProposeNewOwner { new_owner, duration } => {                     
-                        handle_ownership_proposal(deps, info, env, new_owner, duration, 
+                        handle_ownership_proposal(deps, info, env, 
+                            new_owner, duration, 
                             &VAULT_OWNER, &VAULT_PROPOSAL)
                     }
-                    OwnershipActions::RejectOwnershipProposal {  } => {todo!()}
-                    OwnershipActions::ClaimOwnership {  } => {todo!()}
+                    OwnershipActions::RejectOwnershipProposal {  } => { 
+                        handle_ownership_proposal_rejection(deps, info, 
+                            &VAULT_OWNER, &VAULT_PROPOSAL)
+                    }
+                    OwnershipActions::ClaimOwnership {  } => {
+                        handle_claim_ownership(deps, info, env,  
+                            &VAULT_OWNER, &VAULT_PROPOSAL)
+                    }
                 }
             }
         }
@@ -171,15 +180,16 @@ impl Vault {
     
 
     pub fn try_create_strategy(
-        deps: DepsMut,
+        mut deps: DepsMut,
         env: Env,
         info: MessageInfo,
         name: String,
         description: String,
+        proposed_owner: String,
     ) -> Result<Response, ContractError> {
         // Ownership verification. 
         let owner = VAULT_OWNER.get(deps.as_ref())?;
-        ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
+        ensure!(owner == Some(info.sender.clone()), ContractError::Unauthorized {});
 
 
         // Current implementation support only one strategy in one provault.
@@ -189,25 +199,39 @@ impl Vault {
             return Err(VaultError::StrategyAlreadyExists {}.into());
         }
 
-        // TODO - Default strategy ownership to be added in the strategy message.
-        // which will added in the strategy::STRATEGY_OWNER via propose ownership.
-        // This will require strategy owner to first claim the owenership of the strategy actions. 
+        // Strategy object initialization.   
         let strategy = Strategy {
             id: 1,
             name: name.clone(),
             description: description.clone(),
         };
-
         STRATEGY.save(deps.storage, &StrategyKey::new(1), &strategy)?;
+        // At the time of creating strategy object info.sender has to become the default owner.
+        // This is the design constraint of ownership module, info.sender then, further propose the 
+        // change on the same call. 
+        STRATEGY_OWNER.set(deps.branch(), Some(info.sender.clone()));  
 
+
+        // Ownership proposal to be created on the same call. 
+        let strategy_current_owner = STRATEGY_OWNER.get(deps.as_ref())?.unwrap();
+        strategy.handle_ownership_proposal(deps, info, env, 
+            proposed_owner.clone(), MAX_DURATION,
+            &STRATEGY_OWNER, &STRATEGY_PROPOSAL); 
+
+        // TODO - 
+        // Add adaptors and preset distribution related parameters. 
+        // This could be optional to allow toset those params in a separate transaction 
+        // by the current owner. 
         Ok(Response::new()
             .add_attribute("action", "create_strategy")
             .add_attribute("strategy_id", "1")
             .add_attribute("strategy_name", name)
-            .add_attribute("strategy_description", description))
+            .add_attribute("strategy_description", description)
+            .add_attribute("strategy_current_owner", strategy_current_owner.to_string())
+            .add_attribute("strategy_proposed_owner", proposed_owner))
     }
 
-    // TODO - 
+    // TODO - Near future Extension.
     fn try_update_strategy_owner(
         deps: DepsMut,
     ) -> Result<Response, ContractError> {

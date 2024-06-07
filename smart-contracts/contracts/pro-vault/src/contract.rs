@@ -1,5 +1,6 @@
 use crate::error::ContractError;
 
+use cw_storage_plus::Map;
 use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg};
 use crate::msg::ProExtensionExecuteMsg;
 use crate::msg::ExtensionExecuteMsg;
@@ -10,6 +11,10 @@ use crate::vault::provault::{VaultRunningState, VAULT_STATE, VAULT_OWNER, Vault,
 use crate::vault::config::{VAULT_CONFIG, Config};
 use crate::vault::query::{VaultQueryMsg, query_vault_config, 
     query_vault_running_state, query_all_strategies};
+
+use crate::proshare::share_allocator::{allocate_shares, ShareConfig, ShareType};
+
+pub const WHITELIST_DENOMS: Map<&str, bool> = Map::new("whitelist_denoms");
 
 use cosmwasm_std::{
     entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, 
@@ -80,6 +85,12 @@ pub fn instantiate(
     VAULT_CONFIG.save(deps.storage, &config).map_err(|e| {
         ContractError::SaveConfigError(e.to_string())
     })?;
+
+    // Initialize the whitelist-denoms that are allowed to deposit in this 
+    // instance of contract
+   for denom in msg.whitelisted_denoms {
+        WHITELIST_DENOMS.save(deps.storage, &denom, &true)?;
+    }
 
     // Clone necessary parts of info before moving it
     let info_clone = info.clone();
@@ -167,22 +178,39 @@ fn try_deposit(
     if info.funds.len() != 1 || info.funds[0].amount != amount {
         return Err(ContractError::Std(StdError::generic_err("Incorrect deposit amount")));
     }
-
-    // TODO - Whitelist denom verification. Whitelist should be added in initialise message too. 
-    //        there should be a separate update whitelist exection as well.
-    // Ensure the denom matches
-    if info.funds[0].denom != "uosmo" { // TODO - Replace with the appropriate denom
-        return Err(ContractError::Std(StdError::generic_err("Incorrect denom")));
+ 
+    // Whitelist denom verification.
+    let denom = &info.funds[0].denom; 
+    if !WHITELIST_DENOMS.has(deps.storage, denom) {
+        return Err(ContractError::Std(StdError::generic_err("Denom not allowed")));
     }
 
 
-    // TODO - share calculation and allocation to be done on reply handler on successful deposit. 
+    // TODO - Share calculation and allocation to be done. 
+    // Options - 1. Mint share here at this point of time based on the current value of 
+    // provault share in terms of deposited denoms. Fetch the value from the oracle here and 
+    // calc if the oracle pricing and last updated time is acceptable. 
+    // Options - 2. Delayed calculation. [ Async Handling To be done in this case. ]
+    // a. Store the deposited value in storage from the user with block height 
+    // b. Store the oracle pricing that should be used for share calculation. 
+    // c. Deploy the fund across the adaptors. 
+    // d. On successfully adaptor deployment, we do the calculation, and allocate share based on 
+    //    previously stored values 
+
+    // DUMMY IMPLEMENTATION FOR SHARE FOR TESTING
+    // Define the share configuration (using the deposit denom to create the share denom)
+    let share_config = ShareConfig::new(ShareType::Number, denom);
+
+    // Allocate shares using the proshare module
+    let allocate_response = allocate_shares(deps, env.clone(), info.clone(), recipient.clone(), amount, &share_config)?; 
 
     Ok(Response::new()
-        .add_attribute("method", "try_deposit")
-        .add_attribute("amount", amount.to_string())
-        .add_attribute("sender", info.sender.to_string())
-        .add_attribute("recipient", env.contract.address.to_string()))
+    .add_attribute("method", "try_deposit")
+    .add_attribute("amount", amount.to_string())
+    .add_attribute("sender", info.sender.to_string())
+    .add_attribute("recipient", env.contract.address.to_string())
+    .add_attributes(allocate_response.attributes))
+        
 }
 
 fn try_exec_strategy_actions(

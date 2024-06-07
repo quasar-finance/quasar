@@ -144,11 +144,18 @@ impl Strategy {
                 match oa {
                     OwnershipActions::ProposeNewOwner { new_owner, duration } => 
                     {                     
-                        handle_ownership_proposal(deps, info, env, new_owner, duration, 
+                        handle_ownership_proposal(deps, info, env, 
+                            new_owner, duration, 
                             &STRATEGY_OWNER, &STRATEGY_PROPOSAL)
                     }
-                    OwnershipActions::RejectOwnershipProposal { } => { todo!() }
-                    OwnershipActions::ClaimOwnership { } => { todo!() }
+                    OwnershipActions::RejectOwnershipProposal { } => { 
+                            handle_ownership_proposal_rejection(deps, info, 
+                                &STRATEGY_OWNER, &STRATEGY_PROPOSAL)
+                    }
+                    OwnershipActions::ClaimOwnership { } => { 
+                            handle_claim_ownership(deps, info, env, 
+                                &STRATEGY_OWNER, &STRATEGY_PROPOSAL)
+                    }
                 }
              }
         }

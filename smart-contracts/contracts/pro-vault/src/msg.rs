@@ -17,6 +17,8 @@ pub struct InstantiateMsg {
     pub name: String, 
     // Config parameters for the vault       
     pub provault_config: Config, 
+    // Whitelist denoms
+    pub whitelisted_denoms: Vec<String>
 }
 
 
