@@ -46,8 +46,8 @@ mod test {
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
-                        lower_price: Decimal::from_str("400").unwrap(),
-                        upper_price: Decimal::from_str("1466").unwrap(),
+                        lower_price: Decimal::from_str("0.65").unwrap(),
+                        upper_price: Decimal::from_str("1.3").unwrap(),
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
