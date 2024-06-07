@@ -10,12 +10,11 @@ mod tests {
         test_tube::{
             helpers::get_event_attributes_by_ty_and_key,
             initialize::initialize::{
-                fixture_default, DENOM_BASE, DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,
+                fixture_default, ACCOUNTS_INIT_BALANCE, DENOM_BASE, DENOM_QUOTE,
+                PERFORMANCE_FEE_DEFAULT,
             },
         },
     };
-
-    const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
 
     #[test]
     #[ignore]
@@ -27,9 +26,9 @@ mod tests {
         // Create Alice account
         let alice = app
             .init_account(&[
-                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
-                Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
+                Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
+                Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -50,6 +49,7 @@ mod tests {
             .unwrap();
 
         // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
+
         /*
         user:assets: AssetsBalanceResponse { balances: [Coin { 281243579389884 "uatom" }, Coin { 448554353093648 "uosmo" }] }
         1_000_000_000_000_000
@@ -217,9 +217,9 @@ mod tests {
         // Create Alice account
         let alice = app
             .init_account(&[
-                Coin::new(INITIAL_BALANCE_AMOUNT, "uosmo"),
-                Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(INITIAL_BALANCE_AMOUNT, DENOM_QUOTE),
+                Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
+                Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
             ])
             .unwrap();
 
@@ -234,8 +234,8 @@ mod tests {
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None },
                 &[
-                    Coin::new(1_000_000_000_000_000_000, DENOM_BASE),
-                    Coin::new(1_000_000_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE / 10, DENOM_BASE),
+                    Coin::new(ACCOUNTS_INIT_BALANCE / 10, DENOM_QUOTE),
                 ],
                 &alice,
             )
@@ -270,14 +270,14 @@ mod tests {
         // deposit alice 3x 1_000_000_000_000_000_000. we should be close to 3*10^18 for the eth asset
         assert_approx_eq!(
             user_assets.balances[0].amount,
-            Uint128::from(1_879_559_586_415_174_597u128), // TODO: remove hardcoded value
-            "0.001"
+            Uint128::from(187_955_958_641_517u128), // TODO: remove hardcoded value
+            "0.0000005"
         );
         // deposit alice 3x 1_000_000_000. we should be close to 3*10^9 for the osmo asset
         assert_approx_eq!(
             user_assets.balances[1].amount,
-            Uint128::from(3_000_000_000_000_000_000u128),
-            "0.001"
+            Uint128::from(300_000_000_000_000u128), // TODO: remove hardcoded value
+            "0.0000005"
         );
 
         let user_assets_again: AssetsBalanceResponse = wasm
@@ -290,13 +290,13 @@ mod tests {
             .unwrap();
         assert_approx_eq!(
             user_assets_again.balances[0].amount,
-            Uint128::from(1_879_559_586_415_174_597u128),
-            "0.001"
+            Uint128::from(187_955_958_641_517u128),
+            "0.0000005"
         );
         assert_approx_eq!(
             user_assets_again.balances[1].amount,
-            Uint128::from(3_000_000_000_000_000_000u128),
-            "0.001"
+            Uint128::from(300_000_000_000_000u128),
+            "0.0000005"
         );
 
         let vault_assets: TotalAssetsResponse = wasm
@@ -308,9 +308,9 @@ mod tests {
             vault_assets_before
                 .token0
                 .amount
-                .checked_add(Uint128::from(1_879_559_586_415_174_597u128))
+                .checked_add(Uint128::from(187_955_958_641_517u128))
                 .unwrap(),
-            "0.001"
+            "0.0000005"
         );
         // again we get refunded so we only expect around 500 to deposit here
         assert_approx_eq!(
@@ -318,9 +318,9 @@ mod tests {
             vault_assets_before
                 .token1
                 .amount
-                .checked_add(Uint128::from(3_000_000_000_000_000_000u128))
+                .checked_add(Uint128::from(300_000_000_000_000u128))
                 .unwrap(),
-            "0.01"
+            "0.0000005"
         );
 
         let _withdraw = wasm

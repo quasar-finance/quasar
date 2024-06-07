@@ -112,7 +112,6 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
     let ticks_filled_by_current_spacing =
         price_in_this_exponent / geo_spacing.additive_increment_per_tick;
 
-    // TODO: Optimize this type conversion
     let ticks_filled_uint_floor = ticks_filled_by_current_spacing.to_uint_floor();
     let ticks_filled_int: i128 = Uint128::try_from(ticks_filled_uint_floor)?
         .u128()

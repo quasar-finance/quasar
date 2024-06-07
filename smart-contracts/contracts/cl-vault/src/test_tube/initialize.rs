@@ -33,7 +33,7 @@ pub mod initialize {
     use crate::state::VaultConfig;
     use crate::test_tube::helpers::calculate_deposit_ratio;
 
-    const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
+    pub const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
     pub const PERFORMANCE_FEE_DEFAULT: u64 = 20;
 
     // const _TOKENS_PROVIDED_AMOUNT_LOW: &str = "1000000000000000";

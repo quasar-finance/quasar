@@ -66,11 +66,7 @@ pub fn refund_bank_msg(
 
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
-pub fn swap_msg(
-    deps: &DepsMut,
-    env: &Env,
-    mut params: SwapParams,
-) -> Result<CosmosMsg, ContractError> {
+pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMsg, ContractError> {
     // let pool_config = POOL_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
@@ -79,9 +75,6 @@ pub fn swap_msg(
         pool_id: params.pool_id,
         token_out_denom: params.token_out_denom.to_string(),
     };
-
-    // FIX: We are subtracting 1 from the token_out_min_amount because sometimes the Dex is underflowing the amount OF 1 uDENOM
-    params.token_out_min_amount = params.token_out_min_amount.saturating_sub(Uint128::new(1));
 
     // if we don't have a dex_router, we will always swap over the osmosis pool
     if dex_router.is_none() {
