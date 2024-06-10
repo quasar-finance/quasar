@@ -1,17 +1,22 @@
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, Uint128, StdResult, Attribute};
 use crate::error::ContractError;
 use cw_storage_plus::Map;
+use schemars::JsonSchema;
+use serde::{Serialize, Deserialize};
+use cosmwasm_schema::cw_serde;
 
 // Define the map for allocated shares
 pub const ALLOCATED_SHARES: Map<&str, Uint128> = Map::new("allocated_shares");
 
-#[derive(Clone, Debug, PartialEq)]
+// #[cw_serde]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum ShareType {
     Number,
     Cw20Token,
     TokenFactory,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ShareConfig {
     pub share_type: ShareType,
     pub share_denom: String, // TODO - Only a representation during test phases for Number type.

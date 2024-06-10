@@ -1,54 +1,54 @@
-use cosmwasm_std::{Addr, Coin, DepsMut, Env, MessageInfo, Response, StdError, StdResult};
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128};
 use cw_storage_plus::Map;
-use crate::error::ContractError;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use schemars::JsonSchema;
 
-pub const USER_POSITIONS: Map<Addr, UserPosition> = Map::new("user_positions");
+use crate::proshare::share_allocator::{ShareConfig, calculate_shares};
 
-// #[cw_serde]
+
+pub const USER_POSITIONS: Map<&Addr, UserPosition> = Map::new("user_positions");
+
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct UserPosition {
-    pub user_address: Addr,
-    pub total_share: u128,
-    pub deposit_amount: u128,
-    pub last_updated: u64,
+    pub user: Addr,
+    pub shares: Uint128,
 }
 
 impl UserPosition {
-    pub fn new(user_address: Addr, total_share: u128, deposit_amount: u128, last_updated: u64) -> Self {
-        UserPosition {
-            user_address,
-            total_share,
-            deposit_amount,
-            last_updated,
+    pub fn new(user: Addr, shares: Uint128) -> Self {
+        Self {
+            user,
+            shares,
         }
     }
 }
 
-pub fn update_user_position(
+pub fn allocate_position(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
-    user_address: Addr,
-    total_share: u128,
-    deposit_amount: u128,
-) -> Result<Response, ContractError> {
-    let position = UserPosition::new(user_address.clone(), total_share, deposit_amount, env.block.time.seconds());
+    amount: Uint128,
+    config: &ShareConfig,
+) -> StdResult<Response> {
+    // Calculate the number of shares to allocate based on the amount
+    let shares = calculate_shares(amount, config);
 
-    USER_POSITIONS.save(deps.storage, user_address.clone(), &position)?;
+    // Load the user's position or create a new one if it doesn't exist
+    let mut position = USER_POSITIONS.may_load(deps.storage, &info.sender)?
+        .unwrap_or_else(|| UserPosition::new(info.sender.clone(), 
+            Uint128::zero()));
 
-    Ok(Response::new()
-        .add_attribute("action", "update_user_position")
-        .add_attribute("user_address", user_address.to_string())
-        .add_attribute("total_share", total_share.to_string())
-        .add_attribute("deposit_amount", deposit_amount.to_string())
-        .add_attribute("sender", info.sender.to_string()))
+    // Update the user's position with the new shares
+    position.shares += shares;
+
+    // Save the updated position
+    USER_POSITIONS.save(deps.storage, &info.sender, &position)?;
+
+    Ok(Response::new().add_attribute("method", "allocate_position"))
 }
 
-pub fn get_user_position(
-    deps: DepsMut,
-    user_address: Addr,
-) -> StdResult<UserPosition> {
-    USER_POSITIONS.load(deps.storage, user_address)
+pub fn query_position(deps: Deps, address: Addr) -> StdResult<UserPosition> {
+    let position = USER_POSITIONS.load(deps.storage, &address)?;
+    Ok(position)
 }

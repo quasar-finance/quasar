@@ -1,6 +1,11 @@
-use crate::error::ContractError;
-
 use cw_storage_plus::Map;
+use cosmwasm_std::{
+    entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, 
+    StdResult, StdError, Uint128, BankMsg,CosmosMsg,Attribute
+    };
+
+    use crate::error::ContractError;
+
 use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg};
 use crate::msg::ProExtensionExecuteMsg;
 use crate::msg::ExtensionExecuteMsg;
@@ -14,12 +19,16 @@ use crate::vault::query::{VaultQueryMsg, query_vault_config,
 
 use crate::proshare::share_allocator::{allocate_shares, ShareConfig, ShareType};
 
+use crate::position_manager::vault_position_manager::{initialize as initialize_vault,
+    deposit as vault_deposit, 
+    query_provault_position, query_deposit};
+use crate::position_manager::user_position_manager::{allocate_position as user_allocate_position
+    , query_position};
+
+
 pub const WHITELIST_DENOMS: Map<&str, bool> = Map::new("whitelist_denoms");
 
-use cosmwasm_std::{
-    entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, 
-    StdResult, StdError, Uint128, BankMsg,CosmosMsg,Attribute
-    };
+
   
 // TODO - 
 // 1. Locality of local variables to be strucured, that will reduce number of imports from
@@ -167,7 +176,7 @@ fn try_update_running_state(
 }
 
 fn try_deposit(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     amount: Uint128,
@@ -202,14 +211,19 @@ fn try_deposit(
     let share_config = ShareConfig::new(ShareType::Number, denom);
 
     // Allocate shares using the proshare module
-    let allocate_response = allocate_shares(deps, env.clone(), info.clone(), recipient.clone(), amount, &share_config)?; 
+    // let allocate_response = allocate_shares(deps, env.clone(), info.clone(), recipient.clone(), amount, &share_config)?; 
+    
+    // First, allocate shares for the user
+    let user_allocate_resp = user_allocate_position(deps.branch(), env.clone(), info.clone(), amount, &share_config)?;
+    let vault_deposit_resp = vault_deposit(deps, env.clone(), info.clone(), amount, &share_config)?;
 
     Ok(Response::new()
     .add_attribute("method", "try_deposit")
     .add_attribute("amount", amount.to_string())
     .add_attribute("sender", info.sender.to_string())
     .add_attribute("recipient", env.contract.address.to_string())
-    .add_attributes(allocate_response.attributes))
+    .add_attributes(user_allocate_resp.attributes)
+    .add_attributes(vault_deposit_resp.attributes))
         
 }
 
