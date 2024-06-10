@@ -243,8 +243,17 @@ impl Strategy {
     }
 
     pub fn distribute_funds_with_preset_ratios(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-        let mut response = Response::new().add_attribute("action", "distribute_funds_with_preset_ratios");
+        
+        let mut response = Response::new().
+            add_attribute("action", "distribute_funds_with_preset_ratios");
 
+        // TODO #1 - total_outstanding share and amount To be taken from vault::vault_position_manager.
+        // TODO #2 - open deposit objects should be cleared after successful distribution. 
+        // TOTO #3 - reply handlers should be added. Design decision to be taken for one step distribution 
+        //           which will require async handlings. The good option is to just send fund to the adaptors.
+        //           and adaptor will take care of further allocation in the actual allocation to yield destination.
+        // TODO #4 - Real shares <denoms, amount> to be saved from the yield destinations in the position_manager 
+        //           adaptor_position_manager. 
         let total_funds = Uint128::new(1000); // Placeholder for the actual amount in the treasury.
         let ratios = ADAPTOR_RATIOS.range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
             .map(|item| item.map(|(k, v)| AdaptorRatio { adaptor_id: k, ratio: v }))
