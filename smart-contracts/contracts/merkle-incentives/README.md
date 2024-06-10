@@ -24,6 +24,9 @@ The merkle proof/root generator will strip commas and spaces from the csv before
 
 during the claim, the contract will automatically sort the tokens and strip commas/whitespace, so no additional work is required on the client side in order to claim, as long as they have the proper proof generated.
 
+## Updating merkle root
+The merkle root of the contract is updated by the incentives admin. This admin is an address set at instantiation and can be updated by the contract admin. 
+
 ## Test
 
 The test data directory contains a csv called testdata.csv. This is the source document that a merkle tree can be generated on. As you can see we can easily add more rows to add users and more columns to add more incentive tokens.
