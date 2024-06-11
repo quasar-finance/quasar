@@ -21,7 +21,7 @@ use osmosis_std::types::{
 
 use crate::math::tick::tick_to_price;
 use crate::state::{
-    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
+    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG
 };
 
 pub struct QuasarQuerier {
@@ -227,9 +227,10 @@ pub fn mock_deps_with_querier_with_balance(
             },
         )
         .unwrap();
-    POSITION
+    POSITIONS
         .save(
             storage,
+            1,
             &crate::state::Position {
                 position_id: 1,
                 join_time: 0,
@@ -288,9 +289,10 @@ pub fn mock_deps_with_querier(
 
     let storage = &mut deps.storage;
 
-    POSITION
+    POSITIONS
         .save(
             storage,
+            position_id,
             &Position {
                 position_id,
                 join_time: 0,
@@ -321,9 +323,10 @@ pub fn mock_deps_with_querier(
             },
         )
         .unwrap();
-    POSITION
+    POSITIONS
         .save(
             storage,
+            1,
             &crate::state::Position {
                 position_id: 1,
                 join_time: 0,

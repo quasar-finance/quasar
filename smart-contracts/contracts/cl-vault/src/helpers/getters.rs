@@ -27,7 +27,7 @@ pub(crate) fn must_pay_one_or_two(
     if info.funds.len() != 2 && info.funds.len() != 1 {
         return Err(ContractError::IncorrectAmountFunds);
     }
-    
+
     get_one_or_two(&info.funds, denoms)
 }
 

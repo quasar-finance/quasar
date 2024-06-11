@@ -92,7 +92,7 @@ pub enum ModifyRange {
         liquidity: Decimal256,
     },
     /// Create a new position. This consumes all free balance up to max_percentage current free balance
-     CreatePosition {
+    CreatePosition {
         /// The lower price of the new position
         lower_price: Decimal,
         /// The upper price of the new position

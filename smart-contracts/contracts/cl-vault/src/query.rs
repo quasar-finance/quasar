@@ -221,23 +221,24 @@ pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, C
 
     // TODO would be nice to remove the unwraps here, although the unwraps are not awful since something is clearly
     // terribly wrong if Osmosis returns non uints in the amounts field
-    let (amount0, amount1) = positions.positions.iter().fold(
-        (Uint128::zero(), Uint128::zero()),
-        |(acc0, acc1), fp| {
-            (
-                acc0 + fp
-                    .full_breakdown
-                    .asset0
-                    .map(|c| c.amount.parse().unwrap())
-                    .unwrap_or(Uint128::zero()),
-                acc1 + fp
-                    .full_breakdown
-                    .asset1
-                    .map(|c| c.amount.parse().unwrap())
-                    .unwrap_or(Uint128::zero()),
-            )
-        },
-    );
+    let (amount0, amount1) =
+        positions
+            .positions
+            .iter()
+            .fold((Uint128::zero(), Uint128::zero()), |(acc0, acc1), fp| {
+                (
+                    acc0 + fp
+                        .full_breakdown
+                        .asset0
+                        .map(|c| c.amount.parse().unwrap())
+                        .unwrap_or(Uint128::zero()),
+                    acc1 + fp
+                        .full_breakdown
+                        .asset1
+                        .map(|c| c.amount.parse().unwrap())
+                        .unwrap_or(Uint128::zero()),
+                )
+            });
 
     let free0 = deps
         .querier
