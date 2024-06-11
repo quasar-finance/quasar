@@ -12,7 +12,9 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool, query_positions, query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse
+    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
+    query_positions, query_total_assets, query_total_vault_token_supply, query_user_assets,
+    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -36,7 +38,10 @@ use crate::vault::merge::{
 };
 use crate::vault::range::create_position::handle_range_new_create_position;
 use crate::vault::range::modify_position_funds::handle_range_add_to_position_reply;
-use crate::vault::range::move_position::{get_range_admin, handle_initial_create_position_reply, handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply};
+use crate::vault::range::move_position::{
+    get_range_admin, handle_initial_create_position_reply, handle_iteration_create_position_reply,
+    handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply,
+};
 use crate::vault::range::update_range::execute_update_range;
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
@@ -102,7 +107,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Autocompound {} => {
                     prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?)
                 }
-                crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => prepend_claim_msg(&env, execute_update_range(deps, env, info, msg)?),
+                crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => {
+                    prepend_claim_msg(&env, execute_update_range(deps, env, info, msg)?)
+                }
                 crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     force_swap_route,
                     swap_routes,
@@ -157,7 +164,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Positions {} => Ok(to_json_binary(&query_positions(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => {
+                    Ok(to_json_binary(&query_positions(deps)?)?)
+                }
                 crate::msg::ClQueryMsg::RangeAdmin {} => {
                     let range_admin = get_range_admin(deps)?;
                     Ok(to_json_binary(&RangeAdminResponse {

@@ -16,7 +16,8 @@ use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
 use crate::state::{
-    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, MAIN_POSITION, METADATA, MIGRATION_STATUS, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM
+    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, MAIN_POSITION, METADATA,
+    MIGRATION_STATUS, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
