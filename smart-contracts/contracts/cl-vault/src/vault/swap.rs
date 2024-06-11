@@ -7,6 +7,9 @@ use crate::msg::SwapOperation;
 use crate::state::POOL_CONFIG;
 use crate::{state::VAULT_CONFIG, ContractError};
 
+use super::autocompound::SwapAsset;
+use super::range::move_position::assert_range_admin;
+
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
