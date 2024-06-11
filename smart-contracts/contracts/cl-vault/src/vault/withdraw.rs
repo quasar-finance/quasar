@@ -1,16 +1,23 @@
 use cosmwasm_std::{
-    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
-    SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Fraction, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
-use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
-    tokenfactory::v1beta1::MsgBurn,
+use osmosis_std::types::{
+    cosmos::bank::v1beta1::BankQuerier,
+    osmosis::{
+        concentratedliquidity::v1beta1::{MsgWithdrawPosition, MsgWithdrawPositionResponse},
+        tokenfactory::v1beta1::MsgBurn,
+    },
 };
 
 use crate::{
-    helpers::{get_unused_balances, sort_tokens},
+    helpers::{get_asset0_value, get_unused_balances, sort_tokens},
+    query::{query_positions, query_total_assets},
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{
+        CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, MAIN_POSITION, POOL_CONFIG, SHARES,
+        VAULT_DENOM,
+    },
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
@@ -19,9 +26,10 @@ use crate::{
     query::query_total_vault_token_supply,
 };
 
+use super::concentrated_liquidity::get_parsed_position;
+
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
-#[allow(clippy::unnecessary_fallible_conversions)]
 pub fn execute_withdraw(
     deps: DepsMut,
     env: &Env,
@@ -86,7 +94,8 @@ pub fn execute_withdraw(
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
-    let withdraw_msg = withdraw_msg(deps, env, shares_to_withdraw_u128)?;
+    // TODO add an if statement to either go pro_rato or main position if possible
+    let withdraw_msg = withdraw_pro_rato(deps, env, shares_to_withdraw_u128)?;
 
     let collect_rewards_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
@@ -104,10 +113,11 @@ pub fn execute_withdraw(
         .add_attribute("share_amount", shares_to_withdraw)
         .add_message(collect_rewards_msg)
         .add_message(burn_msg)
-        .add_submessage(SubMsg::reply_on_success(
-            withdraw_msg,
-            Replies::WithdrawUser as u64,
-        )))
+        .add_submessages(
+            withdraw_msg
+                .into_iter()
+                .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUser as u64)),
+        ))
 }
 
 pub fn handle_withdraw_user_reply(
@@ -139,25 +149,75 @@ pub fn handle_withdraw_user_reply(
         .add_attribute("amount1", coin1.clone().amount))
 }
 
-fn withdraw_msg(
+fn withdraw_from_main(
+    deps: DepsMut,
+    env: Env,
+    user_shares: Uint128,
+) -> Result<MsgWithdrawPosition, ContractError> {
+    let assets = query_total_assets(deps.as_ref(), env)?;
+    let total_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        assets.token0.amount,
+        assets.token1.amount,
+    )?;
+    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
+
+    let user_value = Decimal256::from_ratio(user_shares, 1_u128)
+        .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
+        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
+
+    let main_position_id = MAIN_POSITION.load(deps.storage)?;
+    let main_position = get_parsed_position(&deps.querier, main_position_id)?;
+    let main_postion_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        main_position.asset0.amount,
+        main_position.asset1.amount,
+    )?;
+
+    let withdraw_percentage = user_value / Decimal256::from_ratio(main_postion_value, 1_u128);
+    let withdraw_liquidity = todo!(); // total-liquidity * withdraw-percentage
+
+    withdraw_from_position(&env, main_position_id, withdraw_liquidity)
+}
+
+fn withdraw_pro_rato(
     deps: DepsMut,
     env: &Env,
     user_shares: Uint128,
-) -> Result<MsgWithdrawPosition, ContractError> {
-    let existing_position = get_position(deps.storage, &deps.querier)?;
-    let existing_liquidity: Decimal256 = existing_position
-        .position
-        .ok_or(ContractError::PositionNotFound)?
-        .liquidity
-        .parse()?;
+) -> Result<Vec<MsgWithdrawPosition>, ContractError> {
+    let bq = BankQuerier::new(&deps.querier);
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
+    let total_vault_shares: Uint128 = bq
+        .supply_of(vault_denom)?
+        .amount
+        .unwrap()
+        .amount
+        .parse::<u128>()?
+        .into();
 
-    let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
-        .checked_mul(existing_liquidity)?
-        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
+    let positions = get_positions(deps.storage, &deps.querier);
 
-    withdraw_from_position(deps.storage, env, user_liquidity)
+    let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions?
+        .into_iter()
+        .map(|(p, fp)| {
+            let existing_liquidity: Decimal256 = fp
+                .position
+                .ok_or(ContractError::PositionNotFound)?
+                .liquidity
+                .parse()?;
+
+            let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
+                .checked_mul(existing_liquidity)?
+                .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
+
+            withdraw_from_position(env, p.position_id, user_liquidity)
+        })
+        .collect();
+
+    withdraws
 }
 
 #[cfg(test)]
