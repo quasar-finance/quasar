@@ -1,7 +1,8 @@
 use cosmwasm_std::{BankMsg, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
-    MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards, MsgCollectSpreadRewardsResponse
+    MsgCollectIncentives, MsgCollectIncentivesResponse, MsgCollectSpreadRewards,
+    MsgCollectSpreadRewardsResponse,
 };
 
 use crate::helpers::sort_tokens;
