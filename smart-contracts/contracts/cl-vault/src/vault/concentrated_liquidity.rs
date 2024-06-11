@@ -1,7 +1,7 @@
-use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Timestamp, Uint128};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
-    Pool,
+    Pool, Position,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
@@ -72,9 +72,89 @@ pub fn get_position(
     position.position.ok_or(ContractError::PositionNotFound)
 }
 
+pub fn get_parsed_position(
+    querier: &QuerierWrapper,
+    position_id: u64,
+) -> Result<FullPositionParsed, ContractError> {
+    let cl_querier = ConcentratedliquidityQuerier::new(querier);
+    let position = cl_querier.position_by_id(position_id)?;
+    position
+        .position
+        .ok_or(ContractError::PositionNotFound)?
+        .try_into()
+}
+
+// TODO move these structs to a package and enable direct proto decoding
+// into these structs
+pub struct FullPositionParsed {
+    pub position: PositionParsed,
+    pub asset0: Coin,
+    pub asset1: Coin,
+    pub claimable_spread_rewards: Vec<Coin>,
+    pub claimable_incentives: Vec<Coin>,
+    pub forfeited_incentives: Vec<Coin>,
+}
+
+impl TryFrom<FullPositionBreakdown> for FullPositionParsed {
+    type Error = ContractError;
+
+    fn try_from(value: FullPositionBreakdown) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position: value
+                .position
+                .ok_or(ContractError::PositionNotFound)?
+                .try_into()?,
+            asset0: value.asset0.unwrap().try_into()?,
+            asset1: value.asset1.unwrap().try_into()?,
+            claimable_spread_rewards: osmosis_std::try_proto_to_cosmwasm_coins(
+                value.claimable_spread_rewards,
+            )?,
+            claimable_incentives: osmosis_std::try_proto_to_cosmwasm_coins(
+                value.claimable_incentives,
+            )?,
+            forfeited_incentives: osmosis_std::try_proto_to_cosmwasm_coins(
+                value.forfeited_incentives,
+            )?,
+        })
+    }
+}
+
+// TODO move these structs to a package and enable direct proto decoding
+// into these structs
+pub struct PositionParsed {
+    pub position_id: u64,
+    pub address: ::prost::alloc::string::String,
+    pub pool_id: u64,
+    pub lower_tick: i64,
+    pub upper_tick: i64,
+    pub join_time: Timestamp,
+    pub liquidity: Decimal256,
+}
+
+impl TryFrom<Position> for PositionParsed {
+    type Error = ContractError;
+
+    fn try_from(value: Position) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position_id: value.position_id,
+            address: value.address,
+            pool_id: value.pool_id,
+            lower_tick: value.lower_tick,
+            upper_tick: value.upper_tick,
+            join_time: value
+                .join_time
+                // This conversion is sloppy and loses seconds information
+                .map(|t| Timestamp::from_seconds(t.seconds.try_into().unwrap()))
+                .unwrap_or(Timestamp::default()),
+            liquidity: value.liquidity.parse()?,
+        })
+    }
+}
+
 pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, ContractError> {
     let pm_querier = PoolmanagerQuerier::new(querier);
-    let pool = pm_querier.pool(pool_id)?;
+    let pool: osmosis_std::types::osmosis::poolmanager::v1beta1::PoolResponse =
+        pm_querier.pool(pool_id)?;
 
     match pool.pool {
         // Some(pool) => Some(Pool::decode(pool.value.as_slice())?),
@@ -181,8 +261,11 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        MAIN_POSITION.save(deps.as_mut().storage, &position_id).unwrap();
-            POSITIONS.save(
+        MAIN_POSITION
+            .save(deps.as_mut().storage, &position_id)
+            .unwrap();
+        POSITIONS
+            .save(
                 deps.as_mut().storage,
                 position_id,
                 &Position {
