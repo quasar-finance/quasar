@@ -31,7 +31,7 @@ pub fn execute_autocompound(
     env: &Env,
     _info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let position_state = POSITIONS.load(deps.storage ,MAIN_POSITION.load(deps.storage)?)?;
+    let position_state = POSITIONS.load(deps.storage, MAIN_POSITION.load(deps.storage)?)?;
 
     // If the position claim after timestamp is not reached yet, return an error
     if position_state.claim_after.is_some()

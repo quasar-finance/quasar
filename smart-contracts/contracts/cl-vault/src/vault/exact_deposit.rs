@@ -119,7 +119,10 @@ mod tests {
         },
     };
 
-    use crate::{helpers::get_depositable_tokens, state::{MAIN_POSITION, POSITIONS}};
+    use crate::{
+        helpers::get_depositable_tokens,
+        state::{MAIN_POSITION, POSITIONS},
+    };
     use crate::{
         state::Position,
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
@@ -279,7 +282,9 @@ mod tests {
             .unwrap();
 
         let position_id = 1;
-        MAIN_POSITION.save(deps.as_mut().storage, &position_id).unwrap();
+        MAIN_POSITION
+            .save(deps.as_mut().storage, &position_id)
+            .unwrap();
         POSITIONS
             .save(
                 deps.as_mut().storage,
@@ -426,7 +431,9 @@ mod tests {
             custom_query_type: PhantomData,
         };
 
-        MAIN_POSITION.save(deps.as_mut().storage, &position_id).unwrap();
+        MAIN_POSITION
+            .save(deps.as_mut().storage, &position_id)
+            .unwrap();
         POSITIONS
             .save(
                 deps.as_mut().storage,
