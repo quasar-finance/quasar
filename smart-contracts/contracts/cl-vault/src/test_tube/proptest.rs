@@ -14,14 +14,14 @@ mod tests {
     };
     use proptest::prelude::*;
 
-    use crate::helpers::generic::sort_tokens;
-    use crate::query::AssetsBalanceResponse;
+    use crate::msg::MovePosition;
+    use crate::query::{AssetsBalanceResponse, MainPositionResponse};
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::test_tube::initialize::initialize::{MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
     use crate::{
         math::tick::tick_to_price,
-        msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
-        query::{PositionResponse, TotalVaultTokenSupplyResponse},
+        msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRange, QueryMsg},
+        query::{PositionsResponse, TotalVaultTokenSupplyResponse},
         query::{TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::initialize::initialize::init_test_contract,
     };
@@ -306,12 +306,21 @@ mod tests {
             return;
         }
 
+        let main_position: MainPositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::MainPosition {},
+                )),
+            )
+            .unwrap();
+
         // Execute deposit and get liquidity_created from emitted events
         let _update_range = wasm
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
+                    ModifyRange::MovePosition(MovePosition {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
@@ -319,7 +328,8 @@ mod tests {
                         twap_window_seconds: 45,
                         forced_swap_route: None,
                         claim_after: None,
-                    },
+                        position_id: main_position.position_id,
+                    }),
                 )),
                 &[],
                 admin_account,
@@ -382,11 +392,11 @@ mod tests {
         contract_address: &Addr,
     ) -> (i64, i64) {
         // query_position will return a Vec of position_ids
-        let position_response: PositionResponse = wasm
+        let position_response: PositionsResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
+                    crate::msg::ClQueryMsg::Positions {},
                 )),
             )
             .unwrap();
@@ -394,7 +404,7 @@ mod tests {
         // TODO Use those to take the latest one? or what?
         let position = cl
             .query_position_by_id(&PositionByIdRequest {
-                position_id: position_response.position_ids[0],
+                position_id: position_response.positions[0].position_id,
             })
             .unwrap()
             .position

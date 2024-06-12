@@ -17,8 +17,8 @@ mod test {
     use prost::Message;
 
     use crate::{
-        msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
-        query::PositionResponse,
+        msg::{ExecuteMsg, ModifyRange, MovePosition, QueryMsg},
+        query::{MainPositionResponse, PositionsResponse},
         test_tube::initialize::initialize::{
             fixture_default, fixture_dex_router, init_test_contract, ADMIN_BALANCE_AMOUNT,
             DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
@@ -32,11 +32,11 @@ mod test {
             fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
-        let _before_position: PositionResponse = wasm
+        let before_position: MainPositionResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
+                    crate::msg::ClQueryMsg::MainPosition {},
                 )),
             )
             .unwrap();
@@ -45,29 +45,33 @@ mod test {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("0.65").unwrap(),
-                        upper_price: Decimal::from_str("1.3").unwrap(),
+                    ModifyRange::MovePosition(MovePosition {
+                        position_id: before_position.position_id,
+                        lower_price: Decimal::from_str("400").unwrap(),
+                        upper_price: Decimal::from_str("1466").unwrap(),
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
                         forced_swap_route: None,
                         claim_after: None,
-                    },
+                    }),
                 )),
                 &[],
                 &admin,
             )
             .unwrap();
 
-        let _after_position: PositionResponse = wasm
+        let after_position: MainPositionResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
-                    crate::msg::ClQueryMsg::Position {},
+                    crate::msg::ClQueryMsg::MainPosition {},
                 )),
             )
             .unwrap();
+
+        // move_position should assign a new position id
+        assert_ne!(before_position, after_position)
     }
 
     #[test]
@@ -196,7 +200,8 @@ mod test {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
+                    ModifyRange::MovePosition(MovePosition {
+                        position_id: main_position.position_id,
                         lower_price: Decimal::from_str("20.71").unwrap(),
                         upper_price: Decimal::from_str("45").unwrap(),
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
@@ -223,7 +228,7 @@ mod test {
                         twap_window_seconds: 45,
                         forced_swap_route: None,
                         claim_after: None,
-                    },
+                    }),
                 )),
                 &[],
                 &admin,
