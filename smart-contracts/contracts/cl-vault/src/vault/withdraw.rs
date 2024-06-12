@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, to_json_binary, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, Fraction, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo,
+    Response, SubMsg, SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -11,21 +11,19 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    helpers::{generic::sort_tokens, getters::get_unused_balances},
+    helpers::{get_asset0_value, get_unused_balances, sort_tokens},
+    query::query_total_assets,
     reply::Replies,
     state::{
         CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, MAIN_POSITION, POOL_CONFIG, SHARES,
         VAULT_DENOM,
     },
-    vault::concentrated_liquidity::{get_position, withdraw_from_position},
+    vault::concentrated_liquidity::withdraw_from_position,
     ContractError,
 };
-use crate::{
-    msg::{ExecuteMsg, ExtensionExecuteMsg},
-    query::query_total_vault_token_supply,
-};
+use crate::query::query_total_vault_token_supply;
 
-use super::concentrated_liquidity::get_parsed_position;
+use super::concentrated_liquidity::{get_parsed_position, get_positions};
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
@@ -92,25 +90,41 @@ pub fn execute_withdraw(
 
     CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
-    // withdraw the user's funds from the position
-    // TODO add an if statement to either go pro_rato or main position if possible
-    let withdraw_msg = withdraw_pro_rato(deps, env, shares_to_withdraw_u128)?;
+    let assets = query_total_assets(deps.as_ref(), env)?;
+    let total_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        assets.token0.amount,
+        assets.token1.amount,
+    )?;
+    let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
 
-    let collect_rewards_msg: CosmosMsg = WasmMsg::Execute {
-        contract_addr: env.contract.address.to_string(),
-        msg: to_json_binary(&ExecuteMsg::VaultExtension(
-            ExtensionExecuteMsg::CollectRewards {},
-        ))?,
-        funds: vec![],
-    }
-    .into();
+    let user_value = Decimal256::from_ratio(user_shares, 1_u128)
+        .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
+        .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
+
+        let main_position_id = MAIN_POSITION.load(deps.storage)?;
+        let main_position = get_parsed_position(&deps.querier, main_position_id)?;
+        let main_postion_value = get_asset0_value(
+            deps.storage,
+            &deps.querier,
+            main_position.asset0.amount,
+            main_position.asset1.amount,
+        )?;
+    
+    // withdraw the user's funds from the position
+    // TODO this should have a seperate test to ensure proper value return if between a main position and multiple positions
+    let withdraw_msg = if user_value.to_uint_ceil() < main_postion_value.into() {
+        vec![withdraw_from_main(deps, env, user_shares.try_into()?)?]
+    } else {
+        withdraw_pro_rato(deps, env, user_shares.try_into()?)?
+    };
 
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "withdraw")
-        .add_attribute("liquidity_amount", withdraw_msg.liquidity_amount.as_str())
+        .add_attribute("user_amount", user_value.to_string())
         .add_attribute("share_amount", shares_to_withdraw)
-        .add_message(collect_rewards_msg)
         .add_message(burn_msg)
         .add_submessages(
             withdraw_msg
@@ -150,10 +164,10 @@ pub fn handle_withdraw_user_reply(
 
 fn withdraw_from_main(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     user_shares: Uint128,
 ) -> Result<MsgWithdrawPosition, ContractError> {
-    let assets = query_total_assets(deps.as_ref(), env)?;
+    let assets = query_total_assets(deps.as_ref(), &env)?;
     let total_value = get_asset0_value(
         deps.storage,
         &deps.querier,
@@ -175,9 +189,9 @@ fn withdraw_from_main(
         main_position.asset1.amount,
     )?;
 
-    let withdraw_percentage = user_value / Decimal256::from_ratio(main_postion_value, 1_u128);
-    let withdraw_liquidity = todo!(); // total-liquidity * withdraw-percentage
-
+    // User value * Main position liquidity / Main position value = user value
+    let withdraw_liquidity = user_value * Decimal256::from_ratio(main_postion_value, 1_u128) / Decimal256::from_ratio(main_postion_value, 1_u128);
+ 
     withdraw_from_position(&env, main_position_id, withdraw_liquidity)
 }
 
@@ -202,11 +216,7 @@ fn withdraw_pro_rato(
     let withdraws: Result<Vec<MsgWithdrawPosition>, ContractError> = positions?
         .into_iter()
         .map(|(p, fp)| {
-            let existing_liquidity: Decimal256 = fp
-                .position
-                .ok_or(ContractError::PositionNotFound)?
-                .liquidity
-                .parse()?;
+            let existing_liquidity: Decimal256 = fp.position.liquidity;
 
             let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
                 .checked_mul(existing_liquidity)?

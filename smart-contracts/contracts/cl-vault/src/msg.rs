@@ -6,8 +6,8 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     query::{
-        AssetsBalanceResponse, PoolResponse, PositionsResponse, RangeAdminResponse,
-        UserSharesBalanceResponse, VerifyTickCacheResponse,
+        AssetsBalanceResponse, MainPositionResponse, PoolResponse, PositionsResponse,
+        RangeAdminResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
 };
@@ -178,6 +178,8 @@ pub enum ClQueryMsg {
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
+    #[returns(MainPositionResponse)]
+    MainPosition,
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
