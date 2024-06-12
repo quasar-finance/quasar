@@ -12,9 +12,9 @@ use crate::instantiate::{
 };
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_positions, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_main_position, query_metadata,
+    query_pool, query_positions, query_total_assets, query_total_vault_token_supply,
+    query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
 use crate::rewards::{
@@ -108,7 +108,7 @@ pub fn execute(
                     prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?)
                 }
                 crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => {
-                    prepend_claim_msg(&env, execute_update_range(deps, env, info, msg)?)
+                    prepend_claim_msg(&env, execute_update_range(deps, &env, info, msg)?)
                 }
                 crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     force_swap_route,
@@ -138,7 +138,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             to_json_binary(&query_assets_from_shares(deps, env, shares)?)?,
         ),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_json_binary(&query_total_assets(deps, env)?)?)
+            Ok(to_json_binary(&query_total_assets(deps, &env)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_json_binary(&query_total_vault_token_supply(deps)?)?)
@@ -175,6 +175,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 }
                 crate::msg::ClQueryMsg::VerifyTickCache => {
                     Ok(to_json_binary(&query_verify_tick_cache(deps)?)?)
+                }
+                crate::msg::ClQueryMsg::MainPosition => {
+                    Ok(to_json_binary(&query_main_position(deps)?)?)
                 }
             },
         },
