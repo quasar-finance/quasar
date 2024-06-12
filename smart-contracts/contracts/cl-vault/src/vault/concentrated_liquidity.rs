@@ -189,9 +189,11 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::{
         state::{PoolConfig, Position, MAIN_POSITION, POSITIONS},
-        test_helpers::QuasarQuerier,
+        test_helpers::{FullPositionBuilder, QuasarQuerier},
     };
     use cosmwasm_std::{
         coin,
@@ -218,22 +220,19 @@ mod tests {
             )
             .unwrap();
         let qq = QuasarQuerier::new(
-            FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id: 1,
-                    address: "bob".to_string(),
-                    pool_id: 1,
-                    lower_tick: 1,
-                    upper_tick: 100,
-                    join_time: None,
-                    liquidity: "123.214".to_string(),
-                }),
-                asset0: Some(coin(1000, "uosmo").into()),
-                asset1: Some(coin(1000, "uatom").into()),
-                claimable_spread_rewards: vec![coin(1000, "uosmo").into()],
-                claimable_incentives: vec![coin(123, "uatom").into()],
-                forfeited_incentives: vec![],
-            },
+            vec![FullPositionBuilder::new(
+                1,
+                1,
+                1,
+                100,
+                None,
+                Decimal256::from_str("123.214").unwrap(),
+                coin(1000, "uosmo"),
+                coin(1000, "uatom"),
+            )
+            .with_spread_rewards(vec![coin(123, "uatom")])
+            .with_incentives(vec![coin(1000, "uosmo")])
+            .build()],
             100,
         );
 
