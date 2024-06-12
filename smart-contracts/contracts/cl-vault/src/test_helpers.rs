@@ -21,7 +21,7 @@ use osmosis_std::types::{
 
 use crate::math::tick::tick_to_price;
 use crate::state::{
-    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG
+    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG,
 };
 
 pub struct QuasarQuerier {
