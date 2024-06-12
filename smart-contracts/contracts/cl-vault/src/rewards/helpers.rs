@@ -39,7 +39,7 @@ fn prepend_msg(mut response: Response, msg: SubMsg) -> Response {
 
 pub fn get_collect_incentives_msg(
     deps: Deps,
-    env: Env,
+    env: &Env,
 ) -> Result<Vec<MsgCollectIncentives>, ContractError> {
     let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
@@ -54,7 +54,7 @@ pub fn get_collect_incentives_msg(
             } else {
                 Some(MsgCollectIncentives {
                     position_ids: vec![p.0],
-                    sender: env.contract.address.into(),
+                    sender: env.contract.address.clone().into(),
                 })
             }
         })
@@ -68,14 +68,14 @@ pub fn get_collect_incentives_msg(
 /// ensure that each positions collected rewards are tracked seperately in different events
 pub fn get_collect_spread_rewards_msgs(
     deps: Deps,
-    env: Env,
+    env: &Env,
 ) -> Result<Vec<MsgCollectSpreadRewards>, ContractError> {
     let msgs: Result<Vec<MsgCollectSpreadRewards>, StdError> = POSITIONS
         .range(deps.storage, None, None, Order::Ascending)
         .map(|p| {
             Ok(MsgCollectSpreadRewards {
                 position_ids: vec![p?.0],
-                sender: env.contract.address.into(),
+                sender: env.contract.address.as_str().to_string(),
             })
         })
         .collect();

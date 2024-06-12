@@ -20,11 +20,11 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
         return Err(ContractError::MigrationStatusOpen {});
     }
 
-    let spread_rewards: Vec<_> = get_collect_spread_rewards_msgs(deps.as_ref(), env)?
+    let spread_rewards: Vec<_> = get_collect_spread_rewards_msgs(deps.as_ref(), &env)?
         .into_iter()
         .map(|m| SubMsg::reply_on_success(m, Replies::CollectSpreadRewards.into()))
         .collect();
-    let incentives: Vec<_> = get_collect_incentives_msg(deps.as_ref(), env)?
+    let incentives: Vec<_> = get_collect_incentives_msg(deps.as_ref(), &env)?
         .into_iter()
         .map(|m| SubMsg::reply_on_success(m, Replies::CollectIncentives.into()))
         .collect();
