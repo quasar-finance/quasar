@@ -69,7 +69,7 @@ impl Querier for QuasarQuerier {
                     let position = self
                         .positions
                         .iter()
-                        .find(|p| p.position.unwrap().position_id == position_id);
+                        .find(|p| p.position.as_ref().map(|p| p.position_id == position_id).unwrap_or(false));
                     if let Some(position) = position {
                         QuerierResult::Ok(CwContractResult::Ok(
                             to_json_binary(&PositionByIdResponse {
