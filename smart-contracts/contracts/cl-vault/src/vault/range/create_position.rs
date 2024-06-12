@@ -13,7 +13,7 @@ use crate::{
 
 pub fn create_new_position(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     lower_price: Decimal,
     upper_price: Decimal,
     claim_after: Option<u64>,
@@ -26,13 +26,13 @@ pub fn create_new_position(
     CURRENT_CLAIM_AFTER.save(deps.storage, &claim_after)?;
 
     // get the current free liquidity
-    let tokens = get_unused_balances(&deps.querier, &env)?;
+    let tokens = get_unused_balances(&deps.querier, env)?;
     let coins = get_one_or_two_coins(&tokens.coins(), (pool.token0, pool.token1))?;
 
     // create a new position between the given ticks add free liquidity
     let new_position = create_position(
         deps,
-        &env,
+        env,
         lower_tick.try_into().unwrap(),
         upper_tick.try_into().unwrap(),
         CoinList::from_coins(coins).coins(),

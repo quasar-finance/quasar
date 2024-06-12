@@ -8,7 +8,7 @@ use crate::{
 
 pub fn delete_position(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     position_id: u64,
 ) -> Result<Response, ContractError> {
     if position_id == MAIN_POSITION.load(deps.storage)? {
@@ -22,7 +22,7 @@ pub fn delete_position(
 
     // withdraw all funds from the position
     let withdraw = withdraw_from_position(
-        &env,
+        env,
         position_id,
         position.position.unwrap().liquidity.parse()?,
     )?;

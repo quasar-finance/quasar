@@ -20,7 +20,7 @@ fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), Co
 
 pub fn execute_update_range(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     info: MessageInfo,
     msg: ModifyRange,
 ) -> Result<Response, ContractError> {
@@ -30,7 +30,7 @@ pub fn execute_update_range(
     match msg {
         ModifyRange::MovePosition(msg) => execute_move_position(
             deps,
-            &env,
+            env,
             info,
             msg.position_id,
             msg.lower_price,

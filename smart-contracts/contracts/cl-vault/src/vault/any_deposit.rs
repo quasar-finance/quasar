@@ -208,7 +208,7 @@ fn mint_msg_user_shares(
     recipient: &Addr,
 ) -> Result<(MsgMint, Uint128), ContractError> {
     // calculate the amount of shares we can mint for this
-    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets = query_total_assets(deps.as_ref(), &env)?;
     let total_assets_value = get_asset0_value(
         deps.storage,
         &deps.querier,
