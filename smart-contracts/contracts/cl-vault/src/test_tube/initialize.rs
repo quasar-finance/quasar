@@ -26,9 +26,11 @@ pub mod initialize {
     use std::str::FromStr;
 
     use crate::helpers::sort_tokens;
+    use crate::msg::MovePosition;
     use crate::msg::{
-        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
+        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRange, QueryMsg,
     };
+    use crate::query::MainPositionResponse;
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
     use crate::test_tube::helpers::calculate_deposit_ratio;
@@ -664,11 +666,21 @@ pub mod initialize {
         // Increment the app time for twaps to function
         app.increase_time(1000000);
 
+        let main_position: MainPositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::MainPosition {},
+                )),
+            )
+            .unwrap();
+
         // Update range of vault as Admin
         wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
+                ModifyRange::MovePosition(MovePosition {
+                    position_id: main_position.position_id,
                     lower_price: Decimal::from_str("0.993").unwrap(),
                     upper_price: Decimal::from_str("1.002").unwrap(),
                     max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
@@ -677,7 +689,7 @@ pub mod initialize {
                     recommended_swap_route: None,
                     force_swap_route: false,
                     claim_after: None,
-                },
+                }),
             )),
             &[],
             &admin,
