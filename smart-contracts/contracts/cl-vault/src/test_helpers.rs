@@ -25,7 +25,7 @@ use osmosis_std::types::{
 
 use crate::math::tick::tick_to_price;
 use crate::state::{
-    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG,
+    PoolConfig, Position, VaultConfig, MAIN_POSITION, POOL_CONFIG, POSITIONS, RANGE_ADMIN, VAULT_CONFIG
 };
 
 pub struct QuasarQuerier {
@@ -170,22 +170,25 @@ pub fn mock_deps_with_querier_with_balance(
     info: &MessageInfo,
     balances: &[(&str, &[Coin])],
 ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+
+    let main_position = FullPositionBuilder::new(
+        1,
+        1,
+        100,
+        1000,
+        None,
+        Decimal256::from_str("1000000.1").unwrap(),
+        coin(1000000, "token0"),
+        coin(1000000, "token1"),
+    )
+    .with_spread_rewards(vec![coin(100, "token0"), coin(100, "token1")])
+    .build();
+
     let mut deps = OwnedDeps {
         storage: MockStorage::default(),
         api: MockApi::default(),
         querier: QuasarQuerier::new_with_balances(
-            vec![FullPositionBuilder::new(
-                1,
-                1,
-                100,
-                1000,
-                None,
-                Decimal256::from_str("1000000.1").unwrap(),
-                coin(1000000, "token0"),
-                coin(1000000, "token1"),
-            )
-            .with_spread_rewards(vec![coin(100, "token0"), coin(100, "token1")])
-            .build()],
+            vec![main_position],
             500,
             balances,
         ),
@@ -216,6 +219,8 @@ pub fn mock_deps_with_querier_with_balance(
             },
         )
         .unwrap();
+    
+    MAIN_POSITION.save(storage, &1).unwrap();
     POSITIONS
         .save(
             storage,
@@ -387,6 +392,7 @@ pub fn mock_deps_with_querier(
 
     let storage = &mut deps.storage;
 
+    MAIN_POSITION.save(storage, &position_id).unwrap();
     POSITIONS
         .save(
             storage,
@@ -421,17 +427,6 @@ pub fn mock_deps_with_querier(
             },
         )
         .unwrap();
-    POSITIONS
-        .save(
-            storage,
-            1,
-            &crate::state::Position {
-                position_id: 1,
-                join_time: 0,
-                claim_after: None,
-            },
-        )
-        .unwrap();
-
+    
     deps
 }
