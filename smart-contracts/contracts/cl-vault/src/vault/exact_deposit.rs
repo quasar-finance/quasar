@@ -123,6 +123,7 @@ mod tests {
     use crate::{
         helpers::get_depositable_tokens,
         state::{MAIN_POSITION, POSITIONS},
+        test_helpers::FullPositionBuilder,
     };
     use crate::{
         helpers::{getters::get_depositable_tokens, msgs::refund_bank_msg},
@@ -403,31 +404,17 @@ mod tests {
             storage: MockStorage::default(),
             api: MockApi::default(),
             querier: QuasarQuerier::new(
-                FullPositionBreakdown {
-                    position: Some(OsmoPosition {
-                        position_id,
-                        address: MOCK_CONTRACT_ADDR.to_string(),
-                        pool_id: 1,
-                        lower_tick: 100,
-                        upper_tick: 1000,
-                        join_time: None,
-                        liquidity: "1000000.2".to_string(),
-                    }),
-                    asset0: token0.map(|c| c.into()),
-                    asset1: token1.map(|c| c.into()),
-                    claimable_spread_rewards: vec![
-                        OsmoCoin {
-                            denom: "token0".to_string(),
-                            amount: "100".to_string(),
-                        },
-                        OsmoCoin {
-                            denom: "token1".to_string(),
-                            amount: "100".to_string(),
-                        },
-                    ],
-                    claimable_incentives: vec![],
-                    forfeited_incentives: vec![],
-                },
+                vec![FullPositionBuilder::new(
+                    2,
+                    1,
+                    100,
+                    1000,
+                    None,
+                    Decimal256::from_str("1000000.2").unwrap(),
+                    coin(100, "token0"),
+                    coin(100, "token1"),
+                )
+                .build()],
                 500,
             ),
             custom_query_type: PhantomData,
