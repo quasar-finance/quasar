@@ -103,14 +103,14 @@ pub fn execute_withdraw(
         .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
         .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
 
-        let main_position_id = MAIN_POSITION.load(deps.storage)?;
-        let main_position = get_parsed_position(&deps.querier, main_position_id)?;
-        let main_postion_value = get_asset0_value(
-            deps.storage,
-            &deps.querier,
-            main_position.asset0.amount,
-            main_position.asset1.amount,
-        )?;
+    let main_position_id = MAIN_POSITION.load(deps.storage)?;
+    let main_position = get_parsed_position(&deps.querier, main_position_id)?;
+    let main_postion_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        main_position.asset0.amount,
+        main_position.asset1.amount,
+    )?;
     
     // withdraw the user's funds from the position
     // TODO this should have a seperate test to ensure proper value return if between a main position and multiple positions
