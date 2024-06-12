@@ -290,7 +290,7 @@ pub fn handle_initial_create_position_reply(
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 #[allow(clippy::too_many_arguments)]
 pub fn do_swap_deposit_merge(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     modify_range_state: ModifyRangeState,
     refunded_amounts: (Uint128, Uint128),
@@ -332,8 +332,8 @@ pub fn do_swap_deposit_merge(
     )?;
 
     let calculated_swap: Option<SwapCalculationResult> = calculate_swap_amount(
-        deps,
-        env,
+        deps.branch(),
+        &env,
         position_id,
         balance0,
         balance1,
@@ -390,7 +390,7 @@ pub fn do_swap_deposit_merge(
 #[allow(clippy::too_many_arguments)]
 pub fn calculate_swap_amount(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     position_id: Option<u64>,
     balance0: Uint128,
     balance1: Uint128,

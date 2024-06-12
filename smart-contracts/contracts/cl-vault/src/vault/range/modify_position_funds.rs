@@ -17,7 +17,7 @@ use crate::{
 /// Any refund is then again ignored
 pub fn increase_position_funds(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     position_id: u64,
     token0: Coin,
     token1: Coin,
@@ -26,7 +26,7 @@ pub fn increase_position_funds(
     let position = get_position(&deps.querier, position_id)?.position.unwrap();
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let unused_balances = get_unused_balances(&deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, env)?;
     let (unused0, unused1) = get_one_or_two(&unused_balances.coins(), (pool.token0, pool.token1))?;
 
     if unused0.amount < token0.amount || unused1.amount < token1.amount {
@@ -35,7 +35,7 @@ pub fn increase_position_funds(
 
     let create = create_position(
         deps,
-        &env,
+        env,
         position.lower_tick,
         position.upper_tick,
         CoinList::from_coins(vec![token0, token1]).coins(),
@@ -86,11 +86,11 @@ pub fn handle_range_add_to_position_reply(
 /// To completely withdraw a position, use delete position
 pub fn decrease_position_funds(
     deps: DepsMut,
-    env: Env,
+    env: &Env,
     position_id: u64,
     liquidity: Decimal256,
 ) -> Result<Response, ContractError> {
-    let msg = withdraw_from_position(&env, position_id, liquidity)?;
+    let msg = withdraw_from_position(env, position_id, liquidity)?;
 
     Ok(Response::new().add_message(msg))
 }
