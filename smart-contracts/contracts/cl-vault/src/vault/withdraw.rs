@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo,
-    Response, SubMsg, SubMsgResult, Uint128, Uint256,
+    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
     cosmos::bank::v1beta1::BankQuerier,
@@ -10,6 +10,7 @@ use osmosis_std::types::{
     },
 };
 
+use crate::query::query_total_vault_token_supply;
 use crate::{
     helpers::{get_asset0_value, get_unused_balances, sort_tokens},
     query::query_total_assets,
@@ -21,7 +22,6 @@ use crate::{
     vault::concentrated_liquidity::withdraw_from_position,
     ContractError,
 };
-use crate::query::query_total_vault_token_supply;
 
 use super::concentrated_liquidity::{get_parsed_position, get_positions};
 
@@ -111,7 +111,7 @@ pub fn execute_withdraw(
         main_position.asset0.amount,
         main_position.asset1.amount,
     )?;
-    
+
     // withdraw the user's funds from the position
     // TODO this should have a seperate test to ensure proper value return if between a main position and multiple positions
     let withdraw_msg = if user_value.to_uint_ceil() < main_postion_value.into() {
@@ -190,8 +190,9 @@ fn withdraw_from_main(
     )?;
 
     // User value * Main position liquidity / Main position value = user value
-    let withdraw_liquidity = user_value * Decimal256::from_ratio(main_postion_value, 1_u128) / Decimal256::from_ratio(main_postion_value, 1_u128);
- 
+    let withdraw_liquidity = user_value * Decimal256::from_ratio(main_postion_value, 1_u128)
+        / Decimal256::from_ratio(main_postion_value, 1_u128);
+
     withdraw_from_position(&env, main_position_id, withdraw_liquidity)
 }
 
@@ -280,6 +281,20 @@ mod tests {
             CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
             (Uint128::new(20), Uint128::new(30))
         )
+    }
+
+    #[test]
+    fn withdraw_from_main_works() {
+        let info = mock_info("bolice", &[]);
+        let deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(2000, "token0"), coin(3000, "token1")],
+            )],
+        );
+
+        withdraw_from_main
     }
 
     // #[test]
