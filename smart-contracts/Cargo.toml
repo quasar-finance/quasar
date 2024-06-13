@@ -56,6 +56,7 @@ serde-json-wasm = {version = "1.0.1", default-features = false}
 itertools = "0.12.1"
 num_enum = "0.7.2"
 base64 = "0.22.0"
+derive_builder = "0.20.0"
 
 # AbstractSDK
 abstract-app = { version = "0.22.2" }

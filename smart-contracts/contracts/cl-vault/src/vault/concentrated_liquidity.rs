@@ -1,6 +1,10 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     Coin, Decimal256, DepsMut, Env, Order, QuerierWrapper, StdError, Storage, Timestamp, Uint128,
 };
+#[cfg(test)]
+use derive_builder::Builder;
+use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
     Pool, Position,
@@ -106,6 +110,8 @@ pub fn get_parsed_position(
 
 // TODO move these structs to a package and enable direct proto decoding
 // into these structs
+#[cfg_attr(test, derive(Builder))]
+#[cw_serde]
 pub struct FullPositionParsed {
     pub position: PositionParsed,
     pub asset0: Coin,
@@ -139,8 +145,23 @@ impl TryFrom<FullPositionBreakdown> for FullPositionParsed {
     }
 }
 
+impl Into<FullPositionBreakdown> for FullPositionParsed {
+    fn into(self) -> FullPositionBreakdown {
+        FullPositionBreakdown {
+            position: Some(self.position.into()),
+            asset0: Some(self.asset0.into()),
+            asset1: Some(self.asset1.into()),
+            claimable_spread_rewards: cosmwasm_to_proto_coins(self.claimable_spread_rewards),
+            claimable_incentives: cosmwasm_to_proto_coins(self.claimable_incentives),
+            forfeited_incentives: cosmwasm_to_proto_coins(self.forfeited_incentives),
+        }
+    }
+}
+
 // TODO move these structs to a package and enable direct proto decoding
 // into these structs
+#[cfg_attr(test, derive(Builder))]
+#[cw_serde]
 pub struct PositionParsed {
     pub position_id: u64,
     pub address: ::prost::alloc::string::String,
@@ -168,6 +189,24 @@ impl TryFrom<Position> for PositionParsed {
                 .unwrap_or(Timestamp::default()),
             liquidity: value.liquidity.parse()?,
         })
+    }
+}
+
+impl Into<Position> for PositionParsed {
+    fn into(self) -> Position {
+        Position {
+            position_id: self.position_id,
+            address: self.address,
+            pool_id: self.pool_id,
+            lower_tick: self.lower_tick,
+            upper_tick: self.upper_tick,
+            join_time: Some(osmosis_std::shim::Timestamp {
+                // save because it's seconds since unix epoch time
+                seconds: self.join_time.seconds().try_into().unwrap(),
+                nanos: 0,
+            }),
+            liquidity: self.liquidity.to_string(),
+        }
     }
 }
 

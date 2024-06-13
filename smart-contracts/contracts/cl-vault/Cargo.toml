@@ -41,3 +41,4 @@ cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-sta
 [dev-dependencies]
 osmosis-test-tube = { workspace = true }
 proptest = { workspace = true }
+derive_builder = { workspace = true }
