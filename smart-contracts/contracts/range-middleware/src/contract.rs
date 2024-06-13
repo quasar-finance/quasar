@@ -7,7 +7,7 @@ use cw2::set_contract_version;
 use crate::admin::execute::execute_admin_msg;
 use crate::admin::query::query_admin;
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::range::execute::execute_range_msg;
 use crate::range::query::query_range;
 use crate::state::{RANGE_EXECUTOR_ADMIN, RANGE_SUBMITTER_ADMIN};
@@ -58,5 +58,35 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new().add_attribute("migrate", "succesful"))
+}
+
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cw2::{get_contract_version, ContractVersion};
+
+    use super::*;
+
+    #[test]
+    fn migrate_works() {
+        let mut deps = mock_dependencies();
+        set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.1.0").unwrap();
+
+        let env = mock_env();
+        let msg = MigrateMsg {};
+
+        migrate(deps.as_mut(), env, msg).unwrap();
+        assert_eq!(
+            get_contract_version(deps.as_ref().storage).unwrap(),
+            ContractVersion {
+                contract: CONTRACT_NAME.into(),
+                version: CONTRACT_VERSION.into()
+            }
+        )
+    }
+}

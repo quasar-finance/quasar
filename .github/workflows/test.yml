@@ -55,6 +55,13 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
+      - name: Install just via cargo
+        run: cargo install just
+      - name: Download smart contracts dependencies
+        if: env.GIT_DIFF
+        run: |
+          cd smart-contracts
+          just download-deps
       - name: Run unit-tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test --lib
