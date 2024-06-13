@@ -50,6 +50,7 @@ serde-json-wasm = {version = "1.0.1", default-features = false}
 itertools = "0.12.1"
 num_enum = "0.7.2"
 base64 = "0.22.0"
+derive_builder = "0.20.0"
 
 # Testing
 cw-multi-test = "1.1.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}

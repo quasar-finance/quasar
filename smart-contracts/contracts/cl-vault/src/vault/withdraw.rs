@@ -190,7 +190,7 @@ fn withdraw_from_main(
     )?;
 
     // User value * Main position liquidity / Main position value = user value
-    let withdraw_liquidity = user_value * Decimal256::from_ratio(main_postion_value, 1_u128)
+    let withdraw_liquidity = (user_value * main_position.position.liquidity)
         / Decimal256::from_ratio(main_postion_value, 1_u128);
 
     withdraw_from_position(&env, main_position_id, withdraw_liquidity)
@@ -232,6 +232,8 @@ fn withdraw_pro_rato(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     #[allow(deprecated)]
     use crate::{
         // rewards::CoinList,
@@ -239,9 +241,15 @@ mod tests {
         state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };
+    use crate::{
+        test_helpers::{mock_deps_with_querier_with_balance_with_positions, FullPositionBuilder},
+        vault::concentrated_liquidity::{
+            FullPositionParsed, FullPositionParsedBuilder, PositionParsed, PositionParsedBuilder,
+        },
+    };
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
-        Addr, CosmosMsg, SubMsgResponse,
+        Addr, CosmosMsg, SubMsgResponse, Timestamp,
     };
 
     use super::*;
@@ -286,15 +294,119 @@ mod tests {
     #[test]
     fn withdraw_from_main_works() {
         let info = mock_info("bolice", &[]);
-        let deps = mock_deps_with_querier_with_balance(
+        let main_position = FullPositionParsedBuilder::default()
+            .position(
+                PositionParsedBuilder::default()
+                    .address(MOCK_CONTRACT_ADDR.to_string())
+                    .position_id(1)
+                    .pool_id(1)
+                    .lower_tick(-10000)
+                    .upper_tick(1000)
+                    .liquidity(Decimal256::from_str("1000.1").unwrap())
+                    .join_time(Timestamp::from_seconds(1))
+                    .build()
+                    .unwrap(),
+            )
+            .asset0(coin(1000, "token0"))
+            .asset1(coin(1000, "token1"))
+            .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+            .claimable_incentives(vec![])
+            .forfeited_incentives(vec![])
+            .build()
+            .unwrap();
+
+        let secondary_positions = vec![
+            FullPositionParsedBuilder::default()
+            .position(
+                PositionParsedBuilder::default()
+                    .address(MOCK_CONTRACT_ADDR.to_string())
+                    .position_id(2)
+                    .pool_id(1)
+                    .lower_tick(-1000)
+                    .upper_tick(100)
+                    .liquidity(Decimal256::from_str("100.1").unwrap())
+                    .join_time(Timestamp::from_seconds(1))
+                    .build()
+                    .unwrap(),
+            )
+            .asset0(coin(100, "token0"))
+            .asset1(coin(100, "token1"))
+            .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+            .claimable_incentives(vec![])
+            .forfeited_incentives(vec![])
+            .build()
+            .unwrap(),
+            FullPositionParsedBuilder::default()
+            .position(
+                PositionParsedBuilder::default()
+                    .address(MOCK_CONTRACT_ADDR.to_string())
+                    .position_id(3)
+                    .pool_id(1)
+                    .lower_tick(-1000)
+                    .upper_tick(2000)
+                    .liquidity(Decimal256::from_str("10.1").unwrap())
+                    .join_time(Timestamp::from_seconds(1))
+                    .build()
+                    .unwrap(),
+            )
+            .asset0(coin(10, "token0"))
+            .asset1(coin(20, "token1"))
+            .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+            .claimable_incentives(vec![])
+            .forfeited_incentives(vec![])
+            .build()
+            .unwrap(),
+        ];
+
+        // The QuasarQuerier hard mocks total shares to 100000
+        let total_shares = 100000;
+        let user_shares  = 1000;
+
+        let mut deps = mock_deps_with_querier_with_balance_with_positions(
             &info,
             &[(
                 MOCK_CONTRACT_ADDR,
-                &[coin(2000, "token0"), coin(3000, "token1")],
+                &[
+                    coin(2000, "token0"),
+                    coin(3000, "token1"),
+                    coin(total_shares, "shares"),
+                ],
             )],
+            main_position.clone().into(),
+            secondary_positions.into_iter().map(|p| p.into()).collect(),
         );
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"shares".to_string())
+            .unwrap();
 
-        withdraw_from_main
+        let env = mock_env();
+        let total_value = query_total_assets(deps.as_ref(), &env).unwrap();
+
+        let total_asset0_value = get_asset0_value(
+            deps.as_ref().storage,
+            &deps.as_ref().querier,
+            total_value.token0.amount,
+            total_value.token1.amount,
+        )
+        .unwrap();
+
+        // our users asset0 value
+        let user_value = user_shares * total_asset0_value.u128() / total_shares;
+
+        let main_position_asset0_value = get_asset0_value(
+            deps.as_ref().storage,
+            &deps.as_ref().querier,
+            main_position.asset0.amount,
+            main_position.asset1.amount,
+        )
+        .unwrap();
+
+        // expected liquidity is the % equivalent of asset_0 value we are withdrawing compared to asset0 value of the main position
+        let liquidity_ratio = Decimal256::from_ratio(user_value, main_position_asset0_value);
+        let expected_liquidity = main_position.position.liquidity * liquidity_ratio;
+
+        let res = withdraw_from_main(deps.as_mut(), &env, Uint128::new(user_shares)).unwrap();
+        assert_eq!(Decimal256::from_atomics(Uint256::from_str(res.liquidity_amount.as_str()).unwrap(), 18).unwrap().to_uint_floor(), expected_liquidity.to_uint_floor())
     }
 
     // #[test]

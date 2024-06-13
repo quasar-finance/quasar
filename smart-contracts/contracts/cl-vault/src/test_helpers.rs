@@ -66,10 +66,12 @@ impl Querier for QuasarQuerier {
                     let position_by_id_request: PositionByIdRequest =
                         prost::Message::decode(data.as_slice()).unwrap();
                     let position_id = position_by_id_request.position_id;
-                    let position = self
-                        .positions
-                        .iter()
-                        .find(|p| p.position.as_ref().map(|p| p.position_id == position_id).unwrap_or(false));
+                    let position = self.positions.iter().find(|p| {
+                        p.position
+                            .as_ref()
+                            .map(|p| p.position_id == position_id)
+                            .unwrap_or(false)
+                    });
                     if let Some(position) = position {
                         QuerierResult::Ok(CwContractResult::Ok(
                             to_json_binary(&PositionByIdResponse {
@@ -232,6 +234,79 @@ pub fn mock_deps_with_querier_with_balance(
     deps
 }
 
+pub fn mock_deps_with_querier_with_balance_with_positions(
+    info: &MessageInfo,
+    balances: &[(&str, &[Coin])],
+    main_position: FullPositionBreakdown,
+    secondary_positions: Vec<FullPositionBreakdown>,
+) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+    let mut positions = secondary_positions.clone();
+    positions.extend_from_slice(&[main_position.clone()]);
+
+    let mut deps = OwnedDeps {
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier: QuasarQuerier::new_with_balances(positions, 500, balances),
+        custom_query_type: PhantomData,
+    };
+
+    let storage = &mut deps.storage;
+
+    RANGE_ADMIN.save(storage, &info.sender).unwrap();
+    POOL_CONFIG
+        .save(
+            storage,
+            &PoolConfig {
+                pool_id: 1,
+                token0: "token0".to_string(),
+                token1: "token1".to_string(),
+            },
+        )
+        .unwrap();
+    VAULT_CONFIG
+        .save(
+            storage,
+            &VaultConfig {
+                performance_fee: Decimal::zero(),
+                treasury: Addr::unchecked("treasure"),
+                swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
+                dex_router: Addr::unchecked("dex_router"),
+            },
+        )
+        .unwrap();
+
+    let mp = main_position.position.unwrap();
+    MAIN_POSITION.save(storage, &mp.position_id).unwrap();
+    POSITIONS
+        .save(
+            storage,
+            1,
+            &crate::state::Position {
+                position_id: mp.position_id,
+                join_time: 1,
+                claim_after: None,
+            },
+        )
+        .unwrap();
+
+    secondary_positions.into_iter().for_each(|sp| {
+        let position = sp.position.unwrap();
+        POSITIONS
+            .save(
+                storage,
+                position.position_id,
+                &Position {
+                    position_id: position.position_id,
+                    join_time: 1,
+                    claim_after: None,
+                },
+            )
+            .unwrap();
+    });
+
+    deps
+}
+
 pub(crate) struct FullPositionBuilder {
     position_id: u64,
     address: String,
@@ -239,7 +314,7 @@ pub(crate) struct FullPositionBuilder {
     lower_tick: i64,
     upper_tick: i64,
     join_time: Option<Timestamp>,
-    liquidity: Decimal256,
+    pub(crate) liquidity: Decimal256,
     asset0: Coin,
     asset1: Coin,
     claimable_spread_rewards: Option<Vec<Coin>>,
@@ -312,51 +387,6 @@ impl FullPositionBuilder {
                 self.forfeited_incentives.unwrap_or_default(),
             ),
         }
-    }
-}
-
-fn get_full_position(
-    id: u64,
-    lower_tick: i64,
-    upper_tick: i64,
-    join_time: Option<Timestamp>,
-    liquidity: Decimal256,
-    asset0: Coin,
-    asset1: Coin,
-    claimable_spread_rewards: Vec<Coin>,
-    claimable_incentives: Vec<Coin>,
-    forfeited_incentives: Vec<Coin>,
-) -> FullPositionBreakdown {
-    FullPositionBreakdown {
-        position: Some(OsmoPosition {
-            position_id: id,
-            address: MOCK_CONTRACT_ADDR.to_string(),
-            pool_id: 1,
-            lower_tick: 100,
-            upper_tick: 1000,
-            join_time: None,
-            liquidity: "1000000.1".to_string(),
-        }),
-        asset0: Some(OsmoCoin {
-            denom: "token0".to_string(),
-            amount: "1000000".to_string(),
-        }),
-        asset1: Some(OsmoCoin {
-            denom: "token1".to_string(),
-            amount: "1000000".to_string(),
-        }),
-        claimable_spread_rewards: vec![
-            OsmoCoin {
-                denom: "token0".to_string(),
-                amount: "100".to_string(),
-            },
-            OsmoCoin {
-                denom: "token1".to_string(),
-                amount: "100".to_string(),
-            },
-        ],
-        claimable_incentives: vec![],
-        forfeited_incentives: vec![],
     }
 }
 
