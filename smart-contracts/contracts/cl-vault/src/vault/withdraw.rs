@@ -243,7 +243,8 @@ mod tests {
     use crate::{
         test_helpers::{mock_deps_with_querier_with_balance_with_positions, FullPositionBuilder},
         vault::concentrated_liquidity::{
-            FullPositionParsed, FullPositionParsedBuilder, PositionParsed, PositionParsedBuilder,
+            get_position, FullPositionParsed, FullPositionParsedBuilder, PositionParsed,
+            PositionParsedBuilder,
         },
     };
     use cosmwasm_std::{
@@ -316,50 +317,50 @@ mod tests {
 
         let secondary_positions = vec![
             FullPositionParsedBuilder::default()
-            .position(
-                PositionParsedBuilder::default()
-                    .address(MOCK_CONTRACT_ADDR.to_string())
-                    .position_id(2)
-                    .pool_id(1)
-                    .lower_tick(-1000)
-                    .upper_tick(100)
-                    .liquidity(Decimal256::from_str("100.1").unwrap())
-                    .join_time(Timestamp::from_seconds(1))
-                    .build()
-                    .unwrap(),
-            )
-            .asset0(coin(100, "token0"))
-            .asset1(coin(100, "token1"))
-            .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
-            .claimable_incentives(vec![])
-            .forfeited_incentives(vec![])
-            .build()
-            .unwrap(),
+                .position(
+                    PositionParsedBuilder::default()
+                        .address(MOCK_CONTRACT_ADDR.to_string())
+                        .position_id(2)
+                        .pool_id(1)
+                        .lower_tick(-1000)
+                        .upper_tick(100)
+                        .liquidity(Decimal256::from_str("100.1").unwrap())
+                        .join_time(Timestamp::from_seconds(1))
+                        .build()
+                        .unwrap(),
+                )
+                .asset0(coin(100, "token0"))
+                .asset1(coin(100, "token1"))
+                .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+                .claimable_incentives(vec![])
+                .forfeited_incentives(vec![])
+                .build()
+                .unwrap(),
             FullPositionParsedBuilder::default()
-            .position(
-                PositionParsedBuilder::default()
-                    .address(MOCK_CONTRACT_ADDR.to_string())
-                    .position_id(3)
-                    .pool_id(1)
-                    .lower_tick(-1000)
-                    .upper_tick(2000)
-                    .liquidity(Decimal256::from_str("10.1").unwrap())
-                    .join_time(Timestamp::from_seconds(1))
-                    .build()
-                    .unwrap(),
-            )
-            .asset0(coin(10, "token0"))
-            .asset1(coin(20, "token1"))
-            .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
-            .claimable_incentives(vec![])
-            .forfeited_incentives(vec![])
-            .build()
-            .unwrap(),
+                .position(
+                    PositionParsedBuilder::default()
+                        .address(MOCK_CONTRACT_ADDR.to_string())
+                        .position_id(3)
+                        .pool_id(1)
+                        .lower_tick(-1000)
+                        .upper_tick(2000)
+                        .liquidity(Decimal256::from_str("10.1").unwrap())
+                        .join_time(Timestamp::from_seconds(1))
+                        .build()
+                        .unwrap(),
+                )
+                .asset0(coin(10, "token0"))
+                .asset1(coin(20, "token1"))
+                .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+                .claimable_incentives(vec![])
+                .forfeited_incentives(vec![])
+                .build()
+                .unwrap(),
         ];
 
         // The QuasarQuerier hard mocks total shares to 100000
         let total_shares = 100000;
-        let user_shares  = 1000;
+        let user_shares = 1000;
 
         let mut deps = mock_deps_with_querier_with_balance_with_positions(
             &info,
@@ -405,112 +406,123 @@ mod tests {
         let expected_liquidity = main_position.position.liquidity * liquidity_ratio;
 
         let res = withdraw_from_main(deps.as_mut(), &env, Uint128::new(user_shares)).unwrap();
-        assert_eq!(Decimal256::from_atomics(Uint256::from_str(res.liquidity_amount.as_str()).unwrap(), 18).unwrap().to_uint_floor(), expected_liquidity.to_uint_floor())
+        assert_eq!(
+            Decimal256::from_atomics(
+                Uint256::from_str(res.liquidity_amount.as_str()).unwrap(),
+                18
+            )
+            .unwrap()
+            .to_uint_floor(),
+            expected_liquidity.to_uint_floor()
+        )
     }
 
-    // #[test]
-    // fn execute_withdraw_works_user_rewards() {
-    //     let info = mock_info("bolice", &[]);
-    //     let mut deps = mock_deps_with_querier_with_balance(
-    //         &info,
-    //         &[(
-    //             MOCK_CONTRACT_ADDR,
-    //             &[coin(2000, "token0"), coin(3000, "token1")],
-    //         )],
-    //     );
-    //     let env = mock_env();
+    #[test]
+    fn withdraw_pro_rato_works() {
+        let info = mock_info("bolice", &[]);
+        let main_position = FullPositionParsedBuilder::default()
+            .position(
+                PositionParsedBuilder::default()
+                    .address(MOCK_CONTRACT_ADDR.to_string())
+                    .position_id(1)
+                    .pool_id(1)
+                    .lower_tick(-10000)
+                    .upper_tick(1000)
+                    .liquidity(Decimal256::from_str("1000.1").unwrap())
+                    .join_time(Timestamp::from_seconds(1))
+                    .build()
+                    .unwrap(),
+            )
+            .asset0(coin(100, "token0"))
+            .asset1(coin(100, "token1"))
+            .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+            .claimable_incentives(vec![])
+            .forfeited_incentives(vec![])
+            .build()
+            .unwrap();
 
-    //     STRATEGIST_REWARDS
-    //         .save(deps.as_mut().storage, &CoinList::new())
-    //         .unwrap();
-    //     VAULT_DENOM
-    //         .save(deps.as_mut().storage, &"share_token".to_string())
-    //         .unwrap();
-    //     SHARES
-    //         .save(
-    //             deps.as_mut().storage,
-    //             Addr::unchecked("bolice"),
-    //             &Uint128::new(1000),
-    //         )
-    //         .unwrap();
+        let secondary_positions = vec![
+            FullPositionParsedBuilder::default()
+                .position(
+                    PositionParsedBuilder::default()
+                        .address(MOCK_CONTRACT_ADDR.to_string())
+                        .position_id(2)
+                        .pool_id(1)
+                        .lower_tick(-1000)
+                        .upper_tick(100)
+                        .liquidity(Decimal256::from_str("100.1").unwrap())
+                        .join_time(Timestamp::from_seconds(1))
+                        .build()
+                        .unwrap(),
+                )
+                .asset0(coin(100, "token0"))
+                .asset1(coin(100, "token1"))
+                .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+                .claimable_incentives(vec![])
+                .forfeited_incentives(vec![])
+                .build()
+                .unwrap(),
+            FullPositionParsedBuilder::default()
+                .position(
+                    PositionParsedBuilder::default()
+                        .address(MOCK_CONTRACT_ADDR.to_string())
+                        .position_id(3)
+                        .pool_id(1)
+                        .lower_tick(-1000)
+                        .upper_tick(2000)
+                        .liquidity(Decimal256::from_str("10.1").unwrap())
+                        .join_time(Timestamp::from_seconds(1))
+                        .build()
+                        .unwrap(),
+                )
+                .asset0(coin(10, "token0"))
+                .asset1(coin(20, "token1"))
+                .claimable_spread_rewards((vec![coin(100, "token0"), coin(100, "token1")]))
+                .claimable_incentives(vec![])
+                .forfeited_incentives(vec![])
+                .build()
+                .unwrap(),
+        ];
 
-    // USER_REWARDS
-    //     .save(
-    //         deps.as_mut().storage,
-    //         Addr::unchecked("alice"),
-    //         &CoinList::from_coins(vec![coin(100, "token0"), coin(175, "token1")]),
-    //     )
-    //     .unwrap();
-    // USER_REWARDS
-    //     .save(
-    //         deps.as_mut().storage,
-    //         Addr::unchecked("bob"),
-    //         &CoinList::from_coins(vec![coin(50, "token0"), coin(125, "token1")]),
-    //     )
-    //     .unwrap();
+        // The QuasarQuerier hard mocks total shares to 100000
+        let total_shares = 100000;
+        let user_shares = 1000;
 
-    //     let _res =
-    //         execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
-    //     // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
-    //     assert_eq!(
-    //         CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
-    //         (Uint128::new(18), Uint128::new(27))
-    //     )
-    // }
+        let mut deps = mock_deps_with_querier_with_balance_with_positions(
+            &info,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[
+                    coin(20, "token0"),
+                    coin(30, "token1"),
+                    coin(total_shares, "shares"),
+                ],
+            )],
+            main_position.clone().into(),
+            secondary_positions.into_iter().map(|p| p.into()).collect(),
+        );
+        VAULT_DENOM
+            .save(deps.as_mut().storage, &"shares".to_string())
+            .unwrap();
 
-    // #[test]
-    // fn execute_withdraw_works_user_strategist_rewards() {
-    //     let info = mock_info("bolice", &[]);
-    //     let mut deps = mock_deps_with_querier_with_balance(
-    //         &info,
-    //         &[(
-    //             MOCK_CONTRACT_ADDR,
-    //             &[coin(200000, "token0"), coin(300000, "token1")],
-    //         )],
-    //     );
-    //     let env = mock_env();
+        let env = mock_env();
+        let withdraw_ratio = Decimal256::from_ratio(user_shares, total_shares);
 
-    //     STRATEGIST_REWARDS
-    //         .save(
-    //             deps.as_mut().storage,
-    //             &CoinList::from_coins(vec![coin(50, "token0"), coin(50, "token1")]),
-    //         )
-    //         .unwrap();
-    //     VAULT_DENOM
-    //         .save(deps.as_mut().storage, &"share_token".to_string())
-    //         .unwrap();
-    //     SHARES
-    //         .save(
-    //             deps.as_mut().storage,
-    //             Addr::unchecked("bolice"),
-    //             &Uint128::new(1000),
-    //         )
-    //         .unwrap();
-
-    // USER_REWARDS
-    //     .save(
-    //         deps.as_mut().storage,
-    //         Addr::unchecked("alice"),
-    //         &CoinList::from_coins(vec![coin(200, "token0"), coin(300, "token1")]),
-    //     )
-    //     .unwrap();
-    // USER_REWARDS
-    //     .save(
-    //         deps.as_mut().storage,
-    //         Addr::unchecked("bob"),
-    //         &CoinList::from_coins(vec![coin(400, "token0"), coin(100, "token1")]),
-    //     )
-    //     .unwrap();
-
-    //     let _res =
-    //         execute_withdraw(deps.as_mut(), env, info, None, Uint128::new(1000).into()).unwrap();
-    //     // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
-    //     // user dust should be 1% of 200000 - 650 (= 1993.5) and 1% of 300000 - 450 (= 2995.5)
-    //     assert_eq!(
-    //         CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
-    //         (Uint128::new(1993), Uint128::new(2995))
-    //     )
-    // }
+        // we expect to withdraw 10% out of each pos
+        let res = withdraw_pro_rato(deps.as_mut(), &env, Uint128::new(user_shares)).unwrap();
+        res.into_iter().for_each(|p| {
+            let total_position =
+                get_parsed_position(&deps.as_ref().querier, p.position_id).unwrap();
+            assert_eq!(
+                total_position.position.liquidity * withdraw_ratio,
+                Decimal256::from_atomics(
+                    Uint256::from_str(p.liquidity_amount.as_str()).unwrap(),
+                    18
+                )
+                .unwrap()
+            )
+        })
+    }
 
     // the execute withdraw flow should be easiest to test in test-tube, since it requires quite a bit of Osmsosis specific information
     // we just test the handle withdraw implementation here
