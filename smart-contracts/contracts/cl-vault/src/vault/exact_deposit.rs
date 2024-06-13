@@ -144,7 +144,7 @@ mod tests {
             amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
         };
 
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mut deps = mock_deps_with_position(token0.clone(), token1.clone());
         let mutdeps = deps.as_mut();
 
         let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
@@ -173,11 +173,11 @@ mod tests {
 
         // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
         let mut deps = mock_deps_with_position(
-            Some(Coin {
+            Coin {
                 denom: "token0".to_string(),
                 amount: Uint128::zero(),
-            }),
-            Some(token1.clone()),
+            },
+            token1.clone(),
         );
 
         let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
@@ -203,11 +203,11 @@ mod tests {
 
         // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
         let mut deps = mock_deps_with_position(
-            Some(token0.clone()),
-            Some(Coin {
+            token0.clone(),
+            Coin {
                 denom: "token1".to_string(),
                 amount: Uint128::zero(),
-            }),
+            },
         );
 
         let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
@@ -232,7 +232,7 @@ mod tests {
         };
 
         // we use a ratio of 1/2
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mut deps = mock_deps_with_position(token0.clone(), token1.clone());
 
         let result =
             get_depositable_tokens(deps.as_mut(), coin(2000, "token0"), coin(5000, "token1"))
@@ -258,7 +258,7 @@ mod tests {
         };
 
         // we use a ratio of 1/2
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mut deps = mock_deps_with_position(token0.clone(), token1.clone());
         let mutdeps = deps.as_mut();
 
         let result =
@@ -395,8 +395,8 @@ mod tests {
     }
 
     fn mock_deps_with_position(
-        token0: Option<Coin>,
-        token1: Option<Coin>,
+        token0: Coin,
+        token1: Coin,
     ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
         let position_id = 2;
 
@@ -411,8 +411,8 @@ mod tests {
                     1000,
                     None,
                     Decimal256::from_str("1000000.2").unwrap(),
-                    coin(100, "token0"),
-                    coin(100, "token1"),
+                    token0,
+                    token1,
                 )
                 .build()],
                 500,
