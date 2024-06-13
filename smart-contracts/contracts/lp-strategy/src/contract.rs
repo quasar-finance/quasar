@@ -23,8 +23,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
-    UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
+    TOKEN_MIN_AMOUNT_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -491,9 +491,16 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 // It's recommended to migrate either pending acks or traps, not both at the same time!
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    if msg.token_out_min_amount.is_zero() {
+        return Err(ContractError::ZeroError);
+    }
+
+    TOKEN_MIN_AMOUNT_OUT.save(deps.storage, &msg.token_out_min_amount)?;
+
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
+        .add_attribute("token_out_min_amount", msg.token_out_min_amount.to_string())
         .add_attribute("success", "true"))
 }
 
@@ -514,6 +521,43 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_migrate_success() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let msg = MigrateMsg {
+            token_out_min_amount: Uint128::new(1000),
+        };
+
+        let res = migrate(deps.as_mut(), env.clone(), msg.clone()).unwrap();
+
+        assert_eq!(
+            res,
+            Response::new()
+                .add_attribute("migrate", CONTRACT_NAME)
+                .add_attribute("token_out_min_amount", msg.token_out_min_amount.to_string())
+                .add_attribute("success", "true")
+        );
+
+        // Verify the storage value
+        let stored_value = TOKEN_MIN_AMOUNT_OUT.load(&deps.storage).unwrap();
+        assert_eq!(stored_value, msg.token_out_min_amount);
+    }
+
+    #[test]
+    fn test_migrate_zero_error() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        let msg = MigrateMsg {
+            token_out_min_amount: Uint128::zero(),
+        };
+
+        let err = migrate(deps.as_mut(), env.clone(), msg).unwrap_err();
+        assert_eq!(err, ContractError::ZeroError);
+    }
 
     #[test]
     fn test_execute_try_icq_ibc_locked() {

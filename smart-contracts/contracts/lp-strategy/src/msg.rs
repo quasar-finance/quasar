@@ -42,7 +42,9 @@ impl InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub token_out_min_amount: Uint128,
+}
 
 #[cw_serde]
 #[derive(QueryResponses)]

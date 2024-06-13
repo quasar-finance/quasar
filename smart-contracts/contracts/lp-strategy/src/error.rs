@@ -138,4 +138,7 @@ pub enum ContractError {
 
     #[error("No pending unbonds found")]
     NoPendingUnbonds,
+
+    #[error("Token out min amount cannot be zero")]
+    ZeroError,
 }
