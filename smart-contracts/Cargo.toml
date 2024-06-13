@@ -12,9 +12,9 @@ members = [
   # "contracts/multihop-router",
    "packages/quasar-types",
   # "packages/intergamm-bindings",
-  "contracts/cl-vault",
-  "contracts/merkle-incentives",
-  "contracts/range-middleware",
+#  "contracts/cl-vault",
+#  "contracts/merkle-incentives",
+#  "contracts/range-middleware",
 ]
 
 [workspace.dependencies]
