@@ -29,6 +29,84 @@ mod test {
 
     #[test]
     #[ignore]
+    fn move_range_works_mainnet() {
+        // TODO: Evaluate creating a fixture_default() variant i.e. out_of_range_init()
+        let (app, contract, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            init_test_contract(
+                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+                &[
+                    Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE), // osmo
+                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE), // usdt
+                ],
+                MsgCreateConcentratedPool {
+                    sender: "overwritten".to_string(),
+                    denom0: DENOM_BASE.to_string(),
+                    denom1: DENOM_QUOTE.to_string(),
+                    tick_spacing: 100,
+                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+                },
+                -4400000, // 0.56 in ticks
+                60000, // 1.06
+                vec![
+                    v1beta1::Coin {
+                        denom: DENOM_BASE.to_string(),
+                        amount: "15036593929".to_string(),
+                    },
+                    v1beta1::Coin {
+                        denom: DENOM_QUOTE.to_string(),
+                        amount: "102317388676".to_string(),
+                    },
+                ],
+                Uint128::new(15036593929u128), // this should be probably less than this
+                Uint128::new(102317388676u128), // this should be probably less than this
+                PERFORMANCE_FEE_DEFAULT,
+            );
+        let wasm = Wasm::new(&app);
+
+        // HERE
+
+        let _before_position: PositionResponse = wasm
+            .query(
+                contract.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+
+        let _result = wasm
+            .execute(
+                contract.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("400").unwrap(),
+                        upper_price: Decimal::from_str("1466").unwrap(),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        recommended_swap_route: None,
+                        force_swap_route: false,
+                        claim_after: None,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let _after_position: PositionResponse = wasm
+            .query(
+                contract.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+    }
+
+    #[test]
+    #[ignore]
     fn move_range_works() {
         // TODO: Evaluate creating a fixture_default() variant i.e. out_of_range_init()
         let (app, contract, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =

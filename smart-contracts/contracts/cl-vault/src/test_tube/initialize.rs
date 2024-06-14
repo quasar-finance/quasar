@@ -209,6 +209,8 @@ pub mod initialize {
             .code_id;
 
         // Setup a dummy CL pool to work with
+        println!("pool.denom0 {}", pool.denom0);
+        println!("pool.denom1 {}", pool.denom1);
         let gov = GovWithAppAccess::new(&app);
         gov.propose_and_execute(
             CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
@@ -216,8 +218,8 @@ pub mod initialize {
                 title: "CL Pool".to_string(),
                 description: "So that we can trade it".to_string(),
                 pool_records: vec![PoolRecord {
-                    denom0: pool.denom0,
-                    denom1: pool.denom1,
+                    denom0: pool.denom0, // DENOM_BASE
+                    denom1: pool.denom1, // DENOM_QUOTE
                     tick_spacing: pool.tick_spacing,
                     spread_factor: pool.spread_factor,
                 }],
@@ -249,12 +251,15 @@ pub mod initialize {
                 &admin,
             )
             .unwrap();
+        println!("create_position: {:?}", create_position);
+
+        println!("tokens_provided: {:?}", tokens_provided);
 
         // Get and assert spot price is 1.0
         let spot_price = pm
             .query_spot_price(&SpotPriceRequest {
-                base_asset_denom: tokens_provided[0].denom.to_string(),
-                quote_asset_denom: tokens_provided[1].denom.to_string(),
+                base_asset_denom: DENOM_BASE.to_string(),
+                quote_asset_denom: DENOM_QUOTE.to_string(),
                 pool_id: vault_pool.id,
             })
             .unwrap();
@@ -287,8 +292,8 @@ pub mod initialize {
                     },
                     vault_token_subdenom: "utestvault".to_string(),
                     range_admin: admin.address(),
-                    initial_lower_tick: lower_tick,
-                    initial_upper_tick: upper_tick,
+                    initial_lower_tick: -7600000,
+                    initial_upper_tick: 490000,
                     thesis: "Provide big swap efficiency".to_string(),
                     name: "Contract".to_string(),
                 },
