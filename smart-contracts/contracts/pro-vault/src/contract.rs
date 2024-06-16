@@ -33,7 +33,6 @@ pub const WHITELIST_DENOMS: Map<&str, bool> = Map::new("whitelist_denoms");
 // TODO - 
 // 1. Locality of local variables to be strucured, that will reduce number of imports from
 // other modules and will make the contract.rs cleaner, smaller, and easy to read and maintain.
-// 2. Stategy Actions to be added here in the match cases.
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -134,7 +133,7 @@ fn emit_instantiate_events(
 }
 
 
-// TODO - Query Enumsd and match to be resturctured. Like Vault config query should be in vault module,
+// TODO - Query Enums and match to be resturctured. Like Vault config query should be in vault module,
 // strategy config query to be in strategy module. 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {

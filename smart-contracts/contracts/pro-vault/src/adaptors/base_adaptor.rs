@@ -67,7 +67,8 @@ pub trait Adapter {
     /// TODO - NOT SURE IF THIS IS USEFUL AT ALL. 
     // fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError>;
 
-    /// Executes a call to another contract
+    /// Executes a call to another contract. The other contract in this case is an 
+    /// adaptor contract. 
     fn execute_call(
         contract_addr: Addr,
         msg: Binary,

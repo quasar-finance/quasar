@@ -181,3 +181,6 @@ pub fn query_ownership_proposal(
 pub fn query_owner(deps: Deps, owner: &Admin) -> StdResult<Option<Addr>> {
     owner.get(deps).map_err(|e| StdError::generic_err(e.to_string()))
 }
+
+
+// TODO - Good enough unit tests to be written.

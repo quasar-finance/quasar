@@ -7,3 +7,7 @@ pub mod strategy;
 pub mod position_manager;
 pub mod adaptors;
 pub mod proshare;
+pub use adaptors::debt_adaptor;
+pub use adaptors::debt_adaptor::*;
+
+
