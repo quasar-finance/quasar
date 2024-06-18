@@ -281,8 +281,16 @@ pub enum ExecuteMsg {
         seq: u64,
         channel: String,
     },
-    TransferAirdrop {
+    TransferOsmosis {
         destination_address: Addr,
         amounts: Vec<OsmoCoin>,
+    },
+    TransferQuasar {
+        destination_address: Addr,
+        amounts: Vec<Coin>,
+    },
+    ExitPool {
+        share_amount_in: Uint128,
+        token_out_min_amount: Uint128,
     },
 }

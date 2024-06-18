@@ -117,9 +117,6 @@ pub(crate) const SIMULATED_EXIT_SHARES_IN: Item<Uint128> = Item::new("simulated_
 // CLAIMABLE_FUNDS is the amount of funds claimable by a certain address, either
 pub(crate) const CLAIMABLE_FUNDS: Map<(Addr, FundPath), Uint128> = Map::new("claimable_funds");
 
-// Token ut min amount for ABCI 29 code error
-pub(crate) const TOKEN_MIN_AMOUNT_OUT: Item<Uint128> = Item::new("min_amount_out");
-
 impl PrimaryKey<'_> for FundPath {
     type Prefix = Addr;
 

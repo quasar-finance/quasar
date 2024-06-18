@@ -13,7 +13,7 @@ use quasar_types::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::TOKEN_MIN_AMOUNT_OUT;
+use crate::ibc_util::calculate_token_out_min_amount;
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
@@ -81,9 +81,7 @@ pub fn batch_unbond(storage: &mut dyn Storage, env: &Env) -> Result<Option<SubMs
     }
 
     // important to use lp_shares before it gets updated
-    // let token_out_min_amount = calculate_token_out_min_amount(storage)?;
-
-    let token_out_min_amount = TOKEN_MIN_AMOUNT_OUT.load(storage)?;
+    let token_out_min_amount = calculate_token_out_min_amount(storage)?;
 
     let msg = exit_swap(
         storage,

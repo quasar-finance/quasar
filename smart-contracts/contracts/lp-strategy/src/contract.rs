@@ -12,7 +12,10 @@ use quasar_types::ibc::IcsAck;
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
 use crate::error::ContractError;
-use crate::execute::{execute_retry, execute_transfer_airdrop};
+use crate::execute::execute_retry;
+use crate::exit_protocol::{
+    execute_exit_pool, execute_transfer_on_osmosis, execute_transfer_on_quasar,
+};
 use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
@@ -23,8 +26,8 @@ use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
     Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
-    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT,
-    TOKEN_MIN_AMOUNT_OUT, TOTAL_VAULT_BALANCE, UNBOND_QUEUE,
+    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
+    UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -125,10 +128,24 @@ pub fn execute(
             execute_remove_lock_admin(deps, env, info, to_remove)
         }
         ExecuteMsg::Retry { seq, channel } => execute_retry(deps, env, info, seq, channel),
-        ExecuteMsg::TransferAirdrop {
+        ExecuteMsg::TransferOsmosis {
             destination_address,
             amounts,
-        } => execute_transfer_airdrop(deps, env, destination_address, amounts),
+        } => execute_transfer_on_osmosis(deps, env, destination_address, amounts, info.sender),
+        ExecuteMsg::TransferQuasar {
+            destination_address,
+            amounts,
+        } => execute_transfer_on_quasar(deps, env, destination_address, amounts, info.sender),
+        ExecuteMsg::ExitPool {
+            share_amount_in,
+            token_out_min_amount,
+        } => execute_exit_pool(
+            deps,
+            env,
+            share_amount_in,
+            token_out_min_amount,
+            info.sender,
+        ),
     }
 }
 
@@ -491,16 +508,9 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 // It's recommended to migrate either pending acks or traps, not both at the same time!
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    if msg.token_out_min_amount.is_zero() {
-        return Err(ContractError::ZeroError);
-    }
-
-    TOKEN_MIN_AMOUNT_OUT.save(deps.storage, &msg.token_out_min_amount)?;
-
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("token_out_min_amount", msg.token_out_min_amount.to_string())
         .add_attribute("success", "true"))
 }
 

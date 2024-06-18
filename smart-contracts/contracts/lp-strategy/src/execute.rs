@@ -1,11 +1,3 @@
-use cosmwasm_std::{Addr, DepsMut, Env, Event, IbcTimeout, MessageInfo, Response, SubMsg};
-use cw_utils::nonpayable;
-use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
-use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
-use quasar_types::ica::packet::ica_send;
-
-use crate::helpers::{create_ibc_ack_submsg, get_ica_address};
-use crate::state::{IBC_TIMEOUT_TIME, ICA_CHANNEL};
 use crate::{
     bond::Bond,
     error::ContractError,
@@ -13,6 +5,8 @@ use crate::{
     state::{PendingBond, RawAmount, FAILED_JOIN_QUEUE, TRAPS},
     unbond::{do_unbond, PendingReturningUnbonds},
 };
+use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
+use cw_utils::nonpayable;
 
 /// The retry entry point will be used to retry any failed ICA message given the sequence number and the channel.
 /// Depending on the type of ICA message, the contract will handle the retry differently.
@@ -108,48 +102,6 @@ pub fn handle_retry_exit_pool(
     TRAPS.remove(deps.storage, (seq, channel));
 
     Ok(resp)
-}
-
-pub fn execute_transfer_airdrop(
-    deps: DepsMut,
-    env: Env,
-    destination_address: Addr,
-    amounts: Vec<OsmoCoin>,
-) -> Result<Response, ContractError> {
-    // let to_address = deps.api.addr_validate(destination_address.as_str())?;
-    let ica_address = get_ica_address(deps.storage, ICA_CHANNEL.load(deps.storage)?)?;
-
-    let msg = MsgSend {
-        from_address: ica_address,
-        to_address: destination_address.clone().to_string(),
-        amount: amounts,
-    };
-
-    let pkt = ica_send::<MsgSend>(
-        msg.clone(),
-        ICA_CHANNEL.load(deps.storage)?,
-        IbcTimeout::with_timestamp(env.block.time.plus_seconds(IBC_TIMEOUT_TIME)),
-    )?;
-
-    let channel = ICA_CHANNEL.load(deps.storage)?;
-
-    let message: SubMsg = create_ibc_ack_submsg(
-        deps.storage,
-        IbcMsgKind::Ica(IcaMessages::BankSend(
-            destination_address.clone(),
-            msg.clone().amount,
-        )),
-        pkt,
-        channel,
-    )?;
-
-    Ok(Response::new()
-        .add_submessage(message)
-        .add_event(Event::new("ica_send_amount"))
-        .add_attribute(
-            "destination_address",
-            destination_address.clone().to_string(),
-        ))
 }
 
 #[cfg(test)]
