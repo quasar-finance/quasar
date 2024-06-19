@@ -11,6 +11,7 @@ pub mod initialize {
         MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
+    use osmosis_test_tube::Bank;
     use osmosis_test_tube::{
         cosmrs::proto::traits::Message,
         osmosis_std::types::osmosis::concentratedliquidity::{
@@ -22,6 +23,9 @@ pub mod initialize {
     use std::str::FromStr;
 
     use crate::helpers::sort_tokens;
+    use crate::math::tick::price_to_tick;
+    use crate::math::tick::tick_to_price;
+    use crate::msg::ExtensionExecuteMsg;
     use crate::msg::MovePosition;
     use crate::msg::{
         ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRange, QueryMsg,
@@ -293,10 +297,73 @@ pub mod initialize {
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
                 sort_tokens(vec![
-                    coin(INITIAL_POSITION_BURN, vault_pool.token0),
-                    coin(INITIAL_POSITION_BURN, vault_pool.token1),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0.clone()),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1.clone()),
                 ])
                 .as_ref(),
+                &admin,
+            )
+            .unwrap();
+
+        let lower_price = tick_to_price(lower_tick / 2).unwrap();
+        let upper_price = tick_to_price(upper_tick / 2).unwrap();
+
+        let bank = Bank::new(&app);
+        bank.send(
+            MsgSend {
+                from_address: admin.address(),
+                to_address: contract.data.address.clone(),
+                amount: osmosis_std::cosmwasm_to_proto_coins(sort_tokens(vec![
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0.clone()),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1.clone()),
+                ])),
+            },
+            &admin,
+        )
+        .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract.data.address.as_str(),
+                &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(
+                    ModifyRange::CreatePosition {
+                        lower_price: lower_price.try_into().unwrap(),
+                        upper_price: upper_price.try_into().unwrap(),
+                        claim_after: None,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        bank.send(
+            MsgSend {
+                from_address: admin.address(),
+                to_address: contract.data.address.clone(),
+                amount: osmosis_std::cosmwasm_to_proto_coins(sort_tokens(vec![
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0.clone()),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1.clone()),
+                ])),
+            },
+            &admin,
+        )
+        .unwrap();
+
+        let lower_price = tick_to_price(lower_tick / 3).unwrap();
+        let upper_price = tick_to_price(upper_tick / 3).unwrap();
+
+        let _res = wasm
+            .execute(
+                contract.data.address.as_str(),
+                &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(
+                    ModifyRange::CreatePosition {
+                        lower_price: lower_price.try_into().unwrap(),
+                        upper_price: upper_price.try_into().unwrap(),
+                        claim_after: None,
+                    },
+                )),
+                &[],
                 &admin,
             )
             .unwrap();
