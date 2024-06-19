@@ -25,8 +25,10 @@ pub enum Replies {
     /// Merge positions, used to merge positions
     Merge,
 
-    // handle user withdraws after liquidity is removed from the position
-    WithdrawUser,
+    // handle user withdraws after liquidity is removed from the main position
+    WithdrawUserMain,
+    // handle user withdraws after user funds are withdrawn from all positions and free balance pro rato
+    WithdrawUserProRato,
     // after creating a denom in initialization, register the created denom
     CreateDenom,
     /// to merge positions, we need to withdraw positions, used internally for merging
