@@ -88,13 +88,17 @@ pub const CURRENT_POSITION_ID: Item<u64> = Item::new("current_position_id");
 pub const CURRENT_CLAIM_AFTER: Item<Option<u64>> = Item::new("current_claim_after");
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
-/// The merge of positions currently being executed
+/// boolean signifying whether the current executing merge is for the main position
+pub const MERGE_MAIN_POSITION: Item<bool> = Item::new("merge_main_position");
+
+/// The queue of positions currently being merged
 pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
 
 #[cw_serde]
 pub struct CurrentMergePosition {
     pub lower_tick: i64,
     pub upper_tick: i64,
+    pub claim_after: Option<u64>,
 }
 
 pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("current_merge_position");
