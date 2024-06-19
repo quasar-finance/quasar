@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    coin, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    coin, Addr, BankMsg, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::{
@@ -10,25 +10,22 @@ use osmosis_std::types::{
     },
 };
 
-use crate::query::query_total_vault_token_supply;
 use crate::{
     helpers::{get_asset0_value, get_unused_balances, sort_tokens},
     query::query_total_assets,
     reply::Replies,
-    state::{
-        CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, MAIN_POSITION, POOL_CONFIG, SHARES,
-        VAULT_DENOM,
-    },
+    state::{CURRENT_WITHDRAWER, MAIN_POSITION, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::withdraw_from_position,
     ContractError,
 };
+use crate::{query::query_total_vault_token_supply, rewards::CoinList};
 
 use super::concentrated_liquidity::{get_parsed_position, get_positions};
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
 pub fn execute_withdraw(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: &Env,
     info: MessageInfo,
     recipient: Option<String>,
@@ -54,30 +51,6 @@ pub fn execute_withdraw(
         .map_err(|_| ContractError::InsufficientFunds)?;
     SHARES.save(deps.storage, info.sender, &left_over.try_into()?)?;
 
-    let total_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
-
-    // get the dust amounts belonging to the user
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-    // TODO replace dust with queries for balance
-    let unused_balances = get_unused_balances(&deps.querier, env)?;
-    let dust0: Uint256 = unused_balances
-        .find_coin(pool_config.token0.clone())
-        .amount
-        .into();
-    let dust1: Uint256 = unused_balances.find_coin(pool_config.token1).amount.into();
-
-    let user_dust0: Uint128 = dust0
-        .checked_mul(shares_to_withdraw)?
-        .checked_div(total_shares)?
-        .try_into()?;
-    let user_dust1 = dust1
-        .checked_mul(shares_to_withdraw)?
-        .checked_div(total_shares)?
-        .try_into()?;
-    // save the new total amount of dust available for other actions
-
-    CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
-
     let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into()?;
     // burn the shares
     let burn_coin = coin(shares_to_withdraw_u128.u128(), vault_denom);
@@ -99,7 +72,7 @@ pub fn execute_withdraw(
     )?;
     let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
 
-    let user_value = Decimal256::from_ratio(user_shares, 1_u128)
+    let user_value = Decimal256::from_ratio(shares_to_withdraw, 1_u128)
         .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
         .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
 
@@ -113,24 +86,53 @@ pub fn execute_withdraw(
     )?;
 
     // withdraw the user's funds from the position
-    // TODO this should have a seperate test to ensure proper value return if between a main position and multiple positions
-    let withdraw_msg = if user_value.to_uint_ceil() < main_postion_value.into() {
-        vec![withdraw_from_main(deps, env, user_shares.try_into()?)?]
-    } else {
-        withdraw_pro_rato(deps, env, user_shares.try_into()?)?
-    };
+    // TODO we also need to account for the case where most of the balance is in in the contracts free balance
+    if user_value.to_uint_ceil() < main_postion_value.into() {
+        let withdraw = vec![withdraw_from_main(
+            deps,
+            env,
+            shares_to_withdraw.try_into()?,
+        )?];
 
-    Ok(Response::new()
-        .add_attribute("method", "execute")
-        .add_attribute("action", "withdraw")
-        .add_attribute("user_amount", user_value.to_string())
-        .add_attribute("share_amount", shares_to_withdraw)
-        .add_message(burn_msg)
-        .add_submessages(
-            withdraw_msg
-                .into_iter()
-                .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUser as u64)),
-        ))
+        Ok(Response::new()
+            .add_attribute("method", "execute")
+            .add_attribute("action", "withdraw")
+            .add_attribute("user_amount", user_value.to_uint_floor().to_string())
+            .add_attribute("source", "main_position")
+            .add_attribute("share_amount", shares_to_withdraw)
+            .add_message(burn_msg)
+            .add_submessages(
+                withdraw
+                    .into_iter()
+                    .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUserMain as u64)),
+            ))
+    } else {
+        let (withdraw, send) = withdraw_pro_rato(
+            deps,
+            env,
+            shares_to_withdraw.try_into()?,
+            recipient,
+        )?;
+
+        let mut res = Response::new()
+            .add_attribute("method", "execute")
+            .add_attribute("action", "withdraw")
+            .add_attribute("source", "all_positions")
+            .add_attribute("user_amount", user_value.to_uint_floor().to_string())
+            .add_attribute("share_amount", shares_to_withdraw)
+            .add_message(burn_msg)
+            .add_submessages(
+                withdraw
+                    .into_iter()
+                    .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUserProRato as u64)),
+            );
+
+        if let Some(send) = send {
+            res = res.add_message(send);
+        }
+
+        Ok(res)
+    }
 }
 
 pub fn handle_withdraw_user_reply(
@@ -139,12 +141,13 @@ pub fn handle_withdraw_user_reply(
 ) -> Result<Response, ContractError> {
     // parse the reply and instantiate the funds we want to send
     let response: MsgWithdrawPositionResponse = data.try_into()?;
+
     let user = CURRENT_WITHDRAWER.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    let (user_dust0, user_dust1) = CURRENT_WITHDRAWER_DUST.load(deps.storage)?;
-    let amount0 = Uint128::new(response.amount0.parse()?).checked_add(user_dust0)?;
-    let amount1 = Uint128::new(response.amount1.parse()?).checked_add(user_dust1)?;
+    // TODO check that user dust is still a thing that makes sense here or leads to overwithdrawing due to the "free balance part already being taken into account"
+    let amount0 = Uint128::new(response.amount0.parse()?);
+    let amount1 = Uint128::new(response.amount1.parse()?);
 
     let coin0 = coin(amount0.u128(), pool_config.token0);
     let coin1 = coin(amount1.u128(), pool_config.token1);
@@ -154,18 +157,21 @@ pub fn handle_withdraw_user_reply(
         to_address: user.to_string(),
         amount: sort_tokens(vec![coin0.clone(), coin1.clone()]),
     };
+
     Ok(Response::new()
         .add_message(msg)
         .add_attribute("method", "reply")
         .add_attribute("action", "handle_withdraw_user")
-        .add_attribute("amount0", coin0.clone().amount)
-        .add_attribute("amount1", coin1.clone().amount))
+        .add_attribute("amount0", coin0.amount)
+        .add_attribute("amount1", coin1.amount))
 }
 
+/// Withdraw user funds from the main position. This relies on calculating based on the amount of funds the user owns
+/// expressed in asset0
 fn withdraw_from_main(
     deps: DepsMut,
     env: &Env,
-    user_shares: Uint128,
+    shares_to_withdraw: Uint128,
 ) -> Result<MsgWithdrawPosition, ContractError> {
     let assets = query_total_assets(deps.as_ref(), &env)?;
     let total_value = get_asset0_value(
@@ -175,36 +181,49 @@ fn withdraw_from_main(
         assets.token1.amount,
     )?;
     let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
+    println!("shares_to_withdraw: {:?}", shares_to_withdraw);
 
-    let user_value = Decimal256::from_ratio(user_shares, 1_u128)
+    let user_value = Decimal256::from_ratio(shares_to_withdraw, 1_u128)
         .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
         .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
+    println!("user_value: {:?}", user_value);
 
     let main_position_id = MAIN_POSITION.load(deps.storage)?;
     let main_position = get_parsed_position(&deps.querier, main_position_id)?;
+    println!("main_position: {:?}", main_position);
+
     let main_postion_value = get_asset0_value(
         deps.storage,
         &deps.querier,
         main_position.asset0.amount,
         main_position.asset1.amount,
     )?;
+    println!("main_postion_value: {:?}", main_postion_value);
 
     // User value * Main position liquidity / Main position value = user value
     let withdraw_liquidity = (user_value * main_position.position.liquidity)
         / Decimal256::from_ratio(main_postion_value, 1_u128);
+    println!("withdraw_liquidity: {:?}", withdraw_liquidity);
 
-    withdraw_from_position(&env, main_position_id, withdraw_liquidity)
+    Ok(withdraw_from_position(
+        &env,
+        main_position_id,
+        withdraw_liquidity,
+    )?)
 }
 
+/// Withdraw user funds pro rato from the different positions and any free balance according to the percentage of
+/// vault shares that the user burns
 fn withdraw_pro_rato(
     deps: DepsMut,
     env: &Env,
-    user_shares: Uint128,
-) -> Result<Vec<MsgWithdrawPosition>, ContractError> {
+    shares_to_withdraw: Uint128,
+    user: Addr,
+) -> Result<(Vec<MsgWithdrawPosition>, Option<BankMsg>), ContractError> {
     let bq = BankQuerier::new(&deps.querier);
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
-    let total_vault_shares: Uint128 = bq
+    let total_shares: Uint128 = bq
         .supply_of(vault_denom)?
         .amount
         .unwrap()
@@ -219,15 +238,45 @@ fn withdraw_pro_rato(
         .map(|(p, fp)| {
             let existing_liquidity: Decimal256 = fp.position.liquidity;
 
-            let user_liquidity = Decimal256::from_ratio(user_shares, 1_u128)
+            let user_liquidity = Decimal256::from_ratio(shares_to_withdraw, 1_u128)
                 .checked_mul(existing_liquidity)?
-                .checked_div(Decimal256::from_ratio(total_vault_shares, 1_u128))?;
+                .checked_div(Decimal256::from_ratio(total_shares, 1_u128))?;
 
             withdraw_from_position(env, p.position_id, user_liquidity)
         })
         .collect();
 
-    withdraws
+    // get the dust amounts belonging to the user
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    // TODO replace dust with queries for balance
+    let unused_balances = get_unused_balances(&deps.querier, env)?;
+    let dust0: Uint256 = unused_balances
+        .find_coin(pool_config.token0.clone())
+        .amount
+        .into();
+    let dust1: Uint256 = unused_balances
+        .find_coin(pool_config.token1.clone())
+        .amount
+        .into();
+
+    let user_dust0: Uint128 = dust0
+        .checked_mul(shares_to_withdraw.into())?
+        .checked_div(total_shares.into())?
+        .try_into()?;
+    let user_dust1: Uint128 = dust1
+        .checked_mul(shares_to_withdraw.into())?
+        .checked_div(total_shares.into())?
+        .try_into()?;
+    // save the new total amount of dust available for other actions
+
+    // send the user's share of the free balance to the the user
+    let send = CoinList::from_coins(vec![
+        coin(user_dust0.u128(), pool_config.token0),
+        coin(user_dust1.u128(), pool_config.token1),
+    ])
+    .to_bank_send(user);
+
+    Ok((withdraws?, send))
 }
 
 #[cfg(test)]
@@ -236,21 +285,17 @@ mod tests {
 
     #[allow(deprecated)]
     use crate::{
-        // rewards::CoinList,
         rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };
     use crate::{
-        test_helpers::{mock_deps_with_querier_with_balance_with_positions, FullPositionBuilder},
-        vault::concentrated_liquidity::{
-            get_position, FullPositionParsed, FullPositionParsedBuilder, PositionParsed,
-            PositionParsedBuilder,
-        },
+        test_helpers::mock_deps_with_querier_with_balance_with_positions,
+        vault::concentrated_liquidity::{FullPositionParsedBuilder, PositionParsedBuilder},
     };
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
-        Addr, CosmosMsg, SubMsgResponse, Timestamp,
+        Addr, CosmosMsg, Decimal, SubMsgResponse, Timestamp,
     };
 
     use super::*;
@@ -286,10 +331,6 @@ mod tests {
         let _res =
             execute_withdraw(deps.as_mut(), &env, info, None, Uint128::new(1000).into()).unwrap();
         // our querier returns a total supply of 100_000, this user unbonds 1000, or 1%. The Dust saved should be one lower
-        assert_eq!(
-            CURRENT_WITHDRAWER_DUST.load(deps.as_ref().storage).unwrap(),
-            (Uint128::new(20), Uint128::new(30))
-        )
     }
 
     #[test]
@@ -368,8 +409,8 @@ mod tests {
             &[(
                 MOCK_CONTRACT_ADDR,
                 &[
-                    coin(2000, "token0"),
-                    coin(3000, "token1"),
+                    // coin(2000, "token0"),
+                    // coin(3000, "token1"),
                     coin(total_shares, "shares"),
                 ],
             )],
@@ -392,7 +433,9 @@ mod tests {
         .unwrap();
 
         // our users asset0 value
-        let user_value = user_shares * total_asset0_value.u128() / total_shares;
+        let user_value = Decimal256::from_ratio(user_shares, 1_u128)
+            * Decimal256::from_ratio(total_asset0_value, 1_u128)
+            / Decimal256::from_ratio(total_shares, 1_u128);
 
         let main_position_asset0_value = get_asset0_value(
             deps.as_ref().storage,
@@ -403,18 +446,20 @@ mod tests {
         .unwrap();
 
         // expected liquidity is the % equivalent of asset_0 value we are withdrawing compared to asset0 value of the main position
-        let liquidity_ratio = Decimal256::from_ratio(user_value, main_position_asset0_value);
-        let expected_liquidity = main_position.position.liquidity * liquidity_ratio;
+
+        // expected_liquidity = main_position_liquidity * user_value / main_position_asset0_value
+        // let liquidity_ratio = Decimal256::from_ratio(user_value, main_position_asset0_value);
+        let expected_liquidity = main_position.position.liquidity * user_value
+            / Decimal256::from_ratio(main_position_asset0_value, 1_u128);
 
         let res = withdraw_from_main(deps.as_mut(), &env, Uint128::new(user_shares)).unwrap();
         assert_eq!(
-            Decimal256::from_atomics(
-                Uint256::from_str(res.liquidity_amount.as_str()).unwrap(),
-                18
-            )
-            .unwrap()
-            .to_uint_floor(),
-            expected_liquidity.to_uint_floor()
+            res,
+            MsgWithdrawPosition {
+                position_id: 1,
+                sender: env.contract.address.to_string(),
+                liquidity_amount: expected_liquidity.atomics().to_string()
+            }
         )
     }
 
@@ -489,16 +534,15 @@ mod tests {
         let total_shares = 100000;
         let user_shares = 1000;
 
+        let coins = CoinList::from_coins(vec![
+            coin(20000, "token0"),
+            coin(30000, "token1"),
+            coin(total_shares, "shares"),
+        ]);
+
         let mut deps = mock_deps_with_querier_with_balance_with_positions(
             &info,
-            &[(
-                MOCK_CONTRACT_ADDR,
-                &[
-                    coin(20, "token0"),
-                    coin(30, "token1"),
-                    coin(total_shares, "shares"),
-                ],
-            )],
+            &[(MOCK_CONTRACT_ADDR, &coins.coins())],
             main_position.clone().into(),
             secondary_positions.into_iter().map(|p| p.into()).collect(),
         );
@@ -510,8 +554,15 @@ mod tests {
         let withdraw_ratio = Decimal256::from_ratio(user_shares, total_shares);
 
         // we expect to withdraw 10% out of each pos
-        let res = withdraw_pro_rato(deps.as_mut(), &env, Uint128::new(user_shares)).unwrap();
-        res.into_iter().for_each(|p| {
+        let (withdraws, send) = withdraw_pro_rato(
+            deps.as_mut(),
+            &env,
+            Uint128::new(user_shares),
+            info.sender.clone(),
+        )
+        .unwrap();
+
+        withdraws.into_iter().for_each(|p| {
             let total_position =
                 get_parsed_position(&deps.as_ref().querier, p.position_id).unwrap();
             assert_eq!(
@@ -522,7 +573,20 @@ mod tests {
                 )
                 .unwrap()
             )
-        })
+        });
+
+        let expected_coins = CoinList::from_coins(vec![
+            coins.find_coin("token0".to_string()),
+            coins.find_coin("token1".to_string()),
+        ])
+        .mul_ratio(Decimal::from_ratio(user_shares, total_shares));
+        assert_eq!(
+            send,
+            Some(BankMsg::Send {
+                to_address: info.sender.to_string(),
+                amount: expected_coins.coins()
+            })
+        )
     }
 
     // the execute withdraw flow should be easiest to test in test-tube, since it requires quite a bit of Osmsosis specific information
@@ -533,12 +597,6 @@ mod tests {
         let to_address = Addr::unchecked("bolice");
         CURRENT_WITHDRAWER
             .save(deps.as_mut().storage, &to_address)
-            .unwrap();
-        CURRENT_WITHDRAWER_DUST
-            .save(
-                deps.as_mut().storage,
-                &(Uint128::new(123), Uint128::new(234)),
-            )
             .unwrap();
 
         POOL_CONFIG
