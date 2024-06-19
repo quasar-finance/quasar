@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, to_json_binary, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction, Order,
-    Response, StdError, SubMsg, Uint128,
+    coin, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
+    Order, Response, StdError, SubMsg, Uint128,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -235,6 +235,19 @@ impl CoinList {
                 denom,
                 amount: 0u128.into(),
             })
+    }
+
+    /// convert the conlist to a bank send. returns None
+    pub fn to_bank_send(self, to_address: Addr) -> Option<BankMsg> {
+        let amount: Vec<_> = self.0.into_iter().filter(|c| !c.amount.is_zero()).collect();
+        if amount.is_empty() {
+            None
+        } else {
+            Some(BankMsg::Send {
+                to_address: to_address.to_string(),
+                amount,
+            })
+        }
     }
 }
 
