@@ -14,10 +14,15 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use crate::{
     msg::MergePositionMsg,
     reply::Replies,
-    state::{CurrentMergePosition, CURRENT_MERGE, CURRENT_MERGE_POSITION, POOL_CONFIG},
+    state::{
+        CurrentMergePosition, Position, CURRENT_MERGE, CURRENT_MERGE_POSITION, MAIN_POSITION,
+        MERGE_MAIN_POSITION, POOL_CONFIG, POSITIONS,
+    },
     vault::concentrated_liquidity::create_position,
     ContractError,
 };
+
+use super::concentrated_liquidity::get_parsed_position;
 
 #[cw_serde]
 pub struct MergeResponse {
@@ -35,6 +40,8 @@ pub fn execute_merge_position(
         return Err(ContractError::Unauthorized {});
     }
 
+    MERGE_MAIN_POSITION.save(deps.storage, &msg.main_position)?;
+
     let mut range: Option<CurrentMergePosition> = None;
     // Withdraw all positions
     let withdraw_msgs: Result<Vec<MsgWithdrawPosition>, ContractError> = msg
@@ -42,8 +49,8 @@ pub fn execute_merge_position(
         .into_iter()
         .map(|position_id| {
             let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
-            let position = cl_querier.position_by_id(position_id)?;
-            let p = position.position.unwrap().position.unwrap();
+            let full_position = get_parsed_position(&deps.querier, position_id)?;
+            let p = full_position.position;
 
             // if we already have queried a range to seen as "canonical", compare the range of the position
             // and error if they are not the same else we set the value of range. Thus the first queried position is seen as canonical
@@ -52,20 +59,23 @@ pub fn execute_merge_position(
                     return Err(ContractError::DifferentTicksInMerge);
                 }
             } else {
+                let position = POSITIONS.load(deps.storage, position_id)?;
                 range = Some(CurrentMergePosition {
                     lower_tick: p.lower_tick,
                     upper_tick: p.upper_tick,
+                    claim_after: position.claim_after,
                 })
             }
 
+            POSITIONS.remove(deps.storage, p.position_id);
+
             // save the position as an ongoing withdraw
             // create a withdraw msg to dispatch
-            let liquidity_amount = Decimal256::from_str(p.liquidity.as_str())?;
-
+            // TODO we can probably use the concentrated liquidity helper here
             Ok(MsgWithdrawPosition {
                 position_id,
                 sender: env.contract.address.to_string(),
-                liquidity_amount: liquidity_amount.atomics().to_string(),
+                liquidity_amount: p.liquidity.atomics().to_string(),
             })
         })
         .collect();
@@ -183,11 +193,30 @@ pub fn handle_merge_withdraw_position_reply(
 }
 
 pub fn handle_merge_create_position_reply(
-    _deps: DepsMut,
-    _env: Env,
+    deps: DepsMut,
+    env: Env,
     msg: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let response: MsgCreatePositionResponse = msg.try_into()?;
+
+    let is_main_position = MERGE_MAIN_POSITION.load(deps.storage)?;
+    if is_main_position {
+        MAIN_POSITION.save(deps.storage, &response.position_id)?
+    }
+
+    let cur = CURRENT_MERGE_POSITION.load(deps.storage)?;
+    POSITIONS.save(
+        deps.storage,
+        response.position_id,
+        &Position {
+            position_id: response.position_id,
+            join_time: env.block.time.seconds(),
+            claim_after: cur.claim_after,
+        },
+    )?;
+
+    CURRENT_MERGE_POSITION.remove(deps.storage);
+
     // TODO decide if we want any healthchecks here
     Ok(Response::new()
         .set_data(
@@ -197,7 +226,8 @@ pub fn handle_merge_create_position_reply(
             .0,
         )
         .add_attribute("method", "reply")
-        .add_attribute("action", "handle_merge_create_position"))
+        .add_attribute("action", "handle_merge_create_position")
+        .add_attribute("main_position_merged", is_main_position.to_string()))
 }
 
 impl TryFrom<SubMsgResult> for MergeResponse {
