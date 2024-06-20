@@ -5,7 +5,7 @@ use cosmwasm_std::{
 };
 use cw_dex_router::{
     msg::{
-        BestPathForPairResponse, ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg
+        BestPathForPairResponse, ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg,
     },
     operations::SwapOperationsListUnchecked,
 };

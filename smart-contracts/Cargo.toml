@@ -31,13 +31,14 @@ cw20 = "1.1.2"
 cw20-base = {version = "1.1.2", features = ["library"]}
 cw20-staking = "0.11.1"
 apollo-cw-asset = "0.1.2"
-cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
+cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", rev = "213d76e", features = ["library", "osmosis"]}
+cw-dex-osmosis = {version = "0.1.0"}
 
 # SDK
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}
 
 # Osmosis
-osmosis-std = "0.24.0"
+osmosis-std = "0.25.0"
 osmosis-std-derive = "0.20.1"
 
 # Serialization & Tools
@@ -52,6 +53,6 @@ num_enum = "0.7.2"
 base64 = "0.22.0"
 
 # Testing
-cw-multi-test = "1.1.0" # {git = "https://github.com/njerschow/cw-multi-test.git"}
-osmosis-test-tube = "24.0.1"
+cw-multi-test = "1.2.0"
+osmosis-test-tube = "25.0.0"
 proptest = "1.2.0"

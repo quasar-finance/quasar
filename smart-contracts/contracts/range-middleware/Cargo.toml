@@ -41,9 +41,9 @@ cw2 ={ workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+cw-dex-router = {workspace = true}
 
 cl-vault = {path = "../cl-vault", features = ["library"]}
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", feature = ["library"]}
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
