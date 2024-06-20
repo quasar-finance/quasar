@@ -2,7 +2,6 @@
 pub mod initialize {
     use apollo_cw_asset::{AssetInfoBase, AssetInfoUnchecked};
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::msg::ExecuteMsg as DexExecuteMsg;
     use cw_dex_router::msg::InstantiateMsg as DexInstantiate;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
@@ -550,7 +549,9 @@ pub mod initialize {
                     ),
                     ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
                     path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
+                        pool: cw_dex_router::operations::Pool::Osmosis(
+                            cw_dex_osmosis::OsmosisPool::unchecked(*pool_id),
+                        ),
                         offer_asset_info: AssetInfoBase::Native(
                             pools_coins[index][0].denom.to_string(),
                         ),
@@ -574,12 +575,16 @@ pub mod initialize {
                 ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
                 path: SwapOperationsListUnchecked::new(vec![
                     SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools[1])),
+                        pool: cw_dex_router::operations::Pool::Osmosis(
+                            cw_dex_osmosis::OsmosisPool::unchecked(pools[1]),
+                        ),
                         ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
                         offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
                     },
                     SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools[0])),
+                        pool: cw_dex_router::operations::Pool::Osmosis(
+                            cw_dex_osmosis::OsmosisPool::unchecked(pools[0]),
+                        ),
                         offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
                         ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
                     },

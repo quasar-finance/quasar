@@ -4,7 +4,6 @@ mod test {
 
     use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
     use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use osmosis_std::types::{
         cosmos::base::v1beta1,
@@ -97,7 +96,9 @@ mod test {
 
         // Define CW Dex Router swap routes
         let path1 = vec![SwapOperationBase::new(
-            cw_dex::Pool::Osmosis(OsmosisPool::unchecked(vault_pool_id)),
+            cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
+                vault_pool_id,
+            )),
             AssetInfoBase::Native(DENOM_QUOTE.to_string()),
             AssetInfoBase::Native(DENOM_BASE.to_string()),
         )];
