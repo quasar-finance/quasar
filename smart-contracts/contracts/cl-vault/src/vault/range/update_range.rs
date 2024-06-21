@@ -42,21 +42,16 @@ pub fn execute_update_range(
             msg.force_swap_route,
             msg.claim_after,
         ),
-        ModifyRange::IncreaseFunds {
-            position_id,
-            token0,
-            token1,
-        } => increase_position_funds(deps, env, position_id, token0, token1),
-        ModifyRange::DecreaseFunds {
-            position_id,
-            liquidity,
-        } => decrease_position_funds(deps, env, position_id, liquidity),
-        ModifyRange::CreatePosition {
-            lower_price,
-            upper_price,
-            claim_after,
-        } => create_new_position(deps, env, lower_price, upper_price, claim_after),
-        ModifyRange::DeletePosition { position_id } => delete_position(deps, env, position_id),
+        ModifyRange::IncreaseFunds(msg) => {
+            increase_position_funds(deps, env, msg.position_id, msg.token0, msg.token1)
+        }
+        ModifyRange::DecreaseFunds(msg) => {
+            decrease_position_funds(deps, env, msg.position_id, msg.liquidity)
+        }
+        ModifyRange::CreatePosition(msg) => {
+            create_new_position(deps, env, msg.lower_price, msg.upper_price, msg.claim_after)
+        }
+        ModifyRange::DeletePosition(msg) => delete_position(deps, env, msg.position_id),
     }
 }
 

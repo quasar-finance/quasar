@@ -9,14 +9,18 @@ mod tests {
     use osmosis_test_tube::{Account, Bank, ConcentratedLiquidity, Module, Wasm};
 
     use crate::{
-        assert_eq_with_diff, msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, QueryMsg}, query::{
-            AssetsBalanceResponse, MainPositionResponse, PositionsResponse, TotalAssetsResponse, UserSharesBalanceResponse
-        }, test_tube::{
+        assert_eq_with_diff,
+        msg::{ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, QueryMsg},
+        query::{
+            AssetsBalanceResponse, MainPositionResponse, PositionsResponse, TotalAssetsResponse,
+            UserSharesBalanceResponse,
+        },
+        test_tube::{
             helpers::{get_event_attributes_by_ty_and_key, get_value_in_asset0},
             initialize::initialize::{
                 fixture_default, DENOM_BASE, DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,
             },
-        }
+        },
     };
 
     const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
@@ -80,13 +84,13 @@ mod tests {
             )
             .unwrap();
 
-            wasm.execute(
-                contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Autocompound {}),
-                &[],
-                &admin,
-            )
-            .unwrap();
+        wasm.execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Autocompound {}),
+            &[],
+            &admin,
+        )
+        .unwrap();
 
         let _vault_assets_after: TotalAssetsResponse = wasm
             .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
@@ -287,7 +291,7 @@ mod tests {
                 position_id: main_position.position_id,
             })
             .unwrap();
-        
+
         // println!("position {:?}", position);
         // let liquidity: Decimal256 = position
         //     .position
@@ -347,8 +351,8 @@ mod tests {
                 &alice,
             )
             .unwrap();
-            let source = get_event_attributes_by_ty_and_key(&withdraw, "wasm", vec!["source"]);
-            assert_eq!(source[0].value, "all_positions");
+        let source = get_event_attributes_by_ty_and_key(&withdraw, "wasm", vec!["source"]);
+        assert_eq!(source[0].value, "all_positions");
 
         let token0 = bank
             .query_balance(&QueryBalanceRequest {
@@ -372,12 +376,26 @@ mod tests {
 
         let second_difference = alice_balance_value_after - alice_balance_value_before;
 
-
-        let positions: PositionsResponse = wasm.query(contract_address.as_str(), &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(ClQueryMsg::Positions {}))).unwrap();
+        let positions: PositionsResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
+                    ClQueryMsg::Positions {},
+                )),
+            )
+            .unwrap();
         // since we are withdrawing from multiple different positions here in the second difference, we might encounter multiple
         // moments where we round down, hence we can be off by 1 * the amount of positions + 1 for the free funds.
         // since each of those calculations is a potential round down
         let allowed_absolute_diff = positions.positions.len() as u128 + 1_u128;
-        assert_eq_with_diff!(first_difference, "main position withdraw value", second_difference, "all positions withdraw value", "0", Uint128::new(allowed_absolute_diff), "difference between withdraws through the main position is too big")
+        assert_eq_with_diff!(
+            first_difference,
+            "main position withdraw value",
+            second_difference,
+            "all positions withdraw value",
+            "0",
+            Uint128::new(allowed_absolute_diff),
+            "difference between withdraws through the main position is too big"
+        )
     }
 }

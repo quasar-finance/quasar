@@ -1,5 +1,6 @@
 mod admin;
 mod any_deposit;
+mod asserts;
 mod authz;
 mod autocompound;
 mod deposit_withdraw;
@@ -9,4 +10,3 @@ mod proptest;
 mod range;
 mod rewards;
 mod withdraw_main_pro_rato;
-mod asserts;

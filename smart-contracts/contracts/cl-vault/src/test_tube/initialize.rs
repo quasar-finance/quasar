@@ -25,6 +25,7 @@ pub mod initialize {
     use crate::helpers::sort_tokens;
     use crate::math::tick::price_to_tick;
     use crate::math::tick::tick_to_price;
+    use crate::msg::CreatePosition;
     use crate::msg::ExtensionExecuteMsg;
     use crate::msg::MovePosition;
     use crate::msg::{
@@ -326,11 +327,11 @@ pub mod initialize {
             .execute(
                 contract.data.address.as_str(),
                 &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(
-                    ModifyRange::CreatePosition {
+                    ModifyRange::CreatePosition(CreatePosition {
                         lower_price: lower_price.try_into().unwrap(),
                         upper_price: upper_price.try_into().unwrap(),
                         claim_after: None,
-                    },
+                    }),
                 )),
                 &[],
                 &admin,
@@ -357,11 +358,11 @@ pub mod initialize {
             .execute(
                 contract.data.address.as_str(),
                 &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(
-                    ModifyRange::CreatePosition {
+                    ModifyRange::CreatePosition(CreatePosition {
                         lower_price: lower_price.try_into().unwrap(),
                         upper_price: upper_price.try_into().unwrap(),
                         claim_after: None,
-                    },
+                    }),
                 )),
                 &[],
                 &admin,

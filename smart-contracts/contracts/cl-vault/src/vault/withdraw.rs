@@ -107,12 +107,8 @@ pub fn execute_withdraw(
                     .map(|m| SubMsg::reply_on_success(m, Replies::WithdrawUserMain as u64)),
             ))
     } else {
-        let (withdraw, send) = withdraw_pro_rato(
-            deps,
-            env,
-            shares_to_withdraw.try_into()?,
-            recipient,
-        )?;
+        let (withdraw, send) =
+            withdraw_pro_rato(deps, env, shares_to_withdraw.try_into()?, recipient)?;
 
         let mut res = Response::new()
             .add_attribute("method", "execute")
