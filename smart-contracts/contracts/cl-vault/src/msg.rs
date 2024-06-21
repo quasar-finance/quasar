@@ -85,28 +85,40 @@ pub enum AdminExtensionExecuteMsg {
 pub enum ModifyRange {
     /// Move the range of a current position
     MovePosition(MovePosition),
-    IncreaseFunds {
-        position_id: u64,
-        token0: Coin,
-        token1: Coin,
-    },
-    DecreaseFunds {
-        position_id: u64,
-        liquidity: Decimal256,
-    },
+    IncreaseFunds(IncreaseFunds),
+    DecreaseFunds(DecreaseFunds),
     /// Create a new position. This consumes all free balance up to max_percentage current free balance
-    CreatePosition {
-        /// The lower price of the new position
-        lower_price: Decimal,
-        /// The upper price of the new position
-        upper_price: Decimal,
-        /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
-        claim_after: Option<u64>,
-    },
-    DeletePosition {
-        /// delete the position under position_id
-        position_id: u64,
-    },
+    CreatePosition(CreatePosition),
+    DeletePosition(DeletePosition),
+}
+
+#[cw_serde]
+pub struct IncreaseFunds {
+    pub position_id: u64,
+    pub token0: Coin,
+    pub token1: Coin,
+}
+
+#[cw_serde]
+pub struct DecreaseFunds {
+    pub position_id: u64,
+    pub liquidity: Decimal256,
+}
+
+#[cw_serde]
+pub struct CreatePosition {
+    /// The lower price of the new position
+    pub lower_price: Decimal,
+    /// The upper price of the new position
+    pub upper_price: Decimal,
+    /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
+    pub claim_after: Option<u64>,
+}
+
+#[cw_serde]
+pub struct DeletePosition {
+    /// delete the position under position_id
+    pub position_id: u64,
 }
 
 #[cw_serde]
