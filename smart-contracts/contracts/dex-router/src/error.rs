@@ -22,9 +22,9 @@ pub enum ContractError {
     #[error("{0}")]
     Asset(#[from] AssetError),
 
-    #[error("Invalid swap operations: {operations:?} {reason}")]
-    InvalidSwapOperations {
-        operations: Vec<SwapAmountInRoute>,
+    #[error("Invalid swap path: {path:?} {reason}")]
+    InvalidSwapPath {
+        path: Vec<SwapAmountInRoute>,
         reason: String,
     },
 
