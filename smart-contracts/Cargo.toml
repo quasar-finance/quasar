@@ -15,6 +15,7 @@ members = [
   "contracts/cl-vault",
   "contracts/merkle-incentives",
   "contracts/range-middleware",
+  "contracts/cw-dex-router",
 ]
 
 [workspace.dependencies]
@@ -31,7 +32,7 @@ cw20 = "1.1.2"
 cw20-base = {version = "1.1.2", features = ["library"]}
 cw20-staking = "0.11.1"
 apollo-cw-asset = "0.1.2"
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", rev = "213d76e", features = ["library", "osmosis"]}
+cw-dex-router = { path = "./contracts/cw-dex-router" , features = ["library", "osmosis"]}
 cw-dex-osmosis = {version = "0.1.0"}
 
 # SDK
