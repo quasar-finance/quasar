@@ -1,4 +1,6 @@
-use cosmwasm_std::{CheckedFromRatioError, DivideByZeroError, IbcOrder, OverflowError, StdError};
+use cosmwasm_std::{
+    CheckedFromRatioError, Coin, DivideByZeroError, IbcOrder, OverflowError, StdError,
+};
 use prost::DecodeError;
 use thiserror::Error;
 
@@ -58,4 +60,32 @@ pub enum Error {
     DivideByZeroError(#[from] DivideByZeroError),
     #[error("{0}")]
     CheckedFromRatioError(#[from] CheckedFromRatioError),
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum FundsError {
+    #[error("Only {0} deposit asset(s) supported.")]
+    InvalidAssets(usize),
+
+    #[error("Wrong denom, expected {0}.")]
+    WrongDenom(String),
+}
+
+pub fn assert_fund_length(length: usize, expected_length: usize) -> Result<(), FundsError> {
+    if length != expected_length {
+        return Err(FundsError::InvalidAssets(expected_length));
+    }
+    Ok(())
+}
+
+pub fn assert_denom(denom: &str, expected_denom: &str) -> Result<(), FundsError> {
+    if denom != expected_denom {
+        return Err(FundsError::WrongDenom(expected_denom.into()));
+    }
+    Ok(())
+}
+
+pub fn assert_funds_single_token(funds: &[Coin], expected_denom: &str) -> Result<(), FundsError> {
+    assert_fund_length(funds.len(), 1)?;
+    assert_denom(&funds[0].denom, expected_denom)
 }
