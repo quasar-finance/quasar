@@ -138,8 +138,8 @@ pub fn set_path(
         .last()
         .is_some_and(|route| AssetInfo::native(route.token_out_denom.clone()) != ask_asset)
     {
-        return Err(ContractError::InvalidSwapOperations {
-            operations: path.into(),
+        return Err(ContractError::InvalidSwapPath {
+            path,
             reason: ask_asset.to_string(),
         });
     }
