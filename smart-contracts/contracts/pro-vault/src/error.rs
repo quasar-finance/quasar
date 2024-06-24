@@ -5,6 +5,7 @@ use cw_controllers::AdminError;
 use crate::vault::error::VaultError;
 use crate::ownership::error::{self, OwnershipError};
 use crate::strategy::error::StrategyError;
+use abstract_money_market_standard::MoneyMarketError;
 
 
 
@@ -54,5 +55,15 @@ pub enum ContractError {
     Ownership(#[from] OwnershipError),
 
     #[error("{0}")]
-    Strategy(#[from] StrategyError)
+    Strategy(#[from] StrategyError),
+
+
+    #[error("{0}")]
+    MoneyMarket(#[from] MoneyMarketError),
+
+    #[error("Oracle contract not set")]
+    OracleContractNotSet,
+    
+    #[error("Expected native asset")]
+    ExpectedNative,
 }

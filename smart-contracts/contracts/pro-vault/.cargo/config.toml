@@ -9,7 +9,7 @@ wasm-debug       = "build --lib --target wasm32-unknown-unknown --locked"
 
 
 [build]
-#rustflags = ["-Awarnings"]
+rustflags = ["-Awarnings"]
 
 [target.wasm32-unknown-unknown]
 rustflags = ["-C", "link-arg=-s"]

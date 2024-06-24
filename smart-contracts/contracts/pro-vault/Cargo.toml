@@ -1,45 +1,60 @@
 [package]
-authors      = ["AK <ak@quasar.fi>"]
-categories   = ["wasm"]
-description  = "provault"
-edition      = "2021"
-homepage     = "https://github.com/quasar-finance/quasar"
-keywords     = ["cosmos", "osmosis", "vault", "provault"]
-license      = "MIT OR Apache-2.0"
-name         = "provault"
-publish      = false
-readme       = "README.md"
-repository   = "https://github.com/quasar-finance/quasar"
-resolver     = "2"
+authors = ["AK <ak@quasar.fi>"]
+categories = ["wasm"]
+description = "provault"
+edition = "2021"
+homepage = "https://github.com/quasar-finance/quasar"
+keywords = ["cosmos", "osmosis", "vault", "provault"]
+license = "MIT OR Apache-2.0"
+name = "provault"
+publish = false
+readme = "README.md"
+repository = "https://github.com/quasar-finance/quasar"
+resolver = "2"
 rust-version = "1.78.0"
-version      = "0.1.0"
+version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
-library    = []
+library = []
+default = ["full_integration"]
+local = []
+full_integration = [
+  "mars-red-bank-types",
+  "cw20",
+  "cw-asset",
+  "cw-utils",
+  "cosmwasm-schema",
+]
 
 [dependencies]
-cosmwasm-schema = "2.0.0"
-cosmwasm-std    = "1.5.3"
-cw-controllers  = "1.1.2"
-#cw-storage-plus = "1.1.0"
-cw-storage-plus = "1.2.0"
-cw-utils        = "1.0.3"
-cw2             = "1.1.2"
-#osmosis-std     = "0.22.0"
-serde           = "1.0.197"
-serde_json      = "1.0.115"
+#cosmwasm-schema = "2.0.0"
+cosmwasm-schema = { version = "2.0.0", optional = true }
+# cosmwasm-std = "1.5.3"
+cosmwasm-std = { workspace = true }
+#cosmwasm-storage-plus = { workspace = true }
+# cosmwasm-storage = "0.15.0"
+cw-controllers = "1.1.2"
+#cw-storage-plus = "1.2.0"
+cw-storage-plus = { workspace = true }
+#cw-utils = "1.0.3"
+cw-utils = { version = "1.0.3", optional = true }
+cw2 = "1.1.2"
+serde = "1.0.197"
+serde_json = "1.0.115"
 schemars = "0.8.10"
-thiserror = { version = "1.0.58" }
-cw-vault-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-abstract-money-market-standard = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-money-market-standard", branch = "main" }
-mars-adapter = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-mars-adapter", branch = "main" }
-cw-asset = { workspace = true }
+thiserror = "1.0.58"
+cw20 = { version = "1.1.2", optional = true }
+cw-vault-standard = { git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+cw-asset = { workspace = true, optional = true }
+abstract-sdk = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-sdk", tag = "v0.22.1" }
+abstract-std = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-std", tag = "v0.22.1" }
+abstract-money-market-standard = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-money-market-standard", tag = "v0.22.1" }
+abstract-adapter-utils = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-adapter-utils", tag = "v0.22.1" }
+
+mars-red-bank-types = { version = "1.0.0", optional = true }
 
 [dev-dependencies]
-#cw-vault-standard = "0.4.0"
-#cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-#osmosis-test-tube = "22.1.0"

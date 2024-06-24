@@ -1,21 +1,19 @@
-use cosmwasm_std::{
-    to_binary, Addr, Binary, Coin, CosmosMsg, Env, QuerierWrapper, Response, StdError, WasmMsg,
-};
-// use osmosis_std::types::cosmos::app::v1alpha1::Config;
+use cosmwasm_std::{Addr, Binary, Coin, CosmosMsg, DepsMut, Deps, Env, QuerierWrapper, Response, StdError, Uint128, WasmMsg, Api, StdResult};
+use cw_storage_plus::Item;
 
 /// Enum for the different market types
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum MarketType {
     Debt,
     CLVault,
     Swap,
- }
+}
 
 /// Metadata struct to provide information about each adapter.
-/// With the use of this meta data, any external adaptor contract 
+/// With the use of this metadata, any external adaptor contract 
 /// is simply a plug and play by the strategy module which is further 
 /// controlled by strategy owner.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct AdapterMetadata {
     pub name: String,
     pub desc: String,
@@ -42,6 +40,19 @@ impl AdapterMetadata {
     }
 }
 
+// Storage keys for AdapterMetadata
+const ADAPTER_METADATA: Item<AdapterMetadata> = Item::new("adapter_metadata");
+
+/// Load AdapterMetadata from storage
+pub fn load_metadata(storage: &dyn cosmwasm_std::Storage) -> StdResult<AdapterMetadata> {
+    ADAPTER_METADATA.load(storage)
+}
+
+/// Store AdapterMetadata in storage
+pub fn store_metadata(storage: &mut dyn cosmwasm_std::Storage, metadata: &AdapterMetadata) -> StdResult<()> {
+    ADAPTER_METADATA.save(storage, metadata)
+}
+
 /// Adapter trait that defines the common behavior for all adapters
 pub trait Adapter {
     /// Metadata for the adapter
@@ -51,21 +62,14 @@ pub trait Adapter {
     // It can go negative as well, if total withdraw > allocated. This is running value to be 
     // updated. This postion to be managed in the position manager module.
     // TODO - Rethink.
-    fn query_net_assets(self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError>;
+    fn query_net_assets(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError>;
 
     // TODO - Rethink. based on current query against the adaptor including pending unbonding.
-    fn query_expected_available_assets(self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError>;
+    fn query_expected_available_assets(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError>;
+
     // Returns the shares associated to this adaptor at a given point of time. This is more 
-    // suitable measure as compared to the asset related queires.
+    // suitable measure as compared to the asset related queries.
     fn query_allocated_shares(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError>;
-
-
-    /// Describes the effective balance of the vault in the adapter
-    /// fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError>;
-
-    /// Describes the base asset balance of the vault in the adapter
-    /// TODO - NOT SURE IF THIS IS USEFUL AT ALL. 
-    // fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError>;
 
     /// Executes a call to another contract. The other contract in this case is an 
     /// adaptor contract. 
@@ -97,13 +101,13 @@ pub trait VaultAdapter: Adapter {
 pub trait DebtAdapter: Adapter {
     type AdapterError;
 
-    fn deposit_collateral(&self, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
+    fn deposit_collateral(&self, deps: DepsMut, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
 
-    fn withdraw_collateral(&self, shares: Coin) -> Result<Response, Self::AdapterError>;
+    fn withdraw_collateral(&self, deps: DepsMut, shares: Coin) -> Result<Response, Self::AdapterError>;
 
-    fn borrow_assets(&self, want: Vec<Coin>) -> Result<Response, Self::AdapterError>;
+    //fn borrow_assets(&self, deps: DepsMut, want: Vec<Coin>) -> Result<Response, Self::AdapterError>;
 
-    fn repay_assets(&self, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
+    //fn repay_assets(&self, deps: DepsMut, assets: Vec<Coin>) -> Result<Response, Self::AdapterError>;
 }
 
 /// Trait for SwapAdapter with additional methods specific to swap operations
@@ -131,13 +135,18 @@ impl Adapter for ExampleVaultAdapter {
         self.metadata.clone()
     }
 
-    fn assets_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
-        // Implement the logic to get the assets balance
+    fn query_net_assets(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
+        // Implement the logic to get the net assets
         unimplemented!()
     }
 
-    fn vault_token_balance(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError> {
-        // Implement the logic to get the vault token balance
+    fn query_expected_available_assets(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
+        // Implement the logic to get the expected available assets
+        unimplemented!()
+    }
+
+    fn query_allocated_shares(&self, querier: &QuerierWrapper, env: Env) -> Result<Coin, StdError> {
+        // Implement the logic to get the allocated shares
         unimplemented!()
     }
 }

@@ -90,12 +90,12 @@ impl Adapter for SingleAssetVaultAdapter {
         self.metadata.clone()
     }
 
-    fn query_net_assets(self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
+    fn query_net_assets(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
         // TODO - Either to check the position management or query the other real adaptor.
         Ok(vec![])
     }
 
-    fn query_expected_available_assets(self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
+    fn query_expected_available_assets(&self, querier: &QuerierWrapper, env: Env) -> Result<Vec<Coin>, StdError> {
 
        // TODO - Either to check the position management or query the other real adaptor.
         Ok(vec![])
