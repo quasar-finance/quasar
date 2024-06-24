@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "description": "Returns all the current path for a given (offer_asset, ask_asset) pair.",
+      "type": "object",
+      "required": [
+        "paths_for_pair"
+      ],
+      "properties": {
+        "paths_for_pair": {
+          "type": "object",
+          "required": [
+            "ask_asset",
+            "offer_asset"
+          ],
+          "properties": {
+            "ask_asset": {
+              "$ref": "#/definitions/AssetInfoBase_for_String"
+            },
+            "offer_asset": {
+              "$ref": "#/definitions/AssetInfoBase_for_String"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "finds the best path for a given (offer_asset, ask_asset) pair. if no path is found, returns None. Returns all the assets from which there are paths to a given ask asset.",
+      "type": "object",
+      "required": [
+        "supported_offer_assets"
+      ],
+      "properties": {
+        "supported_offer_assets": {
+          "type": "object",
+          "required": [
+            "ask_asset"
+          ],
+          "properties": {
+            "ask_asset": {
+              "$ref": "#/definitions/AssetInfoBase_for_String"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns all the assets to which there are paths from a given offer asset.",
+      "type": "object",
+      "required": [
+        "supported_ask_assets"
+      ],
+      "properties": {
+        "supported_ask_assets": {
+          "type": "object",
+          "required": [
+            "offer_asset"
+          ],
+          "properties": {
+            "offer_asset": {
+              "$ref": "#/definitions/AssetInfoBase_for_String"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "AssetInfoBase_for_String": {
+      "description": "Represents the type of an fungible asset.\n\nEach **asset info** instance can be one of three variants:\n\n- Native SDK coins. To create an **asset info** instance of this type, provide the denomination. - CW20 tokens. To create an **asset info** instance of this type, provide the contract address.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "native"
+          ],
+          "properties": {
+            "native": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "cw20"
+          ],
+          "properties": {
+            "cw20": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
