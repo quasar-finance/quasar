@@ -168,6 +168,7 @@ pub fn set_path(
         .collect();
     let pools = pools?;
     let denoms: Vec<(String, String)> = pools.into_iter().map(|pool| get_denoms(pool)).collect();
+    let key = (offer_denom.clone(), ask_denom.clone());
 
     let mut offer_denom = offer_denom;
     let mut out_denoms = vec![];
@@ -198,17 +199,16 @@ pub fn set_path(
             token_out_denom: denom.clone(),
         })
         .collect()];
-    PATHS.update(
-        deps.storage,
-        (offer_denom.clone(), ask_denom.clone()),
-        |paths| -> StdResult<_> {
-            if let Some(paths) = paths {
-                new_paths.extend(paths.into_iter());
-            }
-            Ok(new_paths)
-        },
-    )?;
+    PATHS.update(deps.storage, key.clone(), |paths| -> StdResult<_> {
+        if let Some(paths) = paths {
+            new_paths.extend(paths.into_iter());
+        }
+        Ok(new_paths)
+    })?;
 
+    let mut response = Response::default()
+        .add_attribute("action", "set path")
+        .add_attribute("key", format!("{:?}", key));
     if bidirectional {
         let mut new_paths = vec![path
             .iter()
@@ -219,21 +219,17 @@ pub fn set_path(
                 token_out_denom: denom.clone(),
             })
             .collect()];
-        PATHS.update(
-            deps.storage,
-            (ask_denom.clone(), offer_denom.clone()),
-            |paths| -> StdResult<_> {
-                if let Some(paths) = paths {
-                    new_paths.extend(paths.into_iter());
-                }
-                Ok(new_paths)
-            },
-        )?;
+        let reverse_key = (key.1, key.0);
+        PATHS.update(deps.storage, reverse_key.clone(), |paths| -> StdResult<_> {
+            if let Some(paths) = paths {
+                new_paths.extend(paths.into_iter());
+            }
+            Ok(new_paths)
+        })?;
+        response = response.add_attribute("key", format!("{:?}", reverse_key));
     }
 
-    Ok(Response::default()
-        .add_attribute("action", "set path")
-        .add_attribute("key", format!("{:?}", (offer_denom, ask_denom))))
+    Ok(response)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
