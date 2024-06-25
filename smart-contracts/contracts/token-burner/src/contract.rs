@@ -43,7 +43,7 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::TotalBurntQuery {} => to_json_binary(&query_total_burn(deps)?),
+        QueryMsg::TotalBurnt {} => to_json_binary(&query_total_burn(deps)?),
     }
 }
 

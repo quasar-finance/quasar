@@ -13,7 +13,7 @@ pub enum ExecuteMsg {
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(TotalBurntResponse)]
-    TotalBurntQuery {},
+    TotalBurnt {},
 }
 
 #[cw_serde]
