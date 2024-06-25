@@ -1,14 +1,19 @@
 use cl_vault::{
-    msg::{ClQueryMsg, ExecuteMsg as VaultExecuteMsg, ModifyRange, MovePosition, QueryMsg as VaultQueryMsg},
+    msg::{
+        ClQueryMsg, ExecuteMsg as VaultExecuteMsg, ModifyRange, MovePosition,
+        QueryMsg as VaultQueryMsg,
+    },
     query::PoolResponse,
 };
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, Addr, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
+};
 use cw_dex_router::operations::SwapOperationsListUnchecked;
 
 use crate::{
     range::helpers::is_range_executor_admin,
-    state::{NewRange, RangeUpdates, PENDING_RANGES},
+    state::{NewRange, RangeUpdates, UpdateActions, PENDING_RANGES},
     ContractError,
 };
 
@@ -21,7 +26,7 @@ pub enum RangeExecuteMsg {
     /// Execute a new range
     PopRangeUpdate {
         vault_address: String,
-        params: Option<RangeExecutionParams>        
+        params: Option<RangeExecutionParams>,
     },
 }
 
@@ -45,7 +50,10 @@ pub fn execute_range_msg(
         RangeExecuteMsg::SubmitNewRange { new_ranges } => {
             submit_new_range(deps, env, info, new_ranges)
         }
-        RangeExecuteMsg::PopRangeUpdate { vault_address, params } => execute_pop_update(deps, env, info, vault_address, params)
+        RangeExecuteMsg::PopRangeUpdate {
+            vault_address,
+            params,
+        } => execute_pop_update(deps, env, info, vault_address, params),
     }
 }
 
@@ -95,7 +103,7 @@ pub fn submit_new_range(
 }
 
 // TODO the optional params are not super nice here, a different solution would be nice
-fn execute_pop_update(    
+fn execute_pop_update(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
@@ -113,56 +121,133 @@ fn execute_pop_update(
         PENDING_RANGES.save(deps.storage, vault_address.clone(), &ranges)?;
 
         let response = match next {
-            crate::state::UpdateActions::CreatePosition(msg) => todo!(),
-            crate::state::UpdateActions::DeletePosition(msg) => todo!(),
-            crate::state::UpdateActions::DecreaseFunds(msg) => todo!(),
-            crate::state::UpdateActions::IncreaseFunds(msg) => todo!(),
-            crate::state::UpdateActions::NewRange(msg) => do_move_position(deps, params.ok_or(ContractError::NoRangeExecutionParams { address: vault_address.to_string() })?, msg, vault_address.clone()),
+            UpdateActions::CreatePosition(msg) => {
+                do_create_position(&vault_address, msg)?
+            }
+            UpdateActions::DeletePosition(msg) => {
+                do_delete_position(&vault_address, msg)?
+            }
+            UpdateActions::DecreaseFunds(msg) => {
+                do_decrease_funds(&vault_address, msg)?
+            }
+            UpdateActions::IncreaseFunds(msg) => {
+                do_increase_funds(&vault_address, msg)?
+            }
+            UpdateActions::NewRange(msg) => {
+                // if the range was fully executed
+                let params = params.ok_or(ContractError::NoRangeExecutionParams {
+                    address: vault_address.to_string(),
+                })?;
+
+                if params.ratio_of_swappable_funds_to_use < Decimal::one() {
+                    ranges
+                        .updates
+                        .push_front(UpdateActions::NewRange(msg.clone()))
+                }
+
+                do_move_position(deps, params, msg, vault_address.clone())?
+            }
         };
 
-        Ok(response?.add_attribute("range_executed", "true")
-        .add_attribute("range_executor", info.sender)
-        .add_attribute("range_underlying_contract", vault_address)
-        .add_attribute("action", "execute_new_range"))
+        Ok(response
+            .add_attribute("range_executed", "true")
+            .add_attribute("range_executor", info.sender)
+            .add_attribute("range_underlying_contract", vault_address)
+            .add_attribute("action", "execute_new_range"))
     } else {
         PENDING_RANGES.remove(deps.storage, vault_address.clone());
         Ok(Response::new().add_attribute("range_finished", vault_address))
     }
 }
 
+fn do_create_position(
+    vault_address: &Addr,
+    msg: cl_vault::msg::CreatePosition,
+) -> Result<Response, ContractError> {
+    Ok(call_vault(
+        vault_address.clone(),
+        to_json_binary(&VaultExecuteMsg::VaultExtension(
+            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::CreatePosition(msg)),
+        ))?,
+    )?
+    .add_attribute("update", "create_position"))
+}
+
+fn do_delete_position(
+    vault_address: &Addr,
+    msg: cl_vault::msg::DeletePosition,
+) -> Result<Response, ContractError> {
+    Ok(call_vault(
+        vault_address.clone(),
+        to_json_binary(&VaultExecuteMsg::VaultExtension(
+            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::DeletePosition(msg)),
+        ))?,
+    )?
+    .add_attribute("update", "delete_position"))
+}
+
+fn do_decrease_funds(
+    vault_address: &Addr,
+    msg: cl_vault::msg::DecreaseFunds,
+) -> Result<Response, ContractError> {
+    Ok(call_vault(
+        vault_address.clone(),
+        to_json_binary(&VaultExecuteMsg::VaultExtension(
+            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::DecreaseFunds(msg)),
+        ))?,
+    )?
+    .add_attribute("update", "decrease_funds"))
+}
+
+fn do_increase_funds(
+    vault_address: &Addr,
+    msg: cl_vault::msg::IncreaseFunds,
+) -> Result<Response, ContractError> {
+    Ok(call_vault(
+        vault_address.clone(),
+        to_json_binary(&VaultExecuteMsg::VaultExtension(
+            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::IncreaseFunds(msg)),
+        ))?,
+    )?
+    .add_attribute("update", "increase_funds"))
+}
 pub fn do_move_position(
     deps: DepsMut,
     params: RangeExecutionParams,
     new_range: NewRange,
-    vault_address: Addr
+    vault_address: Addr,
 ) -> Result<Response, ContractError> {
-
-    // TODO this should pop the pending range of the front
-    // if range was completed, delete from pending ranges
-    if params.ratio_of_swappable_funds_to_use == Decimal::one() {
-        PENDING_RANGES.remove(deps.storage, vault_address.clone());
-    }
-
     // construct message to send to cl vault
     let msg = WasmMsg::Execute {
         contract_addr: vault_address.to_string(),
         msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
-            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::MovePosition(MovePosition {
-                lower_price: new_range.lower_price,
-                upper_price: new_range.upper_price,
-                max_slippage: params.max_slippage,
-                ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
-                twap_window_seconds: params.twap_window_seconds,
-                force_swap_route: params.force_swap_route,
-                recommended_swap_route: Some(params.recommended_swap_route),
-                claim_after: params.claim_after,
-                position_id: new_range.position_id, })) ,
+            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::MovePosition(
+                MovePosition {
+                    lower_price: new_range.lower_price,
+                    upper_price: new_range.upper_price,
+                    max_slippage: params.max_slippage,
+                    ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
+                    twap_window_seconds: params.twap_window_seconds,
+                    force_swap_route: params.force_swap_route,
+                    recommended_swap_route: Some(params.recommended_swap_route),
+                    claim_after: params.claim_after,
+                    position_id: new_range.position_id,
+                },
+            )),
         ))?,
 
         funds: vec![],
     };
 
-    Ok(Response::new()
-        .add_message(msg)
-)
+    Ok(Response::new().add_message(msg))
+}
+
+pub fn call_vault(vault: Addr, msg: Binary) -> Result<Response, ContractError> {
+    let msg = WasmMsg::Execute {
+        contract_addr: vault.to_string(),
+        msg,
+        funds: vec![],
+    };
+
+    Ok(Response::new().add_message(msg))
 }
