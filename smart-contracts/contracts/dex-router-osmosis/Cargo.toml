@@ -1,7 +1,7 @@
 [package]
 authors = ["Quasar"]
 edition = "2021"
-name = "dex-router"
+name = "dex-router-osmosis"
 version = "0.0.1"
 readme = "README.md"
 repository = "https://github.com/quasar-finance/quasar"
@@ -13,7 +13,7 @@ keywords = ["cosmwasm", "dex", "router", "osmosis"]
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
-  "dex_router.wasm",
+  "dex_router_osmosis.wasm",
   "hash.txt",
 ]
 
