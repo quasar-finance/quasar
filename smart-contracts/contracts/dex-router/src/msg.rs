@@ -1,8 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
-#[cfg(not(target_arch = "wasm32"))]
-use cw_asset::AssetInfo;
-use cw_asset::{Asset, AssetInfoUnchecked};
+use cosmwasm_std::{Coin, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 #[cw_serde]
@@ -12,15 +9,17 @@ pub struct InstantiateMsg {}
 pub enum ExecuteMsg {
     Swap {
         routes: Vec<SwapAmountInRoute>,
+        out_denom: String,
         minimum_receive: Option<Uint128>,
         to: Option<String>,
     },
     SetPath {
-        offer_asset: AssetInfoUnchecked,
-        ask_asset: AssetInfoUnchecked,
-        path: Vec<SwapAmountInRoute>,
+        offer_denom: String,
+        ask_denom: String,
+        path: Vec<u64>,
         bidirectional: bool,
     },
+    // Remove
 }
 
 #[cw_serde]
@@ -36,32 +35,28 @@ pub struct BestPathForPairResponse {
 pub enum QueryMsg {
     #[returns(Uint128)]
     SimulateSwaps {
-        offer: Asset,
+        offer: Coin,
         routes: Vec<SwapAmountInRoute>,
     },
     /// Returns all the current path for a given (offer_asset, ask_asset) pair.
     #[returns(Vec<Vec<SwapAmountInRoute>>)]
     PathsForPair {
-        offer_asset: AssetInfoUnchecked,
-        ask_asset: AssetInfoUnchecked,
+        offer_denom: String,
+        ask_denom: String,
     },
     /// finds the best path for a given (offer_asset, ask_asset) pair.
     /// if no path is found, returns None.
     #[returns(Option<BestPathForPairResponse>)]
-    BestPathForPair {
-        offer_asset: AssetInfoUnchecked,
-        offer_amount: Uint128,
-        ask_asset: AssetInfoUnchecked,
-    },
+    BestPathForPair { offer: Coin, ask_denom: String },
 
     /// Returns all the assets from which there are paths to a given ask asset.
-    #[returns(Vec<AssetInfo>)]
-    SupportedOfferAssets { ask_asset: AssetInfoUnchecked },
+    #[returns(Vec<String>)]
+    SupportedOfferAssets { ask_denom: String },
 
     /// Returns all the assets to which there are paths from a given offer
     /// asset.
-    #[returns(Vec<AssetInfo>)]
-    SupportedAskAssets { offer_asset: AssetInfoUnchecked },
+    #[returns(Vec<String>)]
+    SupportedAskAssets { offer_denom: String },
 }
 
 #[cw_serde]

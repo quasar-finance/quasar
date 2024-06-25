@@ -1,25 +1,24 @@
-use std::str::FromStr;
-
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coin, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, Event, MessageInfo, Order,
-    Reply, Response, StdResult, SubMsg, Uint128,
+    to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply,
+    Response, StdError, StdResult, SubMsg, Uint128,
 };
 use cw2::set_contract_version;
-use cw_asset::{AssetInfo, AssetInfoUnchecked};
 use mars_owner::OwnerInit::SetInitialOwner;
 use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{
-    MsgSwapExactAmountIn, PoolmanagerQuerier, SwapAmountInRoute,
+    MsgSwapExactAmountIn, PoolResponse, PoolmanagerQuerier, SwapAmountInRoute,
 };
+use prost::Message;
 use quasar_types::error::assert_fund_length;
+use std::str::FromStr;
 
 use crate::error::ContractError;
 use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{RecipientInfo, OWNER, PATHS, RECIPIENT_INFO};
 
-const CONTRACT_NAME: &str = "crates.io:cw-dex-router";
+const CONTRACT_NAME: &str = "crates.io:dex-router";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const SWAP_REPLY_ID: u64 = 1;
 
@@ -52,25 +51,16 @@ pub fn execute(
     match msg {
         ExecuteMsg::Swap {
             routes,
+            out_denom,
             minimum_receive,
             to,
-        } => swap(deps, env, info, routes, minimum_receive, to),
+        } => swap(deps, env, info, routes, out_denom, minimum_receive, to),
         ExecuteMsg::SetPath {
-            offer_asset,
-            ask_asset,
+            offer_denom,
+            ask_denom,
             path,
             bidirectional,
-        } => {
-            let api = deps.api;
-            set_path(
-                deps,
-                info,
-                offer_asset.check(api, None)?,
-                ask_asset.check(api, None)?,
-                path,
-                bidirectional,
-            )
-        }
+        } => set_path(deps, info, offer_denom, ask_denom, path, bidirectional),
     }
 }
 
@@ -97,14 +87,26 @@ pub fn swap(
     env: Env,
     info: MessageInfo,
     routes: Vec<SwapAmountInRoute>,
+    out_denom: String,
     minimum_receive: Option<Uint128>,
     to: Option<String>,
 ) -> Result<Response, ContractError> {
     assert_fund_length(info.funds.len(), 1)?;
-    //Validate input or use sender address if None
     let recipient = to.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
+    let mut routes = routes;
+    if routes.is_empty() {
+        if let Some(best_path) =
+            query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
+        {
+            routes = best_path.routes;
+        } else {
+            return Err(ContractError::NoPathFound {
+                offer: info.funds[0].denom.clone(),
+                ask: out_denom,
+            });
+        }
+    }
 
-    let out_denom = routes.last().unwrap().token_out_denom.clone();
     let msg = MsgSwapExactAmountIn {
         sender: env.contract.address.to_string(),
         routes,
@@ -127,31 +129,77 @@ pub fn swap(
         .add_event(event))
 }
 
+fn get_denoms(pool: PoolResponse) -> (String, String) {
+    if let Some(pool) = pool.pool {
+        if let Ok(pool) =
+            osmosis_std::types::osmosis::gamm::poolmodels::stableswap::v1beta1::Pool::decode(
+                pool.value.as_slice(),
+            )
+        {
+            return (
+                pool.pool_liquidity[0].denom.clone(),
+                pool.pool_liquidity[1].denom.clone(),
+            );
+        }
+        let cl_pool: Result<osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool, _> =
+            pool.try_into();
+        if let Ok(pool) = cl_pool {
+            return (pool.token0, pool.token1);
+        }
+    }
+
+    panic!("Looks like we forgot to support some pools from osmosis")
+}
+
 pub fn set_path(
     deps: DepsMut,
     info: MessageInfo,
-    offer_asset: AssetInfo,
-    ask_asset: AssetInfo,
-    path: Vec<SwapAmountInRoute>,
+    offer_denom: String,
+    ask_denom: String,
+    path: Vec<u64>,
     bidirectional: bool,
 ) -> Result<Response, ContractError> {
     OWNER.assert_owner(deps.storage, &info.sender)?;
+    let pool_querier = PoolmanagerQuerier::new(&deps.querier);
+    let pools: Result<Vec<PoolResponse>, StdError> = path
+        .iter()
+        .map(|pool_id| pool_querier.pool(*pool_id))
+        .collect();
+    let pools = pools?;
+    let denoms: Vec<(String, String)> = pools.into_iter().map(|pool| get_denoms(pool)).collect();
 
-    // Validate the path
-    if path
-        .last()
-        .is_some_and(|route| AssetInfo::native(route.token_out_denom.clone()) != ask_asset)
-    {
-        return Err(ContractError::InvalidSwapPath {
-            path,
-            reason: ask_asset.to_string(),
-        });
+    let mut offer_denom = offer_denom;
+    let mut out_denoms = vec![];
+    let mut in_denoms = vec![];
+    for denom_pair in denoms {
+        in_denoms.push(offer_denom.clone());
+        if offer_denom == denom_pair.0 {
+            offer_denom = denom_pair.1;
+        } else if offer_denom == denom_pair.1 {
+            offer_denom = denom_pair.0;
+        } else {
+            return Err(ContractError::InvalidSwapPath {
+                path,
+                reason: format!(
+                    "Could not find {}, available denoms: {:?}",
+                    offer_denom, denom_pair
+                ),
+            });
+        }
+        out_denoms.push(offer_denom.clone());
     }
 
-    let mut new_paths = vec![path.clone()];
+    let mut new_paths = vec![path
+        .iter()
+        .zip(out_denoms.iter())
+        .map(|(pool_id, denom)| SwapAmountInRoute {
+            pool_id: pool_id.clone(),
+            token_out_denom: denom.clone(),
+        })
+        .collect()];
     PATHS.update(
         deps.storage,
-        (offer_asset.to_string(), ask_asset.to_string()),
+        (offer_denom.clone(), ask_denom.clone()),
         |paths| -> StdResult<_> {
             if let Some(paths) = paths {
                 new_paths.extend(paths.into_iter());
@@ -160,14 +208,19 @@ pub fn set_path(
         },
     )?;
 
-    // reverse path and store if `bidirectional` is true
     if bidirectional {
-        let mut path = path;
-        path.reverse();
-        let mut new_paths = vec![path];
+        let mut new_paths = vec![path
+            .iter()
+            .rev()
+            .zip(in_denoms.iter().rev())
+            .map(|(pool_id, denom)| SwapAmountInRoute {
+                pool_id: pool_id.clone(),
+                token_out_denom: denom.clone(),
+            })
+            .collect()];
         PATHS.update(
             deps.storage,
-            (ask_asset.to_string(), offer_asset.to_string()),
+            (ask_denom.to_string(), offer_denom.to_string()),
             |paths| -> StdResult<_> {
                 if let Some(paths) = paths {
                     new_paths.extend(paths.into_iter());
@@ -183,41 +236,32 @@ pub fn set_path(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::SimulateSwaps { offer, routes } => Ok(to_json_binary(&simulate_swaps(
-            deps,
-            coin(offer.amount.into(), offer.info.inner()),
-            routes,
-        )?)?),
+        QueryMsg::SimulateSwaps { offer, routes } => {
+            Ok(to_json_binary(&simulate_swaps(&deps, &offer, routes)?)?)
+        }
         QueryMsg::PathsForPair {
-            offer_asset,
-            ask_asset,
+            offer_denom,
+            ask_denom,
         } => Ok(to_json_binary(&query_paths_for_pair(
-            deps,
-            offer_asset.check(deps.api, None)?,
-            ask_asset.check(deps.api, None)?,
+            &deps,
+            offer_denom,
+            ask_denom,
         )?)?),
-        QueryMsg::BestPathForPair {
-            offer_asset,
-            offer_amount,
-            ask_asset,
-        } => Ok(to_json_binary(&query_best_path_for_pair(
-            deps,
-            offer_amount,
-            offer_asset.check(deps.api, None)?,
-            ask_asset.check(deps.api, None)?,
-        )?)?),
-        QueryMsg::SupportedOfferAssets { ask_asset } => Ok(to_json_binary(
-            &query_supported_offer_assets(deps, ask_asset)?,
+        QueryMsg::BestPathForPair { offer, ask_denom } => Ok(to_json_binary(
+            &query_best_path_for_pair(&deps, offer, ask_denom)?,
         )?),
-        QueryMsg::SupportedAskAssets { offer_asset } => Ok(to_json_binary(
-            &query_supported_ask_assets(deps, offer_asset)?,
+        QueryMsg::SupportedOfferAssets { ask_denom } => Ok(to_json_binary(
+            &query_supported_offer_assets(deps, ask_denom)?,
+        )?),
+        QueryMsg::SupportedAskAssets { offer_denom } => Ok(to_json_binary(
+            &query_supported_ask_assets(deps, offer_denom)?,
         )?),
     }
 }
 
 pub fn simulate_swaps(
-    deps: Deps,
-    offer: Coin,
+    deps: &Deps,
+    offer: &Coin,
     routes: Vec<SwapAmountInRoute>,
 ) -> Result<Uint128, ContractError> {
     let querier = PoolmanagerQuerier::new(&deps.querier);
@@ -227,18 +271,15 @@ pub fn simulate_swaps(
 }
 
 pub fn query_paths_for_pair(
-    deps: Deps,
-    offer_asset: AssetInfo,
-    ask_asset: AssetInfo,
+    deps: &Deps,
+    offer_denom: String,
+    ask_denom: String,
 ) -> Result<Vec<Vec<SwapAmountInRoute>>, ContractError> {
-    let paths = PATHS.load(
-        deps.storage,
-        (offer_asset.to_string(), ask_asset.to_string()),
-    )?;
+    let paths = PATHS.load(deps.storage, (offer_denom.clone(), ask_denom.clone()))?;
     if paths.is_empty() {
         Err(ContractError::NoPathFound {
-            offer: offer_asset.to_string(),
-            ask: ask_asset.to_string(),
+            offer: offer_denom,
+            ask: ask_denom,
         })
     } else {
         Ok(paths)
@@ -246,20 +287,18 @@ pub fn query_paths_for_pair(
 }
 
 pub fn query_best_path_for_pair(
-    deps: Deps,
-    offer_amount: Uint128,
-    offer_asset: AssetInfo,
-    ask_asset: AssetInfo,
+    deps: &Deps,
+    offer: Coin,
+    ask_denom: String,
 ) -> Result<Option<BestPathForPairResponse>, ContractError> {
-    let paths = query_paths_for_pair(deps, offer_asset.clone(), ask_asset)?;
+    let paths = query_paths_for_pair(deps, offer.denom.clone(), ask_denom)?;
     if paths.is_empty() {
         return Err(ContractError::NoPathsToCheck {});
     }
-    let offer = coin(offer_amount.into(), offer_asset.inner());
     let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
         .into_iter()
         .map(|routes| {
-            let out = simulate_swaps(deps, offer.clone(), routes.clone().into())?;
+            let out = simulate_swaps(deps, &offer, routes.clone().into())?;
             Ok(BestPathForPairResponse {
                 routes,
                 return_amount: out,
@@ -276,30 +315,30 @@ pub fn query_best_path_for_pair(
 
 pub fn query_supported_offer_assets(
     deps: Deps,
-    ask_asset: AssetInfoUnchecked,
-) -> Result<Vec<AssetInfo>, ContractError> {
-    let mut offer_assets: Vec<AssetInfo> = vec![];
+    ask_denom: String,
+) -> Result<Vec<String>, ContractError> {
+    let mut offer_denoms: Vec<String> = vec![];
     for x in PATHS.range(deps.storage, None, None, Order::Ascending) {
-        let ((offer_asset, path_ask_asset), _) = x?;
-        if AssetInfo::native(path_ask_asset) == ask_asset.check(deps.api, None)? {
-            offer_assets.push(AssetInfo::native(offer_asset));
+        let ((offer_denom, path_ask_denom), _) = x?;
+        if path_ask_denom == ask_denom {
+            offer_denoms.push(offer_denom);
         }
     }
-    Ok(offer_assets)
+    Ok(offer_denoms)
 }
 
 pub fn query_supported_ask_assets(
     deps: Deps,
-    offer_asset: AssetInfoUnchecked,
-) -> Result<Vec<AssetInfo>, ContractError> {
-    let mut ask_assets: Vec<AssetInfo> = vec![];
+    offer_denom: String,
+) -> Result<Vec<String>, ContractError> {
+    let mut ask_denoms: Vec<String> = vec![];
     for x in PATHS.range(deps.storage, None, None, Order::Ascending) {
-        let ((path_offer_asset, ask_asset), _) = x?;
-        if AssetInfo::native(path_offer_asset) == offer_asset.check(deps.api, None)? {
-            ask_assets.push(AssetInfo::native(ask_asset));
+        let ((path_offer_denom, ask_denom), _) = x?;
+        if path_offer_denom == offer_denom {
+            ask_denoms.push(ask_denom);
         }
     }
-    Ok(ask_assets)
+    Ok(ask_denoms)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
