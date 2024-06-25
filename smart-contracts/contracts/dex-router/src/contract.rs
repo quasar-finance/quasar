@@ -1,18 +1,22 @@
+use std::str::FromStr;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply,
-    Response, StdResult, SubMsg, Uint128,
+    coin, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, Event, MessageInfo, Order,
+    Reply, Response, StdResult, SubMsg, Uint128,
 };
 use cw2::set_contract_version;
 use cw_asset::{AssetInfo, AssetInfoUnchecked};
 use mars_owner::OwnerInit::SetInitialOwner;
 use osmosis_std::cosmwasm_to_proto_coins;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::{
+    MsgSwapExactAmountIn, PoolmanagerQuerier, SwapAmountInRoute,
+};
 use quasar_types::error::assert_fund_length;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{RecipientInfo, OWNER, PATHS, RECIPIENT_INFO};
 
 const CONTRACT_NAME: &str = "crates.io:cw-dex-router";
@@ -179,9 +183,13 @@ pub fn set_path(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        // QueryMsg::SimulateSwapOperations { offer, operations } => {
-        //     to_json_binary(&simulate_swap_operations(deps, offer, operations)?)
-        // }
+        QueryMsg::SimulateSwapOperations { offer, operations } => {
+            Ok(to_json_binary(&simulate_swap_operations(
+                deps,
+                coin(offer.amount.into(), offer.info.inner()),
+                operations,
+            )?)?)
+        }
         QueryMsg::PathsForPair {
             offer_asset,
             ask_asset,
@@ -190,18 +198,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             offer_asset.check(deps.api, None)?,
             ask_asset.check(deps.api, None)?,
         )?)?),
-        // QueryMsg::BestPathForPair {
-        //     offer_asset,
-        //     offer_amount,
-        //     ask_asset,
-        //     exclude_paths,
-        // } => to_json_binary(&query_best_path_for_pair(
-        //     deps,
-        //     offer_amount,
-        //     offer_asset.check(deps.api)?,
-        //     ask_asset.check(deps.api)?,
-        //     exclude_paths,
-        // )?),
+        QueryMsg::BestPathForPair {
+            offer_asset,
+            offer_amount,
+            ask_asset,
+        } => Ok(to_json_binary(&query_best_path_for_pair(
+            deps,
+            offer_amount,
+            offer_asset.check(deps.api, None)?,
+            ask_asset.check(deps.api, None)?,
+        )?)?),
         QueryMsg::SupportedOfferAssets { ask_asset } => Ok(to_json_binary(
             &query_supported_offer_assets(deps, ask_asset)?,
         )?),
@@ -211,25 +217,16 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
     }
 }
 
-// pub fn simulate_swap_operations(
-//     deps: Deps,
-//     offer: Coin,
-//     routes: Vec<SwapAmountInRoute>,
-// ) -> Result<Uint128, ContractError> {
-//     let querier = PoolmanagerQuerier::new(&deps.querier);
-//     let res = querier
+pub fn simulate_swap_operations(
+    deps: Deps,
+    offer: Coin,
+    routes: Vec<SwapAmountInRoute>,
+) -> Result<Uint128, ContractError> {
+    let querier = PoolmanagerQuerier::new(&deps.querier);
+    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), routes)?;
 
-//     let mut offer_asset = Asset::from(offer);
-//     for route in routes.into_iter() {
-//         let receive_info = AssetInfo::native(route.token_out_denom);
-//         let receive_amount = operation
-//             .pool
-//             .simulate_swap(deps, offer_asset, receive_info)?;
-//         offer_asset = Asset::new(receive_info, receive_amount);
-//     }
-
-//     Ok(offer_amount)
-// }
+    Ok(Uint128::from_str(&response.token_out_amount)?)
+}
 
 pub fn query_paths_for_pair(
     deps: Deps,
@@ -250,41 +247,34 @@ pub fn query_paths_for_pair(
     }
 }
 
-// pub fn query_best_path_for_pair(
-//     deps: Deps,
-//     offer_amount: Uint128,
-//     offer_asset: AssetInfo,
-//     ask_asset: AssetInfo,
-//     exclude_paths: Option<Vec<u64>>,
-// ) -> Result<Option<BestPathForPairResponse>, ContractError> {
-//     let paths = query_paths_for_pair(deps, offer_asset, ask_asset)?;
-//     let excluded = exclude_paths.unwrap_or(vec![]);
-//     let paths: Vec<(u64, Vec<SwapAmountInRoute>)> = paths
-//         .into_iter()
-//         .filter(|(id, _)| !excluded.contains(id))
-//         .collect();
+pub fn query_best_path_for_pair(
+    deps: Deps,
+    offer_amount: Uint128,
+    offer_asset: AssetInfo,
+    ask_asset: AssetInfo,
+) -> Result<Option<BestPathForPairResponse>, ContractError> {
+    let paths = query_paths_for_pair(deps, offer_asset.clone(), ask_asset)?;
+    if paths.is_empty() {
+        return Err(ContractError::NoPathsToCheck {});
+    }
+    let offer = coin(offer_amount.into(), offer_asset.inner());
+    let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
+        .into_iter()
+        .map(|swaps| {
+            let out = simulate_swap_operations(deps, offer.clone(), swaps.clone().into())?;
+            Ok(BestPathForPairResponse {
+                operations: swaps,
+                return_amount: out,
+            })
+        })
+        .collect();
 
-//     if paths.is_empty() {
-//         return Err(ContractError::NoPathsToCheck {});
-//     }
+    let best_path = swap_paths?
+        .into_iter()
+        .max_by(|a, b| a.return_amount.cmp(&b.return_amount));
 
-//     let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
-//         .into_iter()
-//         .map(|(_, swaps)| {
-//             let out = simulate_swap_operations(deps, offer_amount, swaps.clone().into())?;
-//             Ok(BestPathForPairResponse {
-//                 operations: swaps,
-//                 return_amount: out,
-//             })
-//         })
-//         .collect();
-
-//     let best_path = swap_paths?
-//         .into_iter()
-//         .max_by(|a, b| a.return_amount.cmp(&b.return_amount));
-
-//     Ok(best_path)
-// }
+    Ok(best_path)
+}
 
 pub fn query_supported_offer_assets(
     deps: Deps,

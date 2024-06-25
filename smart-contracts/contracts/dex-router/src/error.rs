@@ -30,4 +30,7 @@ pub enum ContractError {
 
     #[error("No path found for assets {offer:?} -> {ask:?}")]
     NoPathFound { offer: String, ask: String },
+
+    #[error("No paths to check")]
+    NoPathsToCheck {},
 }
