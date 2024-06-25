@@ -10,6 +10,7 @@ use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{
     MsgSwapExactAmountIn, PoolResponse, PoolmanagerQuerier, SwapAmountInRoute,
 };
+
 use prost::Message;
 use quasar_types::error::assert_fund_length;
 use std::str::FromStr;
@@ -50,11 +51,11 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Swap {
-            routes,
+            path,
             out_denom,
             minimum_receive,
             to,
-        } => swap(deps, env, info, routes, out_denom, minimum_receive, to),
+        } => swap(deps, env, info, path, out_denom, minimum_receive, to),
         ExecuteMsg::SetPath {
             offer_denom,
             ask_denom,
@@ -86,19 +87,19 @@ pub fn swap(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    routes: Vec<SwapAmountInRoute>,
+    path: Vec<SwapAmountInRoute>,
     out_denom: String,
     minimum_receive: Option<Uint128>,
     to: Option<String>,
 ) -> Result<Response, ContractError> {
     assert_fund_length(info.funds.len(), 1)?;
     let recipient = to.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
-    let mut routes = routes;
-    if routes.is_empty() {
+    let mut path = path;
+    if path.is_empty() {
         if let Some(best_path) =
             query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
         {
-            routes = best_path.routes;
+            path = best_path.path;
         } else {
             return Err(ContractError::NoPathFound {
                 offer: info.funds[0].denom.clone(),
@@ -109,7 +110,7 @@ pub fn swap(
 
     let msg = MsgSwapExactAmountIn {
         sender: env.contract.address.to_string(),
-        routes,
+        routes: path,
         token_in: Some(cosmwasm_to_proto_coins(info.funds.clone())[0].clone()),
         token_out_min_amount: minimum_receive.unwrap_or_default().to_string(),
     };
@@ -220,7 +221,7 @@ pub fn set_path(
             .collect()];
         PATHS.update(
             deps.storage,
-            (ask_denom.to_string(), offer_denom.to_string()),
+            (ask_denom.clone(), offer_denom.clone()),
             |paths| -> StdResult<_> {
                 if let Some(paths) = paths {
                     new_paths.extend(paths.into_iter());
@@ -230,14 +231,16 @@ pub fn set_path(
         )?;
     }
 
-    Ok(Response::default())
+    Ok(Response::default()
+        .add_attribute("action", "set path")
+        .add_attribute("key", format!("{:?}", (offer_denom, ask_denom))))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::SimulateSwaps { offer, routes } => {
-            Ok(to_json_binary(&simulate_swaps(&deps, &offer, routes)?)?)
+        QueryMsg::SimulateSwaps { offer, path } => {
+            Ok(to_json_binary(&simulate_swaps(&deps, &offer, path)?)?)
         }
         QueryMsg::PathsForPair {
             offer_denom,
@@ -262,10 +265,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 pub fn simulate_swaps(
     deps: &Deps,
     offer: &Coin,
-    routes: Vec<SwapAmountInRoute>,
+    path: Vec<SwapAmountInRoute>,
 ) -> Result<Uint128, ContractError> {
     let querier = PoolmanagerQuerier::new(&deps.querier);
-    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), routes)?;
+    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path)?;
 
     Ok(Uint128::from_str(&response.token_out_amount)?)
 }
@@ -275,15 +278,17 @@ pub fn query_paths_for_pair(
     offer_denom: String,
     ask_denom: String,
 ) -> Result<Vec<Vec<SwapAmountInRoute>>, ContractError> {
-    let paths = PATHS.load(deps.storage, (offer_denom.clone(), ask_denom.clone()))?;
-    if paths.is_empty() {
-        Err(ContractError::NoPathFound {
-            offer: offer_denom,
-            ask: ask_denom,
-        })
-    } else {
-        Ok(paths)
+    let paths = PATHS.may_load(deps.storage, (offer_denom.clone(), ask_denom.clone()))?;
+    if let Some(paths) = paths {
+        if !paths.is_empty() {
+            return Ok(paths);
+        }
     }
+
+    Err(ContractError::NoPathFound {
+        offer: offer_denom,
+        ask: ask_denom,
+    })
 }
 
 pub fn query_best_path_for_pair(
@@ -297,10 +302,10 @@ pub fn query_best_path_for_pair(
     }
     let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
         .into_iter()
-        .map(|routes| {
-            let out = simulate_swaps(deps, &offer, routes.clone().into())?;
+        .map(|path| {
+            let out = simulate_swaps(deps, &offer, path.clone().into())?;
             Ok(BestPathForPairResponse {
-                routes,
+                path,
                 return_amount: out,
             })
         })

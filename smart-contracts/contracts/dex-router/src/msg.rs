@@ -8,7 +8,7 @@ pub struct InstantiateMsg {}
 #[cw_serde]
 pub enum ExecuteMsg {
     Swap {
-        routes: Vec<SwapAmountInRoute>,
+        path: Vec<SwapAmountInRoute>,
         out_denom: String,
         minimum_receive: Option<Uint128>,
         to: Option<String>,
@@ -24,8 +24,8 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub struct BestPathForPairResponse {
-    /// the routes that will be used to perform the swap
-    pub routes: Vec<SwapAmountInRoute>,
+    /// the path that will be used to perform the swap
+    pub path: Vec<SwapAmountInRoute>,
     /// the amount of tokens that are expected to be received after the swap
     pub return_amount: Uint128,
 }
@@ -36,7 +36,7 @@ pub enum QueryMsg {
     #[returns(Uint128)]
     SimulateSwaps {
         offer: Coin,
-        routes: Vec<SwapAmountInRoute>,
+        path: Vec<SwapAmountInRoute>,
     },
     /// Returns all the current path for a given (offer_asset, ask_asset) pair.
     #[returns(Vec<Vec<SwapAmountInRoute>>)]
