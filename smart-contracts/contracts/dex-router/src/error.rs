@@ -31,9 +31,3 @@ pub enum ContractError {
     #[error("No path found for assets {offer:?} -> {ask:?}")]
     NoPathFound { offer: String, ask: String },
 }
-
-impl From<ContractError> for StdError {
-    fn from(x: ContractError) -> Self {
-        Self::generic_err(x.to_string())
-    }
-}
