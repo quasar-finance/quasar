@@ -183,13 +183,11 @@ pub fn set_path(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::SimulateSwapOperations { offer, operations } => {
-            Ok(to_json_binary(&simulate_swap_operations(
-                deps,
-                coin(offer.amount.into(), offer.info.inner()),
-                operations,
-            )?)?)
-        }
+        QueryMsg::SimulateSwaps { offer, routes } => Ok(to_json_binary(&simulate_swaps(
+            deps,
+            coin(offer.amount.into(), offer.info.inner()),
+            routes,
+        )?)?),
         QueryMsg::PathsForPair {
             offer_asset,
             ask_asset,
@@ -217,7 +215,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
     }
 }
 
-pub fn simulate_swap_operations(
+pub fn simulate_swaps(
     deps: Deps,
     offer: Coin,
     routes: Vec<SwapAmountInRoute>,
@@ -260,10 +258,10 @@ pub fn query_best_path_for_pair(
     let offer = coin(offer_amount.into(), offer_asset.inner());
     let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
         .into_iter()
-        .map(|swaps| {
-            let out = simulate_swap_operations(deps, offer.clone(), swaps.clone().into())?;
+        .map(|routes| {
+            let out = simulate_swaps(deps, offer.clone(), routes.clone().into())?;
             Ok(BestPathForPairResponse {
-                operations: swaps,
+                routes,
                 return_amount: out,
             })
         })

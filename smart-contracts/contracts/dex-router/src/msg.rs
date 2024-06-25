@@ -25,8 +25,8 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub struct BestPathForPairResponse {
-    /// the operations that will be executed to perform the swap
-    pub operations: Vec<SwapAmountInRoute>,
+    /// the routes that will be used to perform the swap
+    pub routes: Vec<SwapAmountInRoute>,
     /// the amount of tokens that are expected to be received after the swap
     pub return_amount: Uint128,
 }
@@ -35,12 +35,12 @@ pub struct BestPathForPairResponse {
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(Uint128)]
-    SimulateSwapOperations {
+    SimulateSwaps {
         offer: Asset,
-        operations: Vec<SwapAmountInRoute>,
+        routes: Vec<SwapAmountInRoute>,
     },
     /// Returns all the current path for a given (offer_asset, ask_asset) pair.
-    #[returns(Vec<SwapAmountInRoute>)]
+    #[returns(Vec<Vec<SwapAmountInRoute>>)]
     PathsForPair {
         offer_asset: AssetInfoUnchecked,
         ask_asset: AssetInfoUnchecked,
