@@ -1,4 +1,4 @@
-# Dex router
+# Dex router for osmosis
 
 Responsible for the on-chain computation of multi-hop swap routes.
 
