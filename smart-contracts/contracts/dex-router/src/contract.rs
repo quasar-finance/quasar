@@ -167,7 +167,7 @@ pub fn set_path(
         .map(|pool_id| pool_querier.pool(*pool_id))
         .collect();
     let pools = pools?;
-    let denoms: Vec<(String, String)> = pools.into_iter().map(|pool| get_denoms(pool)).collect();
+    let denoms: Vec<(String, String)> = pools.into_iter().map(get_denoms).collect();
     let key = (offer_denom.clone(), ask_denom.clone());
 
     let mut offer_denom = offer_denom;
@@ -195,7 +195,7 @@ pub fn set_path(
         .iter()
         .zip(out_denoms.iter())
         .map(|(pool_id, denom)| SwapAmountInRoute {
-            pool_id: pool_id.clone(),
+            pool_id: *pool_id,
             token_out_denom: denom.clone(),
         })
         .collect()];
@@ -215,7 +215,7 @@ pub fn set_path(
             .rev()
             .zip(in_denoms.iter().rev())
             .map(|(pool_id, denom)| SwapAmountInRoute {
-                pool_id: pool_id.clone(),
+                pool_id: *pool_id,
                 token_out_denom: denom.clone(),
             })
             .collect()];
@@ -299,7 +299,7 @@ pub fn query_best_path_for_pair(
     let swap_paths: Result<Vec<BestPathForPairResponse>, ContractError> = paths
         .into_iter()
         .map(|path| {
-            let out = simulate_swaps(deps, &offer, path.clone().into())?;
+            let out = simulate_swaps(deps, &offer, path.clone())?;
             Ok(BestPathForPairResponse {
                 path,
                 return_amount: out,
