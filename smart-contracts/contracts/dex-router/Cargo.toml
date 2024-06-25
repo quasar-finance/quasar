@@ -27,13 +27,13 @@ library = []
 [dependencies]
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
-cw-asset = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw2 = { workspace = true }
 thiserror = { workspace = true }
 mars-owner = { workspace = true }
 osmosis-std = { workspace = true }
 quasar-types = { workspace = true }
+prost = { workspace = true }
 
 [dev-dependencies]
 osmosis-test-tube = { workspace = true }
