@@ -59,7 +59,7 @@ pub fn execute_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, BurnEr
 
     // Prepare the Burn message
     let burn_msg = CosmosMsg::Bank(BankMsg::Burn {
-        amount: info.clone().funds,
+        amount: info.funds.clone(),
     });
 
     for fund in &info.funds {
