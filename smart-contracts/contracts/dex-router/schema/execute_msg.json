@@ -11,7 +11,8 @@
         "swap": {
           "type": "object",
           "required": [
-            "routes"
+            "out_denom",
+            "path"
           ],
           "properties": {
             "minimum_receive": {
@@ -24,7 +25,10 @@
                 }
               ]
             },
-            "routes": {
+            "out_denom": {
+              "type": "string"
+            },
+            "path": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/SwapAmountInRoute"
@@ -51,25 +55,27 @@
         "set_path": {
           "type": "object",
           "required": [
-            "ask_asset",
+            "ask_denom",
             "bidirectional",
-            "offer_asset",
+            "offer_denom",
             "path"
           ],
           "properties": {
-            "ask_asset": {
-              "$ref": "#/definitions/AssetInfoBase_for_String"
+            "ask_denom": {
+              "type": "string"
             },
             "bidirectional": {
               "type": "boolean"
             },
-            "offer_asset": {
-              "$ref": "#/definitions/AssetInfoBase_for_String"
+            "offer_denom": {
+              "type": "string"
             },
             "path": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/SwapAmountInRoute"
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
               }
             }
           },
@@ -80,35 +86,6 @@
     }
   ],
   "definitions": {
-    "AssetInfoBase_for_String": {
-      "description": "Represents the type of an fungible asset.\n\nEach **asset info** instance can be one of three variants:\n\n- Native SDK coins. To create an **asset info** instance of this type, provide the denomination. - CW20 tokens. To create an **asset info** instance of this type, provide the contract address.",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "native"
-          ],
-          "properties": {
-            "native": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "cw20"
-          ],
-          "properties": {
-            "cw20": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "SwapAmountInRoute": {
       "type": "object",
       "required": [
