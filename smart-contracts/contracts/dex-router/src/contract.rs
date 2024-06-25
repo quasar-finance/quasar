@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, Event, MessageInfo, Order, Reply,
-    Response, StdError, StdResult, SubMsg, Uint128,
+    Response, StdResult, SubMsg, Uint128,
 };
 use cw2::set_contract_version;
 use cw_asset::{AssetInfo, AssetInfoUnchecked};
@@ -144,38 +144,32 @@ pub fn set_path(
         });
     }
 
-    // check if we have any exisiting items under the offer_asset, ask_asset pair
-    // we are looking for the highest ID so we can increment it, this should be under Order::Descending in the first item
-    let ps: Result<Vec<(u64, Vec<SwapAmountInRoute>)>, StdError> = PATHS
-        .prefix((offer_asset.to_string(), ask_asset.to_string()))
-        .range(deps.storage, None, None, Order::Descending)
-        .collect();
-    let paths = ps?;
-    let last_id = paths.first().map(|(val, _)| val).unwrap_or(&0);
-
-    let new_id = last_id + 1;
-    PATHS.save(
+    let mut new_paths = vec![path.clone()];
+    PATHS.update(
         deps.storage,
-        (offer_asset.to_string(), ask_asset.to_string(), new_id),
-        &path,
+        (offer_asset.to_string(), ask_asset.to_string()),
+        |paths| -> StdResult<_> {
+            if let Some(paths) = paths {
+                new_paths.extend(paths.into_iter());
+            }
+            Ok(new_paths)
+        },
     )?;
 
     // reverse path and store if `bidirectional` is true
     if bidirectional {
-        let ps: Result<Vec<(u64, Vec<SwapAmountInRoute>)>, StdError> = PATHS
-            .prefix((ask_asset.to_string(), offer_asset.to_string()))
-            .range(deps.storage, None, None, Order::Descending)
-            .collect();
-        let paths = ps?;
-        let last_id = paths.first().map(|(val, _)| val).unwrap_or(&0);
-
-        let new_id = last_id + 1;
         let mut path = path;
         path.reverse();
-        PATHS.save(
+        let mut new_paths = vec![path];
+        PATHS.update(
             deps.storage,
-            (ask_asset.to_string(), offer_asset.to_string(), new_id),
-            &path,
+            (ask_asset.to_string(), offer_asset.to_string()),
+            |paths| -> StdResult<_> {
+                if let Some(paths) = paths {
+                    new_paths.extend(paths.into_iter());
+                }
+                Ok(new_paths)
+            },
         )?;
     }
 
@@ -241,12 +235,11 @@ pub fn query_paths_for_pair(
     deps: Deps,
     offer_asset: AssetInfo,
     ask_asset: AssetInfo,
-) -> Result<Vec<(u64, Vec<SwapAmountInRoute>)>, ContractError> {
-    let ps: StdResult<Vec<(u64, Vec<SwapAmountInRoute>)>> = PATHS
-        .prefix((offer_asset.to_string(), ask_asset.to_string()))
-        .range(deps.storage, None, None, Order::Ascending)
-        .collect();
-    let paths = ps?;
+) -> Result<Vec<Vec<SwapAmountInRoute>>, ContractError> {
+    let paths = PATHS.load(
+        deps.storage,
+        (offer_asset.to_string(), ask_asset.to_string()),
+    )?;
     if paths.is_empty() {
         Err(ContractError::NoPathFound {
             offer: offer_asset.to_string(),
@@ -299,7 +292,7 @@ pub fn query_supported_offer_assets(
 ) -> Result<Vec<AssetInfo>, ContractError> {
     let mut offer_assets: Vec<AssetInfo> = vec![];
     for x in PATHS.range(deps.storage, None, None, Order::Ascending) {
-        let ((offer_asset, path_ask_asset, _), _) = x?;
+        let ((offer_asset, path_ask_asset), _) = x?;
         if AssetInfo::native(path_ask_asset) == ask_asset.check(deps.api, None)? {
             offer_assets.push(AssetInfo::native(offer_asset));
         }
@@ -313,7 +306,7 @@ pub fn query_supported_ask_assets(
 ) -> Result<Vec<AssetInfo>, ContractError> {
     let mut ask_assets: Vec<AssetInfo> = vec![];
     for x in PATHS.range(deps.storage, None, None, Order::Ascending) {
-        let ((path_offer_asset, ask_asset, _), _) = x?;
+        let ((path_offer_asset, ask_asset), _) = x?;
         if AssetInfo::native(path_offer_asset) == offer_asset.check(deps.api, None)? {
             ask_assets.push(AssetInfo::native(ask_asset));
         }
