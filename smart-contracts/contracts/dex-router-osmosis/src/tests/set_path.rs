@@ -25,3 +25,21 @@ fn test_if_not_owner_then_set_path_fails() {
         ContractError::Owner(mars_owner::OwnerError::NotOwner {})
     );
 }
+
+#[test]
+fn test_if_path_is_empty_then_set_path_fails() {
+    let mut deps = mock_dependencies();
+    let env = mock_env();
+    let info = mock_info("owner", &[]);
+    let msg = InstantiateMsg {};
+    assert!(instantiate(deps.as_mut(), env.clone(), info.clone(), msg).is_ok());
+
+    let msg = ExecuteMsg::SetPath {
+        offer_denom: "from".to_string(),
+        ask_denom: "to".to_string(),
+        path: vec![],
+        bidirectional: true,
+    };
+    let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
+    assert_eq!(err, ContractError::EmptyPath {});
+}

@@ -15,11 +15,11 @@ use prost::Message;
 use quasar_types::error::assert_fund_length;
 use std::str::FromStr;
 
-use crate::error::ContractError;
+use crate::error::{assert_path, ContractError};
 use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{RecipientInfo, OWNER, PATHS, RECIPIENT_INFO};
 
-const CONTRACT_NAME: &str = "crates.io:dex-router";
+const CONTRACT_NAME: &str = "crates.io:dex-router-osmosis";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const SWAP_REPLY_ID: u64 = 1;
 
@@ -161,6 +161,7 @@ pub fn set_path(
     bidirectional: bool,
 ) -> Result<Response, ContractError> {
     OWNER.assert_owner(deps.storage, &info.sender)?;
+    assert_path(&path)?;
     let pool_querier = PoolmanagerQuerier::new(&deps.querier);
     let pools: Result<Vec<PoolResponse>, StdError> = path
         .iter()
@@ -173,12 +174,12 @@ pub fn set_path(
     let mut offer_denom = offer_denom;
     let mut out_denoms = vec![];
     let mut in_denoms = vec![];
-    for denom_pair in denoms {
+    for denom_pair in &denoms {
         in_denoms.push(offer_denom.clone());
         if offer_denom == denom_pair.0 {
-            offer_denom = denom_pair.1;
+            offer_denom = denom_pair.1.clone();
         } else if offer_denom == denom_pair.1 {
-            offer_denom = denom_pair.0;
+            offer_denom = denom_pair.0.clone();
         } else {
             return Err(ContractError::InvalidSwapPath {
                 path,
@@ -189,6 +190,16 @@ pub fn set_path(
             });
         }
         out_denoms.push(offer_denom.clone());
+    }
+    if offer_denom != ask_denom {
+        return Err(ContractError::InvalidSwapPath {
+            path,
+            reason: format!(
+                "Could not find {}, available denoms: {:?}",
+                ask_denom,
+                denoms.last().unwrap()
+            ),
+        });
     }
 
     let mut new_paths = vec![path
