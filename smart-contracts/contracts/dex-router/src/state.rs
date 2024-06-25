@@ -10,6 +10,6 @@ pub struct RecipientInfo {
     pub denom: String,
 }
 
-pub const PATHS: Map<(String, String, u64), Vec<SwapAmountInRoute>> = Map::new("paths");
+pub const PATHS: Map<(String, String), Vec<Vec<SwapAmountInRoute>>> = Map::new("paths");
 pub const RECIPIENT_INFO: Item<RecipientInfo> = Item::new("recipient");
 pub const OWNER: Owner = Owner::new("owner");
