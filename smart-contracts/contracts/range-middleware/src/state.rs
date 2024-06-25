@@ -12,7 +12,6 @@ pub struct NewRange {
     pub upper_price: Decimal,
 }
 
-
 #[cw_serde]
 pub struct RangeUpdates {
     pub cl_vault_address: String,
@@ -25,7 +24,7 @@ pub enum UpdateActions {
     DeletePosition(DeletePosition),
     DecreaseFunds(DecreaseFunds),
     IncreaseFunds(IncreaseFunds),
-    NewRange(NewRange)
+    NewRange(NewRange),
 }
 
 pub const PENDING_RANGES: Map<Addr, RangeUpdates> = Map::new("pending_ranges");
