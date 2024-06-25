@@ -19,6 +19,7 @@ use crate::error::{assert_path, ContractError};
 use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{RecipientInfo, OWNER, PATHS, RECIPIENT_INFO};
 
+const _CONTRACT_NAME: &str = "quasar:dex-router-osmosis";
 const CONTRACT_NAME: &str = "crates.io:dex-router-osmosis";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const SWAP_REPLY_ID: u64 = 1;
@@ -121,7 +122,7 @@ pub fn swap(
             denom: out_denom,
         },
     )?;
-    let event = Event::new("quasar dex-router")
+    let event = Event::new(_CONTRACT_NAME)
         .add_attribute("operation", "swap")
         .add_attribute("offer_amount", info.funds[0].amount)
         .add_attribute("to", recipient.to_string());
@@ -217,9 +218,16 @@ pub fn set_path(
         Ok(new_paths)
     })?;
 
-    let mut response = Response::default()
-        .add_attribute("action", "set path")
-        .add_attribute("key", format!("{:?}", key));
+    let mut event = Event::new(_CONTRACT_NAME)
+        .add_attribute("operation", "set path")
+        .add_attribute("key", format!("{:?}", key))
+        .add_attribute(
+            "path",
+            path.iter()
+                .map(|pool_id| pool_id.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
+        );
     if bidirectional {
         let mut new_paths = vec![path
             .iter()
@@ -237,10 +245,10 @@ pub fn set_path(
             }
             Ok(new_paths)
         })?;
-        response = response.add_attribute("key", format!("{:?}", reverse_key));
+        event = event.add_attribute("key", format!("{:?}", reverse_key));
     }
 
-    Ok(response)
+    Ok(Response::default().add_event(event))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
