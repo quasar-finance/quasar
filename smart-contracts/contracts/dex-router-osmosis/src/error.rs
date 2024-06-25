@@ -28,4 +28,14 @@ pub enum ContractError {
 
     #[error("Pool not found: {pool_id:?}")]
     PoolNotFound { pool_id: u64 },
+
+    #[error("Can't set empty path.")]
+    EmptyPath {},
+}
+
+pub fn assert_path(path: &[u64]) -> Result<(), ContractError> {
+    if path.is_empty() {
+        return Err(ContractError::EmptyPath {});
+    }
+    Ok(())
 }
