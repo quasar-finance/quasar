@@ -319,5 +319,69 @@ mod tests {
     }
 
     #[test]
-    fn pop_move_position_complete_execution_works() {}
+    fn pop_move_position_complete_execution_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let sender = "alice";
+        let info = MessageInfo {
+            sender: Addr::unchecked(sender),
+            funds: vec![],
+        };
+        RANGE_EXECUTOR_ADMIN.save(deps.as_mut().storage, &Addr::unchecked(sender)).unwrap();
+
+        let vault_address = "contract1";
+
+        let mut updates = VecDeque::new();
+        updates.push_back(UpdateActions::NewRange(NewRange {
+            position_id: 1,
+            lower_price: Decimal::zero(),
+            upper_price: Decimal::one(),
+        }));
+        updates.push_back(UpdateActions::CreatePosition(CreatePosition {
+            lower_price: Decimal::from_ratio(1_u128, 2_u128),
+            upper_price: Decimal::one(),
+            claim_after: None,
+        }));
+
+        let mut range_update = RangeUpdates {
+            updates,
+            cl_vault_address: vault_address.to_string(),
+        };
+
+        PENDING_RANGES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked(vault_address),
+                &range_update,
+            )
+            .unwrap();
+
+        let params = RangeExecutionParams {
+            max_slippage: Decimal::percent(99),
+            ratio_of_swappable_funds_to_use: Decimal::one(),
+            twap_window_seconds: 24,
+            recommended_swap_route: SwapOperationsListBase::<String>::new(vec![]),
+            force_swap_route: false,
+            claim_after: None,
+        };
+
+        let res = execute_pop_update(
+            deps.as_mut(),
+            env,
+            info,
+            vault_address.to_string(),
+            Some(params),
+        )
+        .unwrap();
+
+        // at this point we expect to have fully executed the move position and this expect the front item of updates to be popped
+        range_update.updates.pop_front();
+
+        assert_eq!(
+            PENDING_RANGES
+                .load(deps.as_mut().storage, Addr::unchecked(vault_address))
+                .unwrap(),
+            range_update
+        );
+    }
 }
