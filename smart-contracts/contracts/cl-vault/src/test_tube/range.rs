@@ -5,12 +5,9 @@ mod test {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
     use osmosis_std::types::{
         cosmos::base::v1beta1,
-        osmosis::{
-            concentratedliquidity::{
-                poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-                v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
-            },
-            poolmanager::v1beta1::SwapAmountInRoute,
+        osmosis::concentratedliquidity::{
+            poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+            v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
         },
     };
     use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, Wasm};
@@ -94,18 +91,11 @@ mod test {
             )
             .unwrap();
 
-        // Define CW Dex Router swap routes
-        // let path1 = vec![SwapOperationBase::new(
-        //     cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-        //         vault_pool_id,
-        //     )),
-        //     AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-        //     AssetInfoBase::Native(DENOM_BASE.to_string()),
-        // )];
-        let path1 = SwapAmountInRoute {
-            pool_id: todo!(),
-            token_out_denom: todo!(),
-        };
+        // // Define CW Dex Router swap route to force
+        // let path1 = SwapAmountInRoute {
+        //     pool_id: todo!(),
+        //     token_out_denom: todo!(),
+        // };
 
         let _result = wasm
             .execute(
@@ -117,7 +107,8 @@ mod test {
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
-                        forced_swap_route: Some(vec![path1]),
+                        // forced_swap_route: Some(vec![path1]),
+                        forced_swap_route: None,
                         claim_after: None,
                     },
                 )),
@@ -135,6 +126,8 @@ mod test {
             )
             .unwrap();
     }
+
+    // TODO: move_range_cw_dex_works with forced route
 
     #[test]
     #[ignore]
