@@ -1,28 +1,7 @@
-use crate::contract::{execute, get_denom, instantiate};
+use crate::contract::{execute, instantiate};
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-
-#[test]
-fn test_get_denom_for_denom() {
-    let denom = "denom".to_string();
-    let new_denom = get_denom(&denom);
-    assert_eq!(denom, new_denom);
-}
-
-#[test]
-fn test_get_denom_for_coin_string() {
-    let denom = "\n\u{5}uatom\u{15}\n100000000000000000000".to_string();
-    let new_denom = get_denom(&denom);
-    assert_eq!("uatom", new_denom);
-}
-
-#[test]
-fn test_get_denom_for_other_coin_string() {
-    let denom = "\n\u{5}uatom\u{12}\u{15}100000000000000000000".to_string();
-    let new_denom = get_denom(&denom);
-    assert_eq!("uatom", new_denom);
-}
 
 #[test]
 fn test_if_not_owner_then_set_path_fails() {
