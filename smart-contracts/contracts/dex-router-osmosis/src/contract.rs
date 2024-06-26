@@ -63,6 +63,12 @@ pub fn execute(
             path,
             bidirectional,
         } => set_path(deps, info, offer_denom, ask_denom, path, bidirectional),
+        ExecuteMsg::RemovePath {
+            offer_denom,
+            ask_denom,
+            path,
+            bidirectional,
+        } => remove_path(deps, info, offer_denom, ask_denom, path, bidirectional),
     }
 }
 
@@ -251,6 +257,73 @@ pub fn set_path(
     Ok(Response::default().add_event(event))
 }
 
+fn try_remove_path(
+    paths: Option<Vec<Vec<SwapAmountInRoute>>>,
+    path: &[u64],
+    offer_denom: String,
+    ask_denom: String,
+) -> Result<Option<Vec<Vec<SwapAmountInRoute>>>, ContractError> {
+    if let Some(mut paths) = paths {
+        let idx = paths.iter().position(|p| -> bool {
+            path.iter()
+                .zip(p.iter().map(|p| p.pool_id))
+                .all(|(pool_id0, pool_id1)| pool_id0 == &pool_id1)
+        });
+        if let Some(idx) = idx {
+            paths.remove(idx);
+            if !paths.is_empty() {
+                return Ok(Some(paths));
+            } else {
+                return Ok(None);
+            }
+        }
+    }
+
+    return Err(ContractError::NoPathFound {
+        offer: offer_denom,
+        ask: ask_denom,
+    });
+}
+
+pub fn remove_path(
+    deps: DepsMut,
+    info: MessageInfo,
+    offer_denom: String,
+    ask_denom: String,
+    path: Vec<u64>,
+    bidirectional: bool,
+) -> Result<Response, ContractError> {
+    OWNER.assert_owner(deps.storage, &info.sender)?;
+    assert_path(&path)?;
+
+    let key = (offer_denom.clone(), ask_denom.clone());
+    let paths = PATHS.may_load(deps.storage, key.clone())?;
+    println!("{:?}", key);
+    println!("{:?}", paths);
+    let paths = try_remove_path(paths, &path, offer_denom.clone(), ask_denom.clone())?;
+    println!("{:?}", paths);
+    if let Some(paths) = paths {
+        PATHS.save(deps.storage, key, &paths)?;
+    } else {
+        PATHS.remove(deps.storage, key);
+    }
+
+    if bidirectional {
+        let reverse_key = (ask_denom.clone(), offer_denom.clone());
+        let paths = PATHS.may_load(deps.storage, reverse_key.clone())?;
+        let mut path = path;
+        path.reverse();
+        let paths = try_remove_path(paths, &path, ask_denom.clone(), offer_denom.clone())?;
+        if let Some(paths) = paths {
+            PATHS.save(deps.storage, reverse_key, &paths)?;
+        } else {
+            PATHS.remove(deps.storage, reverse_key);
+        }
+    }
+
+    Ok(Response::default())
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
@@ -284,7 +357,6 @@ pub fn simulate_swaps(
 ) -> Result<Uint128, ContractError> {
     let querier = PoolmanagerQuerier::new(&deps.querier);
     let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path)?;
-
     Ok(Uint128::from_str(&response.token_out_amount)?)
 }
 

@@ -83,6 +83,44 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "remove_path"
+      ],
+      "properties": {
+        "remove_path": {
+          "type": "object",
+          "required": [
+            "ask_denom",
+            "bidirectional",
+            "offer_denom",
+            "path"
+          ],
+          "properties": {
+            "ask_denom": {
+              "type": "string"
+            },
+            "bidirectional": {
+              "type": "boolean"
+            },
+            "offer_denom": {
+              "type": "string"
+            },
+            "path": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {

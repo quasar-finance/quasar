@@ -19,7 +19,12 @@ pub enum ExecuteMsg {
         path: Vec<u64>,
         bidirectional: bool,
     },
-    // Remove
+    RemovePath {
+        offer_denom: String,
+        ask_denom: String,
+        path: Vec<u64>,
+        bidirectional: bool,
+    },
 }
 
 #[cw_serde]
