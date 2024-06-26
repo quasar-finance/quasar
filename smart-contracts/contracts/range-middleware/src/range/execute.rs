@@ -226,7 +226,7 @@ pub fn do_move_position(
         funds: vec![],
     };
 
-    Ok(Response::new().add_message(msg))
+    Ok(Response::new().add_message(msg).add_attribute("update", "move_position"))
 }
 
 pub fn call_vault(vault: Addr, msg: Binary) -> Result<Response, ContractError> {
