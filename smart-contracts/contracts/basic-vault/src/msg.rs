@@ -149,10 +149,10 @@ pub enum ExecuteMsg {
     ForceClaim {
         addresses: Vec<String>,
     },
-    TransferQuasar{
+    TransferQuasar {
         destination_address: Addr,
         amounts: Vec<Coin>,
-    }
+    },
 }
 
 #[cw_serde]

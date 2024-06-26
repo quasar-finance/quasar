@@ -2571,11 +2571,17 @@ fn test_force_claim() {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR, MockQuerier, MockStorage, MockApi};
-    use cosmwasm_std::{attr, coin, coins, BankMsg, Coin, CosmosMsg, Event, OwnedDeps, Querier, QuerierResult, SystemError, ContractResult, ContractInfoResponse, from_binary, to_binary, Empty, WasmQuery, QueryRequest, Addr};
     use crate::error::ContractError;
-    use std::marker::PhantomData;
     use crate::execute::execute_transfer_quasar;
+    use cosmwasm_std::testing::{
+        mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
+    };
+    use cosmwasm_std::{
+        attr, coin, coins, from_binary, to_binary, Addr, BankMsg, Coin, ContractInfoResponse,
+        ContractResult, CosmosMsg, Empty, Event, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        SystemError, WasmQuery,
+    };
+    use std::marker::PhantomData;
 
     // Custom mock querier
     pub struct CustomQuerier {
@@ -2594,12 +2600,15 @@ mod tests {
 
     impl Querier for CustomQuerier {
         fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
-            let request: std::result::Result<QueryRequest<Empty>, _> = cosmwasm_std::from_slice(bin_request);
+            let request: std::result::Result<QueryRequest<Empty>, _> =
+                cosmwasm_std::from_slice(bin_request);
             if let Ok(QueryRequest::Wasm(WasmQuery::ContractInfo { contract_addr })) = request {
                 if contract_addr == MOCK_CONTRACT_ADDR {
                     let mut contract_info = ContractInfoResponse::new(0, "creator".to_string());
                     contract_info.admin = Some(self.admin.clone());
-                    return QuerierResult::Ok(ContractResult::Ok(to_binary(&contract_info).unwrap()));
+                    return QuerierResult::Ok(ContractResult::Ok(
+                        to_binary(&contract_info).unwrap(),
+                    ));
                 }
             }
             self.base.raw_query(bin_request)
@@ -2633,7 +2642,13 @@ mod tests {
         let info = mock_info(sender.as_str(), &[]);
 
         // Call the function
-        let result = execute_transfer_quasar(deps.as_mut(), env.clone(), destination_address.clone(), amounts.clone(), sender.clone());
+        let result = execute_transfer_quasar(
+            deps.as_mut(),
+            env.clone(),
+            destination_address.clone(),
+            amounts.clone(),
+            sender.clone(),
+        );
 
         // Check that the result is Ok and contains the expected response
         match result {
@@ -2644,7 +2659,7 @@ mod tests {
                     CosmosMsg::Bank(BankMsg::Send { to_address, amount }) => {
                         assert_eq!(to_address, destination_address.as_str());
                         assert_eq!(amount, &amounts);
-                    },
+                    }
                     _ => panic!("Unexpected message"),
                 }
 
@@ -2652,8 +2667,11 @@ mod tests {
                 assert_eq!(response.events.len(), 1);
                 let event = &response.events[0];
                 assert_eq!(event.ty, "transfer_on_quasar");
-                assert!(event.attributes.contains(&attr("destination_address", destination_address.to_string())));
-            },
+                assert!(event.attributes.contains(&attr(
+                    "destination_address",
+                    destination_address.to_string()
+                )));
+            }
             Err(e) => panic!("Unexpected error: {:?}", e),
         }
     }
@@ -2683,13 +2701,19 @@ mod tests {
         let amounts = coins(1000, "atom");
 
         // Call the function
-        let result = execute_transfer_quasar(deps.as_mut(), env.clone(), destination_address.clone(), amounts.clone(), sender.clone());
+        let result = execute_transfer_quasar(
+            deps.as_mut(),
+            env.clone(),
+            destination_address.clone(),
+            amounts.clone(),
+            sender.clone(),
+        );
 
         // Check that the result is an Err with Unauthorized error
         match result {
             Ok(_) => panic!("Expected error but got Ok"),
             Err(e) => match e {
-                ContractError::Unauthorized {} => {},
+                ContractError::Unauthorized {} => {}
                 _ => panic!("Unexpected error: {:?}", e),
             },
         }
