@@ -137,6 +137,20 @@ pub fn swap(
         .add_event(event))
 }
 
+pub fn get_denom(text: &str) -> &str {
+    if !text.contains("\n") {
+        return text;
+    }
+    let digits = text
+        .chars()
+        .into_iter()
+        .rev()
+        .take_while(|c| c.is_ascii_digit())
+        .count();
+    let denom = &text[2..(text.len() - digits - 2)];
+    return denom;
+}
+
 fn get_denoms(pool: PoolResponse) -> (String, String) {
     if let Some(pool) = pool.pool {
         if let Ok(pool) =
@@ -152,7 +166,10 @@ fn get_denoms(pool: PoolResponse) -> (String, String) {
         let cl_pool: Result<osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool, _> =
             pool.try_into();
         if let Ok(pool) = cl_pool {
-            return (pool.token0, pool.token1);
+            return (
+                get_denom(&pool.token0).to_string(),
+                get_denom(&pool.token1).to_string(),
+            );
         }
     }
 
