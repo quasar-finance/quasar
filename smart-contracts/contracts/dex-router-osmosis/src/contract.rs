@@ -298,16 +298,23 @@ pub fn remove_path(
 
     let key = (offer_denom.clone(), ask_denom.clone());
     let paths = PATHS.may_load(deps.storage, key.clone())?;
-    println!("{:?}", key);
-    println!("{:?}", paths);
     let paths = try_remove_path(paths, &path, offer_denom.clone(), ask_denom.clone())?;
-    println!("{:?}", paths);
     if let Some(paths) = paths {
-        PATHS.save(deps.storage, key, &paths)?;
+        PATHS.save(deps.storage, key.clone(), &paths)?;
     } else {
-        PATHS.remove(deps.storage, key);
+        PATHS.remove(deps.storage, key.clone());
     }
 
+    let mut event = Event::new(_CONTRACT_NAME)
+        .add_attribute("operation", "remove path")
+        .add_attribute("key", format!("{:?}", key))
+        .add_attribute(
+            "path",
+            path.iter()
+                .map(|pool_id| pool_id.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
+        );
     if bidirectional {
         let reverse_key = (ask_denom.clone(), offer_denom.clone());
         let paths = PATHS.may_load(deps.storage, reverse_key.clone())?;
@@ -315,13 +322,14 @@ pub fn remove_path(
         path.reverse();
         let paths = try_remove_path(paths, &path, ask_denom.clone(), offer_denom.clone())?;
         if let Some(paths) = paths {
-            PATHS.save(deps.storage, reverse_key, &paths)?;
+            PATHS.save(deps.storage, reverse_key.clone(), &paths)?;
         } else {
-            PATHS.remove(deps.storage, reverse_key);
+            PATHS.remove(deps.storage, reverse_key.clone());
         }
+        event = event.add_attribute("key", format!("{:?}", reverse_key));
     }
 
-    Ok(Response::default())
+    Ok(Response::default().add_event(event))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
