@@ -317,8 +317,7 @@ mod tests {
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
-                        recommended_swap_route: None,
-                        force_swap_route: false,
+                        forced_swap_route: None,
                         claim_after: None,
                     },
                 )),

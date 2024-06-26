@@ -9,8 +9,6 @@ mod tests {
     use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::assert_approx_eq;
     use cosmwasm_std::{Coin, Uint128};
-    use cw_dex_router::operations::SwapOperationBase;
-    use cw_dex_router::operations::SwapOperationsListUnchecked;
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -325,15 +323,14 @@ mod tests {
         wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                force_swap_route: true,
-                swap_routes: vec![SwapAsset {
+                swap_assets: vec![SwapAsset {
                     token_in_denom: DENOM_REWARD.to_string(),
                     pool_id_0: swap_pools_ids[2],
                     pool_id_1: swap_pools_ids[1],
-                    recommended_swap_route_token_0: Option::from(SwapOperationsListUnchecked::new(
+                    forced_swap_route_token_0: Option::from(SwapOperationsListUnchecked::new(
                         path1,
                     )),
-                    recommended_swap_route_token_1: Option::from(SwapOperationsListUnchecked::new(
+                    forced_swap_route_token_1: Option::from(SwapOperationsListUnchecked::new(
                         path2,
                     )),
                 }],
