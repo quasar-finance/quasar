@@ -15,12 +15,13 @@ use cw20_base::contract::{
 };
 use cw20_base::state::{MinterData, TokenInfo, TOKEN_INFO};
 use cw_utils::parse_instantiate_response_data;
+use lp_strategy::exit_protocol::execute_transfer_on_quasar;
 use lp_strategy::msg::ConfigResponse;
 use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{bond, claim, force_claim, force_unbond, unbond, update_cap};
+use crate::execute::{bond, claim, execute_transfer_quasar, force_claim, force_unbond, unbond, update_cap};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
@@ -265,6 +266,10 @@ pub fn execute(
         }
         ExecuteMsg::ForceUnbond { addresses } => force_unbond(deps, env, info, addresses),
         ExecuteMsg::ForceClaim { addresses } => force_claim(deps, env, info, addresses),
+        ExecuteMsg::TransferQuasar {
+            destination_address,
+            amounts,
+        } => execute_transfer_quasar(deps, env, destination_address, amounts, info.sender),
     }
 }
 

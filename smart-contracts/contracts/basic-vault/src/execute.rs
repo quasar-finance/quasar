@@ -1,7 +1,4 @@
-use cosmwasm_std::{
-    attr, coin, to_json_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, Uint128, WasmMsg,
-};
+use cosmwasm_std::{attr, coin, to_json_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint128, WasmMsg, Addr, CosmosMsg, BankMsg, Event};
 
 use cw20::BalanceResponse;
 use cw20_base::contract::execute_burn;
@@ -677,6 +674,32 @@ pub fn force_claim(
             .add_attributes(unbond_response.attributes);
     }
     Ok(res)
+}
+
+pub fn execute_transfer_quasar(
+    deps: DepsMut,
+    env: Env,
+    destination_address: Addr,
+    amounts: Vec<Coin>,
+    sender: Addr,
+) -> Result<Response, ContractError> {
+    // validate admin
+    is_contract_admin(&deps.querier, &env, &sender)?;
+
+    // validate destination address on local chain
+    let to_address = deps.api.addr_validate(destination_address.as_str())?;
+
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: to_address.to_string(),
+            amount: amounts,
+        }))
+        .add_event(Event::new("transfer_on_quasar")
+            .add_attribute(
+                "destination_address",
+                destination_address.clone().to_string().clone(),
+            ))
+    )
 }
 
 #[cfg(test)]

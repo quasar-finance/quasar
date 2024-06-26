@@ -2568,3 +2568,130 @@ fn test_force_claim() {
         ]
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR, MockQuerier, MockStorage, MockApi};
+    use cosmwasm_std::{attr, coin, coins, BankMsg, Coin, CosmosMsg, Event, OwnedDeps, Querier, QuerierResult, SystemError, ContractResult, ContractInfoResponse, from_binary, to_binary, Empty, WasmQuery, QueryRequest, Addr};
+    use crate::error::ContractError;
+    use std::marker::PhantomData;
+    use crate::execute::execute_transfer_quasar;
+
+    // Custom mock querier
+    pub struct CustomQuerier {
+        base: MockQuerier,
+        admin: String,
+    }
+
+    impl CustomQuerier {
+        pub fn new(admin: String) -> Self {
+            CustomQuerier {
+                base: MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]),
+                admin,
+            }
+        }
+    }
+
+    impl Querier for CustomQuerier {
+        fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
+            let request: std::result::Result<QueryRequest<Empty>, _> = cosmwasm_std::from_slice(bin_request);
+            if let Ok(QueryRequest::Wasm(WasmQuery::ContractInfo { contract_addr })) = request {
+                if contract_addr == MOCK_CONTRACT_ADDR {
+                    let mut contract_info = ContractInfoResponse::new(0, "creator".to_string());
+                    contract_info.admin = Some(self.admin.clone());
+                    return QuerierResult::Ok(ContractResult::Ok(to_binary(&contract_info).unwrap()));
+                }
+            }
+            self.base.raw_query(bin_request)
+        }
+    }
+    #[test]
+    fn test_execute_transfer_quasar() {
+        // Create custom querier with admin set to "admin"
+        let admin = "admin".to_string();
+        let custom_querier = CustomQuerier::new(admin.clone());
+
+        // Create mock dependencies with custom querier
+        let mut deps = OwnedDeps {
+            storage: MockStorage::new(),
+            api: MockApi::default(),
+            querier: custom_querier,
+            custom_query_type: PhantomData,
+        };
+
+        // Create mock environment
+        let env = mock_env();
+
+        // Define sender and destination addresses
+        let sender = Addr::unchecked("admin");
+        let destination_address = Addr::unchecked("destination");
+
+        // Define the amounts to transfer
+        let amounts = coins(1000, "atom");
+
+        // Create a mock info with the sender address
+        let info = mock_info(sender.as_str(), &[]);
+
+        // Call the function
+        let result = execute_transfer_quasar(deps.as_mut(), env.clone(), destination_address.clone(), amounts.clone(), sender.clone());
+
+        // Check that the result is Ok and contains the expected response
+        match result {
+            Ok(response) => {
+                // Check the messages
+                assert_eq!(response.messages.len(), 1);
+                match &response.messages[0].msg {
+                    CosmosMsg::Bank(BankMsg::Send { to_address, amount }) => {
+                        assert_eq!(to_address, destination_address.as_str());
+                        assert_eq!(amount, &amounts);
+                    },
+                    _ => panic!("Unexpected message"),
+                }
+
+                // Check the events and attributes
+                assert_eq!(response.events.len(), 1);
+                let event = &response.events[0];
+                assert_eq!(event.ty, "transfer_on_quasar");
+                assert!(event.attributes.contains(&attr("destination_address", destination_address.to_string())));
+            },
+            Err(e) => panic!("Unexpected error: {:?}", e),
+        }
+    }
+
+    #[test]
+    fn test_execute_transfer_quasar_unauthorized() {
+        // Create custom querier with admin set to "admin"
+        let admin = "admin".to_string();
+        let custom_querier = CustomQuerier::new(admin.clone());
+
+        // Create mock dependencies with custom querier
+        let mut deps = OwnedDeps {
+            storage: MockStorage::new(),
+            api: MockApi::default(),
+            querier: custom_querier,
+            custom_query_type: PhantomData,
+        };
+
+        // Create mock environment
+        let env = mock_env();
+
+        // Define sender and destination addresses
+        let sender = Addr::unchecked("not_admin");
+        let destination_address = Addr::unchecked("destination");
+
+        // Define the amounts to transfer
+        let amounts = coins(1000, "atom");
+
+        // Call the function
+        let result = execute_transfer_quasar(deps.as_mut(), env.clone(), destination_address.clone(), amounts.clone(), sender.clone());
+
+        // Check that the result is an Err with Unauthorized error
+        match result {
+            Ok(_) => panic!("Expected error but got Ok"),
+            Err(e) => match e {
+                ContractError::Unauthorized {} => {},
+                _ => panic!("Unexpected error: {:?}", e),
+            },
+        }
+    }
+}
