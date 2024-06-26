@@ -34,7 +34,7 @@ cw20-staking = "0.11.1"
 apollo-cw-asset = "0.1.2"
 mars-owner = "2.0.0"
 quasar-types = { path = "packages/quasar-types" }
-dex-router-osmosis = { path = "contracts/dex-router-osmosis" }
+dex-router-osmosis = { path = "contracts/dex-router-osmosis", features = ["library"] }
 
 # SDK
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}
