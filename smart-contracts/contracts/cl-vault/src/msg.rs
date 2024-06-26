@@ -1,6 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     query::{
@@ -89,10 +90,8 @@ pub struct ModifyRangeMsg {
     pub ratio_of_swappable_funds_to_use: Decimal,
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
-    /// recommended swap route to take
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    /// whether or not to force the swap route
-    pub force_swap_route: bool,
+    /// forced swap route to take
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
     pub claim_after: Option<u64>,
 }

@@ -5,6 +5,7 @@ use crate::{
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 /// metadata useful for display purposes
 #[cw_serde]
@@ -149,9 +150,7 @@ pub struct ModifyRangeState {
     // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
     // the recommended path to take for the swap
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    // whether or not to force the swap route
-    pub force_swap_route: bool,
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

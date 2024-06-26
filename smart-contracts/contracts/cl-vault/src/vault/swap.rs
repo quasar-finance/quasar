@@ -1,4 +1,5 @@
 use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::msgs::swap_msg;
 use crate::state::POOL_CONFIG;
@@ -23,6 +24,7 @@ pub struct SwapParams {
     pub token_in_denom: String,
     pub token_out_min_amount: Uint128,
     pub token_out_denom: String,
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
 pub fn execute_swap_non_vault_funds(
@@ -93,8 +95,7 @@ pub fn execute_swap_non_vault_funds(
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_0,
                 token_out_denom: pool_token_0,
-                recommended_swap_route: current_swap_asset.recommended_swap_route_token_0,
-                force_swap_route,
+                forced_swap_route: current_swap_asset.forced_swap_route_token_0,
             },
         )?);
         swap_msgs.push(swap_msg(
@@ -106,8 +107,7 @@ pub fn execute_swap_non_vault_funds(
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_1,
                 token_out_denom: pool_token_1,
-                recommended_swap_route: current_swap_asset.recommended_swap_route_token_1,
-                force_swap_route,
+                forced_swap_route: current_swap_asset.forced_swap_route_token_1,
             },
         )?);
     }
@@ -209,8 +209,7 @@ mod tests {
             token_out_min_amount,
             token_in_denom,
             token_out_denom,
-            recommended_swap_route: None,
-            force_swap_route: false,
+            forced_swap_route: None,
         };
 
         let result = super::swap_msg(&deps_mut, &env, swap_params).unwrap();

@@ -30,6 +30,7 @@ use osmosis_std::types::osmosis::{
         MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
     },
     gamm::v1beta1::MsgSwapExactAmountInResponse,
+    poolmanager::v1beta1::SwapAmountInRoute,
 };
 use std::str::FromStr;
 
@@ -65,8 +66,7 @@ pub fn execute_update_range(
     max_slippage: Decimal,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
-    recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    force_swap_route: bool,
+    forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
@@ -92,8 +92,7 @@ pub fn execute_update_range(
         new_range_position_ids: vec![],
         ratio_of_swappable_funds_to_use,
         twap_window_seconds,
-        recommended_swap_route,
-        force_swap_route,
+        forced_swap_route,
     };
 
     execute_update_range_ticks(deps, env, info, modify_range_config, claim_after)
@@ -487,8 +486,7 @@ fn calculate_swap_amount(
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.to_string(),
-            recommended_swap_route: mrs.recommended_swap_route,
-            force_swap_route: mrs.force_swap_route,
+            forced_swap_route: mrs.forced_swap_route,
         },
     )?;
 
@@ -746,7 +744,6 @@ mod tests {
             Decimal::one(),
             45,
             None,
-            false,
             None,
         )
         .unwrap();
@@ -835,8 +832,7 @@ mod tests {
                     max_slippage: Decimal::zero(),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
-                    recommended_swap_route: None,
-                    force_swap_route: false,
+                    forced_swap_route: None,
                 }),
             )
             .unwrap();

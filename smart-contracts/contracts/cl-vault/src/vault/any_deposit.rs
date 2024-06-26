@@ -1,4 +1,3 @@
-use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
     attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
@@ -343,6 +342,7 @@ fn calculate_swap_amount(
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.clone(),
+            forced_swap_route: None, // TODO: check this None
         },
     )?;
 
