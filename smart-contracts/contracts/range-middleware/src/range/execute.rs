@@ -117,21 +117,11 @@ fn execute_pop_update(
     let next = ranges.updates.pop_front();
     if let Some(next) = next {
         // TODO assert that the pending range is properly decremented here
-        PENDING_RANGES.save(deps.storage, vault_address.clone(), &ranges)?;
-
         let response = match next {
-            UpdateActions::CreatePosition(msg) => {
-                do_create_position(&vault_address, msg)?
-            }
-            UpdateActions::DeletePosition(msg) => {
-                do_delete_position(&vault_address, msg)?
-            }
-            UpdateActions::DecreaseFunds(msg) => {
-                do_decrease_funds(&vault_address, msg)?
-            }
-            UpdateActions::IncreaseFunds(msg) => {
-                do_increase_funds(&vault_address, msg)?
-            }
+            UpdateActions::CreatePosition(msg) => do_create_position(&vault_address, msg)?,
+            UpdateActions::DeletePosition(msg) => do_delete_position(&vault_address, msg)?,
+            UpdateActions::DecreaseFunds(msg) => do_decrease_funds(&vault_address, msg)?,
+            UpdateActions::IncreaseFunds(msg) => do_increase_funds(&vault_address, msg)?,
             UpdateActions::NewRange(msg) => {
                 // if the range was fully executed
                 let params = params.ok_or(ContractError::NoRangeExecutionParams {
@@ -144,9 +134,11 @@ fn execute_pop_update(
                         .push_front(UpdateActions::NewRange(msg.clone()))
                 }
 
-                do_move_position(deps, params, msg, vault_address.clone())?
+                do_move_position(params, msg, vault_address.clone())?
             }
         };
+
+        PENDING_RANGES.save(deps.storage, vault_address.clone(), &ranges)?;
 
         Ok(response
             .add_attribute("range_executed", "true")
@@ -211,7 +203,6 @@ fn do_increase_funds(
     .add_attribute("update", "increase_funds"))
 }
 pub fn do_move_position(
-    deps: DepsMut,
     params: RangeExecutionParams,
     new_range: NewRange,
     vault_address: Addr,
@@ -246,4 +237,87 @@ pub fn call_vault(vault: Addr, msg: Binary) -> Result<Response, ContractError> {
     };
 
     Ok(Response::new().add_message(msg))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::VecDeque;
+
+    use cl_vault::msg::CreatePosition;
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Addr, Decimal, MessageInfo,
+    };
+    use cw_dex_router::operations::SwapOperationsListBase;
+
+    use crate::state::{NewRange, RangeUpdates, UpdateActions, PENDING_RANGES, RANGE_EXECUTOR_ADMIN};
+
+    use super::{execute_pop_update, RangeExecutionParams};
+
+    #[test]
+    fn pop_move_position_partial_execution_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let sender = "alice";
+        let info = MessageInfo {
+            sender: Addr::unchecked(sender),
+            funds: vec![],
+        };
+        RANGE_EXECUTOR_ADMIN.save(deps.as_mut().storage, &Addr::unchecked(sender)).unwrap();
+
+        let vault_address = "contract1";
+
+        let mut updates = VecDeque::new();
+        updates.push_back(UpdateActions::NewRange(NewRange {
+            position_id: 1,
+            lower_price: Decimal::zero(),
+            upper_price: Decimal::one(),
+        }));
+        updates.push_back(UpdateActions::CreatePosition(CreatePosition {
+            lower_price: Decimal::from_ratio(1_u128, 2_u128),
+            upper_price: Decimal::one(),
+            claim_after: None,
+        }));
+
+        let range_update = RangeUpdates {
+            updates,
+            cl_vault_address: vault_address.to_string(),
+        };
+
+        PENDING_RANGES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked(vault_address),
+                &range_update,
+            )
+            .unwrap();
+
+        let params = RangeExecutionParams {
+            max_slippage: Decimal::percent(99),
+            ratio_of_swappable_funds_to_use: Decimal::percent(10),
+            twap_window_seconds: 24,
+            recommended_swap_route: SwapOperationsListBase::<String>::new(vec![]),
+            force_swap_route: false,
+            claim_after: None,
+        };
+
+        let res = execute_pop_update(
+            deps.as_mut(),
+            env,
+            info,
+            vault_address.to_string(),
+            Some(params),
+        )
+        .unwrap();
+
+        assert_eq!(
+            PENDING_RANGES
+                .load(deps.as_mut().storage, Addr::unchecked(vault_address))
+                .unwrap(),
+            range_update
+        )
+    }
+
+    #[test]
+    fn pop_move_position_complete_execution_works() {}
 }
