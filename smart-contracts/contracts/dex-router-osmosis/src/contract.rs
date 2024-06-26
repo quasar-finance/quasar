@@ -8,10 +8,9 @@ use cw2::set_contract_version;
 use mars_owner::OwnerInit::SetInitialOwner;
 use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{
-    MsgSwapExactAmountIn, PoolResponse, PoolmanagerQuerier, SwapAmountInRoute,
+    MsgSwapExactAmountIn, PoolmanagerQuerier, SwapAmountInRoute, TotalPoolLiquidityResponse,
 };
 
-use prost::Message;
 use quasar_types::error::assert_fund_length;
 use std::str::FromStr;
 
@@ -137,26 +136,22 @@ pub fn swap(
         .add_event(event))
 }
 
-fn get_denoms(pool: PoolResponse) -> (String, String) {
-    if let Some(pool) = pool.pool {
-        if let Ok(pool) =
-            osmosis_std::types::osmosis::gamm::poolmodels::stableswap::v1beta1::Pool::decode(
-                pool.value.as_slice(),
+fn get_denoms(deps: &Deps, path: &[u64]) -> StdResult<Vec<(String, String)>> {
+    let pool_querier = PoolmanagerQuerier::new(&deps.querier);
+    let liquidity: Result<Vec<TotalPoolLiquidityResponse>, StdError> = path
+        .iter()
+        .map(|pool_id| pool_querier.total_pool_liquidity(*pool_id))
+        .collect();
+    let liquidity = liquidity?;
+    Ok(liquidity
+        .into_iter()
+        .map(|liq| {
+            (
+                liq.liquidity[0].denom.clone(),
+                liq.liquidity[1].denom.clone(),
             )
-        {
-            return (
-                pool.pool_liquidity[0].denom.clone(),
-                pool.pool_liquidity[1].denom.clone(),
-            );
-        }
-        let cl_pool: Result<osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool, _> =
-            pool.try_into();
-        if let Ok(pool) = cl_pool {
-            return (pool.token0, pool.token1);
-        }
-    }
-
-    panic!("Looks like we forgot to support some pools from osmosis")
+        })
+        .collect())
 }
 
 pub fn set_path(
@@ -169,13 +164,7 @@ pub fn set_path(
 ) -> Result<Response, ContractError> {
     OWNER.assert_owner(deps.storage, &info.sender)?;
     assert_path(&path)?;
-    let pool_querier = PoolmanagerQuerier::new(&deps.querier);
-    let pools: Result<Vec<PoolResponse>, StdError> = path
-        .iter()
-        .map(|pool_id| pool_querier.pool(*pool_id))
-        .collect();
-    let pools = pools?;
-    let denoms: Vec<(String, String)> = pools.into_iter().map(get_denoms).collect();
+    let denoms = get_denoms(&deps.as_ref(), &path)?;
     let key = (offer_denom.clone(), ask_denom.clone());
 
     let mut offer_denom = offer_denom;
