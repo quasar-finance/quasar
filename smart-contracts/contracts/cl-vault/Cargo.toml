@@ -53,8 +53,8 @@ cw-utils = { workspace = true }
 cw2 = { workspace = true }
 num_enum = { workspace = true }
 apollo-cw-asset = { workspace = true }
-cw-dex-router = {workspace = true}
-cw-dex-osmosis = {workspace = true}
+dex-router-osmosis = {workspace = true}
+# cw-dex-osmosis = {workspace = true}
 
 ## todo update this in dex router code first as this has been deprecated
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}

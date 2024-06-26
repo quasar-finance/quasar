@@ -25,7 +25,6 @@ use cosmwasm_std::{
     attr, to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
     MessageInfo, Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
         MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,

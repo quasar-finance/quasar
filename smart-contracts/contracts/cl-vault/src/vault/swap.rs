@@ -1,5 +1,4 @@
 use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 
 use crate::helpers::msgs::swap_msg;
 use crate::state::POOL_CONFIG;
@@ -24,8 +23,6 @@ pub struct SwapParams {
     pub token_in_denom: String,
     pub token_out_min_amount: Uint128,
     pub token_out_denom: String,
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    pub force_swap_route: bool,
 }
 
 pub fn execute_swap_non_vault_funds(

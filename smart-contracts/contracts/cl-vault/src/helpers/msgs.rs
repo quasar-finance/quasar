@@ -3,11 +3,8 @@ use cosmwasm_std::{
     attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Uint128,
     WasmMsg,
 };
-use cw_dex_router::{
-    msg::{
-        BestPathForPairResponse, ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg,
-    },
-    operations::SwapOperationsListUnchecked,
+use dex_router_osmosis::msg::{
+    BestPathForPairResponse, ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
@@ -96,9 +93,9 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
     let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
         Some(operations) => deps.querier.query_wasm_smart(
             dex_router_address.to_string(),
-            &DexRouterQueryMsg::SimulateSwapOperations {
-                offer_amount: params.token_in_amount,
-                operations,
+            &DexRouterQueryMsg::SimulateSwaps {
+                offer: todo!(),
+                path: todo!(),
             },
         )?,
         None => 0u128.into(),
@@ -106,10 +103,8 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
     let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
         dex_router_address.to_string(),
         &DexRouterQueryMsg::BestPathForPair {
-            offer_asset: offer_asset.into(),
-            ask_asset: ask_asset.into(),
-            exclude_paths: None,
-            offer_amount: params.token_in_amount,
+            offer: todo!(),
+            ask_denom: todo!(),
         },
     )?;
     let best_out = match best_path.clone() {
@@ -138,13 +133,13 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
             params.token_out_min_amount,
         ))
     } else if best_out.ge(&recommended_out) {
-        let operations = best_path
-            .ok_or(ContractError::MissingBestPath {})?
-            .operations
-            .into();
+        // let operations = best_path
+        //     .ok_or(ContractError::MissingBestPath {})?
+        //     .operations
+        //     .into();
         cw_dex_execute_swap_operations_msg(
             &dex_router_address,
-            operations,
+            todo!(),
             params.token_out_min_amount,
             &params.token_in_denom.to_string(),
             params.token_in_amount,
@@ -185,18 +180,18 @@ fn osmosis_swap_exact_amount_in_msg(
 
 fn cw_dex_execute_swap_operations_msg(
     dex_router_address: &Addr,
-    operations: SwapOperationsListUnchecked,
+    path: Vec<SwapAmountInRoute>,
     token_out_min_amount: Uint128,
     token_in_denom: &String,
     token_in_amount: Uint128,
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_json_binary(&DexRouterExecuteMsg::ExecuteSwapOperations {
-            operations,
+        msg: to_json_binary(&DexRouterExecuteMsg::Swap {
+            path,
+            out_denom: todo!(),
             minimum_receive: Some(token_out_min_amount),
             to: None,
-            offer_amount: None,
         })?,
         funds: vec![Coin {
             denom: token_in_denom.to_string(),

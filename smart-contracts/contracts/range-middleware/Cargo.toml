@@ -41,7 +41,7 @@ cw2 ={ workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-cw-dex-router = {workspace = true}
+dex-router-osmosis = { workspace = true }
 
 cl-vault = {path = "../cl-vault", features = ["library"]}
 

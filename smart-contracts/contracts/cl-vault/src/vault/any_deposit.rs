@@ -3,8 +3,6 @@ use cosmwasm_std::{
     attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
-use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
-
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
@@ -334,10 +332,6 @@ fn calculate_swap_amount(
         // });
     }
 
-    let pool: cw_dex_router::operations::Pool = cw_dex_router::operations::Pool::Osmosis(
-        cw_dex_osmosis::OsmosisPool::unchecked(pool_config.pool_id),
-    );
-
     // generate a swap message with recommended path as the current
     // pool on which the vault is running
     let swap_msg = swap_msg(
@@ -349,14 +343,6 @@ fn calculate_swap_amount(
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.clone(),
-            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
-                SwapOperationBase {
-                    pool,
-                    offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
-                    ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
-                },
-            ])),
-            force_swap_route: false,
         },
     )?;
 
