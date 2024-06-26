@@ -42,8 +42,8 @@ schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 dex-router-osmosis = { workspace = true }
-
 cl-vault = {path = "../cl-vault", features = ["library"]}
+osmosis-std = "0.25.0"
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }
