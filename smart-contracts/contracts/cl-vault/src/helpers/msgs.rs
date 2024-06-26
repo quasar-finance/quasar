@@ -90,68 +90,68 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
     let native = AssetInfo::Native(params.token_out_denom.to_string());
     let ask_asset = native;
 
-    let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
-        Some(operations) => deps.querier.query_wasm_smart(
-            dex_router_address.to_string(),
-            &DexRouterQueryMsg::SimulateSwaps {
-                offer: todo!(),
-                path: todo!(),
-            },
-        )?,
-        None => 0u128.into(),
-    };
-    let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
-        dex_router_address.to_string(),
-        &DexRouterQueryMsg::BestPathForPair {
-            offer: todo!(),
-            ask_denom: todo!(),
-        },
-    )?;
-    let best_out = match best_path.clone() {
-        Some(best_path) => best_path.return_amount,
-        None => 0u128.into(),
-    };
+    // let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
+    //     Some(operations) => deps.querier.query_wasm_smart(
+    //         dex_router_address.to_string(),
+    //         &DexRouterQueryMsg::SimulateSwaps {
+    //             offer: todo!(),
+    //             path: todo!(),
+    //         },
+    //     )?,
+    //     None => 0u128.into(),
+    // };
+    // let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
+    //     dex_router_address.to_string(),
+    //     &DexRouterQueryMsg::BestPathForPair {
+    //         offer: todo!(),
+    //         ask_denom: todo!(),
+    //     },
+    // )?;
+    // let best_out = match best_path.clone() {
+    //     Some(best_path) => best_path.return_amount,
+    //     None => 0u128.into(),
+    // };
 
     // if we need to force the route
-    if params.force_swap_route {
-        match params.recommended_swap_route {
-            Some(recommended_swap_route) => cw_dex_execute_swap_operations_msg(
+    if params.forced_swap_route.is_some() {
+        match params.forced_swap_route {
+            Some(forced_swap_route) => cw_dex_execute_swap_operations_msg(
                 &dex_router_address,
-                recommended_swap_route,
+                forced_swap_route,
                 params.token_out_min_amount,
                 &params.token_in_denom.to_string(),
                 params.token_in_amount,
             ),
             None => Err(ContractError::TryForceRouteWithoutRecommendedSwapRoute {}),
         }
-    } else if best_out.is_zero() && recommended_out.is_zero() {
-        Ok(osmosis_swap_exact_amount_in_msg(
-            env,
-            pool_route,
-            params.token_in_amount,
-            &params.token_in_denom.to_string(),
-            params.token_out_min_amount,
-        ))
-    } else if best_out.ge(&recommended_out) {
-        // let operations = best_path
-        //     .ok_or(ContractError::MissingBestPath {})?
-        //     .operations
-        //     .into();
-        cw_dex_execute_swap_operations_msg(
-            &dex_router_address,
-            todo!(),
-            params.token_out_min_amount,
-            &params.token_in_denom.to_string(),
-            params.token_in_amount,
-        )
+    // } else if best_out.is_zero() && recommended_out.is_zero() {
+    //     Ok(osmosis_swap_exact_amount_in_msg(
+    //         env,
+    //         pool_route,
+    //         params.token_in_amount,
+    //         &params.token_in_denom.to_string(),
+    //         params.token_out_min_amount,
+    //     ))
+    // } else if best_out.ge(&recommended_out) {
+    //     // let operations = best_path
+    //     //     .ok_or(ContractError::MissingBestPath {})?
+    //     //     .operations
+    //     //     .into();
+    //     cw_dex_execute_swap_operations_msg(
+    //         &dex_router_address,
+    //         todo!(),
+    //         params.token_out_min_amount,
+    //         &params.token_in_denom.to_string(),
+    //         params.token_in_amount,
+    //     )
     } else {
         // recommended_out > best_out
-        let recommended_swap_route = params
-            .recommended_swap_route
-            .ok_or(ContractError::MissingRecommendedSwapRoute {})?;
+        // let recommended_swap_route = params
+        //     .recommended_swap_route
+        //     .ok_or(ContractError::MissingRecommendedSwapRoute {})?;
         cw_dex_execute_swap_operations_msg(
             &dex_router_address,
-            recommended_swap_route, // will be some here
+            vec![], // will be None here, should it be None?
             params.token_out_min_amount,
             &params.token_in_denom.to_string(),
             params.token_in_amount,
