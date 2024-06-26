@@ -1,4 +1,4 @@
-use burn_coins::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use token_burner::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_schema::write_api;
 
 fn main() {

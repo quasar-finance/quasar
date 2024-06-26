@@ -1,5 +1,6 @@
 [package]
-name = "burn_coins"
+name = "token-burner"
+authors = ["Arham chordia <Arham@quasar.fi>"]
 version = "0.1.0"
 edition = "2021"
 
