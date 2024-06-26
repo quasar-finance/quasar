@@ -1,11 +1,8 @@
 #[cfg(test)]
 pub mod initialize {
-    use apollo_cw_asset::{AssetInfoBase, AssetInfoUnchecked};
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
-    use cw_dex_router::msg::ExecuteMsg as DexExecuteMsg;
-    use cw_dex_router::msg::InstantiateMsg as DexInstantiate;
-    use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultInfoResponse;
+    use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
@@ -544,21 +541,9 @@ pub mod initialize {
             wasm.execute(
                 &dex_router,
                 &DexExecuteMsg::SetPath {
-                    offer_asset: AssetInfoUnchecked::Native(
-                        pools_coins[index][0].denom.to_string(),
-                    ),
-                    ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
-                    path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                        pool: cw_dex_router::operations::Pool::Osmosis(
-                            cw_dex_osmosis::OsmosisPool::unchecked(*pool_id),
-                        ),
-                        offer_asset_info: AssetInfoBase::Native(
-                            pools_coins[index][0].denom.to_string(),
-                        ),
-                        ask_asset_info: AssetInfoBase::Native(
-                            pools_coins[index][1].denom.to_string(),
-                        ),
-                    }]),
+                    offer_denom: pools_coins[index][0].denom.to_string(),
+                    ask_denom: pools_coins[index][1].denom.to_string(),
+                    path: vec![*pool_id],
                     bidirectional: true,
                 },
                 vec![].as_ref(),
@@ -571,24 +556,9 @@ pub mod initialize {
         wasm.execute(
             &dex_router,
             &DexExecuteMsg::SetPath {
-                offer_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
-                ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
-                path: SwapOperationsListUnchecked::new(vec![
-                    SwapOperationBase {
-                        pool: cw_dex_router::operations::Pool::Osmosis(
-                            cw_dex_osmosis::OsmosisPool::unchecked(pools[1]),
-                        ),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                    },
-                    SwapOperationBase {
-                        pool: cw_dex_router::operations::Pool::Osmosis(
-                            cw_dex_osmosis::OsmosisPool::unchecked(pools[0]),
-                        ),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
-                    },
-                ]),
+                offer_denom: DENOM_REWARD.to_string(),
+                ask_denom: DENOM_BASE.to_string(),
+                path: vec![1, 0],
                 bidirectional: true,
             },
             sort_tokens(vec![]).as_ref(),
@@ -679,8 +649,7 @@ pub mod initialize {
                     max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
-                    recommended_swap_route: None,
-                    force_swap_route: false,
+                    forced_swap_route: None,
                     claim_after: None,
                 },
             )),

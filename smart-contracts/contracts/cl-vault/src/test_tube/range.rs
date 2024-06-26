@@ -74,7 +74,7 @@ mod test {
             app,
             contract_address,
             _dex_router_addr,
-            vault_pool_id,
+            _vault_pool_id,
             _swap_pools_ids,
             admin,
             _deposit_ratio,

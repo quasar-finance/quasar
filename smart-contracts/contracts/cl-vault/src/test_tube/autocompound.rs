@@ -6,7 +6,6 @@ mod tests {
     use std::ops::Sub;
     use std::str::FromStr;
 
-    use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::assert_approx_eq;
     use cosmwasm_std::{Coin, Uint128};
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
@@ -290,30 +289,30 @@ mod tests {
 
         // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-        // Define CW Dex Router swap routes
-        let path1 = vec![
-            SwapOperationBase::new(
-                cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-                    swap_pools_ids[1],
-                )),
-                AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-            ),
-            SwapOperationBase::new(
-                cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-                    swap_pools_ids[2],
-                )),
-                AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                AssetInfoBase::Native(DENOM_BASE.to_string()),
-            ),
-        ];
-        let path2 = vec![SwapOperationBase::new(
-            cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-                swap_pools_ids[1],
-            )),
-            AssetInfoBase::Native(DENOM_REWARD.to_string()),
-            AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-        )];
+        // // Define CW Dex Router swap routes
+        // let path1 = vec![
+        //     SwapOperationBase::new(
+        //         cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
+        //             swap_pools_ids[1],
+        //         )),
+        //         AssetInfoBase::Native(DENOM_REWARD.to_string()),
+        //         AssetInfoBase::Native(DENOM_QUOTE.to_string()),
+        //     ),
+        //     SwapOperationBase::new(
+        //         cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
+        //             swap_pools_ids[2],
+        //         )),
+        //         AssetInfoBase::Native(DENOM_QUOTE.to_string()),
+        //         AssetInfoBase::Native(DENOM_BASE.to_string()),
+        //     ),
+        // ];
+        // let path2 = vec![SwapOperationBase::new(
+        //     cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
+        //         swap_pools_ids[1],
+        //     )),
+        //     AssetInfoBase::Native(DENOM_REWARD.to_string()),
+        //     AssetInfoBase::Native(DENOM_QUOTE.to_string()),
+        // )];
 
         // Swap non vault funds to vault funds
         // 50000000000ustride to 49500000000uatom as spot price 1.0 less swap_fees
@@ -327,12 +326,14 @@ mod tests {
                     token_in_denom: DENOM_REWARD.to_string(),
                     pool_id_0: swap_pools_ids[2],
                     pool_id_1: swap_pools_ids[1],
-                    forced_swap_route_token_0: Option::from(SwapOperationsListUnchecked::new(
-                        path1,
-                    )),
-                    forced_swap_route_token_1: Option::from(SwapOperationsListUnchecked::new(
-                        path2,
-                    )),
+                    // forced_swap_route_token_0: Option::from(SwapOperationsListUnchecked::new(
+                    //     path1,
+                    // )),
+                    // forced_swap_route_token_1: Option::from(SwapOperationsListUnchecked::new(
+                    //     path2,
+                    // )),
+                    forced_swap_route_token_0: None,
+                    forced_swap_route_token_1: None,
                 }],
             }),
             &[],
