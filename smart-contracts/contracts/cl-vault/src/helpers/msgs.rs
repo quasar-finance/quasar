@@ -1,11 +1,8 @@
-use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
     attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Uint128,
     WasmMsg,
 };
-use dex_router_osmosis::msg::{
-    BestPathForPairResponse, ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg,
-};
+use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
@@ -86,9 +83,8 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
 
     // we know we have a dex_router, so we can unwrap
     let dex_router_address = dex_router.clone().unwrap();
-    let offer_asset = AssetInfo::Native(params.token_in_denom.to_string());
-    let native = AssetInfo::Native(params.token_out_denom.to_string());
-    let ask_asset = native;
+    // let offer_asset = AssetInfo::Native(params.token_in_denom.to_string());
+    // let native = AssetInfo::Native(params.token_out_denom.to_string());
 
     // let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
     //     Some(operations) => deps.querier.query_wasm_smart(
@@ -118,9 +114,10 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
             Some(forced_swap_route) => cw_dex_execute_swap_operations_msg(
                 &dex_router_address,
                 forced_swap_route,
-                params.token_out_min_amount,
-                &params.token_in_denom.to_string(),
+                params.token_in_denom.to_string(),
                 params.token_in_amount,
+                params.token_out_denom.to_string(),
+                params.token_out_min_amount,
             ),
             None => Err(ContractError::TryForceRouteWithoutRecommendedSwapRoute {}),
         }
@@ -152,9 +149,10 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
         cw_dex_execute_swap_operations_msg(
             &dex_router_address,
             vec![], // will be None here, should it be None?
-            params.token_out_min_amount,
-            &params.token_in_denom.to_string(),
+            params.token_in_denom.to_string(),
             params.token_in_amount,
+            params.token_out_denom.to_string(),
+            params.token_out_min_amount,
         )
     }
 }
@@ -181,20 +179,21 @@ fn osmosis_swap_exact_amount_in_msg(
 fn cw_dex_execute_swap_operations_msg(
     dex_router_address: &Addr,
     path: Vec<SwapAmountInRoute>,
-    token_out_min_amount: Uint128,
-    token_in_denom: &String,
+    token_in_denom: String,
     token_in_amount: Uint128,
+    token_out_denom: String,
+    token_out_min_amount: Uint128,
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
         msg: to_json_binary(&DexRouterExecuteMsg::Swap {
             path,
-            out_denom: todo!(),
+            out_denom: token_out_denom,
             minimum_receive: Some(token_out_min_amount),
             to: None,
         })?,
         funds: vec![Coin {
-            denom: token_in_denom.to_string(),
+            denom: token_in_denom,
             amount: token_in_amount,
         }],
     }

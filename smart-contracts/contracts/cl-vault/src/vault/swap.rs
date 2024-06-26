@@ -31,7 +31,6 @@ pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    force_swap_route: bool,
     swap_assets: Vec<SwapAsset>,
 ) -> Result<Response, ContractError> {
     // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.

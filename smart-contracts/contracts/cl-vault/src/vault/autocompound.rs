@@ -20,6 +20,7 @@ use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
 
+// TODO: This should be deprecated in favor of a field as forced_swap_route: Option<Vec<SwapAmountInRoute>>
 #[cw_serde]
 pub struct SwapAsset {
     pub token_in_denom: String,

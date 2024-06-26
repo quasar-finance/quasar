@@ -130,10 +130,9 @@ pub fn execute(
                         claim_after,
                     )?,
                 ),
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                    force_swap_route,
-                    swap_routes,
-                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_assets } => {
+                    execute_swap_non_vault_funds(deps, env, info, swap_assets)
+                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
