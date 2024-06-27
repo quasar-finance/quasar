@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Coin, Uint128};
+use mars_owner::OwnerUpdate;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 #[cw_serde]
@@ -24,6 +25,7 @@ pub enum ExecuteMsg {
         path: Vec<u64>,
         bidirectional: bool,
     },
+    UpdateOwner(OwnerUpdate),
 }
 
 #[cw_serde]

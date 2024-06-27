@@ -67,6 +67,7 @@ pub fn execute(
             path,
             bidirectional,
         } => remove_path(deps, info, offer_denom, ask_denom, path, bidirectional),
+        ExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
     }
 }
 
