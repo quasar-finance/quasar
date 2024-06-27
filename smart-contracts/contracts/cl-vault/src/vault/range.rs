@@ -206,7 +206,6 @@ pub fn handle_withdraw_position_reply(
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
     // we can fix this by going straight into a swap-deposit-merge before creating any positions
 
-    // todo: Check if needs LTE or just LT
     // 0 token0 and current_tick > lower_tick
     // 0 token1 and current_tick < upper_tick
     // if (lower < current < upper) && amount0 == 0  || amount1 == 0
@@ -808,7 +807,7 @@ mod tests {
         //         .find(|a| { a.key == "token_in" })
         //         .unwrap()
         //         .value,
-        //     "5962token1" // TODO: number changed
+        //     "5962token1"
         // );
 
         // SECOND CASE STARTS HERE

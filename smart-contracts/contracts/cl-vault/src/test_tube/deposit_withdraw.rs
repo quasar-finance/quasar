@@ -48,8 +48,6 @@ mod tests {
             )
             .unwrap();
 
-        // TODO: Check this -> Certain deposit amounts do not work here due to an off by one error in Osmosis cl code. The value here is chosen to specifically work
-
         /*
         user:assets: AssetsBalanceResponse { balances: [Coin { 281243579389884 "uatom" }, Coin { 448554353093648 "uosmo" }] }
         1_000_000_000_000_000

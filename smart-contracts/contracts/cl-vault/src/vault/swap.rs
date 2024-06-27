@@ -76,7 +76,7 @@ pub fn execute_swap_non_vault_funds(
             .checked_add(Uint128::new(1))?
             .checked_div(Uint128::new(2))?;
 
-        // TODO: We should be passing the max_slippage from outside as we do during ModifyRange
+        // TODO_FUTURE: We should be passing the max_slippage from outside as we do during ModifyRange
         let token_out_min_amount_0 = part_0_amount.checked_multiply_ratio(
             vault_config.swap_max_slippage.numerator(),
             vault_config.swap_max_slippage.denominator(),
@@ -154,7 +154,6 @@ pub fn execute_swap_non_vault_funds(
 //     let pm_querier =
 //         osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier::new(querier);
 
-//     // todo: verify that we should be concatenating amount and denom or if we should just send token in amount as string
 //     let result = pm_querier.estimate_swap_exact_amount_in(
 //         pool_config.pool_id,
 //         token_in_amount.to_string() + token_in_denom,

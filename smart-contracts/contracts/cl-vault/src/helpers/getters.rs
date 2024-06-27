@@ -182,7 +182,6 @@ pub fn get_depositable_tokens(
 
 //     let liquidity_y = delta_y.checked_div(denominator)?;
 
-//     // todo: check this is what we want
 //     Ok((
 //         liquidity_x.atomics().try_into()?,
 //         liquidity_y.atomics().try_into()?,

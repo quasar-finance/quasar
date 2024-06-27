@@ -28,7 +28,7 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// swap max slippage // TODO: This is unused. This should be used on any swap operations where we pass an offchain computed slippage parameter
+    /// swap max slippage
     pub swap_max_slippage: Decimal,
     /// Dex router address
     pub dex_router: Addr,
@@ -61,7 +61,6 @@ pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status"
 #[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
-    // todo: Verify in instantiate message
     pub token0: String,
     pub token1: String,
 }

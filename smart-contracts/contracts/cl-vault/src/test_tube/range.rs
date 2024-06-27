@@ -5,9 +5,12 @@ mod test {
     use cosmwasm_std::{coin, Coin, Decimal, Uint128};
     use osmosis_std::types::{
         cosmos::base::v1beta1,
-        osmosis::concentratedliquidity::{
-            poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-            v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
+        osmosis::{
+            concentratedliquidity::{
+                poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
+                v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
+            },
+            poolmanager::v1beta1::SwapAmountInRoute,
         },
     };
     use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, Wasm};
@@ -91,12 +94,6 @@ mod test {
             )
             .unwrap();
 
-        // // Define CW Dex Router swap route to force
-        // let path1 = SwapAmountInRoute {
-        //     pool_id: todo!(),
-        //     token_out_denom: todo!(),
-        // };
-
         let _result = wasm
             .execute(
                 contract_address.as_str(),
@@ -127,7 +124,66 @@ mod test {
             .unwrap();
     }
 
-    // TODO: move_range_cw_dex_works with forced route
+    // TODO: further enhance this forced swap test logic
+    #[test]
+    #[ignore]
+    fn move_range_cw_dex_works_forced_swap_route() {
+        let (
+            app,
+            contract_address,
+            _dex_router_addr,
+            vault_pool_id,
+            _swap_pools_ids,
+            admin,
+            _deposit_ratio,
+            _deposit_ratio_approx,
+        ) = fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
+        let wasm = Wasm::new(&app);
+
+        let _before_position: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+
+        // Define CW Dex Router swap route to force
+        // In this case we are going from in range, to out of range to the upper side, so we swap all the quote token to base token
+        let path1 = SwapAmountInRoute {
+            pool_id: vault_pool_id,
+            token_out_denom: DENOM_BASE.to_string(),
+        };
+
+        let _result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("400").unwrap(),
+                        upper_price: Decimal::from_str("1466").unwrap(),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        forced_swap_route: Some(vec![path1]),
+                        claim_after: None,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let _after_position: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+    }
 
     #[test]
     #[ignore]
