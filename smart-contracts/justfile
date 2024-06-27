@@ -18,6 +18,8 @@ test-tube:
 test-tube-dev: workspace-optimize
     cargo test --features "test-tube"
 
+download-deps:
+
 workspace-optimize:
     #!/bin/bash
     if [[ $(uname -m) == 'arm64' ]]; then docker run --rm -v "$(pwd)":/code \
