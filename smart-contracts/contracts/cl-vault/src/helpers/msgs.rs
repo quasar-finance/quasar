@@ -142,7 +142,6 @@ fn cw_dex_execute_swap_operations_msg(
             path: Some(path),
             out_denom: token_out_denom,
             minimum_receive: Some(token_out_min_amount),
-            to: None,
         })?,
         funds: vec![Coin {
             denom: token_in_denom,
