@@ -17,7 +17,6 @@ fn test_swap_without_funds_throws() {
         path: None,
         out_denom: "test".to_string(),
         minimum_receive: None,
-        to: None,
     };
 
     let info = mock_info("user", &[]);
@@ -37,7 +36,6 @@ fn test_swap_with_too_many_funds_throws() {
         path: None,
         out_denom: "test".to_string(),
         minimum_receive: None,
-        to: None,
     };
 
     let info = mock_info("user", &[coin(1000, "uosmo"), coin(1000, "uatom")]);
