@@ -6,18 +6,16 @@ mod tests {
     use std::ops::Sub;
     use std::str::FromStr;
 
-    use apollo_cw_asset::AssetInfoBase;
     use cosmwasm_std::assert_approx_eq;
     use cosmwasm_std::{Coin, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
-    use cw_dex_router::operations::SwapOperationBase;
-    use cw_dex_router::operations::SwapOperationsListUnchecked;
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
     use crate::msg::QueryMsg;
+    use crate::msg::SwapOperation;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::AssetsBalanceResponse;
@@ -29,26 +27,25 @@ mod tests {
     use crate::test_tube::initialize::initialize::INITIAL_POSITION_BURN;
     use crate::test_tube::initialize::initialize::PERFORMANCE_FEE_DEFAULT;
     use crate::test_tube::initialize::initialize::{
-        fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
+        fixture_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
         DENOM_REWARD, DEPOSIT_AMOUNT,
     };
-    use crate::vault::autocompound::SwapAsset;
 
     const DENOM_REWARD_AMOUNT: u128 = 100000000000;
 
     #[test]
     #[ignore]
-    fn test_autocompound_with_rewards() {
+    fn test_autocompound_with_rewards_swap_non_vault_funds() {
         let (
             app,
             contract_address,
             _dex_router_addr,
             _vault_pool_id,
-            pools_ids,
+            swap_pools_ids,
             admin,
             deposit_ratio,
             deposit_ratio_approx,
-        ) = fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
+        ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
         let bm = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
@@ -293,25 +290,6 @@ mod tests {
 
         // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-        // Define CW Dex Router swap routes
-        let path1 = vec![
-            SwapOperationBase::new(
-                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
-                AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-            ),
-            SwapOperationBase::new(
-                cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[0])),
-                AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                AssetInfoBase::Native(DENOM_BASE.to_string()),
-            ),
-        ];
-        let path2 = vec![SwapOperationBase::new(
-            cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools_ids[1])),
-            AssetInfoBase::Native(DENOM_REWARD.to_string()),
-            AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-        )];
-
         // Swap non vault funds to vault funds
         // 50000000000ustride to 49500000000uatom as spot price 1.0 less swap_fees
         // 50000000000ustride to 49500000000uosmo as spot price 1.0 less swap_fees
@@ -320,15 +298,24 @@ mod tests {
         wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                force_swap_route: false,
-                swap_routes: vec![SwapAsset {
+                swap_operations: vec![SwapOperation {
                     token_in_denom: DENOM_REWARD.to_string(),
-                    recommended_swap_route_token_0: Option::from(SwapOperationsListUnchecked::new(
-                        path1,
-                    )),
-                    recommended_swap_route_token_1: Option::from(SwapOperationsListUnchecked::new(
-                        path2,
-                    )),
+                    pool_id_0: swap_pools_ids[2],
+                    pool_id_1: swap_pools_ids[1],
+                    forced_swap_route_token_0: Some(vec![
+                        SwapAmountInRoute {
+                            pool_id: swap_pools_ids[1],
+                            token_out_denom: DENOM_QUOTE.to_string(),
+                        },
+                        SwapAmountInRoute {
+                            pool_id: swap_pools_ids[2],
+                            token_out_denom: DENOM_BASE.to_string(),
+                        },
+                    ]),
+                    forced_swap_route_token_1: Some(vec![SwapAmountInRoute {
+                        pool_id: swap_pools_ids[1],
+                        token_out_denom: DENOM_QUOTE.to_string(),
+                    }]),
                 }],
             }),
             &[],

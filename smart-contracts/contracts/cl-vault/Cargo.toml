@@ -36,7 +36,7 @@ library = []
 optimize = """docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.15.0
+  cosmwasm/rust-optimizer:0.16.0
 """
 
 [dependencies]
@@ -53,11 +53,9 @@ cw-utils = { workspace = true }
 cw2 = { workspace = true }
 num_enum = { workspace = true }
 apollo-cw-asset = { workspace = true }
+dex-router-osmosis = {workspace = true}
 
 ## todo update this in dex router code first as this has been deprecated
-cw-dex = { workspace = true }
-
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", features = ["library", "osmosis"]}
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
 
 [dev-dependencies]

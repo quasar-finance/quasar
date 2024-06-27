@@ -1,6 +1,6 @@
-use crate::helpers::get_unused_balances;
+use crate::helpers::coinlist::CoinList;
+use crate::helpers::getters::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
-use crate::rewards::CoinList;
 use crate::state::DEX_ROUTER;
 use crate::state::{
     PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM,

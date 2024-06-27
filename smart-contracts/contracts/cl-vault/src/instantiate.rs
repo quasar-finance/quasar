@@ -11,7 +11,8 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::{get_asset0_value, must_pay_one_or_two};
+use crate::helpers::assert::must_pay_one_or_two;
+use crate::helpers::getters::get_asset0_value;
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;

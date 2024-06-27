@@ -7,7 +7,8 @@ use cw2::set_contract_version;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 
 use crate::error::ContractError;
-use crate::helpers::sort_tokens;
+use crate::helpers::generic::sort_tokens;
+use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
@@ -18,10 +19,6 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::{
-    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
-    prepend_claim_msg,
-};
 #[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
@@ -32,6 +29,9 @@ use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
+};
+use crate::vault::distribution::{
+    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
 use crate::vault::exact_deposit::execute_exact_deposit;
 use crate::vault::merge::{
@@ -113,8 +113,7 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
-                    recommended_swap_route,
-                    force_swap_route,
+                    forced_swap_route,
                     claim_after,
                 }) => prepend_claim_msg(
                     &env,
@@ -127,15 +126,13 @@ pub fn execute(
                         max_slippage,
                         ratio_of_swappable_funds_to_use,
                         twap_window_seconds,
-                        recommended_swap_route,
-                        force_swap_route,
+                        forced_swap_route,
                         claim_after,
                     )?,
                 ),
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                    force_swap_route,
-                    swap_routes,
-                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_operations } => {
+                    execute_swap_non_vault_funds(deps, env, info, swap_operations)
+                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -289,15 +286,13 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[allow(deprecated)]
     use crate::{
-        rewards::CoinList, state::USER_REWARDS,
-        test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH,
-    };
-    use crate::{
+        helpers::coinlist::CoinList,
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
+    #[allow(deprecated)]
+    use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},

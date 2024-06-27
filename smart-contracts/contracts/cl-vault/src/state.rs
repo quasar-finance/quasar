@@ -1,10 +1,11 @@
-use crate::rewards::CoinList;
-use crate::vault::merge::CurrentMergeWithdraw;
-use crate::vault::range::SwapDirection;
+use crate::{
+    helpers::coinlist::CoinList,
+    vault::{merge::CurrentMergeWithdraw, range::SwapDirection},
+};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_storage_plus::{Deque, Item, Map};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 /// metadata useful for display purposes
 #[cw_serde]
@@ -27,7 +28,7 @@ pub struct VaultConfig {
     pub performance_fee: Decimal,
     /// Account to receive fee payments
     pub treasury: Addr,
-    /// swap max slippage // TODO: This is unused
+    /// swap max slippage
     pub swap_max_slippage: Decimal,
     /// Dex router address
     pub dex_router: Addr,
@@ -60,7 +61,6 @@ pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status"
 #[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
-    // todo: Verify in instantiate message
     pub token0: String,
     pub token1: String,
 }
@@ -149,9 +149,7 @@ pub struct ModifyRangeState {
     // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
     // the recommended path to take for the swap
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    // whether or not to force the swap route
-    pub force_swap_route: bool,
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

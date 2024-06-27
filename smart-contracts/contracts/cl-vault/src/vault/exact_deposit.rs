@@ -2,10 +2,11 @@ use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
 
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
-use crate::helpers::{get_asset0_value, get_depositable_tokens, refund_bank_msg};
+use crate::helpers::assert::must_pay_one_or_two;
+use crate::helpers::getters::{get_asset0_value, get_depositable_tokens};
+use crate::helpers::msgs::refund_bank_msg;
 use crate::query::query_total_vault_token_supply;
 use crate::{
-    helpers::must_pay_one_or_two,
     query::query_total_assets,
     state::{POOL_CONFIG, SHARES, VAULT_DENOM},
     ContractError,
@@ -119,8 +120,8 @@ mod tests {
         },
     };
 
-    use crate::helpers::get_depositable_tokens;
     use crate::{
+        helpers::{getters::get_depositable_tokens, msgs::refund_bank_msg},
         state::{Position, POSITION},
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
     };

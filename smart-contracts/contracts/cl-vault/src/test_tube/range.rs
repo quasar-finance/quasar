@@ -10,118 +10,31 @@ mod test {
                 poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
                 v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
             },
-            poolmanager::v1beta1::{MsgSwapExactAmountIn, SwapAmountInRoute},
+            poolmanager::v1beta1::SwapAmountInRoute,
         },
     };
-    use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, PoolManager, Wasm};
+    use osmosis_test_tube::{Account, ConcentratedLiquidity, Module, Wasm};
     use prost::Message;
 
     use crate::{
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
         test_tube::initialize::initialize::{
-            init_test_contract, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+            fixture_default, fixture_dex_router, init_test_contract, ADMIN_BALANCE_AMOUNT,
+            DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
         },
     };
-
-    const ADMIN_BALANCE_AMOUNT: u128 = 340282366920938463463374607431768211455u128;
-    const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
 
     #[test]
     #[ignore]
     fn move_range_works() {
-        // TODO: Evaluate creating a fixture_default() variant i.e. out_of_range_init()
-        let (app, contract, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-            init_test_contract(
-                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-                &[
-                    Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
-                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-                ],
-                MsgCreateConcentratedPool {
-                    sender: "overwritten".to_string(),
-                    denom0: DENOM_BASE.to_string(),
-                    denom1: DENOM_QUOTE.to_string(),
-                    tick_spacing: 100,
-                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-                },
-                21205000,
-                27448000,
-                vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                ],
-                Uint128::zero(),
-                Uint128::zero(),
-                PERFORMANCE_FEE_DEFAULT,
-            );
+        let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
-
-        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -5000000,
-                upper_tick: 500000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        let alice = app
-            .init_account(&[
-                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ])
-            .unwrap();
-
-        // do a swap to move the cur tick
-        let pm = PoolManager::new(&app);
-        pm.swap_exact_amount_in(
-            MsgSwapExactAmountIn {
-                sender: alice.address(),
-                routes: vec![SwapAmountInRoute {
-                    pool_id: cl_pool_id,
-                    token_out_denom: DENOM_BASE.to_string(),
-                }],
-                token_in: Some(v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "1000".to_string(),
-                }),
-                token_out_min_amount: "1".to_string(),
-            },
-            &alice,
-        )
-        .unwrap();
-
-        // let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        // let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _before_position: PositionResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
                     crate::msg::ClQueryMsg::Position {},
                 )),
@@ -130,16 +43,15 @@ mod test {
 
         let _result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
-                        lower_price: Decimal::from_str("400").unwrap(),
-                        upper_price: Decimal::from_str("1466").unwrap(),
+                        lower_price: Decimal::from_str("0.65").unwrap(),
+                        upper_price: Decimal::from_str("1.3").unwrap(),
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
-                        recommended_swap_route: None,
-                        force_swap_route: false,
+                        forced_swap_route: None,
                         claim_after: None,
                     },
                 )),
@@ -150,7 +62,7 @@ mod test {
 
         let _after_position: PositionResponse = wasm
             .query(
-                contract.as_str(),
+                contract_address.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
                     crate::msg::ClQueryMsg::Position {},
                 )),
@@ -160,99 +72,129 @@ mod test {
 
     #[test]
     #[ignore]
-    fn move_range_same_single_side_works() {
-        let (app, contract, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-            init_test_contract(
-                // TODO: Evaluate creating a fixture_default() variant i.e. out_of_range_init()
-                "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-                &[
-                    Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
-                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                    Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-                ],
-                MsgCreateConcentratedPool {
-                    sender: "overwritten".to_string(),
-                    denom0: DENOM_BASE.to_string(),
-                    denom1: DENOM_QUOTE.to_string(),
-                    tick_spacing: 100,
-                    spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-                },
-                21205000,
-                27448000,
-                vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                ],
-                Uint128::zero(),
-                Uint128::zero(),
-                PERFORMANCE_FEE_DEFAULT,
-            );
+    fn move_range_cw_dex_works() {
+        let (
+            app,
+            contract_address,
+            _dex_router_addr,
+            _vault_pool_id,
+            _swap_pools_ids,
+            admin,
+            _deposit_ratio,
+            _deposit_ratio_approx,
+        ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
-        let cl = ConcentratedLiquidity::new(&app);
-        let pm = PoolManager::new(&app);
 
-        // Create a second position (in range) in the pool with the admin user to allow for swapping during update range operation
-        cl.create_position(
-            MsgCreatePosition {
-                pool_id: cl_pool_id,
-                sender: admin.address(),
-                lower_tick: -5000000,
-                upper_tick: 500000,
-                tokens_provided: vec![
-                    v1beta1::Coin {
-                        denom: DENOM_BASE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                    v1beta1::Coin {
-                        denom: DENOM_QUOTE.to_string(),
-                        amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-                    },
-                ],
-                token_min_amount0: Uint128::zero().to_string(),
-                token_min_amount1: Uint128::zero().to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
-
-        let alice = app
-            .init_account(&[
-                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ])
+        let _before_position: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
             .unwrap();
-
-        // do a swap to move the cur tick
-        pm.swap_exact_amount_in(
-            MsgSwapExactAmountIn {
-                sender: alice.address(),
-                routes: vec![SwapAmountInRoute {
-                    pool_id: cl_pool_id,
-                    token_out_denom: DENOM_BASE.to_string(),
-                }],
-                token_in: Some(v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "1000".to_string(),
-                }),
-                token_out_min_amount: "1".to_string(),
-            },
-            &alice,
-        )
-        .unwrap();
-
-        //let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        //let _pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let _result = wasm
             .execute(
-                contract.as_str(),
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("400").unwrap(),
+                        upper_price: Decimal::from_str("1466").unwrap(),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        // forced_swap_route: Some(vec![path1]),
+                        forced_swap_route: None,
+                        claim_after: None,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let _after_position: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+    }
+
+    // TODO: further enhance this forced swap test logic
+    #[test]
+    #[ignore]
+    fn move_range_cw_dex_works_forced_swap_route() {
+        let (
+            app,
+            contract_address,
+            _dex_router_addr,
+            vault_pool_id,
+            _swap_pools_ids,
+            admin,
+            _deposit_ratio,
+            _deposit_ratio_approx,
+        ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
+        let wasm = Wasm::new(&app);
+
+        let _before_position: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+
+        // Define CW Dex Router swap route to force
+        // In this case we are going from in range, to out of range to the upper side, so we swap all the quote token to base token
+        let path1 = SwapAmountInRoute {
+            pool_id: vault_pool_id,
+            token_out_denom: DENOM_BASE.to_string(),
+        };
+
+        let _result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("400").unwrap(),
+                        upper_price: Decimal::from_str("1466").unwrap(),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        forced_swap_route: Some(vec![path1]),
+                        claim_after: None,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let _after_position: PositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::Position {},
+                )),
+            )
+            .unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn move_range_single_side_works() {
+        let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
+        let wasm = Wasm::new(&app);
+
+        let _result = wasm
+            .execute(
+                contract_address.as_str(),
                 &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                     ModifyRangeMsg {
                         lower_price: Decimal::from_str("20.71").unwrap(),
@@ -260,8 +202,26 @@ mod test {
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
-                        recommended_swap_route: None,
-                        force_swap_route: false,
+                        forced_swap_route: None,
+                        claim_after: None,
+                    },
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        let _result = wasm
+            .execute(
+                contract_address.as_str(),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRangeMsg {
+                        lower_price: Decimal::from_str("0.1").unwrap(),
+                        upper_price: Decimal::from_str("0.2").unwrap(),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        forced_swap_route: None,
                         claim_after: None,
                     },
                 )),

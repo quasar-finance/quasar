@@ -4,7 +4,7 @@ use cl_vault::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     range::helpers::is_range_executor_admin,
@@ -24,8 +24,7 @@ pub enum RangeExecuteMsg {
         max_slippage: Decimal,
         ratio_of_swappable_funds_to_use: Decimal,
         twap_window_seconds: u64,
-        recommended_swap_route: SwapOperationsListUnchecked,
-        force_swap_route: bool,
+        forced_swap_route: Option<Vec<SwapAmountInRoute>>,
         claim_after: Option<u64>,
     },
 }
@@ -35,8 +34,7 @@ pub struct RangeExecutionParams {
     pub max_slippage: Decimal,
     pub ratio_of_swappable_funds_to_use: Decimal,
     pub twap_window_seconds: u64,
-    pub recommended_swap_route: SwapOperationsListUnchecked,
-    pub force_swap_route: bool,
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     pub claim_after: Option<u64>,
 }
 
@@ -55,8 +53,7 @@ pub fn execute_range_msg(
             max_slippage,
             ratio_of_swappable_funds_to_use,
             twap_window_seconds,
-            recommended_swap_route,
-            force_swap_route,
+            forced_swap_route,
             claim_after,
         } => execute_new_range(
             deps,
@@ -67,8 +64,7 @@ pub fn execute_range_msg(
                 max_slippage,
                 ratio_of_swappable_funds_to_use,
                 twap_window_seconds,
-                recommended_swap_route,
-                force_swap_route,
+                forced_swap_route,
                 claim_after,
             },
         ),
@@ -152,8 +148,7 @@ pub fn execute_new_range(
                 max_slippage: params.max_slippage,
                 ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
                 twap_window_seconds: params.twap_window_seconds,
-                force_swap_route: params.force_swap_route,
-                recommended_swap_route: Some(params.recommended_swap_route),
+                forced_swap_route: params.forced_swap_route,
                 claim_after: params.claim_after,
             }),
         ))?,
