@@ -786,7 +786,7 @@ dependencies = [
  "mars-owner",
  "osmosis-std 0.24.0",
  "osmosis-test-tube",
- "prost 0.12.4",
+ "prost 0.12.6",
  "quasar-types",
  "thiserror",
 ]
