@@ -126,7 +126,7 @@ pub mod initialize {
     //     )
     // }
 
-    pub fn fixture_cw_dex_router(
+    pub fn fixture_dex_router(
         performance_fee: u64,
     ) -> (
         OsmosisTestApp,

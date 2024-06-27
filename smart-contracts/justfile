@@ -18,10 +18,6 @@ test-tube:
 test-tube-dev: workspace-optimize
     cargo test --features "test-tube"
 
-download-deps:
-	mkdir -p artifacts target
-	#wget https://github.com/quasar-finance/cw-dex-router/releases/latest/download/cw_dex_router-osmosis.wasm -O artifacts/cw_dex_router-osmosis.wasm
-
 workspace-optimize:
     #!/bin/bash
     if [[ $(uname -m) == 'arm64' ]]; then docker run --rm -v "$(pwd)":/code \

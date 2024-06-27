@@ -20,7 +20,7 @@ mod test {
         msg::{ExecuteMsg, ModifyRangeMsg, QueryMsg},
         query::PositionResponse,
         test_tube::initialize::initialize::{
-            fixture_cw_dex_router, fixture_default, init_test_contract, ADMIN_BALANCE_AMOUNT,
+            fixture_default, fixture_dex_router, init_test_contract, ADMIN_BALANCE_AMOUNT,
             DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
         },
     };
@@ -82,7 +82,7 @@ mod test {
             admin,
             _deposit_ratio,
             _deposit_ratio_approx,
-        ) = fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
+        ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         let _before_position: PositionResponse = wasm
@@ -137,7 +137,7 @@ mod test {
             admin,
             _deposit_ratio,
             _deposit_ratio_approx,
-        ) = fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
+        ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
         let _before_position: PositionResponse = wasm

@@ -27,7 +27,7 @@ mod tests {
     use crate::test_tube::initialize::initialize::INITIAL_POSITION_BURN;
     use crate::test_tube::initialize::initialize::PERFORMANCE_FEE_DEFAULT;
     use crate::test_tube::initialize::initialize::{
-        fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
+        fixture_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
         DENOM_REWARD, DEPOSIT_AMOUNT,
     };
 
@@ -45,7 +45,7 @@ mod tests {
             admin,
             deposit_ratio,
             deposit_ratio_approx,
-        ) = fixture_cw_dex_router(PERFORMANCE_FEE_DEFAULT);
+        ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
         let bm = Bank::new(&app);
         let wasm = Wasm::new(&app);
 
