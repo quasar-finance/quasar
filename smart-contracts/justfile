@@ -20,7 +20,7 @@ test-tube-dev: workspace-optimize
 
 download-deps:
 	mkdir -p artifacts target
-	wget https://github.com/quasar-finance/cw-dex-router/releases/latest/download/cw_dex_router.wasm -O artifacts/cw_dex_router.wasm
+	wget https://github.com/quasar-finance/cw-dex-router/releases/latest/download/cw_dex_router-osmosis.wasm -O artifacts/cw_dex_router-osmosis.wasm
 
 workspace-optimize:
     #!/bin/bash
@@ -28,14 +28,14 @@ workspace-optimize:
             --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
             --platform linux/arm64 \
-            cosmwasm/workspace-optimizer-arm64:0.15.0; \
+            cosmwasm/workspace-optimizer-arm64:0.16.0; \
     elif [[ $(uname -m) == 'aarch64' ]]; then docker run --rm -v "$(pwd)":/code \
             --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
             --platform linux/arm64 \
-            cosmwasm/workspace-optimizer-arm64:0.15.0; \
+            cosmwasm/workspace-optimizer-arm64:0.16.0; \
     elif [[ $(uname -m) == 'x86_64' ]]; then docker run --rm -v "$(pwd)":/code \
             --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
             --platform linux/amd64 \
-            cosmwasm/workspace-optimizer:0.15.0; fi
+            cosmwasm/workspace-optimizer:0.16.0; fi

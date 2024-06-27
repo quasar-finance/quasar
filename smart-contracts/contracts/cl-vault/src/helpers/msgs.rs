@@ -1,14 +1,8 @@
-use apollo_cw_asset::AssetInfo;
 use cosmwasm_std::{
     attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Uint128,
     WasmMsg,
 };
-use cw_dex_router::{
-    msg::{
-        BestPathForPairResponse, ExecuteMsg as DexRouterExecuteMsg, QueryMsg as DexRouterQueryMsg,
-    },
-    operations::SwapOperationsListUnchecked,
-};
+use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
@@ -89,77 +83,28 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
 
     // we know we have a dex_router, so we can unwrap
     let dex_router_address = dex_router.clone().unwrap();
-    let offer_asset = AssetInfo::Native(params.token_in_denom.to_string());
-    let native = AssetInfo::Native(params.token_out_denom.to_string());
-    let ask_asset = native;
-
-    let recommended_out: Uint128 = match params.recommended_swap_route.clone() {
-        Some(operations) => deps.querier.query_wasm_smart(
-            dex_router_address.to_string(),
-            &DexRouterQueryMsg::SimulateSwapOperations {
-                offer_amount: params.token_in_amount,
-                operations,
-            },
-        )?,
-        None => 0u128.into(),
-    };
-    let best_path: Option<BestPathForPairResponse> = deps.querier.query_wasm_smart(
-        dex_router_address.to_string(),
-        &DexRouterQueryMsg::BestPathForPair {
-            offer_asset: offer_asset.into(),
-            ask_asset: ask_asset.into(),
-            exclude_paths: None,
-            offer_amount: params.token_in_amount,
-        },
-    )?;
-    let best_out = match best_path.clone() {
-        Some(best_path) => best_path.return_amount,
-        None => 0u128.into(),
-    };
 
     // if we need to force the route
-    if params.force_swap_route {
-        match params.recommended_swap_route {
-            Some(recommended_swap_route) => cw_dex_execute_swap_operations_msg(
+    if params.forced_swap_route.is_some() {
+        match params.forced_swap_route {
+            Some(forced_swap_route) => cw_dex_execute_swap_operations_msg(
                 &dex_router_address,
-                recommended_swap_route,
-                params.token_out_min_amount,
-                &params.token_in_denom.to_string(),
+                forced_swap_route,
+                params.token_in_denom.to_string(),
                 params.token_in_amount,
+                params.token_out_denom.to_string(),
+                params.token_out_min_amount,
             ),
             None => Err(ContractError::TryForceRouteWithoutRecommendedSwapRoute {}),
         }
-    } else if best_out.is_zero() && recommended_out.is_zero() {
-        Ok(osmosis_swap_exact_amount_in_msg(
-            env,
-            pool_route,
-            params.token_in_amount,
-            &params.token_in_denom.to_string(),
-            params.token_out_min_amount,
-        ))
-    } else if best_out.ge(&recommended_out) {
-        let operations = best_path
-            .ok_or(ContractError::MissingBestPath {})?
-            .operations
-            .into();
-        cw_dex_execute_swap_operations_msg(
-            &dex_router_address,
-            operations,
-            params.token_out_min_amount,
-            &params.token_in_denom.to_string(),
-            params.token_in_amount,
-        )
     } else {
-        // recommended_out > best_out
-        let recommended_swap_route = params
-            .recommended_swap_route
-            .ok_or(ContractError::MissingRecommendedSwapRoute {})?;
         cw_dex_execute_swap_operations_msg(
             &dex_router_address,
-            recommended_swap_route, // will be some here
-            params.token_out_min_amount,
-            &params.token_in_denom.to_string(),
+            vec![], // will be None here, should it be None?
+            params.token_in_denom.to_string(),
             params.token_in_amount,
+            params.token_out_denom.to_string(),
+            params.token_out_min_amount,
         )
     }
 }
@@ -185,21 +130,22 @@ fn osmosis_swap_exact_amount_in_msg(
 
 fn cw_dex_execute_swap_operations_msg(
     dex_router_address: &Addr,
-    operations: SwapOperationsListUnchecked,
-    token_out_min_amount: Uint128,
-    token_in_denom: &String,
+    path: Vec<SwapAmountInRoute>,
+    token_in_denom: String,
     token_in_amount: Uint128,
+    token_out_denom: String,
+    token_out_min_amount: Uint128,
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
-        msg: to_json_binary(&DexRouterExecuteMsg::ExecuteSwapOperations {
-            operations,
+        msg: to_json_binary(&DexRouterExecuteMsg::Swap {
+            path: Some(path),
+            out_denom: token_out_denom,
             minimum_receive: Some(token_out_min_amount),
             to: None,
-            offer_amount: None,
         })?,
         funds: vec![Coin {
-            denom: token_in_denom.to_string(),
+            denom: token_in_denom,
             amount: token_in_amount,
         }],
     }

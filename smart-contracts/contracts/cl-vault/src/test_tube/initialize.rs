@@ -1,12 +1,8 @@
 #[cfg(test)]
 pub mod initialize {
-    use apollo_cw_asset::{AssetInfoBase, AssetInfoUnchecked};
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
-    use cw_dex::osmosis::OsmosisPool;
-    use cw_dex_router::msg::ExecuteMsg as DexExecuteMsg;
-    use cw_dex_router::msg::InstantiateMsg as DexInstantiate;
-    use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
     use cw_vault_multi_standard::VaultInfoResponse;
+    use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
@@ -144,7 +140,7 @@ pub mod initialize {
     ) {
         init_test_contract_with_dex_router_and_swap_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            "../../artifacts/cw_dex_router.wasm",
+            "../../artifacts/dex_router_osmosis.wasm",
             &[
                 Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
                 Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
@@ -545,19 +541,9 @@ pub mod initialize {
             wasm.execute(
                 &dex_router,
                 &DexExecuteMsg::SetPath {
-                    offer_asset: AssetInfoUnchecked::Native(
-                        pools_coins[index][0].denom.to_string(),
-                    ),
-                    ask_asset: AssetInfoUnchecked::Native(pools_coins[index][1].denom.to_string()),
-                    path: SwapOperationsListUnchecked::new(vec![SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pool_id.clone())),
-                        offer_asset_info: AssetInfoBase::Native(
-                            pools_coins[index][0].denom.to_string(),
-                        ),
-                        ask_asset_info: AssetInfoBase::Native(
-                            pools_coins[index][1].denom.to_string(),
-                        ),
-                    }]),
+                    offer_denom: pools_coins[index][0].denom.to_string(),
+                    ask_denom: pools_coins[index][1].denom.to_string(),
+                    path: vec![*pool_id],
                     bidirectional: true,
                 },
                 vec![].as_ref(),
@@ -565,31 +551,6 @@ pub mod initialize {
             )
             .unwrap();
         }
-
-        // Set additional path
-        wasm.execute(
-            &dex_router,
-            &DexExecuteMsg::SetPath {
-                offer_asset: AssetInfoUnchecked::Native(DENOM_REWARD.to_string()),
-                ask_asset: AssetInfoUnchecked::Native(DENOM_BASE.to_string()),
-                path: SwapOperationsListUnchecked::new(vec![
-                    SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools[1])),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_REWARD.to_string()),
-                    },
-                    SwapOperationBase {
-                        pool: cw_dex::Pool::Osmosis(OsmosisPool::unchecked(pools[0])),
-                        offer_asset_info: AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-                        ask_asset_info: AssetInfoBase::Native(DENOM_BASE.to_string()),
-                    },
-                ]),
-                bidirectional: true,
-            },
-            sort_tokens(vec![]).as_ref(),
-            &admin,
-        )
-        .unwrap();
     }
 
     // TESTS
@@ -674,8 +635,7 @@ pub mod initialize {
                     max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
-                    recommended_swap_route: None,
-                    force_swap_route: false,
+                    forced_swap_route: None,
                     claim_after: None,
                 },
             )),

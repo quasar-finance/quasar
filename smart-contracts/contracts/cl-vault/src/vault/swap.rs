@@ -1,11 +1,11 @@
 use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::msgs::swap_msg;
+use crate::msg::SwapOperation;
 use crate::state::POOL_CONFIG;
 use crate::{state::VAULT_CONFIG, ContractError};
 
-use super::autocompound::SwapAsset;
 use super::range::assert_range_admin;
 
 /// SwapCalculationResult holds the result of a swap calculation
@@ -24,30 +24,29 @@ pub struct SwapParams {
     pub token_in_denom: String,
     pub token_out_min_amount: Uint128,
     pub token_out_denom: String,
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    pub force_swap_route: bool,
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
 pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    force_swap_route: bool,
-    swap_assets: Vec<SwapAsset>,
+    swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
     // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_range_admin(deps.storage, &info.sender)?;
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    if swap_assets.is_empty() {
-        return Err(ContractError::EmptyCompoundAssetList {});
+
+    if swap_operations.is_empty() {
+        return Err(ContractError::EmptySwapOperations {});
     }
 
     let mut swap_msgs: Vec<CosmosMsg> = vec![];
 
-    for current_swap_asset in swap_assets {
-        let token_in_denom = current_swap_asset.token_in_denom.clone();
+    for swap_operation in swap_operations {
+        let token_in_denom = swap_operation.token_in_denom.clone();
         let pool_token_0 = pool_config.token0.clone();
         let pool_token_1 = pool_config.token1.clone();
 
@@ -61,7 +60,7 @@ pub fn execute_swap_non_vault_funds(
             .querier
             .query_balance(
                 env.clone().contract.address,
-                current_swap_asset.clone().token_in_denom,
+                swap_operation.clone().token_in_denom,
             )?
             .amount;
 
@@ -77,7 +76,7 @@ pub fn execute_swap_non_vault_funds(
             .checked_add(Uint128::new(1))?
             .checked_div(Uint128::new(2))?;
 
-        // TODO: We should be passing the max_slippage from outside as we do during ModifyRange
+        // TODO_FUTURE: We should be passing the max_slippage from outside as we do during ModifyRange
         let token_out_min_amount_0 = part_0_amount.checked_multiply_ratio(
             vault_config.swap_max_slippage.numerator(),
             vault_config.swap_max_slippage.denominator(),
@@ -91,26 +90,24 @@ pub fn execute_swap_non_vault_funds(
             &deps,
             &env,
             SwapParams {
-                pool_id: current_swap_asset.pool_id_0,
+                pool_id: swap_operation.pool_id_0,
                 token_in_amount: part_0_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_0,
                 token_out_denom: pool_token_0,
-                recommended_swap_route: current_swap_asset.recommended_swap_route_token_0,
-                force_swap_route,
+                forced_swap_route: swap_operation.forced_swap_route_token_0,
             },
         )?);
         swap_msgs.push(swap_msg(
             &deps,
             &env,
             SwapParams {
-                pool_id: current_swap_asset.pool_id_1,
+                pool_id: swap_operation.pool_id_1,
                 token_in_amount: part_1_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_1,
                 token_out_denom: pool_token_1,
-                recommended_swap_route: current_swap_asset.recommended_swap_route_token_1,
-                force_swap_route,
+                forced_swap_route: swap_operation.forced_swap_route_token_1,
             },
         )?);
     }
@@ -157,7 +154,6 @@ pub fn execute_swap_non_vault_funds(
 //     let pm_querier =
 //         osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier::new(querier);
 
-//     // todo: verify that we should be concatenating amount and denom or if we should just send token in amount as string
 //     let result = pm_querier.estimate_swap_exact_amount_in(
 //         pool_config.pool_id,
 //         token_in_amount.to_string() + token_in_denom,
@@ -212,8 +208,7 @@ mod tests {
             token_out_min_amount,
             token_in_denom,
             token_out_denom,
-            recommended_swap_route: None,
-            force_swap_route: false,
+            forced_swap_route: None,
         };
 
         let result = super::swap_msg(&deps_mut, &env, swap_params).unwrap();

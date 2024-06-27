@@ -113,8 +113,7 @@ pub fn execute(
                     max_slippage,
                     ratio_of_swappable_funds_to_use,
                     twap_window_seconds,
-                    recommended_swap_route,
-                    force_swap_route,
+                    forced_swap_route,
                     claim_after,
                 }) => prepend_claim_msg(
                     &env,
@@ -127,15 +126,13 @@ pub fn execute(
                         max_slippage,
                         ratio_of_swappable_funds_to_use,
                         twap_window_seconds,
-                        recommended_swap_route,
-                        force_swap_route,
+                        forced_swap_route,
                         claim_after,
                     )?,
                 ),
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                    force_swap_route,
-                    swap_routes,
-                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_operations } => {
+                    execute_swap_non_vault_funds(deps, env, info, swap_operations)
+                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }

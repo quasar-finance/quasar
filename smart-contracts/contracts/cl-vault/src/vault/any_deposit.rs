@@ -1,11 +1,7 @@
-use apollo_cw_asset::AssetInfoBase;
 use cosmwasm_std::{
     attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
     SubMsgResult, Uint128, Uint256,
 };
-use cw_dex::Pool::Osmosis;
-use cw_dex_router::operations::{SwapOperationBase, SwapOperationsListUnchecked};
-
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
@@ -346,16 +342,7 @@ fn calculate_swap_amount(
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.clone(),
-            recommended_swap_route: Option::from(SwapOperationsListUnchecked::new(vec![
-                SwapOperationBase {
-                    pool: Osmosis(cw_dex::implementations::osmosis::OsmosisPool::unchecked(
-                        pool_config.pool_id,
-                    )),
-                    offer_asset_info: AssetInfoBase::Native(token_in_denom.clone()),
-                    ask_asset_info: AssetInfoBase::Native(token_out_denom.clone()),
-                },
-            ])),
-            force_swap_route: false,
+            forced_swap_route: None, // TODO: check this None
         },
     )?;
 
