@@ -14,7 +14,7 @@ fn test_swap_without_funds_throws() {
     assert!(instantiate(deps.as_mut(), env.clone(), info, msg).is_ok());
 
     let msg = ExecuteMsg::Swap {
-        path: vec![],
+        path: None,
         out_denom: "test".to_string(),
         minimum_receive: None,
         to: None,
@@ -34,7 +34,7 @@ fn test_swap_with_too_many_funds_throws() {
     assert!(instantiate(deps.as_mut(), env.clone(), info, msg).is_ok());
 
     let msg = ExecuteMsg::Swap {
-        path: vec![],
+        path: None,
         out_denom: "test".to_string(),
         minimum_receive: None,
         to: None,

@@ -14,7 +14,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::{
 use quasar_types::error::assert_fund_length;
 use std::str::FromStr;
 
-use crate::error::{assert_path, ContractError};
+use crate::error::{assert_non_empty_path, ContractError};
 use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{RecipientInfo, OWNER, PATHS, RECIPIENT_INFO};
 
@@ -93,30 +93,32 @@ pub fn swap(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    path: Vec<SwapAmountInRoute>,
+    path: Option<Vec<SwapAmountInRoute>>,
     out_denom: String,
     minimum_receive: Option<Uint128>,
     to: Option<String>,
 ) -> Result<Response, ContractError> {
     assert_fund_length(info.funds.len(), 1)?;
     let recipient = to.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
-    let mut path = path;
-    if path.is_empty() {
+    let swap_path = if let Some(path) = path {
+        path
+    } else {
         if let Some(best_path) =
             query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
         {
-            path = best_path.path;
+            best_path.path
         } else {
             return Err(ContractError::NoPathFound {
                 offer: info.funds[0].denom.clone(),
                 ask: out_denom,
             });
         }
-    }
+    };
+    assert_non_empty_path(&swap_path)?;
 
     let msg = MsgSwapExactAmountIn {
         sender: env.contract.address.to_string(),
-        routes: path,
+        routes: swap_path,
         token_in: Some(cosmwasm_to_proto_coins(info.funds.clone())[0].clone()),
         token_out_min_amount: minimum_receive.unwrap_or_default().to_string(),
     };
@@ -163,7 +165,7 @@ pub fn set_path(
     bidirectional: bool,
 ) -> Result<Response, ContractError> {
     OWNER.assert_owner(deps.storage, &info.sender)?;
-    assert_path(&path)?;
+    assert_non_empty_path(&path)?;
     let denoms = get_denoms(&deps.as_ref(), &path)?;
     let key = (offer_denom.clone(), ask_denom.clone());
 
@@ -283,7 +285,7 @@ pub fn remove_path(
     bidirectional: bool,
 ) -> Result<Response, ContractError> {
     OWNER.assert_owner(deps.storage, &info.sender)?;
-    assert_path(&path)?;
+    assert_non_empty_path(&path)?;
 
     let key = (offer_denom.clone(), ask_denom.clone());
     let paths = PATHS.may_load(deps.storage, key.clone())?;

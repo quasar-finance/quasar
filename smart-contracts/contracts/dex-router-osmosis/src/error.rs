@@ -33,7 +33,7 @@ pub enum ContractError {
     EmptyPath {},
 }
 
-pub fn assert_path(path: &[u64]) -> Result<(), ContractError> {
+pub fn assert_non_empty_path<T>(path: &[T]) -> Result<(), ContractError> {
     if path.is_empty() {
         return Err(ContractError::EmptyPath {});
     }
