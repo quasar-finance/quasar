@@ -323,12 +323,10 @@ fn calculate_swap_amount(
         .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
 
     if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::InvalidSwapAssets {});
-        // TODO: Restore this error
-        // return Err(ContractError::BadTokenForSwap {
-        //     base_token: pool_config.token0,
-        //     quote_token: pool_config.token1,
-        // });
+        return Err(ContractError::BadTokenForSwap {
+            base_token: pool_config.token0,
+            quote_token: pool_config.token1,
+        });
     }
 
     // generate a swap message with recommended path as the current
