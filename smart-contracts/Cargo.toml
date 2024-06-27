@@ -12,6 +12,7 @@ members = [
   # "contracts/multihop-router",
   # "packages/quasar-types",
   # "packages/intergamm-bindings",
+  "contracts/token-burner",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
   "contracts/range-middleware",
