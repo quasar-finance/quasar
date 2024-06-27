@@ -14,11 +14,11 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::helpers::generic::sort_tokens;
     use crate::query::AssetsBalanceResponse;
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
     use crate::test_tube::initialize::initialize::{MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
     use crate::{
-        helpers::sort_tokens,
         math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PositionResponse, TotalVaultTokenSupplyResponse},
@@ -171,8 +171,8 @@ mod tests {
         percentage: f64,
     ) {
         let balance = get_user_shares_balance(wasm, contract_address, account);
-        // TODO: get user shares balance
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
+
         // // Before queries
         // let vault_shares_balance_before: TotalVaultTokenSupplyResponse =
         //     get_vault_shares_balance(wasm, contract_address);
@@ -317,8 +317,7 @@ mod tests {
                         max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
                         ratio_of_swappable_funds_to_use: Decimal::one(),
                         twap_window_seconds: 45,
-                        recommended_swap_route: None,
-                        force_swap_route: false,
+                        forced_swap_route: None,
                         claim_after: None,
                     },
                 )),
@@ -466,7 +465,6 @@ mod tests {
         ) {
             // Creating test core
             let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
-                // TODO: evaluate using fixture_default() here
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
                     Coin::new(340282366920938463463374607431768211455, "uosmo"),

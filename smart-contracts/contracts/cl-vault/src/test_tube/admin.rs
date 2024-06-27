@@ -12,7 +12,7 @@ mod tests {
     fn range_admin_update_works() {
         let (_app, _contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
             fixture_default(PERFORMANCE_FEE_DEFAULT);
-        // change the range admin and verify that it works
+        // TODO: change the range admin and verify that it works
     }
 
     #[test]

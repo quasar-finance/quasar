@@ -6,7 +6,6 @@ mod math;
 pub mod msg;
 pub mod query;
 mod reply;
-mod rewards;
 pub mod state;
 mod vault;
 

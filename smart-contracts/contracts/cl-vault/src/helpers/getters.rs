@@ -5,41 +5,14 @@ use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
-use crate::rewards::CoinList;
-use crate::state::ADMIN_ADDRESS;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    attr, coin, Addr, Attribute, BankMsg, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
-    MessageInfo, QuerierWrapper, Storage, Uint128, Uint256,
+    Coin, Decimal, Decimal256, DepsMut, Env, Fraction, QuerierWrapper, Storage, Uint128, Uint256,
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
-/// Returns the Coin of the needed denoms in the order given in denoms
-pub(crate) fn must_pay_one_or_two(
-    info: &MessageInfo,
-    denoms: (String, String),
-) -> Result<(Coin, Coin), ContractError> {
-    if info.funds.len() != 2 && info.funds.len() != 1 {
-        return Err(ContractError::IncorrectAmountFunds);
-    }
-
-    let token0 = info
-        .funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.0)
-        .unwrap_or(coin(0, denoms.0));
-
-    let token1 = info
-        .funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.1)
-        .unwrap_or(coin(0, denoms.1));
-
-    Ok((token0, token1))
-}
+use super::coinlist::CoinList;
 
 /// Calculate the total value of two assets in asset0.
 pub fn get_asset0_value(
@@ -60,29 +33,6 @@ pub fn get_asset0_value(
         .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
 
     Ok(total)
-}
-
-pub(crate) fn must_pay_one_or_two_from_balance(
-    funds: Vec<Coin>,
-    denoms: (String, String),
-) -> Result<(Coin, Coin), ContractError> {
-    if funds.len() < 2 {
-        return Err(ContractError::IncorrectAmountFunds);
-    }
-
-    let token0 = funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.0)
-        .unwrap_or(coin(0, denoms.0));
-
-    let token1 = funds
-        .clone()
-        .into_iter()
-        .find(|coin| coin.denom == denoms.1)
-        .unwrap_or(coin(0, denoms.1));
-
-    Ok((token0, token1))
 }
 
 /// get_spot_price
@@ -197,43 +147,6 @@ pub fn get_depositable_tokens(
     }
 }
 
-/// Generate a bank message and attributes for refunding tokens to a recipient.
-pub fn refund_bank_msg(
-    receiver: Addr,
-    refund0: Option<Coin>,
-    refund1: Option<Coin>,
-) -> Result<Option<(BankMsg, Vec<Attribute>)>, ContractError> {
-    let mut attributes: Vec<Attribute> = vec![];
-    let mut coins: Vec<Coin> = vec![];
-
-    if let Some(refund0) = refund0 {
-        if refund0.amount > Uint128::zero() {
-            attributes.push(attr("refund0_amount", refund0.amount));
-            attributes.push(attr("refund0_denom", refund0.denom.as_str()));
-            coins.push(refund0)
-        }
-    }
-    if let Some(refund1) = refund1 {
-        if refund1.amount > Uint128::zero() {
-            attributes.push(attr("refund1_amount", refund1.amount));
-            attributes.push(attr("refund1_denom", refund1.denom.as_str()));
-            coins.push(refund1)
-        }
-    }
-    let result: Option<(BankMsg, Vec<Attribute>)> = if !coins.is_empty() {
-        Some((
-            BankMsg::Send {
-                to_address: receiver.to_string(),
-                amount: coins,
-            },
-            attributes,
-        ))
-    } else {
-        None
-    };
-    Ok(result)
-}
-
 // /// get_liquidity_needed_for_tokens
 // ///
 // /// this function calculates the liquidity needed for depositing token0 and quote token amounts respectively and returns both.
@@ -269,7 +182,6 @@ pub fn refund_bank_msg(
 
 //     let liquidity_y = delta_y.checked_div(denominator)?;
 
-//     // todo: check this is what we want
 //     Ok((
 //         liquidity_x.atomics().try_into()?,
 //         liquidity_y.atomics().try_into()?,
@@ -385,45 +297,6 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
         .try_into()?;
 
     Ok(swap_amount)
-}
-
-pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, ContractError> {
-    let slippage_multiplier = Decimal::one().checked_sub(slippage)?;
-
-    let adjusted_amount = amount.checked_multiply_ratio(
-        slippage_multiplier.numerator(),
-        slippage_multiplier.denominator(),
-    )?;
-
-    Ok(adjusted_amount)
-}
-
-/// This function compares the address of the message sender (caller) with the current admin
-/// address stored in the state. This provides a convenient way to verify if the caller
-/// is the admin in a single line.
-pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
-    if ADMIN_ADDRESS.load(deps.storage)? != caller {
-        Err(ContractError::Unauthorized {})
-    } else {
-        Ok(caller.clone())
-    }
-}
-
-pub fn round_up_to_nearest_multiple(amount: i64, multiple: i64) -> i64 {
-    let remainder = amount % multiple;
-    if remainder == 0 {
-        amount
-    } else if amount < 0 {
-        amount - remainder
-    } else {
-        amount + multiple - remainder
-    }
-}
-
-pub fn sort_tokens(tokens: Vec<Coin>) -> Vec<Coin> {
-    let mut sorted_tokens = tokens;
-    sorted_tokens.sort_by(|a, b| a.denom.cmp(&b.denom));
-    sorted_tokens
 }
 
 /// this function subtracts out anything from the raw contract balance that isn't dedicated towards user or strategist rewards.
@@ -611,88 +484,15 @@ pub fn get_liquidity_amount_for_unused_funds(
     Ok(max_initial_deposit_liquidity.checked_add(post_swap_liquidity)?)
 }
 
-pub fn extract_attribute_value_by_ty_and_key(
-    events: &[cosmwasm_std::Event],
-    ty: &str,
-    key: &str,
-) -> Option<String> {
-    events
-        .iter()
-        .filter(|event| event.ty == ty)
-        .flat_map(|event| event.attributes.iter())
-        .find(|attr| attr.key == key)
-        .map(|attr| attr.value.clone())
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
 
-    use cosmwasm_std::{coin, testing::mock_dependencies, Addr};
+    use cosmwasm_std::testing::mock_dependencies;
 
     use crate::math::tick::{build_tick_exp_cache, price_to_tick};
 
     use super::*;
-
-    #[test]
-    fn must_pay_one_or_two_works_ordered() {
-        let expected0 = coin(100, "uatom");
-        let expected1 = coin(200, "uosmo");
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![expected0.clone(), expected1.clone()],
-        };
-        let (token0, token1) =
-            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
-        assert_eq!(expected0, token0);
-        assert_eq!(expected1, token1);
-    }
-
-    #[test]
-    fn must_pay_one_or_two_works_unordered() {
-        let expected0 = coin(100, "uatom");
-        let expected1 = coin(200, "uosmo");
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![expected1.clone(), expected0.clone()],
-        };
-        let (token0, token1) =
-            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
-        assert_eq!(expected0, token0);
-        assert_eq!(expected1, token1);
-    }
-
-    #[test]
-    fn must_pay_one_or_two_rejects_three() {
-        let expected0 = coin(100, "uatom");
-        let expected1 = coin(200, "uosmo");
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![expected1, expected0, coin(200, "uqsr")],
-        };
-        let _err =
-            must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap_err();
-    }
-
-    #[test]
-    fn must_pay_one_or_two_accepts_second_token() {
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![coin(200, "uosmo")],
-        };
-        let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
-        assert_eq!((coin(0, "uatom"), coin(200, "uosmo")), res)
-    }
-
-    #[test]
-    fn must_pay_one_or_two_accepts_first_token() {
-        let info = MessageInfo {
-            sender: Addr::unchecked("sender"),
-            funds: vec![coin(200, "uatom")],
-        };
-        let res = must_pay_one_or_two(&info, ("uatom".to_string(), "uosmo".to_string())).unwrap();
-        assert_eq!((coin(200, "uatom"), coin(0, "uosmo")), res)
-    }
 
     #[test]
     fn test_0_to_1_swap() {
@@ -809,53 +609,5 @@ mod tests {
 
             assert_eq!(swap_amount, result);
         }
-    }
-
-    #[test]
-    fn test_round_up_to_nearest_multiple() {
-        assert_eq!(round_up_to_nearest_multiple(10, 5), 10);
-        assert_eq!(round_up_to_nearest_multiple(11, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(12, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(13, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(14, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(15, 5), 15);
-        assert_eq!(round_up_to_nearest_multiple(16, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(17, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(18, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(19, 5), 20);
-        assert_eq!(round_up_to_nearest_multiple(20, 5), 20);
-        // does it also work for negative inputs?
-        assert_eq!(round_up_to_nearest_multiple(-10, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-11, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-12, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-13, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-14, 5), -10);
-        assert_eq!(round_up_to_nearest_multiple(-15, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-16, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-17, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-18, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-19, 5), -15);
-        assert_eq!(round_up_to_nearest_multiple(-20, 5), -20);
-    }
-
-    #[test]
-    fn test_sort_tokens() {
-        let tokens = vec![
-            coin(100, "uatom"),
-            coin(200, "uosmo"),
-            coin(300, "uqsr"),
-            coin(400, "ueth"),
-        ];
-
-        let expected = vec![
-            coin(100, "uatom"),
-            coin(400, "ueth"),
-            coin(200, "uosmo"),
-            coin(300, "uqsr"),
-        ];
-
-        let sorted_tokens = sort_tokens(tokens);
-
-        assert_eq!(sorted_tokens, expected);
     }
 }

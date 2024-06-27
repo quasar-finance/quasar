@@ -4,12 +4,11 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
 
-use crate::helpers::sort_tokens;
+use crate::helpers::coinlist::CoinList;
+use crate::helpers::generic::sort_tokens;
+use crate::helpers::msgs::{collect_incentives_msg, collect_spread_rewards_msg};
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POSITION};
 use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
-
-use super::helpers::CoinList;
-use super::{get_collect_incentives_msg, get_collect_spread_rewards_msg};
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
@@ -18,7 +17,7 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     if matches!(migration_status, MigrationStatus::Open) {
         return Err(ContractError::MigrationStatusOpen {});
     }
-    let msg = get_collect_spread_rewards_msg(deps.as_ref(), env)?;
+    let msg = collect_spread_rewards_msg(deps.as_ref(), env)?;
 
     Ok(Response::new()
         .add_attribute("method", "execute")
@@ -78,7 +77,7 @@ pub fn handle_collect_spread_rewards_reply(
 
     // If claim_after period expired
     if env.block.time.seconds() > claim_timestamp {
-        let msg = get_collect_incentives_msg(deps.as_ref(), env)?;
+        let msg = collect_incentives_msg(deps.as_ref(), env)?;
         // Here, directly update the response without cloning it unnecessarily
         response = response.add_submessage(SubMsg::reply_on_success(
             msg,

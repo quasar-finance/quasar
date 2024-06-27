@@ -1,30 +1,22 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Order;
 use cosmwasm_std::{
     to_json_binary, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
 };
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
-use crate::helpers::{get_unused_balances, must_pay_one_or_two_from_balance};
+use crate::helpers::assert::must_pay_one_or_two_from_balance;
+use crate::helpers::coinlist::CoinList;
+use crate::helpers::getters::get_unused_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
-use crate::rewards::CoinList;
 #[allow(deprecated)]
 use crate::state::USER_REWARDS;
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
-
-#[cw_serde]
-pub struct SwapAsset {
-    pub token_in_denom: String,
-    pub recommended_swap_route_token_0: Option<SwapOperationsListUnchecked>,
-    pub recommended_swap_route_token_1: Option<SwapOperationsListUnchecked>,
-}
 
 pub fn execute_autocompound(
     deps: DepsMut,

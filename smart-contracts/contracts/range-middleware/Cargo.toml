@@ -30,7 +30,7 @@ library = []
 optimize = """docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/optimizer:0.15.0
+  cosmwasm/optimizer:0.16.0
 """
 
 [dependencies]
@@ -41,9 +41,9 @@ cw2 ={ workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-
+dex-router-osmosis = { workspace = true }
 cl-vault = {path = "../cl-vault", features = ["library"]}
-cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch = "feat/deprecate-osmo-gamm", feature = ["library"]}
+osmosis-std = "0.25.0"
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

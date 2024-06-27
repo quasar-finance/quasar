@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Decimal, Uint128};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     query::{
@@ -9,7 +9,6 @@ use crate::{
         UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
-    vault::autocompound::SwapAsset,
 };
 
 /// Extension execute messages for an apollo autocompounding vault
@@ -31,10 +30,7 @@ pub enum ExtensionExecuteMsg {
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
     /// SwapNonVaultFunds
-    SwapNonVaultFunds {
-        force_swap_route: bool,
-        swap_routes: Vec<SwapAsset>,
-    },
+    SwapNonVaultFunds { swap_operations: Vec<SwapOperation> },
 }
 
 /// Extension messages for Authz. This interface basically reexports certain vault functionality
@@ -90,10 +86,8 @@ pub struct ModifyRangeMsg {
     pub ratio_of_swappable_funds_to_use: Decimal,
     /// twap window to use in seconds
     pub twap_window_seconds: u64,
-    /// recommended swap route to take
-    pub recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    /// whether or not to force the swap route
-    pub force_swap_route: bool,
+    /// forced swap route to take
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
     pub claim_after: Option<u64>,
 }
@@ -101,6 +95,16 @@ pub struct ModifyRangeMsg {
 #[cw_serde]
 pub struct MergePositionMsg {
     pub position_ids: Vec<u64>,
+}
+
+// struct used by swap.rs on swap non vault funds
+#[cw_serde]
+pub struct SwapOperation {
+    pub token_in_denom: String,
+    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// Extension query messages for an apollo autocompounding vault

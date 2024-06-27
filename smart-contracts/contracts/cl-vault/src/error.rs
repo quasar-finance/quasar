@@ -98,8 +98,8 @@ pub enum ContractError {
     #[error("Cannot force a recommended route if recommended route is passed in as None")]
     TryForceRouteWithoutRecommendedSwapRoute {},
 
-    #[error("Auto compound swap list is empty")]
-    EmptyCompoundAssetList {},
+    #[error("Swap operations for non vault funds swap cannot be empty")]
+    EmptySwapOperations {},
 
     #[error("Migration status is closed")]
     MigrationStatusClosed {},

@@ -8,7 +8,7 @@ use osmosis_std::types::osmosis::{
 };
 
 use crate::{
-    helpers::{get_unused_balances, sort_tokens},
+    helpers::{generic::sort_tokens, getters::get_unused_balances},
     reply::Replies,
     state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
@@ -162,10 +162,10 @@ fn withdraw_msg(
 
 #[cfg(test)]
 mod tests {
+    use crate::helpers::coinlist::CoinList;
     #[allow(deprecated)]
     use crate::{
         // rewards::CoinList,
-        rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };
@@ -188,7 +188,7 @@ mod tests {
         );
         let env = mock_env();
 
-        // TODO: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
+        // TODO_FUTURE: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
         #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(deps.as_mut().storage, &CoinList::new())

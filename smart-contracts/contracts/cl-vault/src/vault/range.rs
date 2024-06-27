@@ -1,34 +1,36 @@
 use crate::{
-    helpers::{extract_attribute_value_by_ty_and_key, get_twap_price, get_unused_balances},
     helpers::{
-        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+        generic::extract_attribute_value_by_ty_and_key,
+        getters::{
+            get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances,
+        },
+        msgs::swap_msg,
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
-    state::CURRENT_BALANCE,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
-        POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP,
+        MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, RANGE_ADMIN, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
-        swap::swap_msg,
     },
     ContractError,
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
-    Response, Storage, SubMsg, SubMsgResult, Uint128,
+    attr, to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction,
+    MessageInfo, Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
         MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
     },
     gamm::v1beta1::MsgSwapExactAmountInResponse,
+    poolmanager::v1beta1::SwapAmountInRoute,
 };
 use std::str::FromStr;
 
@@ -64,8 +66,7 @@ pub fn execute_update_range(
     max_slippage: Decimal,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
-    recommended_swap_route: Option<SwapOperationsListUnchecked>,
-    force_swap_route: bool,
+    forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
@@ -91,8 +92,7 @@ pub fn execute_update_range(
         new_range_position_ids: vec![],
         ratio_of_swappable_funds_to_use,
         twap_window_seconds,
-        recommended_swap_route,
-        force_swap_route,
+        forced_swap_route,
     };
 
     execute_update_range_ticks(deps, env, info, modify_range_config, claim_after)
@@ -206,7 +206,6 @@ pub fn handle_withdraw_position_reply(
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
     // we can fix this by going straight into a swap-deposit-merge before creating any positions
 
-    // todo: Check if needs LTE or just LT
     // 0 token0 and current_tick > lower_tick
     // 0 token1 and current_tick < upper_tick
     // if (lower < current < upper) && amount0 == 0  || amount1 == 0
@@ -333,7 +332,7 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
-    let calculated_swap: Option<SwapCalculationResult> = calculate_swap_amount(
+    let swap_calc_result = calculate_swap_amount(
         deps,
         env,
         position_id,
@@ -345,37 +344,38 @@ pub fn do_swap_deposit_merge(
     )?;
 
     // Start constructing the response
-    let mut response = Response::new()
+    let response = Response::new()
         .add_attribute("method", "reply")
         .add_attribute("action", "do_swap_deposit_merge");
 
     // Check if there is a swap message and append accordingly
-    if let Some(calculated) = calculated_swap {
-        response = response.add_submessage(SubMsg::reply_on_success(
-            calculated.swap_msg,
-            Replies::Swap.into(),
-        ));
-        response = response.add_attribute(
-            "token_in",
-            format!(
-                "{}{}",
-                calculated.token_in_amount, calculated.token_in_denom
-            ),
-        );
-        response = response.add_attribute(
-            "token_out_min",
-            format!("{}", calculated.token_out_min_amount),
-        );
+    if let Some(calculated) = swap_calc_result {
+        Ok(response
+            .add_submessage(SubMsg::reply_on_success(
+                calculated.swap_msg,
+                Replies::Swap.into(),
+            ))
+            .add_attributes(vec![
+                attr(
+                    "token_in",
+                    format!(
+                        "{}{}",
+                        calculated.token_in_amount, calculated.token_in_denom
+                    ),
+                ),
+                attr(
+                    "token_out_min",
+                    format!("{}", calculated.token_out_min_amount),
+                ),
+            ]))
     } else {
         // If no swap message, add a new position attribute
-        response = response.add_attribute("new_position", position_id.unwrap().to_string());
+        Ok(response.add_attribute("new_position", position_id.unwrap().to_string()))
     }
-
-    Ok(response)
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn calculate_swap_amount(
+fn calculate_swap_amount(
     deps: DepsMut,
     env: Env,
     position_id: Option<u64>,
@@ -441,20 +441,20 @@ pub fn calculate_swap_amount(
         return Ok(None);
     };
 
-    // todo check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
+    // TODO: check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
             SwapDirection::ZeroToOne => (
-                pool_config.token0,
-                pool_config.token1,
+                &pool_config.token0,
+                &pool_config.token1,
                 token_in_amount
                     .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
                 balance0.checked_sub(token_in_amount)?,
             ),
             SwapDirection::OneToZero => (
-                pool_config.token1,
-                pool_config.token0,
+                &pool_config.token1,
+                &pool_config.token0,
                 token_in_amount
                     .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
                 balance1.checked_sub(token_in_amount)?,
@@ -467,20 +467,29 @@ pub fn calculate_swap_amount(
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
 
-    let swap_params = SwapParams {
-        token_in_amount,
-        token_out_min_amount,
-        token_in_denom: token_in_denom.clone(),
-        token_out_denom,
-        recommended_swap_route: mrs.recommended_swap_route,
-        force_swap_route: mrs.force_swap_route,
-    };
+    if !pool_config.pool_contains_token(token_in_denom) {
+        return Err(ContractError::BadTokenForSwap {
+            base_token: pool_config.token0,
+            quote_token: pool_config.token1,
+        });
+    }
 
-    let swap_msg = swap_msg(deps, &env, swap_params)?;
+    let swap_msg = swap_msg(
+        &deps,
+        &env,
+        SwapParams {
+            pool_id: pool_config.pool_id,
+            token_in_amount,
+            token_out_min_amount,
+            token_in_denom: token_in_denom.clone(),
+            token_out_denom: token_out_denom.to_string(),
+            forced_swap_route: mrs.forced_swap_route,
+        },
+    )?;
 
     Ok(Some(SwapCalculationResult {
         swap_msg,
-        token_in_denom,
+        token_in_denom: token_in_denom.to_string(),
         token_in_amount,
         token_out_min_amount,
         position_id: None,
@@ -493,7 +502,6 @@ pub fn handle_swap_reply(
     env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // TODO: Remove handling of data. if we keep reply_on_success in the caller function
     match data.clone() {
         SubMsgResult::Ok(msg) => {
             let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
@@ -733,7 +741,6 @@ mod tests {
             Decimal::one(),
             45,
             None,
-            false,
             None,
         )
         .unwrap();
@@ -798,7 +805,7 @@ mod tests {
         //         .find(|a| { a.key == "token_in" })
         //         .unwrap()
         //         .value,
-        //     "5962token1" // TODO: number changed
+        //     "5962token1"
         // );
 
         // SECOND CASE STARTS HERE
@@ -822,8 +829,7 @@ mod tests {
                     max_slippage: Decimal::zero(),
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
-                    recommended_swap_route: None,
-                    force_swap_route: false,
+                    forced_swap_route: None,
                 }),
             )
             .unwrap();
