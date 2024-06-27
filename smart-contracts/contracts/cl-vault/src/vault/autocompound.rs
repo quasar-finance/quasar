@@ -1,4 +1,3 @@
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Order;
 use cosmwasm_std::{
     to_json_binary, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
@@ -7,7 +6,6 @@ use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::assert::must_pay_one_or_two_from_balance;
 use crate::helpers::coinlist::CoinList;
@@ -19,16 +17,6 @@ use crate::state::USER_REWARDS;
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
-
-// TODO: This should be deprecated in favor of a field as forced_swap_route: Option<Vec<SwapAmountInRoute>>
-#[cw_serde]
-pub struct SwapAsset {
-    pub token_in_denom: String,
-    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
-    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
-}
 
 pub fn execute_autocompound(
     deps: DepsMut,

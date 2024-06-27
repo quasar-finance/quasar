@@ -14,6 +14,7 @@ mod tests {
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
     use crate::msg::QueryMsg;
+    use crate::msg::SwapOperation;
     use crate::msg::UserBalanceQueryMsg::UserSharesBalance;
     use crate::msg::{ExecuteMsg, ExtensionQueryMsg};
     use crate::query::AssetsBalanceResponse;
@@ -28,7 +29,6 @@ mod tests {
         fixture_cw_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
         DENOM_REWARD, DEPOSIT_AMOUNT,
     };
-    use crate::vault::autocompound::SwapAsset;
 
     const DENOM_REWARD_AMOUNT: u128 = 100000000000;
 
@@ -322,16 +322,10 @@ mod tests {
         wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                swap_assets: vec![SwapAsset {
+                swap_operations: vec![SwapOperation {
                     token_in_denom: DENOM_REWARD.to_string(),
                     pool_id_0: swap_pools_ids[2],
                     pool_id_1: swap_pools_ids[1],
-                    // forced_swap_route_token_0: Option::from(SwapOperationsListUnchecked::new(
-                    //     path1,
-                    // )),
-                    // forced_swap_route_token_1: Option::from(SwapOperationsListUnchecked::new(
-                    //     path2,
-                    // )),
                     forced_swap_route_token_0: None,
                     forced_swap_route_token_1: None,
                 }],
