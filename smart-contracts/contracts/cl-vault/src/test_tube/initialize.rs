@@ -9,6 +9,7 @@ pub mod initialize {
     use cw_vault_multi_standard::VaultInfoResponse;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1;
+    use osmosis_std::types::osmosis::concentratedliquidity;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
     };
@@ -17,6 +18,7 @@ pub mod initialize {
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
     use osmosis_test_tube::Bank;
+    use osmosis_test_tube::Runner;
     use osmosis_test_tube::{
         cosmrs::proto::traits::Message,
         osmosis_std::types::osmosis::concentratedliquidity::{
@@ -216,28 +218,14 @@ pub mod initialize {
             .data
             .code_id;
 
-        // Setup a dummy CL pool to work with
-        let gov = GovWithAppAccess::new(&app);
-        gov.propose_and_execute(
-            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
-            CreateConcentratedLiquidityPoolsProposal {
-                title: "CL Pool".to_string(),
-                description: "So that we can trade it".to_string(),
-                pool_records: vec![PoolRecord {
-                    denom0: pool.denom0,
-                    denom1: pool.denom1,
-                    tick_spacing: pool.tick_spacing,
-                    spread_factor: pool.spread_factor,
-                }],
-            },
-            admin.address(),
+        let vault_pool = create_cl_pool(
+            &app,
+            pool.denom0,
+            pool.denom1,
+            pool.tick_spacing,
+            pool.spread_factor,
             &admin,
-        )
-        .unwrap();
-
-        // Get just created pool information by querying all the pools, and taking the first one
-        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        );
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
@@ -382,6 +370,41 @@ pub mod initialize {
             deposit_ratio,
             deposit_ratio_approx,
         )
+    }
+
+    /// Create a CL pool without any liquidity
+    pub fn create_cl_pool<'a>(
+        app: &'a OsmosisTestApp,
+        denom0: String,
+        denom1: String,
+        tick_spacing: u64,
+        spread_factor: String,
+        admin: &SigningAccount,
+    ) -> concentratedliquidity::v1beta1::Pool {
+        // Setup a dummy CL pool to work with
+        let gov = GovWithAppAccess::new(app);
+        gov.propose_and_execute(
+            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
+            CreateConcentratedLiquidityPoolsProposal {
+                title: "CL Pool".to_string(),
+                description: "So that we can trade it".to_string(),
+                pool_records: vec![PoolRecord {
+                    denom0: denom0,
+                    denom1: denom1,
+                    tick_spacing: tick_spacing,
+                    spread_factor: spread_factor,
+                }],
+            },
+            admin.address(),
+            admin,
+        )
+        .unwrap();
+
+        let cl = ConcentratedLiquidity::new(app);
+        // Get just created pool information by querying all the pools, and taking the first one
+        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        vault_pool
     }
 
     fn init_test_contract_with_dex_router_and_swap_pools(

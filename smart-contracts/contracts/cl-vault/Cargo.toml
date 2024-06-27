@@ -53,6 +53,7 @@ cw-utils = { workspace = true }
 cw2 = { workspace = true }
 num_enum = { workspace = true }
 apollo-cw-asset = { workspace = true }
+cw-orch = { workspace = true }
 
 ## todo update this in dex router code first as this has been deprecated
 cw-dex = { workspace = true }

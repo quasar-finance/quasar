@@ -1,10 +1,11 @@
 [package]
-name = "osmosis-helpers"
+name = "interface"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-osmosis-test-tube = { workspace = true }
-cosmwasm-std = { workspace = true }
+cw-orch.workspace = true
+cl-vault = { path = "../../contracts/cl-vault" }
+range-middleware = { path = "../../contracts/range-middleware" }
