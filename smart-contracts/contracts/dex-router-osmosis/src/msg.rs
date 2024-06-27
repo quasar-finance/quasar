@@ -11,7 +11,6 @@ pub enum ExecuteMsg {
         out_denom: String,
         path: Option<Vec<SwapAmountInRoute>>,
         minimum_receive: Option<Uint128>,
-        to: Option<String>,
     },
     SetPath {
         offer_denom: String,
@@ -43,13 +42,13 @@ pub enum QueryMsg {
         offer: Coin,
         path: Vec<SwapAmountInRoute>,
     },
-    /// Returns all the current path for a given (offer_asset, ask_asset) pair.
+    /// Returns all the current path for a given (offer_denom, ask_denom) pair.
     #[returns(Vec<Vec<SwapAmountInRoute>>)]
     PathsForPair {
         offer_denom: String,
         ask_denom: String,
     },
-    /// finds the best path for a given (offer_asset, ask_asset) pair.
+    /// finds the best path for a given (offer_denom, ask_denom) pair.
     /// if no path is found, returns None.
     #[returns(Option<BestPathForPairResponse>)]
     BestPathForPair { offer: Coin, ask_denom: String },
