@@ -11,6 +11,7 @@ mod tests {
     use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
     use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
     use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
     use crate::msg::QueryMsg;
@@ -34,7 +35,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_autocompound_with_rewards() {
+    fn test_autocompound_with_rewards_swap_non_vault_funds() {
         let (
             app,
             contract_address,
@@ -289,31 +290,6 @@ mod tests {
 
         // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-        // // Define CW Dex Router swap routes
-        // let path1 = vec![
-        //     SwapOperationBase::new(
-        //         cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-        //             swap_pools_ids[1],
-        //         )),
-        //         AssetInfoBase::Native(DENOM_REWARD.to_string()),
-        //         AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-        //     ),
-        //     SwapOperationBase::new(
-        //         cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-        //             swap_pools_ids[2],
-        //         )),
-        //         AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-        //         AssetInfoBase::Native(DENOM_BASE.to_string()),
-        //     ),
-        // ];
-        // let path2 = vec![SwapOperationBase::new(
-        //     cw_dex_router::operations::Pool::Osmosis(cw_dex_osmosis::OsmosisPool::unchecked(
-        //         swap_pools_ids[1],
-        //     )),
-        //     AssetInfoBase::Native(DENOM_REWARD.to_string()),
-        //     AssetInfoBase::Native(DENOM_QUOTE.to_string()),
-        // )];
-
         // Swap non vault funds to vault funds
         // 50000000000ustride to 49500000000uatom as spot price 1.0 less swap_fees
         // 50000000000ustride to 49500000000uosmo as spot price 1.0 less swap_fees
@@ -326,8 +302,22 @@ mod tests {
                     token_in_denom: DENOM_REWARD.to_string(),
                     pool_id_0: swap_pools_ids[2],
                     pool_id_1: swap_pools_ids[1],
-                    forced_swap_route_token_0: None,
-                    forced_swap_route_token_1: None,
+                    forced_swap_route_token_0: Some(vec![
+                        SwapAmountInRoute {
+                            pool_id: swap_pools_ids[1],
+                            token_out_denom: DENOM_QUOTE.to_string(),
+                        },
+                        SwapAmountInRoute {
+                            pool_id: swap_pools_ids[2],
+                            token_out_denom: DENOM_BASE.to_string(),
+                        },
+                    ]),
+                    forced_swap_route_token_1: Some(vec![
+                        SwapAmountInRoute {
+                            pool_id: swap_pools_ids[1],
+                            token_out_denom: DENOM_QUOTE.to_string(),
+                        },
+                    ]),
                 }],
             }),
             &[],
