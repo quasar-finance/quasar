@@ -101,17 +101,15 @@ pub fn swap(
     let swap_path = if let Some(path) = path {
         assert_non_empty_path(&path)?;
         path
+    } else if let Some(best_path) =
+        query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
+    {
+        best_path.path
     } else {
-        if let Some(best_path) =
-            query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
-        {
-            best_path.path
-        } else {
-            return Err(ContractError::NoPathFound {
-                offer: info.funds[0].denom.clone(),
-                ask: out_denom,
-            });
-        }
+        return Err(ContractError::NoPathFound {
+            offer: info.funds[0].denom.clone(),
+            ask: out_denom,
+        });
     };
 
     let msg = MsgSwapExactAmountIn {
@@ -268,10 +266,10 @@ fn try_remove_path(
         }
     }
 
-    return Err(ContractError::NoPathFound {
+    Err(ContractError::NoPathFound {
         offer: offer_denom,
         ask: ask_denom,
-    });
+    })
 }
 
 pub fn remove_path(
