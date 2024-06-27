@@ -551,20 +551,6 @@ pub mod initialize {
             )
             .unwrap();
         }
-
-        // Set additional path
-        wasm.execute(
-            &dex_router,
-            &DexExecuteMsg::SetPath {
-                offer_denom: DENOM_REWARD.to_string(),
-                ask_denom: DENOM_BASE.to_string(),
-                path: vec![1, 0],
-                bidirectional: true,
-            },
-            sort_tokens(vec![]).as_ref(),
-            &admin,
-        )
-        .unwrap();
     }
 
     // TESTS
