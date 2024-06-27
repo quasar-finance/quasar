@@ -116,11 +116,7 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Install just via cargo
-        run: cargo install just
       
-      # This is the new one
       - name: Move smart contracts
         if: env.GIT_DIFF
         run: |
