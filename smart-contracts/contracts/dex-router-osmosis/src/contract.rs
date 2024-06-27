@@ -54,8 +54,7 @@ pub fn execute(
             path,
             out_denom,
             minimum_receive,
-            to,
-        } => swap(deps, env, info, path, out_denom, minimum_receive, to),
+        } => swap(deps, env, info, path, out_denom, minimum_receive),
         ExecuteMsg::SetPath {
             offer_denom,
             ask_denom,
@@ -68,6 +67,7 @@ pub fn execute(
             path,
             bidirectional,
         } => remove_path(deps, info, offer_denom, ask_denom, path, bidirectional),
+        ExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
     }
 }
 
@@ -96,25 +96,21 @@ pub fn swap(
     path: Option<Vec<SwapAmountInRoute>>,
     out_denom: String,
     minimum_receive: Option<Uint128>,
-    to: Option<String>,
 ) -> Result<Response, ContractError> {
     assert_fund_length(info.funds.len(), 1)?;
-    let recipient = to.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let swap_path = if let Some(path) = path {
+        assert_non_empty_path(&path)?;
         path
+    } else if let Some(best_path) =
+        query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
+    {
+        best_path.path
     } else {
-        if let Some(best_path) =
-            query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
-        {
-            best_path.path
-        } else {
-            return Err(ContractError::NoPathFound {
-                offer: info.funds[0].denom.clone(),
-                ask: out_denom,
-            });
-        }
+        return Err(ContractError::NoPathFound {
+            offer: info.funds[0].denom.clone(),
+            ask: out_denom,
+        });
     };
-    assert_non_empty_path(&swap_path)?;
 
     let msg = MsgSwapExactAmountIn {
         sender: env.contract.address.to_string(),
@@ -125,14 +121,14 @@ pub fn swap(
     RECIPIENT_INFO.save(
         deps.storage,
         &RecipientInfo {
-            address: info.sender,
+            address: info.sender.clone(),
             denom: out_denom,
         },
     )?;
     let event = Event::new(_CONTRACT_NAME)
         .add_attribute("operation", "swap")
         .add_attribute("offer_amount", info.funds[0].amount)
-        .add_attribute("to", recipient.to_string());
+        .add_attribute("to", info.sender.to_string());
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(msg, SWAP_REPLY_ID))
         .add_event(event))
@@ -270,10 +266,10 @@ fn try_remove_path(
         }
     }
 
-    return Err(ContractError::NoPathFound {
+    Err(ContractError::NoPathFound {
         offer: offer_denom,
         ask: ask_denom,
-    });
+    })
 }
 
 pub fn remove_path(
