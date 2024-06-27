@@ -8,8 +8,8 @@ pub struct InstantiateMsg {}
 #[cw_serde]
 pub enum ExecuteMsg {
     Swap {
-        path: Vec<SwapAmountInRoute>,
         out_denom: String,
+        path: Option<Vec<SwapAmountInRoute>>,
         minimum_receive: Option<Uint128>,
         to: Option<String>,
     },

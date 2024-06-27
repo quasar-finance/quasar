@@ -11,8 +11,7 @@
         "swap": {
           "type": "object",
           "required": [
-            "out_denom",
-            "path"
+            "out_denom"
           ],
           "properties": {
             "minimum_receive": {
@@ -29,7 +28,10 @@
               "type": "string"
             },
             "path": {
-              "type": "array",
+              "type": [
+                "array",
+                "null"
+              ],
               "items": {
                 "$ref": "#/definitions/SwapAmountInRoute"
               }
