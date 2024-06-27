@@ -101,6 +101,7 @@ pub fn swap(
     assert_fund_length(info.funds.len(), 1)?;
     let recipient = to.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let swap_path = if let Some(path) = path {
+        assert_non_empty_path(&path)?;
         path
     } else {
         if let Some(best_path) =
@@ -114,7 +115,6 @@ pub fn swap(
             });
         }
     };
-    assert_non_empty_path(&swap_path)?;
 
     let msg = MsgSwapExactAmountIn {
         sender: env.contract.address.to_string(),
