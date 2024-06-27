@@ -139,7 +139,7 @@ fn cw_dex_execute_swap_operations_msg(
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
         msg: to_json_binary(&DexRouterExecuteMsg::Swap {
-            path,
+            path: Some(path),
             out_denom: token_out_denom,
             minimum_receive: Some(token_out_min_amount),
             to: None,
