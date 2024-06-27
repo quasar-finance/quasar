@@ -312,12 +312,10 @@ mod tests {
                             token_out_denom: DENOM_BASE.to_string(),
                         },
                     ]),
-                    forced_swap_route_token_1: Some(vec![
-                        SwapAmountInRoute {
-                            pool_id: swap_pools_ids[1],
-                            token_out_denom: DENOM_QUOTE.to_string(),
-                        },
-                    ]),
+                    forced_swap_route_token_1: Some(vec![SwapAmountInRoute {
+                        pool_id: swap_pools_ids[1],
+                        token_out_denom: DENOM_QUOTE.to_string(),
+                    }]),
                 }],
             }),
             &[],
