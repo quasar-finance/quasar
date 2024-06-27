@@ -550,6 +550,7 @@ func New(
 
 		app.AccountKeeper,
 		app.BankKeeper,
+		app.StakingKeeper,
 	)
 
 	qvestingModule := qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper)

@@ -22,9 +22,14 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		CmdQueryParams(),
-		CmdQuerySpendableBalances(),
 		CmdQueryVestingAccounts(),
+		CmdQueryQVestingAccounts(),
+		CmdQuerySpendableBalances(),
+		CmdQuerySpendableSupply(),
 		CmdQueryVestingLockedSupply(),
+		CmdQueryDelegationLockedSupply(),
+		CmdQueryDelegatorLockedSupply(),
+		CmdTotalLockedSupply(),
 	)
 
 	return cmd
@@ -54,10 +59,86 @@ func CmdQueryParams() *cobra.Command {
 	return cmd
 }
 
+func CmdQueryVestingAccounts() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "vesting-accounts",
+		Short: "shows all the existing vesting accounts in a paginated response",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryVestingAccountsRequest{
+				Pagination: pageReq,
+			}
+
+			res, err := queryClient.VestingAccounts(ctx, params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "vesting-accounts")
+
+	return cmd
+}
+
+func CmdQueryQVestingAccounts() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "qvesting-accounts",
+		Short: "shows the existing vesting accounts created via qvesting module in a paginated response",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryQVestingAccountsRequest{
+				Pagination: pageReq,
+			}
+
+			res, err := queryClient.QVestingAccounts(ctx, params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "qvesting-accounts")
+
+	return cmd
+}
+
 func CmdQuerySpendableBalances() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "spendable-balances [address]",
-		Short: "shows the spendable balances in a paginated response for a given vesting account",
+		Short: "shows the spendable balances for a given vesting account in a paginated response ",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqAddress := args[0]
@@ -95,12 +176,14 @@ func CmdQuerySpendableBalances() *cobra.Command {
 	return cmd
 }
 
-func CmdQueryVestingAccounts() *cobra.Command {
+func CmdQuerySpendableSupply() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "accounts",
-		Short: "shows the existing vesting accounts in a paginated response",
-		Args:  cobra.ExactArgs(0),
+		Use:   "spendable-supply [denom]",
+		Short: "shows the total spendable balances supply across all accounts for a given denom",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqDenom := args[0]
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -109,16 +192,7 @@ func CmdQueryVestingAccounts() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 			ctx := cmd.Context()
 
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
-			if err != nil {
-				return err
-			}
-
-			params := &types.QueryVestingAccountsRequest{
-				Pagination: pageReq,
-			}
-
-			res, err := queryClient.VestingAccounts(ctx, params)
+			res, err := queryClient.SpendableSupply(ctx, &types.QuerySpendableSupplyRequest{Denom: reqDenom})
 			if err != nil {
 				return err
 			}
@@ -128,15 +202,14 @@ func CmdQueryVestingAccounts() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
-	flags.AddPaginationFlagsToCmd(cmd, "vesting-accounts")
 
 	return cmd
 }
 
 func CmdQueryVestingLockedSupply() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "locked-supply [denom]",
-		Short: "shows the total locked-supply in vesting accounts for a given denom",
+		Use:   "vesting-locked-supply [denom]",
+		Short: "shows the total vesting locked supply across all the accounts for a given denom",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqDenom := args[0]
@@ -157,6 +230,93 @@ func CmdQueryVestingLockedSupply() *cobra.Command {
 			return clientCtx.PrintProto(res)
 		},
 	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdQueryDelegationLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delegation-locked-supply",
+		Short: "shows the total delegation locked supply across all accounts for the staking denom",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.DelegationLockedSupply(ctx, &types.QueryDelegationLockedSupplyRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdQueryDelegatorLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delegator-locked-supply [address]",
+		Short: "shows the total delegation locked supply in delegation for a given account and the staking denom",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqAddress := args[0]
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.DelegatorLockedSupply(ctx, &types.QueryDelegatorLockedSupplyRequest{Address: reqAddress})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdTotalLockedSupply() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "total-locked-supply",
+		Short: "shows the total vesting and delegation locked supply across all accounts for the staking denom",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.TotalLockedSupply(ctx, &types.QueryTotalLockedSupplyRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
