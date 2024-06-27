@@ -10,6 +10,7 @@ pub struct RecipientInfo {
     pub denom: String,
 }
 
+// map from (offer_denom, ask_denom) keys to a vector of swap routes
 pub const PATHS: Map<(String, String), Vec<Vec<SwapAmountInRoute>>> = Map::new("paths");
 pub const RECIPIENT_INFO: Item<RecipientInfo> = Item::new("recipient");
 pub const OWNER: Owner = Owner::new("owner");
