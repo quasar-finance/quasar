@@ -14,6 +14,7 @@ use crate::{
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),

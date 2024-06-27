@@ -116,7 +116,6 @@ fn execute_pop_update(
     let mut ranges = PENDING_RANGES.load(deps.storage, vault_address.clone())?;
     let next = ranges.updates.pop_front();
     if let Some(next) = next {
-        // TODO assert that the pending range is properly decremented here
         let response = match next {
             UpdateActions::CreatePosition(msg) => do_create_position(&vault_address, msg)?,
             UpdateActions::DeletePosition(msg) => do_delete_position(&vault_address, msg)?,
@@ -226,7 +225,9 @@ pub fn do_move_position(
         funds: vec![],
     };
 
-    Ok(Response::new().add_message(msg).add_attribute("update", "move_position"))
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("update", "move_position"))
 }
 
 pub fn call_vault(vault: Addr, msg: Binary) -> Result<Response, ContractError> {
@@ -241,16 +242,17 @@ pub fn call_vault(vault: Addr, msg: Binary) -> Result<Response, ContractError> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::VecDeque;
-
     use cl_vault::msg::CreatePosition;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
         Addr, Decimal, MessageInfo,
     };
     use cw_dex_router::operations::SwapOperationsListBase;
+    use std::collections::VecDeque;
 
-    use crate::state::{NewRange, RangeUpdates, UpdateActions, PENDING_RANGES, RANGE_EXECUTOR_ADMIN};
+    use crate::state::{
+        NewRange, RangeUpdates, UpdateActions, PENDING_RANGES, RANGE_EXECUTOR_ADMIN,
+    };
 
     use super::{execute_pop_update, RangeExecutionParams};
 
@@ -263,7 +265,9 @@ mod tests {
             sender: Addr::unchecked(sender),
             funds: vec![],
         };
-        RANGE_EXECUTOR_ADMIN.save(deps.as_mut().storage, &Addr::unchecked(sender)).unwrap();
+        RANGE_EXECUTOR_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked(sender))
+            .unwrap();
 
         let vault_address = "contract1";
 
@@ -301,7 +305,7 @@ mod tests {
             claim_after: None,
         };
 
-        let res = execute_pop_update(
+        let _res = execute_pop_update(
             deps.as_mut(),
             env,
             info,
@@ -327,7 +331,10 @@ mod tests {
             sender: Addr::unchecked(sender),
             funds: vec![],
         };
-        RANGE_EXECUTOR_ADMIN.save(deps.as_mut().storage, &Addr::unchecked(sender)).unwrap();
+
+        RANGE_EXECUTOR_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked(sender))
+            .unwrap();
 
         let vault_address = "contract1";
 
@@ -365,7 +372,7 @@ mod tests {
             claim_after: None,
         };
 
-        let res = execute_pop_update(
+        let _res = execute_pop_update(
             deps.as_mut(),
             env,
             info,

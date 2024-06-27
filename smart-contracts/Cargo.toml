@@ -14,9 +14,6 @@ members = [
   "contracts/cl-vault",
   "contracts/merkle-incentives",
   "contracts/range-middleware",
-  "contracts/dex-router-osmosis",
-  "contracts/lst-dex-adapter-osmosis",
-  "contracts/lst-adapter-osmosis",
 ]
 
 [workspace.dependencies]
@@ -33,11 +30,7 @@ cw20 = "1.1.2"
 cw20-base = {version = "1.1.2", features = ["library"]}
 cw20-staking = "0.11.1"
 apollo-cw-asset = "0.1.2"
-mars-owner = "2.0.0"
-quasar-types = { path = "packages/quasar-types" }
-dex-router-osmosis = { path = "contracts/dex-router-osmosis", features = ["library"] }
-lst-dex-adapter-osmosis = { path = "contracts/lst-dex-adapter-osmosis", features = ["library"] }
-lst-adapter-osmosis = { path = "contracts/lst-adapter-osmosis", features = ["library"] }
+cw-dex = {git = "https://github.com/quasar-finance/cw-dex", branch = "feat/deprecate-osmo-gamm"}
 
 # SDK
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}
