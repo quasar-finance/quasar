@@ -20,7 +20,7 @@ test-tube-dev: workspace-optimize
 
 download-deps:
 	mkdir -p artifacts target
-	wget https://github.com/quasar-finance/cw-dex-router/releases/latest/download/cw_dex_router-osmosis.wasm -O artifacts/cw_dex_router-osmosis.wasm
+	#wget https://github.com/quasar-finance/cw-dex-router/releases/latest/download/cw_dex_router-osmosis.wasm -O artifacts/cw_dex_router-osmosis.wasm
 
 workspace-optimize:
     #!/bin/bash
