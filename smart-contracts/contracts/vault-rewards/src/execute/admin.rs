@@ -1,3 +1,4 @@
+use crate::execute::user::execute_claim;
 use crate::msg::DistributionScheduleOptions;
 use crate::state::{DistributionSchedule, CONFIG};
 use crate::VaultRewardsError;
@@ -105,6 +106,36 @@ pub fn execute_remove_distribution_schedule(
         ("action", "remove_distribution_schedule"),
         ("id", &id.to_string()),
     ]))
+}
+
+pub fn execute_auto_claim(
+    mut deps: DepsMut,
+    env: Env,
+    user_addresses: Vec<Addr>,
+) -> Result<Response, VaultRewardsError> {
+    let mut res = Response::new();
+
+    for user in user_addresses {
+        // validate address
+        deps.api.addr_validate(user.as_ref())?;
+
+        // get claim response to separate out messages from it
+        let execute_claim_response = execute_claim(deps.branch(), &env, user.clone())?;
+
+        // extract messages from response
+        let execute_claim_messages = execute_claim_response
+            .messages
+            .iter()
+            .map(|sm| sm.msg.clone());
+
+        // use these message and attributes to generate a response
+        res = res
+            .add_messages(execute_claim_messages)
+            .add_attributes(execute_claim_response.attributes);
+    }
+
+    // pass the parsed response
+    Ok(res)
 }
 
 #[cfg(test)]

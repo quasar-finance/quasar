@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Reply, Response,
-    StdError, StdResult, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
+    SubMsg, SubMsgResult, Uint128, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -20,15 +20,17 @@ use vault_rewards::msg::InstantiateMsg as VaultRewardsInstantiateMsg;
 
 use crate::callback::{on_bond, on_start_unbond, on_unbond};
 use crate::error::ContractError;
-use crate::execute::{bond, claim, unbond, update_cap};
+use crate::execute::{
+    bond, claim, execute_transfer_quasar, force_claim, force_unbond, unbond, update_cap,
+};
 use crate::helpers::update_user_reward_index;
 use crate::msg::{
     ExecuteMsg, GetCapResponse, GetDebugResponse, InstantiateMsg, MigrateMsg, PrimitiveConfig,
     QueryMsg, VaultTokenInfoResponse,
 };
 use crate::query::{
-    query_deposit_ratio, query_investment, query_pending_bonds, query_pending_bonds_by_id,
-    query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
+    query_active_users, query_deposit_ratio, query_investment, query_pending_bonds,
+    query_pending_bonds_by_id, query_pending_unbonds, query_pending_unbonds_by_id, query_tvl_info,
 };
 use crate::state::{
     AdditionalTokenInfo, Cap, InvestmentInfo, ADDITIONAL_TOKEN_INFO, BONDING_SEQ, CAP, CLAIMS,
@@ -263,6 +265,12 @@ pub fn execute(
                     .add_messages(update_user_reward_indexes),
             )
         }
+        ExecuteMsg::ForceUnbond { addresses } => force_unbond(deps, env, info, addresses),
+        ExecuteMsg::ForceClaim { addresses } => force_claim(deps, env, info, addresses),
+        ExecuteMsg::TransferQuasar {
+            destination_address,
+            amounts,
+        } => execute_transfer_quasar(deps, env, destination_address, amounts, info.sender),
     }
 }
 
@@ -328,6 +336,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::PendingUnbondsById { bond_id } => {
             to_json_binary(&query_pending_unbonds_by_id(deps, bond_id)?)
         }
+        QueryMsg::ActiveUsers {} => to_json_binary(&query_active_users(deps)?),
     }
 }
 
@@ -360,28 +369,25 @@ pub fn query_debug_string(deps: Deps) -> StdResult<GetDebugResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    let msgs: Result<Vec<WasmMsg>, StdError> = cw20_base::state::BALANCES
-        .range(deps.storage, None, None, Order::Ascending)
-        .map(|val| {
-            let (addr, _) = val?;
-            update_user_reward_index(deps.storage, &addr)
-        })
-        .collect();
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let mut investment_info = INVESTMENT.load(deps.storage)?;
+    investment_info.min_withdrawal = msg.min_withdrawal;
 
-    let wrapped_msges = msgs?.into_iter().map(CosmosMsg::Wasm);
+    INVESTMENT.save(deps.storage, &investment_info)?;
 
     Ok(Response::new()
+        .add_attribute("migrate", CONTRACT_NAME)
         .add_attribute(
-            "updated-rewards-indexes-msges",
-            wrapped_msges.len().to_string(),
+            "update_min_withdrawal",
+            investment_info.min_withdrawal.to_string(),
         )
-        .add_messages(wrapped_msges))
+        .add_attribute("success", "true"))
 }
 
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{
+        attr,
         testing::{mock_dependencies, mock_env, mock_info},
         Addr, ContractResult, Decimal, QuerierResult,
     };
@@ -389,6 +395,49 @@ mod test {
     use crate::msg::PrimitiveConfig;
 
     use super::*;
+
+    #[test]
+    fn test_migrate() {
+        let mut deps = mock_dependencies();
+
+        // Setup initial data
+        let initial_investment_info = InvestmentInfo {
+            owner: Addr::unchecked("owner_address"),
+            min_withdrawal: Uint128::new(1000),
+            deposit_denom: "uosmo".to_string(),
+            primitives: vec![], // Assuming PrimitiveConfig is properly defined elsewhere
+        };
+
+        // Save initial data
+        INVESTMENT
+            .save(&mut deps.storage, &initial_investment_info)
+            .unwrap();
+
+        // Create migration message
+        let msg = MigrateMsg {
+            min_withdrawal: Uint128::new(500), // New minimum withdrawal value
+        };
+
+        // Call migrate function
+        let env = mock_env();
+        let response = migrate(deps.as_mut(), env, msg).unwrap();
+
+        // Load the updated investment info
+        let updated_investment_info = INVESTMENT.load(&deps.storage).unwrap();
+
+        // Assert the min_withdrawal was updated
+        assert_eq!(updated_investment_info.min_withdrawal, Uint128::new(500));
+
+        // Check response attributes
+        assert_eq!(
+            response.attributes,
+            vec![
+                attr("migrate", CONTRACT_NAME),
+                attr("update_min_withdrawal", "500"),
+                attr("success", "true"),
+            ]
+        );
+    }
 
     #[test]
     fn instantiate_works() {

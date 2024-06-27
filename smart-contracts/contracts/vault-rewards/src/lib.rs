@@ -6,4 +6,6 @@ pub mod query;
 pub mod state;
 
 mod error;
+mod tests;
+
 pub use crate::error::VaultRewardsError;

@@ -111,6 +111,30 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "auto_claim"
+          ],
+          "properties": {
+            "auto_claim": {
+              "type": "object",
+              "required": [
+                "user_addresses"
+              ],
+              "properties": {
+                "user_addresses": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Addr"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },

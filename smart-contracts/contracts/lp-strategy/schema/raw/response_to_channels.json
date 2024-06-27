@@ -1,0 +1,206 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ChannelsResponse",
+  "type": "object",
+  "required": [
+    "channels"
+  ],
+  "properties": {
+    "channels": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ChannelInfo"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "ChannelInfo": {
+      "type": "object",
+      "required": [
+        "channel_type",
+        "connection_id",
+        "counterparty_endpoint",
+        "handshake_state",
+        "id"
+      ],
+      "properties": {
+        "channel_type": {
+          "description": "the channel type,",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ChannelType"
+            }
+          ]
+        },
+        "connection_id": {
+          "description": "the connection this exists on (you can use to query client/consensus info)",
+          "type": "string"
+        },
+        "counterparty_endpoint": {
+          "description": "the remote channel/port we connect to",
+          "allOf": [
+            {
+              "$ref": "#/definitions/IbcEndpoint"
+            }
+          ]
+        },
+        "handshake_state": {
+          "description": "the channel handshake state",
+          "allOf": [
+            {
+              "$ref": "#/definitions/HandshakeState"
+            }
+          ]
+        },
+        "id": {
+          "description": "id of this channel",
+          "type": "string"
+        }
+      }
+    },
+    "ChannelType": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "icq"
+          ],
+          "properties": {
+            "icq": {
+              "type": "object",
+              "required": [
+                "channel_ty"
+              ],
+              "properties": {
+                "channel_ty": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ica"
+          ],
+          "properties": {
+            "ica": {
+              "type": "object",
+              "required": [
+                "channel_ty"
+              ],
+              "properties": {
+                "channel_ty": {
+                  "$ref": "#/definitions/IcaMetadata"
+                },
+                "counter_party_address": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ics20"
+          ],
+          "properties": {
+            "ics20": {
+              "type": "object",
+              "required": [
+                "channel_ty"
+              ],
+              "properties": {
+                "channel_ty": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Encoding": {
+      "type": "string",
+      "enum": [
+        "proto3"
+      ]
+    },
+    "HandshakeState": {
+      "type": "string",
+      "enum": [
+        "init",
+        "try_open",
+        "open",
+        "closed"
+      ]
+    },
+    "IbcEndpoint": {
+      "type": "object",
+      "required": [
+        "channel_id",
+        "port_id"
+      ],
+      "properties": {
+        "channel_id": {
+          "type": "string"
+        },
+        "port_id": {
+          "type": "string"
+        }
+      }
+    },
+    "IcaMetadata": {
+      "type": "object",
+      "required": [
+        "encoding",
+        "tx_type",
+        "version"
+      ],
+      "properties": {
+        "controller_connection_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "encoding": {
+          "$ref": "#/definitions/Encoding"
+        },
+        "host_connection_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tx_type": {
+          "$ref": "#/definitions/TxType"
+        },
+        "version": {
+          "$ref": "#/definitions/Version"
+        }
+      }
+    },
+    "TxType": {
+      "type": "string",
+      "enum": [
+        "sdk_multi_msg"
+      ]
+    },
+    "Version": {
+      "type": "string",
+      "enum": [
+        "ics27-1"
+      ]
+    }
+  }
+}

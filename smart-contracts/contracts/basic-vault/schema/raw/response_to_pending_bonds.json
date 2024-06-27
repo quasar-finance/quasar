@@ -36,7 +36,7 @@
           "type": "string"
         },
         "share_amount": {
-          "description": "the amount of tokens that were bonded",
+          "description": "the shares gotten by the bond",
           "allOf": [
             {
               "$ref": "#/definitions/Uint128"
@@ -48,16 +48,30 @@
     "BondingStub": {
       "type": "object",
       "required": [
-        "address"
+        "address",
+        "amount"
       ],
       "properties": {
         "address": {
           "type": "string"
         },
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
         "bond_response": {
           "anyOf": [
             {
               "$ref": "#/definitions/BondResponse"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "primitive_value": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Uint128"
             },
             {
               "type": "null"

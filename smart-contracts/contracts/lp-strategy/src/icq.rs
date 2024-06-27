@@ -3,7 +3,7 @@ use cosmwasm_std::{
     Uint128,
 };
 #[allow(deprecated)]
-use osmosis_std::types::osmosis::gamm::v1beta1::QuerySpotPriceRequest;
+use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceRequest;
 use osmosis_std::types::{
     cosmos::bank::v1beta1::QueryBalanceRequest,
     cosmos::base::v1beta1::Coin as OsmoCoin,

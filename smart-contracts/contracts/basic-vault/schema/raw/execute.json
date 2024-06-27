@@ -65,6 +65,20 @@
       "additionalProperties": false
     },
     {
+      "description": "Clear cache can be triggered by anyone and hits each internal primitive with the TryICQ message.",
+      "type": "object",
+      "required": [
+        "clear_cache"
+      ],
+      "properties": {
+        "clear_cache": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "type": "object",
       "required": [
         "bond_response"
@@ -101,7 +115,39 @@
       "additionalProperties": false
     },
     {
-      "description": "Implements CW20. Transfer is a base message to move tokens to another account without triggering actions",
+      "description": "Admin Messages Set Cap is used to set the total cap of the vault, it can also be used to updated admin",
+      "type": "object",
+      "required": [
+        "set_cap"
+      ],
+      "properties": {
+        "set_cap": {
+          "type": "object",
+          "properties": {
+            "new_cap_admin": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "new_total": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "CW20 Messges Implements CW20. Transfer is a base message to move tokens to another account without triggering actions",
       "type": "object",
       "required": [
         "transfer"
@@ -343,11 +389,46 @@
     {
       "type": "object",
       "required": [
-        "clear_cache"
+        "force_unbond"
       ],
       "properties": {
-        "clear_cache": {
+        "force_unbond": {
           "type": "object",
+          "required": [
+            "addresses"
+          ],
+          "properties": {
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "force_claim"
+      ],
+      "properties": {
+        "force_claim": {
+          "type": "object",
+          "required": [
+            "addresses"
+          ],
+          "properties": {
+            "addresses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
           "additionalProperties": false
         }
       },
@@ -371,7 +452,7 @@
           "type": "string"
         },
         "share_amount": {
-          "description": "the amount of tokens that were bonded",
+          "description": "the shares gotten by the bond",
           "allOf": [
             {
               "$ref": "#/definitions/Uint128"

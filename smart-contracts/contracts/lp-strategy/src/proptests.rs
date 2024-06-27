@@ -8,7 +8,7 @@ mod tests {
     };
     use proptest::prelude::*;
     use prost::Message;
-    use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
+    use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAckData};
 
     use crate::{
         bond::Bond,
@@ -25,11 +25,12 @@ mod tests {
         test_helpers::{create_query_response, default_setup, pending_bond_to_bond},
     };
     use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+    #[allow(deprecated)]
+    use osmosis_std::types::osmosis::gamm::v2::QuerySpotPriceResponse;
     use osmosis_std::types::{
         cosmos::bank::v1beta1::QueryBalanceResponse,
         osmosis::gamm::v1beta1::{
             QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
-            QuerySpotPriceResponse,
         },
     };
     use proptest::collection::vec;
@@ -206,6 +207,7 @@ mod tests {
                 .encode_to_vec(),
             );
 
+            #[allow(deprecated)]
             let spot_price = create_query_response(
                 QuerySpotPriceResponse {
                     spot_price: (spot_price_rq+1).to_string(),
@@ -227,22 +229,20 @@ mod tests {
             // LockResponse is fixed to None in this test for simplicity
             // let lock = create_query_response(LockedResponse { lock: None }.encode_to_vec());
 
-            let ibc_ack = InterchainQueryPacketAck {
-                data: Binary::from(
-                    &CosmosResponse {
-                        responses: vec![
-                            raw_balance,
-                            quote_balance,
-                            lp_balance,
-                            exit_pool,
-                            spot_price,
-                            join_pool,
-                            // lock,
-                        ],
-                    }
-                    .encode_to_vec()[..],
-                ),
-            };
+            let ibc_ack = InterchainQueryPacketAckData::new(Binary::from(
+                &CosmosResponse {
+                    responses: vec![
+                        raw_balance,
+                        quote_balance,
+                        lp_balance,
+                        exit_pool,
+                        spot_price,
+                        join_pool,
+                        // lock,
+                    ],
+                }
+                .encode_to_vec()[..],
+            ));
 
             // simulate that we received the ICQ ACK
             let res = handle_icq_ack(deps.as_mut().storage, env, to_json_binary(&ibc_ack).unwrap()).unwrap();

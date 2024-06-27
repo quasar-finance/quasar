@@ -72,11 +72,16 @@
       "description": "Investment info is fixed at instantiation, and is used to control the function of the contract",
       "type": "object",
       "required": [
+        "deposit_denom",
         "min_withdrawal",
         "owner",
         "primitives"
       ],
       "properties": {
+        "deposit_denom": {
+          "description": "the denom accepted by the vault",
+          "type": "string"
+        },
         "min_withdrawal": {
           "description": "This is the minimum amount we will pull out to reinvest, as well as a minimum that can be unbonded (to avoid needless staking tx)",
           "allOf": [

@@ -15,6 +15,11 @@ pub struct InterchainQueryPacketData {
 /// This is compatible with the JSON serialization
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
 pub struct InterchainQueryPacketAck {
+    pub result: Binary,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug, Default)]
+pub struct InterchainQueryPacketAckData {
     pub data: Binary,
 }
 
@@ -36,7 +41,29 @@ pub struct CosmosResponse {
 
 impl InterchainQueryPacketAck {
     pub fn new(data: Binary) -> Self {
-        InterchainQueryPacketAck { data }
+        InterchainQueryPacketAck { result: data }
+    }
+
+    // pub fn data(&self) -> &Binary {
+    //     &self.result.data
+    // }
+
+    // pub fn into_inner(self) -> Binary {
+    //     self.result.data
+    // }
+}
+
+impl InterchainQueryPacketAckData {
+    pub fn new(data: Binary) -> Self {
+        InterchainQueryPacketAckData { data }
+    }
+
+    pub fn data(&self) -> &Binary {
+        &self.data
+    }
+
+    pub fn into_inner(self) -> Binary {
+        self.data
     }
 }
 

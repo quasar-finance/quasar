@@ -99,6 +99,28 @@
       "additionalProperties": false
     },
     {
+      "description": "PendingBondsById shows the bonds that are currently in the process of being deposited for a bond id",
+      "type": "object",
+      "required": [
+        "pending_bonds_by_id"
+      ],
+      "properties": {
+        "pending_bonds_by_id": {
+          "type": "object",
+          "required": [
+            "bond_id"
+          ],
+          "properties": {
+            "bond_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "GetTvlInfo gets all info necessary for",
       "type": "object",
       "required": [
@@ -126,6 +148,28 @@
           ],
           "properties": {
             "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Get all unbonding claims for an id",
+      "type": "object",
+      "required": [
+        "pending_unbonds_by_id"
+      ],
+      "properties": {
+        "pending_unbonds_by_id": {
+          "type": "object",
+          "required": [
+            "bond_id"
+          ],
+          "properties": {
+            "bond_id": {
               "type": "string"
             }
           },
@@ -219,6 +263,19 @@
               "type": "string"
             }
           },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "active_users"
+      ],
+      "properties": {
+        "active_users": {
+          "type": "object",
           "additionalProperties": false
         }
       },

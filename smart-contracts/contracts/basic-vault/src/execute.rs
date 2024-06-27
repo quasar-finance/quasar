@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coin, to_json_binary, Attribute, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
-    StdError, Uint128, WasmMsg,
+    attr, coin, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, DepsMut,
+    Env, Event, MessageInfo, Response, StdError, Uint128, WasmMsg,
 };
 
 use cw20::BalanceResponse;
@@ -603,6 +603,104 @@ pub fn update_cap(
         .add_attribute("action", "update_cap")
         .add_attributes(attributes)
         .add_attribute("success", "true"))
+}
+
+pub fn force_unbond(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    addresses: Vec<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut res = Response::new();
+    let investment = INVESTMENT.load(deps.as_ref().storage)?;
+
+    for address in addresses {
+        let address = deps.api.addr_validate(&address)?;
+        let balance =
+            cw20_base::contract::query_balance(deps.as_ref(), address.to_string())?.balance;
+
+        // only unbond if balance is greater than min_withdrawal to avoid getting an error
+        if balance > investment.min_withdrawal {
+            // workaround to pass the user address instead of the contract admin address
+            let user_info = MessageInfo {
+                sender: address.clone(),
+                funds: vec![],
+            };
+            let start_unbond_response =
+                do_start_unbond(deps.branch(), &env, &user_info, Some(balance))?
+                    .unwrap_or(Response::new());
+
+            let start_unbond_msgs = start_unbond_response
+                .messages
+                .iter()
+                .map(|sm| sm.msg.clone());
+
+            res = res
+                .add_messages(start_unbond_msgs)
+                .add_attributes(start_unbond_response.attributes);
+        } else {
+            res = res.add_attributes(vec![
+                attr("action", "skipped_start_unbond"),
+                attr("from", address.to_string()),
+            ]);
+        }
+    }
+    Ok(res)
+}
+
+pub fn force_claim(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    addresses: Vec<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    is_contract_admin(&deps.querier, &env, &info.sender)?;
+    let mut res = Response::new();
+
+    for address in addresses {
+        let address = deps.api.addr_validate(&address)?;
+
+        let user_info = MessageInfo {
+            sender: address.clone(),
+            funds: vec![],
+        };
+        let unbond_response =
+            do_unbond(deps.branch(), &env, &user_info)?.unwrap_or(Response::new());
+
+        let unbond_msgs = unbond_response.messages.iter().map(|sm| sm.msg.clone());
+
+        res = res
+            .add_messages(unbond_msgs)
+            .add_attributes(unbond_response.attributes);
+    }
+    Ok(res)
+}
+
+pub fn execute_transfer_quasar(
+    deps: DepsMut,
+    env: Env,
+    destination_address: Addr,
+    amounts: Vec<Coin>,
+    sender: Addr,
+) -> Result<Response, ContractError> {
+    // validate admin
+    is_contract_admin(&deps.querier, &env, &sender)?;
+
+    // validate destination address on local chain
+    let to_address = deps.api.addr_validate(destination_address.as_str())?;
+
+    Ok(Response::new()
+        .add_message(CosmosMsg::Bank(BankMsg::Send {
+            to_address: to_address.to_string(),
+            amount: amounts,
+        }))
+        .add_event(Event::new("transfer_on_quasar").add_attribute(
+            "destination_address",
+            destination_address.clone().to_string().clone(),
+        )))
 }
 
 #[cfg(test)]

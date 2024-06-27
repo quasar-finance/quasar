@@ -13,10 +13,10 @@ use quasar_types::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::ibc_util::calculate_token_out_min_amount;
 use crate::{
     error::ContractError,
     helpers::{create_ibc_ack_submsg, get_ica_address, IbcMsgKind, IcaMessages},
-    ibc_util::calculate_token_out_min_amount,
     msg::ExecuteMsg,
     state::{
         RawAmount, CONFIG, IBC_TIMEOUT_TIME, ICA_CHANNEL, PENDING_UNBOND_QUEUE, RETURNING,
@@ -326,6 +326,7 @@ mod tests {
         CosmosMsg,
     };
 
+    use crate::ibc_util::calculate_token_out_min_amount;
     use crate::{
         state::{Unbond, LP_SHARES, SIMULATED_EXIT_RESULT},
         test_helpers::default_setup,

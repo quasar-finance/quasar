@@ -5,8 +5,8 @@ use std::{
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, IbcPacketAckMsg, StdResult, Uint128};
-
 pub use cw20::BalanceResponse;
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
@@ -43,8 +43,7 @@ impl InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub delete_pending_acks: Vec<(u64, String)>,
-    pub delete_traps: Vec<(u64, String)>,
+    pub token_out_min_amount: Uint128,
 }
 
 #[cw_serde]
@@ -281,5 +280,17 @@ pub enum ExecuteMsg {
     Retry {
         seq: u64,
         channel: String,
+    },
+    TransferOsmosis {
+        destination_address: Addr,
+        amounts: Vec<OsmoCoin>,
+    },
+    TransferQuasar {
+        destination_address: Addr,
+        amounts: Vec<Coin>,
+    },
+    ExitPool {
+        share_amount_in: Uint128,
+        token_out_min_amount: Uint128,
     },
 }

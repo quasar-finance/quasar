@@ -11,8 +11,11 @@ use quasar_types::ibc::IcsAck;
 
 use crate::admin::{add_lock_admin, check_depositor, is_lock_admin, remove_lock_admin};
 use crate::bond::do_bond;
-use crate::error::{ContractError, Trap};
+use crate::error::ContractError;
 use crate::execute::execute_retry;
+use crate::exit_protocol::{
+    execute_exit_pool, execute_transfer_on_osmosis, execute_transfer_on_quasar,
+};
 use crate::helpers::{create_callback_submsg, is_contract_admin, lock_try_icq, SubMsgKind};
 use crate::ibc::{handle_failing_ack, handle_succesful_ack, on_packet_timeout};
 use crate::ibc_lock::{IbcLock, Lock};
@@ -22,9 +25,9 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, LockOnly, MigrateMsg, UnlockOnly};
 use crate::reply::{handle_ack_reply, handle_callback_reply, handle_ibc_reply};
 use crate::start_unbond::{do_start_unbond, StartUnbond};
 use crate::state::{
-    Config, LpCache, OngoingDeposit, PendingBond, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR,
-    FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, PENDING_ACK, REPLIES, RETURNING,
-    START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE, TRAPS, UNBOND_QUEUE,
+    Config, LpCache, OngoingDeposit, RawAmount, ADMIN, BOND_QUEUE, CONFIG, DEPOSITOR, IBC_LOCK,
+    ICA_CHANNEL, LP_SHARES, REPLIES, RETURNING, START_UNBOND_QUEUE, TIMED_OUT, TOTAL_VAULT_BALANCE,
+    UNBOND_QUEUE,
 };
 use crate::unbond::{do_unbond, finish_unbond, PendingReturningUnbonds};
 
@@ -125,6 +128,24 @@ pub fn execute(
             execute_remove_lock_admin(deps, env, info, to_remove)
         }
         ExecuteMsg::Retry { seq, channel } => execute_retry(deps, env, info, seq, channel),
+        ExecuteMsg::TransferOsmosis {
+            destination_address,
+            amounts,
+        } => execute_transfer_on_osmosis(deps, env, destination_address, amounts, info.sender),
+        ExecuteMsg::TransferQuasar {
+            destination_address,
+            amounts,
+        } => execute_transfer_on_quasar(deps, env, destination_address, amounts, info.sender),
+        ExecuteMsg::ExitPool {
+            share_amount_in,
+            token_out_min_amount,
+        } => execute_exit_pool(
+            deps,
+            env,
+            share_amount_in,
+            token_out_min_amount,
+            info.sender,
+        ),
     }
 }
 
@@ -487,58 +508,10 @@ pub fn execute_close_channel(deps: DepsMut, channel_id: String) -> Result<Respon
 
 // It's recommended to migrate either pending acks or traps, not both at the same time!
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    // remove old traps
-    for key in msg.delete_traps.clone() {
-        TRAPS.remove(deps.storage, key)
-    }
-
-    // remove old pending acks
-    for key in msg.delete_pending_acks.clone() {
-        PENDING_ACK.remove(deps.storage, key)
-    }
-
-    // add a new fresh unlocked ibc lock
-    IBC_LOCK.save(deps.storage, &Lock::new())?;
-
-    let mut fjq = vec![];
-    while !FAILED_JOIN_QUEUE.is_empty(deps.storage)? {
-        let fj = FAILED_JOIN_QUEUE.pop_front(deps.storage)?;
-        fjq.push(fj.unwrap());
-    }
-
-    if !fjq.is_empty() {
-        TRAPS.save(
-            deps.storage,
-            (1, "undefined-purge".to_string()),
-            &Trap {
-                error: "rejoin purge".to_string(),
-                step: crate::helpers::IbcMsgKind::Ica(
-                    crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                        bonds: fjq
-                            .into_iter()
-                            .map(|b| OngoingDeposit {
-                                claim_amount: Uint128::new(1),
-                                raw_amount: RawAmount::LocalDenom(b.amount),
-                                owner: b.owner,
-                                bond_id: b.bond_id,
-                            })
-                            .collect(),
-                    }),
-                ),
-                last_succesful: false,
-            },
-        )?;
-    }
-
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new()
         .add_attribute("migrate", CONTRACT_NAME)
-        .add_attribute("success", "true")
-        .add_attribute("deleted_traps", msg.delete_traps.len().to_string())
-        .add_attribute(
-            "deleted_pending_acks",
-            msg.delete_pending_acks.len().to_string(),
-        ))
+        .add_attribute("success", "true"))
 }
 
 #[cfg(test)]
@@ -553,305 +526,47 @@ mod tests {
 
     use crate::{
         bond::Bond,
-        error::Trap,
-        queries::handle_trapped_errors_query,
-        state::{PendingBond, Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
+        state::{Unbond, LOCK_ADMIN, SHARES, UNBONDING_CLAIMS},
         test_helpers::default_setup,
     };
 
     use super::*;
 
     #[test]
-    fn migrate_purges_queue() {
-        let env = mock_env();
+    fn test_migrate_success() {
         let mut deps = mock_dependencies();
-
-        FAILED_JOIN_QUEUE
-            .push_back(
-                deps.as_mut().storage,
-                &Bond {
-                    amount: Uint128::new(101),
-                    owner: Addr::unchecked("vault"),
-                    bond_id: "1".to_string(),
-                },
-            )
-            .unwrap();
-        FAILED_JOIN_QUEUE
-            .push_back(
-                deps.as_mut().storage,
-                &Bond {
-                    amount: Uint128::new(101),
-                    owner: Addr::unchecked("vault"),
-                    bond_id: "1".to_string(),
-                },
-            )
-            .unwrap();
-        FAILED_JOIN_QUEUE
-            .push_back(
-                deps.as_mut().storage,
-                &Bond {
-                    amount: Uint128::new(101),
-                    owner: Addr::unchecked("vault"),
-                    bond_id: "1".to_string(),
-                },
-            )
-            .unwrap();
+        let env = mock_env();
 
         let msg = MigrateMsg {
-            delete_traps: vec![],
-            delete_pending_acks: vec![],
+            token_out_min_amount: Uint128::new(1000),
         };
 
-        migrate(deps.as_mut(), env, msg).unwrap();
-        assert!(FAILED_JOIN_QUEUE.is_empty(deps.as_mut().storage).unwrap());
+        let res = migrate(deps.as_mut(), env.clone(), msg.clone()).unwrap();
+
         assert_eq!(
-            handle_trapped_errors_query(deps.as_ref())
-                .unwrap()
-                .errors
-                .len(),
-            1
+            res,
+            Response::new()
+                .add_attribute("migrate", CONTRACT_NAME)
+                .add_attribute("token_out_min_amount", msg.token_out_min_amount.to_string())
+                .add_attribute("success", "true")
         );
+
+        // Verify the storage value
+        let stored_value = TOKEN_MIN_AMOUNT_OUT.load(&deps.storage).unwrap();
+        assert_eq!(stored_value, msg.token_out_min_amount);
     }
 
     #[test]
-    fn migrate_msg_works_for_pending_acks() {
+    fn test_migrate_zero_error() {
         let mut deps = mock_dependencies();
         let env = mock_env();
 
-        let entries = vec![
-            (
-                (1, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (2, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (1, "channel-3".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (1, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-            (
-                (1, "channel-2".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-            (
-                (1, "channel-4".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-        ];
-
-        for (key, value) in entries.clone() {
-            PENDING_ACK
-                .save(deps.as_mut().storage, key, &value)
-                .unwrap();
-        }
-
         let msg = MigrateMsg {
-            delete_traps: vec![],
-            delete_pending_acks: entries.iter().map(|(key, _)| key.clone()).collect(),
+            token_out_min_amount: Uint128::zero(),
         };
 
-        let res = migrate(deps.as_mut(), env, msg.clone()).unwrap();
-        assert!(PENDING_ACK.is_empty(deps.as_ref().storage));
-        assert_eq!(res.attributes[2].value, "0".to_string());
-        assert_eq!(
-            res.attributes[3].value,
-            msg.delete_pending_acks.len().to_string()
-        );
-    }
-
-    #[test]
-    fn migrate_msg_works_for_traps() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        let entries = vec![
-            (
-                (1, "channel-1".to_string()),
-                Trap {
-                    error: "some_error".to_string(),
-                    step: crate::helpers::IbcMsgKind::Ica(
-                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![],
-                        }),
-                    ),
-                    last_succesful: true,
-                },
-            ),
-            (
-                (2, "channel-10".to_string()),
-                Trap {
-                    error: "some_error".to_string(),
-                    step: crate::helpers::IbcMsgKind::Ica(
-                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![OngoingDeposit {
-                                claim_amount: Uint128::new(100),
-                                owner: Addr::unchecked("juan".to_string()),
-                                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
-                                bond_id: "bond_id_1".to_string(),
-                            }],
-                        }),
-                    ),
-                    last_succesful: true,
-                },
-            ),
-            (
-                (3, "channel-100".to_string()),
-                Trap {
-                    error: "some_error".to_string(),
-                    step: crate::helpers::IbcMsgKind::Ica(
-                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![OngoingDeposit {
-                                claim_amount: Uint128::new(100),
-                                owner: Addr::unchecked("juan".to_string()),
-                                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
-                                bond_id: "bond_id_1".to_string(),
-                            }],
-                        }),
-                    ),
-                    last_succesful: false,
-                },
-            ),
-        ];
-
-        for (key, value) in entries.clone() {
-            TRAPS.save(deps.as_mut().storage, key, &value).unwrap();
-        }
-
-        let msg = MigrateMsg {
-            delete_traps: entries.iter().map(|(key, _)| key.clone()).collect(),
-            delete_pending_acks: vec![],
-        };
-
-        let res = migrate(deps.as_mut(), env, msg.clone()).unwrap();
-        assert!(TRAPS.is_empty(deps.as_ref().storage));
-        assert_eq!(res.attributes[2].value, msg.delete_traps.len().to_string());
-        assert_eq!(res.attributes[3].value, "0".to_string());
-    }
-
-    #[test]
-    fn migrate_msg_works_for_traps_and_pending_acks_combined() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        let pending_acks_entries = vec![
-            (
-                (1, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (2, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (1, "channel-3".to_string()),
-                crate::helpers::IbcMsgKind::Ica(crate::helpers::IcaMessages::ExitPool(
-                    PendingReturningUnbonds { unbonds: vec![] },
-                )),
-            ),
-            (
-                (1, "channel-1".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-            (
-                (1, "channel-2".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-            (
-                (1, "channel-4".to_string()),
-                crate::helpers::IbcMsgKind::Icq,
-            ),
-        ];
-
-        for (key, value) in pending_acks_entries.clone() {
-            PENDING_ACK
-                .save(deps.as_mut().storage, key, &value)
-                .unwrap();
-        }
-
-        let trap_entries = vec![
-            (
-                (1, "channel-1".to_string()),
-                Trap {
-                    error: "some_error".to_string(),
-                    step: crate::helpers::IbcMsgKind::Ica(
-                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![],
-                        }),
-                    ),
-                    last_succesful: true,
-                },
-            ),
-            (
-                (2, "channel-10".to_string()),
-                Trap {
-                    error: "some_error".to_string(),
-                    step: crate::helpers::IbcMsgKind::Ica(
-                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![OngoingDeposit {
-                                claim_amount: Uint128::new(100),
-                                owner: Addr::unchecked("juan".to_string()),
-                                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
-                                bond_id: "bond_id_1".to_string(),
-                            }],
-                        }),
-                    ),
-                    last_succesful: true,
-                },
-            ),
-            (
-                (3, "channel-100".to_string()),
-                Trap {
-                    error: "some_error".to_string(),
-                    step: crate::helpers::IbcMsgKind::Ica(
-                        crate::helpers::IcaMessages::JoinSwapExternAmountIn(PendingBond {
-                            bonds: vec![OngoingDeposit {
-                                claim_amount: Uint128::new(100),
-                                owner: Addr::unchecked("juan".to_string()),
-                                raw_amount: RawAmount::LocalDenom(Uint128::new(100)),
-                                bond_id: "bond_id_1".to_string(),
-                            }],
-                        }),
-                    ),
-                    last_succesful: false,
-                },
-            ),
-        ];
-
-        for (key, value) in trap_entries.clone() {
-            TRAPS.save(deps.as_mut().storage, key, &value).unwrap();
-        }
-
-        let msg = MigrateMsg {
-            delete_traps: trap_entries.iter().map(|(key, _)| key.clone()).collect(),
-            delete_pending_acks: pending_acks_entries
-                .iter()
-                .map(|(key, _)| key.clone())
-                .collect(),
-        };
-
-        let res = migrate(deps.as_mut(), env, msg.clone()).unwrap();
-        assert!(TRAPS.is_empty(deps.as_ref().storage));
-        assert_eq!(res.attributes[2].value, msg.delete_traps.len().to_string());
-        assert_eq!(
-            res.attributes[3].value,
-            msg.delete_pending_acks.len().to_string()
-        );
+        let err = migrate(deps.as_mut(), env.clone(), msg).unwrap_err();
+        assert_eq!(err, ContractError::ZeroError);
     }
 
     #[test]

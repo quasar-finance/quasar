@@ -23,6 +23,7 @@ use quasar_types::{
     types::{CoinRatio, CoinWeight},
 };
 
+use crate::state::{UnbondingStub, PENDING_UNBOND_IDS, UNBOND_STATE};
 use crate::{
     callback::on_bond,
     contract::execute,
@@ -2225,4 +2226,496 @@ fn test_claim_with_funds() {
     let msg = ExecuteMsg::Claim {};
     let res = execute(deps.as_mut(), env, info, msg);
     assert_eq!(res.unwrap_err(), PaymentError::NonPayable {}.into());
+}
+
+#[test]
+fn test_force_unbond() {
+    let mut deps = mock_deps_with_primitives(even_primitives_single_token());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details_single_token());
+    let info = mock_info(TEST_CREATOR, &[]);
+    let env = mock_env();
+    let _ = init(deps.as_mut(), &init_msg, &env, &info);
+
+    let reply_msg = reply_msg();
+    let _ = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
+
+    BONDING_SEQ
+        .save(deps.as_mut().storage, &Uint128::one())
+        .unwrap();
+
+    // user deposits
+    let deposit_info = mock_info("user1", &even_deposit_single_token());
+    let deposit_msg = ExecuteMsg::Bond {
+        recipient: Option::None,
+    };
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        deposit_info,
+        deposit_msg.clone(),
+    )
+    .unwrap();
+
+    // mock callbacks from primitives
+    // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
+    let primitive_1_info = mock_info("quasar123", &[]);
+    let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 100u128.into(),
+        bond_id: "1".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_1_info,
+        primitive_1_msg,
+    )
+    .unwrap();
+
+    let primitive_2_info = mock_info("quasar124", &[]);
+    let primitive_2_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 100u128.into(),
+        bond_id: "1".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_2_info,
+        primitive_2_msg,
+    )
+    .unwrap();
+
+    let primitive_3_info = mock_info("quasar125", &[]);
+    let primitive_3_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 100u128.into(),
+        bond_id: "1".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_3_info,
+        primitive_3_msg,
+    )
+    .unwrap();
+
+    // check that the user has 300 - 3 shares
+    let balance_query = crate::msg::QueryMsg::Balance {
+        address: "user1".to_string(),
+    };
+    let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
+    let balance: BalanceResponse = from_json(&balance_res).unwrap();
+    assert_eq!(balance.balance, Uint128::from(300 - 3u128));
+
+    // another user deposits
+    let deposit_info = mock_info("user2", &coins(100u128, "ibc/uosmo"));
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        deposit_info.clone(),
+        deposit_msg,
+    )
+    .unwrap();
+
+    // mock callbacks from primitives -- user2 case
+    let primitive_1_info = mock_info("quasar123", &[]);
+    let primitive_1_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 49u128.into(),
+        bond_id: "2".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_1_info,
+        primitive_1_msg,
+    )
+    .unwrap();
+
+    let primitive_2_info = mock_info("quasar124", &[]);
+    let primitive_2_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 49u128.into(),
+        bond_id: "2".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_2_info,
+        primitive_2_msg,
+    )
+    .unwrap();
+
+    let primitive_3_info = mock_info("quasar125", &[]);
+    let primitive_3_msg = ExecuteMsg::BondResponse(BondResponse {
+        share_amount: 49u128.into(),
+        bond_id: "2".to_string(),
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_3_info,
+        primitive_3_msg,
+    )
+    .unwrap();
+
+    // check that the user2 has 149 - 3 shares
+    let balance_query = crate::msg::QueryMsg::Balance {
+        address: "user2".to_string(),
+    };
+    let balance_res = query(deps.as_ref(), env.clone(), balance_query).unwrap();
+    let balance: BalanceResponse = from_json(&balance_res).unwrap();
+    assert_eq!(balance.balance, Uint128::from(149 - 3u128));
+
+    // force unbond the user & some user that's not bounded
+    let contract_admin_info = mock_info("admin", &[]);
+    let force_unbond_msg = ExecuteMsg::ForceUnbond {
+        addresses: vec![
+            "user1".to_string(),
+            "user2".to_string(),
+            "user_not_bonded".to_string(),
+        ],
+    };
+
+    let force_unbond_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        contract_admin_info,
+        force_unbond_msg,
+    )
+    .unwrap();
+
+    // two messages to each primitive should be sent (for user1 & user2) + update vault rewards twice
+    assert_eq!(force_unbond_res.messages.len(), (3 + 1) * 2);
+
+    // check that only user1 & user2 started unbonding and that the amount of burnt shares is correct
+    assert_eq!(
+        force_unbond_res.attributes,
+        [
+            // user1
+            Attribute {
+                key: "action".to_string(),
+                value: "start_unbond".to_string(),
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "user1".to_string(),
+            },
+            Attribute {
+                key: "burnt".to_string(),
+                value: "297".to_string(),
+            },
+            Attribute {
+                key: "bond_id".to_string(),
+                value: "3".to_string(),
+            },
+            // user2
+            Attribute {
+                key: "action".to_string(),
+                value: "start_unbond".to_string(),
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "user2".to_string(),
+            },
+            Attribute {
+                key: "burnt".to_string(),
+                value: "146".to_string(),
+            },
+            Attribute {
+                key: "bond_id".to_string(),
+                value: "4".to_string(),
+            },
+            // user not bonded
+            Attribute {
+                key: "action".to_string(),
+                value: "skipped_start_unbond".to_string(),
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "user_not_bonded".to_string(),
+            },
+        ],
+    );
+}
+
+#[test]
+fn test_force_claim() {
+    let mut deps = mock_deps_with_primitives(even_primitives_single_token());
+    let init_msg = init_msg_with_primitive_details(even_primitive_details_single_token());
+    let info = mock_info(TEST_CREATOR, &[]);
+    let env = mock_env();
+    let _ = init(deps.as_mut(), &init_msg, &env, &info);
+
+    let reply_msg = reply_msg();
+    let _ = reply(deps.as_mut(), env.clone(), reply_msg).unwrap();
+
+    PENDING_UNBOND_IDS
+        .save(
+            deps.as_mut().storage,
+            Addr::unchecked(TEST_DEPOSITOR),
+            &vec!["2".to_string()],
+        )
+        .unwrap();
+
+    UNBOND_STATE
+        .save(
+            deps.as_mut().storage,
+            "2".to_string(),
+            &crate::state::Unbond {
+                stub: vec![
+                    UnbondingStub {
+                        address: "quasar123".to_string(),
+                        unlock_time: Some(env.block.time.minus_seconds(1)),
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "2".to_string(),
+                        }),
+                        unbond_funds: coins(100, "ibc/uosmo"),
+                    },
+                    UnbondingStub {
+                        address: "quasar124".to_string(),
+                        unlock_time: Some(env.block.time.minus_seconds(1)),
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "2".to_string(),
+                        }),
+                        unbond_funds: coins(100, "ibc/uosmo"),
+                    },
+                    UnbondingStub {
+                        address: "quasar125".to_string(),
+                        unlock_time: Some(env.block.time.minus_seconds(1)),
+                        unbond_response: Some(UnbondResponse {
+                            unbond_id: "2".to_string(),
+                        }),
+                        unbond_funds: coins(100, "ibc/uosmo"),
+                    },
+                ],
+                shares: Uint128::new(200),
+            },
+        )
+        .unwrap();
+
+    // mock callbacks from primitives
+    // in this scenario we expect 1000/1000 * 100 = 100 shares back from each primitive
+    let primitive_1_info = mock_info("quasar123", &[]);
+    let primitive_1_msg = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: "2".to_string(),
+        unlock_time: env.block.time,
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_1_info,
+        primitive_1_msg,
+    )
+    .unwrap();
+
+    let primitive_2_info = mock_info("quasar124", &[]);
+    let primitive_2_msg = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: "2".to_string(),
+        unlock_time: env.block.time,
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_2_info,
+        primitive_2_msg,
+    )
+    .unwrap();
+
+    let primitive_3_info = mock_info("quasar125", &[]);
+    let primitive_3_msg = ExecuteMsg::StartUnbondResponse(StartUnbondResponse {
+        unbond_id: "2".to_string(),
+        unlock_time: env.block.time,
+    });
+    let _ = execute(
+        deps.as_mut(),
+        env.clone(),
+        primitive_3_info,
+        primitive_3_msg,
+    )
+    .unwrap();
+
+    // force claim the user & some user that's not bounded
+    let contract_admin_info = mock_info("admin", &[]);
+    let force_claim_msg = ExecuteMsg::ForceClaim {
+        addresses: vec![TEST_DEPOSITOR.to_string()],
+    };
+
+    let force_claim_res = execute(
+        deps.as_mut(),
+        env.clone(),
+        contract_admin_info,
+        force_claim_msg,
+    )
+    .unwrap();
+
+    println!("force_claim_res: {force_claim_res:?}");
+
+    // we check that attributes are what we expect, but can't check the messages
+    // as the code is calling lp_strategy::msg::QueryMsg::UnbondingClaim
+    assert_eq!(
+        force_claim_res.attributes,
+        [
+            Attribute {
+                key: "action".to_string(),
+                value: "unbond".to_string()
+            },
+            Attribute {
+                key: "from".to_string(),
+                value: "depositor".to_string()
+            },
+            Attribute {
+                key: "num_unbondable_ids".to_string(),
+                // TODO: check why 0?
+                value: "0".to_string()
+            }
+        ]
+    );
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::error::ContractError;
+    use crate::execute::execute_transfer_quasar;
+    use cosmwasm_std::testing::{
+        mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
+    };
+    use cosmwasm_std::{
+        attr, coin, coins, from_binary, to_binary, Addr, BankMsg, Coin, ContractInfoResponse,
+        ContractResult, CosmosMsg, Empty, Event, OwnedDeps, Querier, QuerierResult, QueryRequest,
+        SystemError, WasmQuery,
+    };
+    use std::marker::PhantomData;
+
+    // Custom mock querier
+    pub struct CustomQuerier {
+        base: MockQuerier,
+        admin: String,
+    }
+
+    impl CustomQuerier {
+        pub fn new(admin: String) -> Self {
+            CustomQuerier {
+                base: MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]),
+                admin,
+            }
+        }
+    }
+
+    impl Querier for CustomQuerier {
+        fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
+            let request: std::result::Result<QueryRequest<Empty>, _> =
+                cosmwasm_std::from_slice(bin_request);
+            if let Ok(QueryRequest::Wasm(WasmQuery::ContractInfo { contract_addr })) = request {
+                if contract_addr == MOCK_CONTRACT_ADDR {
+                    let mut contract_info = ContractInfoResponse::new(0, "creator".to_string());
+                    contract_info.admin = Some(self.admin.clone());
+                    return QuerierResult::Ok(ContractResult::Ok(
+                        to_binary(&contract_info).unwrap(),
+                    ));
+                }
+            }
+            self.base.raw_query(bin_request)
+        }
+    }
+    #[test]
+    fn test_execute_transfer_quasar() {
+        // Create custom querier with admin set to "admin"
+        let admin = "admin".to_string();
+        let custom_querier = CustomQuerier::new(admin.clone());
+
+        // Create mock dependencies with custom querier
+        let mut deps = OwnedDeps {
+            storage: MockStorage::new(),
+            api: MockApi::default(),
+            querier: custom_querier,
+            custom_query_type: PhantomData,
+        };
+
+        // Create mock environment
+        let env = mock_env();
+
+        // Define sender and destination addresses
+        let sender = Addr::unchecked("admin");
+        let destination_address = Addr::unchecked("destination");
+
+        // Define the amounts to transfer
+        let amounts = coins(1000, "atom");
+
+        // Create a mock info with the sender address
+        let info = mock_info(sender.as_str(), &[]);
+
+        // Call the function
+        let result = execute_transfer_quasar(
+            deps.as_mut(),
+            env.clone(),
+            destination_address.clone(),
+            amounts.clone(),
+            sender.clone(),
+        );
+
+        // Check that the result is Ok and contains the expected response
+        match result {
+            Ok(response) => {
+                // Check the messages
+                assert_eq!(response.messages.len(), 1);
+                match &response.messages[0].msg {
+                    CosmosMsg::Bank(BankMsg::Send { to_address, amount }) => {
+                        assert_eq!(to_address, destination_address.as_str());
+                        assert_eq!(amount, &amounts);
+                    }
+                    _ => panic!("Unexpected message"),
+                }
+
+                // Check the events and attributes
+                assert_eq!(response.events.len(), 1);
+                let event = &response.events[0];
+                assert_eq!(event.ty, "transfer_on_quasar");
+                assert!(event.attributes.contains(&attr(
+                    "destination_address",
+                    destination_address.to_string()
+                )));
+            }
+            Err(e) => panic!("Unexpected error: {:?}", e),
+        }
+    }
+
+    #[test]
+    fn test_execute_transfer_quasar_unauthorized() {
+        // Create custom querier with admin set to "admin"
+        let admin = "admin".to_string();
+        let custom_querier = CustomQuerier::new(admin.clone());
+
+        // Create mock dependencies with custom querier
+        let mut deps = OwnedDeps {
+            storage: MockStorage::new(),
+            api: MockApi::default(),
+            querier: custom_querier,
+            custom_query_type: PhantomData,
+        };
+
+        // Create mock environment
+        let env = mock_env();
+
+        // Define sender and destination addresses
+        let sender = Addr::unchecked("not_admin");
+        let destination_address = Addr::unchecked("destination");
+
+        // Define the amounts to transfer
+        let amounts = coins(1000, "atom");
+
+        // Call the function
+        let result = execute_transfer_quasar(
+            deps.as_mut(),
+            env.clone(),
+            destination_address.clone(),
+            amounts.clone(),
+            sender.clone(),
+        );
+
+        // Check that the result is an Err with Unauthorized error
+        match result {
+            Ok(_) => panic!("Expected error but got Ok"),
+            Err(e) => match e {
+                ContractError::Unauthorized {} => {}
+                _ => panic!("Unexpected error: {:?}", e),
+            },
+        }
+    }
 }

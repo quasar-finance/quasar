@@ -14,6 +14,7 @@ use cosmwasm_std::{
     from_json, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, DepsMut, Env, IbcMsg,
     IbcPacketAckMsg, Order, QuerierWrapper, Response, StdError, Storage, SubMsg, Uint128, WasmMsg,
 };
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use prost::Message;
 use quasar_types::{callback::Callback, ibc::MsgTransferResponse};
 use schemars::JsonSchema;
@@ -247,6 +248,7 @@ pub enum IcaMessages {
     ReturnTransfer(PendingReturningUnbonds),
     RecoveryExitPool(PendingReturningRecovery),
     RecoveryReturnTransfer(PendingReturningRecovery),
+    BankSend(Addr, Vec<OsmoCoin>),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -341,6 +343,7 @@ pub(crate) fn unlock_on_error(
             }
             IcaMessages::RecoveryExitPool(_) => todo!(),
             IcaMessages::RecoveryReturnTransfer(_) => todo!(),
+            IcaMessages::BankSend(_, _) => todo!(),
         },
         IbcMsgKind::Icq => {
             IBC_LOCK.update(storage, |lock| {
