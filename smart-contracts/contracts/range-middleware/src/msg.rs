@@ -31,5 +31,18 @@ pub enum QueryMsg {
     #[returns(Empty)]
     AdminQuery(AdminQueryMsg),
 }
+
+impl From<RangeQueryMsg> for QueryMsg {
+    fn from(msg: RangeQueryMsg) -> Self {
+        QueryMsg::RangeQuery(msg)
+    }
+}
+
+impl From<AdminQueryMsg> for QueryMsg {
+    fn from(msg: AdminQueryMsg) -> Self {
+        QueryMsg::AdminQuery(msg)
+    }
+}
+
 #[cw_serde]
 pub struct MigrateMsg {}

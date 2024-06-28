@@ -10,6 +10,7 @@ use cw_orch_osmosis_test_tube::{osmosis_test_tube::Account, OsmosisTestTube};
 use interface::range_middleware::RangeMiddlewareContract;
 use range_middleware::{
     msg::{ExecuteMsgFns, QueryMsgFns},
+    range::query::RangeQueryMsgFns,
     state::{RangeUpdates, UpdateActions},
 };
 
@@ -92,26 +93,35 @@ fn submit_range_works() {
         )
         .unwrap();
 
+    let update = RangeUpdates {
+        cl_vault_address: cl_vault.addr_str().unwrap(),
+        updates: vec![
+            UpdateActions::CreatePosition(CreatePosition {
+                lower_price: Decimal::from_str("1.1").unwrap(),
+                upper_price: Decimal::from_str("1.5").unwrap(),
+                claim_after: None,
+            }),
+            UpdateActions::CreatePosition(CreatePosition {
+                lower_price: Decimal::from_str("0.5").unwrap(),
+                upper_price: Decimal::from_str("0.9").unwrap(),
+                claim_after: None,
+            }),
+        ]
+        .into(),
+    };
+
     let res = range_middleware
         .range_msg(
             range_middleware::range::execute::RangeExecuteMsg::SubmitNewRange {
-                new_ranges: RangeUpdates {
-                    cl_vault_address: cl_vault.addr_str().unwrap(),
-                    updates: vec![
-                        UpdateActions::CreatePosition(CreatePosition {
-                            lower_price: Decimal::from_str("1.1").unwrap(),
-                            upper_price: Decimal::from_str("1.5").unwrap(),
-                            claim_after: None,
-                        }),
-                        UpdateActions::CreatePosition(CreatePosition {
-                            lower_price: Decimal::from_str("0.5").unwrap(),
-                            upper_price: Decimal::from_str("0.9").unwrap(),
-                            claim_after: None,
-                        }),
-                    ]
-                    .into(),
-                },
+                new_ranges: update.clone(),
             },
         )
         .unwrap();
+
+    assert_eq!(
+        update,
+        range_middleware
+            .get_queued_range_updates_for_contract(cl_vault.addr_str().unwrap())
+            .unwrap()
+    )
 }
