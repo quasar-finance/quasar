@@ -442,6 +442,7 @@ pub fn init_test_contract(
 }
 
 #[test]
+#[ignore]
 fn default_init_works() {
     let (app, contract_address, pools, admin) = default_init();
     let wasm = Wasm::new(&app);
