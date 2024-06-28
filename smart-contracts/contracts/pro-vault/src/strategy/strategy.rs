@@ -1,6 +1,8 @@
 use cosmwasm_std::{
-    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, StdError, Uint128,
+    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdResult, 
+    Storage, StdError, Uint128, Decimal, Decimal256
 };
+
 use serde::{Serialize, Deserialize};
 use cw_storage_plus::{Map, Item};
 use cosmwasm_schema::cw_serde;
@@ -15,10 +17,14 @@ use crate::ownership::ownership::{
 
 use super::error;
 
+
+// Strategy persistent state variables
 const ADAPTERS: Map<&str, AdaptorInfo> = Map::new("adapters");
 const ADAPTOR_RATIOS: Map<&str, u128> = Map::new("adaptor_ratios");
 pub const STRATEGY: Map<&[u8], Strategy> = Map::new("strategy");
+const LATEST_ADAPTOR_ID: Item<u64> = Item::new("latest_adaptor_id");
 
+// Ownership related state variables
 pub const STRATEGY_OWNER: Admin = Admin::new("strategy_owner");
 pub const STRATEGY_PROPOSAL: Item<OwnerProposal> = Item::new("strategy_proposal");
 
@@ -36,6 +42,7 @@ impl StrategyKey {
 pub struct AdaptorInfo {
     pub name: String,
     pub unique_id: String, 
+    pub creation_block: u64,
 }
 
 #[cw_serde]
@@ -52,10 +59,44 @@ pub struct AdaptorRatio {
 pub struct Ratio;
 
 impl Ratio {
-    pub fn calculate_ratios(total_funds: u128, ratios: Vec<u128>) -> Vec<u128> {
-        let sum_ratios: u128 = ratios.iter().sum();
-        ratios.iter().map(|r| total_funds * r / sum_ratios).collect()
+ 
+
+    pub fn fund_allocation_calc(total_amount: u128, allocation_ratios: Vec<u128>) -> Vec<u128> {
+        let total_ratio: u128 = allocation_ratios.iter().sum();
+        allocation_ratios.iter().map(|&ratio| total_amount * ratio / total_ratio).collect()
     }
+
+    /// Calculates fund allocations based on given allocation percentages.
+    /// Returns a tuple containing the allocations and any residual amount.
+    /// TODO - Should we use Decimal256 or bigger?
+    pub fn calculate_fund_allocations(total_funds: u128, allocation_percentages: Vec<u128>) -> StdResult<(Vec<u128>, u128)> {
+        // Sum all allocation percentages
+        let total_percentage: u128 = allocation_percentages.iter().sum();
+    
+        // Convert the total percentage to a Decimal for precise arithmetic
+        let total_percentage_decimal = Decimal::from_ratio(total_percentage, 1u128);
+    
+        // Calculate the allocation for each percentage
+        let allocations: Vec<u128> = allocation_percentages.iter()
+            .map(|&percentage| {
+                // Convert the individual percentage to a Decimal
+                let percentage_decimal = Decimal::from_ratio(percentage, 1u128);
+                // Calculate the allocation as a Decimal and convert it to u128
+                let allocation_decimal = percentage_decimal * Decimal::from_ratio(total_funds, 
+                    1u128) / total_percentage_decimal;
+                // Convert the Decimal to Uint128 and then to u128
+                allocation_decimal * Uint128::one()
+            })
+            .map(|uint128| uint128.u128())
+            .collect();
+    
+         
+        let total_allocated: u128 = allocations.iter().sum();
+        let residual: u128 = total_funds - total_allocated;
+    
+        Ok((allocations, residual))
+    }
+    
 
     pub fn parse_custom_ratios(custom_ratios: String) -> StdResult<Vec<AdaptorRatio>> {
         let ratios: Vec<AdaptorRatio> = custom_ratios.split(',')
@@ -81,7 +122,7 @@ pub enum StrategyAction {
     DistributeFundWithPresetAdaptorRatio, // Distributing funds across adaptors as per preset ratios
     DistributeFundWithCustomAdaptorRatios { custom_ratios: String }, // CustomAdaptorRatio (A1:R1, A2:R2, A3:R3)
     RemoveAdaptor { unique_id: String }, // Remove Adaptor by unique_id
-    AddNewAdaptor { name: String, unique_id: String }, // Add a new adaptor with name and unique_id. Should fail if already one is present.
+    AddNewAdaptor { name: String }, // Add a new adaptor with name and unique_id. Should fail if already one is present.
     UpdateStrategyParams,
     UpdateAdaptorRunningState { unique_id: String },
     UpdateStrategyRunningState,
@@ -103,6 +144,15 @@ pub struct Strategy {
 
 // TODO - Strategy actions to be protected by strategy owner
 impl Strategy {
+
+    /// Generates a new unique ID for the adaptor by incrementing the latest ID stored in LATEST_ADAPTOR_ID.
+    fn generate_new_adaptor_id(deps: DepsMut) -> StdResult<u64> {
+        let mut latest_id = LATEST_ADAPTOR_ID.may_load(deps.storage)?.unwrap_or(0);
+        latest_id += 1;
+        LATEST_ADAPTOR_ID.save(deps.storage, &latest_id)?;
+        Ok(latest_id)
+    }
+
     pub fn execute_action(
         deps: DepsMut,
         env: Env,
@@ -112,7 +162,7 @@ impl Strategy {
     {
         match action {
             StrategyAction::DistributeFundWithPresetAdaptorRatio => {
-                Self::distribute_funds_with_preset_ratios(deps, env)
+                Self::distribute_funds_with_preset_ratios(deps, info, env)
             }
             StrategyAction::DistributeFundWithCustomAdaptorRatios { custom_ratios } => {
                 Self::distribute_funds_with_custom_ratios(deps, env, info, custom_ratios)
@@ -123,10 +173,15 @@ impl Strategy {
                 Ok(Response::new()
                 .add_attribute("action", "remove_adaptor"))
              }
+            /* 
             StrategyAction::AddNewAdaptor { name, unique_id } => {
                 // TODO - Validation checks
                 // Use the code from adaptor module to properly register an adaptor with address or so. 
                 Self::add_adapter(deps.storage, AdaptorInfo { name, unique_id })
+            }
+            */
+            StrategyAction::AddNewAdaptor { name } => {
+                Self::add_adapter(deps, env, name)
             }
             StrategyAction::UpdateStrategyParams => {
                 // Placeholder for updating strategy parameters
@@ -168,17 +223,34 @@ impl Strategy {
     // For simplification, there should be only one adaptor of one adaptor type. So maximum one
     // instance of CLVault, maximum one instance DebtMarket adaptor, and max one for the 
     // Swap Market. 
-    pub fn add_adapter(storage: &mut dyn Storage, 
-        adaptor_info: AdaptorInfo) -> Result<Response, ContractError> {
-        if ADAPTERS.has(storage, adaptor_info.unique_id.as_str()) {
-            Err(AdaptorAlreadyExists{}.into())
-        } else {
-            ADAPTERS.save(storage, adaptor_info.unique_id.as_str(), &adaptor_info)?;
-            Ok(Response::new()
-                .add_attribute("action", "add_adapter")
-                .add_attribute("adaptor_name", adaptor_info.name)
-                .add_attribute("unique_id", adaptor_info.unique_id))
+  
+
+    pub fn add_adapter(mut deps: DepsMut, env: Env, name: String) -> Result<Response, ContractError> {
+        // TODO - Valid adaptor name and type validation. And Additional adaptor params based on the 
+        // type of the adaptor requested. So ther will be a new message type here. 
+        let new_id = Self::generate_new_adaptor_id(deps.branch())?;
+        let unique_id = new_id.to_string();
+        let adaptor_info = AdaptorInfo {
+            name,
+            unique_id: unique_id.clone(),
+            creation_block: env.block.height,
+        };
+
+        if ADAPTERS.has(deps.storage, unique_id.as_str()) {
+            return Err(AdaptorAlreadyExists{}.into());
         }
+
+        ADAPTERS.save(deps.storage, unique_id.as_str(), &adaptor_info)?;
+        LATEST_ADAPTOR_ID.save(deps.storage, &new_id)?;
+
+        // TODO - Call into adaptor module to do initialise the requested adaptor.
+
+        Ok(Response::new()
+            .add_attribute("action", "add_adapter")
+            .add_attribute("adaptor_name", adaptor_info.name)
+            .add_attribute("unique_id", adaptor_info.unique_id)
+            .add_attribute("creation_block", adaptor_info.creation_block.to_string()))
+    
     }
 
     // To be triggered by strategy owner via strategy action entry point.
@@ -196,7 +268,7 @@ impl Strategy {
         let total_funds = Self::get_treasury_funds(deps.storage)?;
 
         // Calculate allocations based on custom ratios
-        let allocations = Ratio::calculate_ratios(total_funds.u128(), ratios.iter().map(|r| r.ratio).collect());
+        let (allocations, residual) = Ratio::calculate_fund_allocations(total_funds.u128(), ratios.iter().map(|r| r.ratio).collect())?;
 
         // Implement the logic to transfer `allocations[i]` amount to the adaptor with id `ratios[i].adaptor_id`.
         let mut response = Response::new().add_attribute("action", "distribute_funds_with_custom_ratios");
@@ -205,6 +277,9 @@ impl Strategy {
             Self::transfer_funds_to_adaptor(deps.branch(), &env, &info, &ratio.adaptor_id, allocations[i])?;
             response = response.add_attribute(format!("allocation_{}", ratio.adaptor_id), allocations[i].to_string());
         }
+
+        // Add an attribute for the residual amount
+        response = response.add_attribute("residual", residual.to_string());
 
         Ok(response)
     }
@@ -242,14 +317,12 @@ impl Strategy {
         Ok(())
     }
 
-    pub fn distribute_funds_with_preset_ratios(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-        
-        let mut response = Response::new().
-            add_attribute("action", "distribute_funds_with_preset_ratios");
+    pub fn distribute_funds_with_preset_ratios(mut deps: DepsMut, info: MessageInfo, env: Env) -> Result<Response, ContractError> {
+        let mut response = Response::new().add_attribute("action", "distribute_funds_with_preset_ratios");
 
         // TODO #1 - total_outstanding share and amount To be taken from vault::vault_position_manager.
         // TODO #2 - open deposit objects should be cleared after successful distribution. 
-        // TOTO #3 - reply handlers should be added. Design decision to be taken for one step distribution 
+        // TODO #3 - reply handlers should be added. Design decision to be taken for one step distribution 
         //           which will require async handlings. The good option is to just send fund to the adaptors.
         //           and adaptor will take care of further allocation in the actual allocation to yield destination.
         // TODO #4 - Real shares <denoms, amount> to be saved from the yield destinations in the position_manager 
@@ -261,18 +334,24 @@ impl Strategy {
 
         Ratio::validate_ratios(&ratios)?;
 
-        let allocations = Ratio::calculate_ratios(total_funds.u128(), ratios.iter().map(|r| r.ratio).collect());
+        // Calculate allocations based on preset ratios
+        let (allocations, residual) = Ratio::calculate_fund_allocations(total_funds.u128(), ratios.iter().map(|r| r.ratio).collect())?;
 
         for (i, ratio) in ratios.iter().enumerate() {
-            // TODO - Adaptor module should also support a add_fund mendatory methods towards the adaptors. 
-            // As the actual methods of deployment is different in each adaptors, 
+            // TODO - Adaptor module should also support a add_fund mandatory methods towards the adaptors. 
+            // As the actual methods of deployment are different in each adaptors, 
             // We can implement something like, adaptor type and match statement helper.
-            // In the match if is is Mars then we do deposit, for SWAP we do swap operation on the actual adaptor. 
+            // In the match if it is Mars then we do deposit, for SWAP we do swap operation on the actual adaptor. 
             // Implement the logic to transfer `allocations[i]` amount to the adaptor with id `ratio.adaptor_id`.
+            Self::transfer_funds_to_adaptor(deps.branch(), &env, &info, &ratio.adaptor_id, allocations[i])?;
             response = response.add_attribute(format!("allocation_{}", ratio.adaptor_id), allocations[i].to_string());
         }
 
+        // Add an attribute for the residual amount
+        response = response.add_attribute("residual", residual.to_string());
+
         Ok(response)
     }
+
 }
  

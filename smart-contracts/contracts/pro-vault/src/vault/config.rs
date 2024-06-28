@@ -17,7 +17,7 @@ pub struct VaultConfigResponse {
 pub struct Config {
     pub max_deposit_cap: Uint128,
     pub deposit_denom: String,
-    pub share_denom: String,
+    pub share_denom: Option<String>,
     pub max_strategy_inst: Uint64,
     pub admin: String,
 }

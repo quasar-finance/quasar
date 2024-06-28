@@ -6,10 +6,10 @@ use cosmwasm_std::{
 
     use crate::error::ContractError;
 
-use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg};
-use crate::msg::ProExtensionExecuteMsg;
-use crate::msg::ExtensionExecuteMsg;
-
+use crate::msg::{InstantiateMsg, QueryMsg, MigrateMsg, ExecuteMsg, 
+    ExtensionExecuteMsg, ProExtensionExecuteMsg, 
+    ExtensionQueryMsg, ProExtensionQueryMsg};
+ 
 use crate::strategy::strategy::{Strategy, StrategyAction};
 
 use crate::vault::provault::{VaultRunningState, VAULT_STATE, VAULT_OWNER, Vault, VaultAction};
@@ -126,7 +126,9 @@ fn emit_instantiate_events(
         .add_attribute("vault_owner", info.sender.to_string())
         .add_attribute("max_deposit_cap", config.max_deposit_cap.to_string())
         .add_attribute("deposit_denom", config.deposit_denom.clone())
-        .add_attribute("share_denom", config.share_denom.clone())
+//        .add_attribute("share_denom", config.share_denom.clone())
+        .add_attribute("share_denom", config.share_denom.clone().unwrap_or_else(|| "".to_string()))
+
         .add_attribute("max_strategy_inst", config.max_strategy_inst.to_string())
         .add_attribute("admin", config.admin.to_string())
         .add_attributes(update_state_attributes) // Merge attributes from update_state
@@ -137,18 +139,69 @@ fn emit_instantiate_events(
 // strategy config query to be in strategy module. 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-
     match msg {
-        QueryMsg::GetAllStrategies {} => query_all_strategies(deps),
-        QueryMsg::VaultQuery(vault_msg) => {
-            match vault_msg {
-                VaultQueryMsg::GetVaultConfig {} => query_vault_config(deps),
-                VaultQueryMsg::GetVaultRunningState {} => query_vault_running_state(deps),
+        QueryMsg::VaultStandardInfo {} => {
+            // TODO: Implement the logic for VaultStandardInfo query
+            todo!()
+        },
+        QueryMsg::Info {} => {
+            // TODO: Implement the logic for Info query
+            todo!()
+        },
+        QueryMsg::PreviewDeposit { amount } => {
+            // TODO: Implement the logic for PreviewDeposit query
+            todo!()
+        },
+        QueryMsg::PreviewRedeem { amount } => {
+            // TODO: Implement the logic for PreviewRedeem query
+            todo!()
+        },
+        QueryMsg::TotalAssets {} => {
+            // TODO: Implement the logic for TotalAssets query
+            todo!()
+        },
+        QueryMsg::TotalVaultTokenSupply {} => {
+            // TODO: Implement the logic for TotalVaultTokenSupply query
+            todo!()
+        },
+        QueryMsg::ConvertToShares { amount } => {
+            // TODO: Implement the logic for ConvertToShares query
+            todo!()
+        },
+        QueryMsg::ConvertToAssets { amount } => {
+            // TODO: Implement the logic for ConvertToAssets query
+            todo!()
+        },
+        QueryMsg::VaultExtension(extension_msg) => {
+            match extension_msg {
+                ExtensionQueryMsg::ProExtension(pro_msg) => {
+                    match pro_msg { 
+                        ProExtensionQueryMsg::Metadata {  } => { todo!() },
+                        ProExtensionQueryMsg::GetAllStrategies {} => {
+                        // Implement the logic for GetAllStrategies query
+                        query_all_strategies(deps)
+                         },
+                        ProExtensionQueryMsg::VaultQuery(vault_msg) => {
+                            match vault_msg {
+                                VaultQueryMsg::GetVaultConfig {} => {
+                                    // Implement the logic for GetVaultConfig query
+                                    query_vault_config(deps)
+                                },
+                                VaultQueryMsg::GetVaultRunningState {} => {
+                                    // Implement the logic for GetVaultRunningState query
+                                    query_vault_running_state(deps)
+                                },
+                                // Handle other VaultQueryMsg variants here if any
+                            }
+                        }
+            }
+                // Handle other ProExtensionQueryMsg variants here if any
             }
         }
-        // Handle other queries ...
+        },
     }
 }
+
  
 
 #[cfg_attr(not(feature = "library"), entry_point)]

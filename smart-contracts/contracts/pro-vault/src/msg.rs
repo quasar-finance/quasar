@@ -22,13 +22,6 @@ pub struct InstantiateMsg {
 }
 
 
-// Pro vault query message enums types.
-// TODO - Extending the Vault standard query message
-#[cw_serde]
-pub enum QueryMsg {
-    GetAllStrategies {},
-    VaultQuery(VaultQueryMsg), // Use VaultQueryMsg for vault-related queries
-}
 
 #[cw_serde]
 pub struct MigrateMsg {}
@@ -51,8 +44,26 @@ pub enum ExtensionExecuteMsg {
     ProExtension(ProExtensionExecuteMsg),
 }
 
-/// ExecuteMsg
+/// Execute Msg
 pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
 
 
- 
+/////// QUERY ////////
+
+// Pro vault extension query messages
+#[cw_serde]
+pub enum ProExtensionQueryMsg {
+    Metadata {},
+    GetAllStrategies {},
+    // Use VaultQueryMsg for vault-related queries
+    VaultQuery(VaultQueryMsg), 
+}
+
+// Extending the vault standard query message
+#[cw_serde]
+pub enum ExtensionQueryMsg {
+    ProExtension(ProExtensionQueryMsg),
+}
+
+/// Query Msg
+pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
