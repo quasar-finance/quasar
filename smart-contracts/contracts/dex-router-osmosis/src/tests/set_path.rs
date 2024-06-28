@@ -1,7 +1,26 @@
 use crate::contract::{execute, instantiate};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
+use osmosis_test_tube::{Module, Wasm};
+
+use super::initialize::default_init;
+
+fn get_instantiate_msg() -> InstantiateMsg {
+    InstantiateMsg {}
+}
+
+#[test]
+fn test_instantiate() {
+    let mut deps = mock_dependencies();
+    let msg = get_instantiate_msg();
+    let info = mock_info("creator", &[]);
+
+    let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+    assert_eq!(res.messages.len(), 0);
+    assert_eq!(res.attributes.len(), 0);
+}
 
 #[test]
 fn test_if_not_owner_then_set_path_fails() {
@@ -42,4 +61,49 @@ fn test_if_path_is_empty_then_set_path_fails() {
     };
     let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
     assert_eq!(err, ContractError::EmptyPath {});
+}
+
+#[test]
+fn test_set_path_works() {
+    let (app, contract_address, pools, admin) = default_init();
+    let wasm = Wasm::new(&app);
+
+    for pool in pools.clone() {
+        let _ = wasm
+            .execute(
+                &contract_address.to_string(),
+                &ExecuteMsg::SetPath {
+                    path: vec![pool.pool],
+                    bidirectional: true,
+                    offer_denom: pool.denom0.clone(),
+                    ask_denom: pool.denom1.clone(),
+                },
+                &[],
+                &admin,
+            )
+            .unwrap();
+    }
+
+    let resp: Vec<Vec<SwapAmountInRoute>> = wasm
+        .query(
+            contract_address.as_str(),
+            &QueryMsg::PathsForPair {
+                offer_denom: pools.first().unwrap().denom0.clone(),
+                ask_denom: pools.first().unwrap().denom1.clone(),
+            },
+        )
+        .unwrap();
+
+    // Assert that the set path is included in the response
+    let expected_path = SwapAmountInRoute {
+        pool_id: pools.first().unwrap().pool,
+        token_out_denom: pools.first().unwrap().denom1.clone(),
+    };
+
+    let paths_contain_expected = resp.iter().any(|path| path.contains(&expected_path));
+
+    assert!(
+        paths_contain_expected,
+        "Expected path was not found in the response"
+    );
 }

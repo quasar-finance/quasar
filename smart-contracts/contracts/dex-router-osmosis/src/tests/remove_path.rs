@@ -1,9 +1,11 @@
 use crate::contract::{execute, instantiate};
-use crate::msg::{ExecuteMsg, InstantiateMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::PATHS;
+use crate::tests::initialize::default_init;
 use crate::ContractError;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
+use osmosis_test_tube::{Module, Wasm};
 
 #[test]
 fn test_if_not_owner_then_remove_path_fails() {
@@ -221,4 +223,62 @@ fn test_remove_one_of_two_paths() {
         PATHS.may_load(deps.as_mut().storage, key).unwrap(),
         Some(vec![path2])
     );
+}
+
+#[test]
+fn test_set_and_remove_path() {
+    let (app, contract_address, pools, admin) = default_init();
+    let wasm = Wasm::new(&app);
+
+    for pool in pools.clone() {
+        let _ = wasm
+            .execute(
+                &contract_address.to_string(),
+                &ExecuteMsg::SetPath {
+                    path: vec![pool.pool],
+                    bidirectional: true,
+                    offer_denom: pool.denom0.clone(),
+                    ask_denom: pool.denom1.clone(),
+                },
+                &[],
+                &admin,
+            )
+            .unwrap();
+    }
+
+    let _ = wasm
+        .execute(
+            &contract_address.to_string(),
+            &ExecuteMsg::RemovePath {
+                path: vec![pools.first().unwrap().pool],
+                bidirectional: true,
+                offer_denom: pools.first().unwrap().denom0.clone(),
+                ask_denom: pools.first().unwrap().denom1.clone(),
+            },
+            &[],
+            &admin,
+        )
+        .unwrap();
+
+    let resp: Vec<Vec<SwapAmountInRoute>> = wasm
+        .query(
+            contract_address.as_str(),
+            &QueryMsg::PathsForPair {
+                offer_denom: pools.first().unwrap().denom0.clone(),
+                ask_denom: pools.first().unwrap().denom1.clone(),
+            },
+        )
+        .unwrap();
+
+    // Assert that the set path is included in the response
+    let expected_path_to_remove = SwapAmountInRoute {
+        pool_id: pools.first().unwrap().pool,
+        token_out_denom: pools.first().unwrap().denom1.clone(),
+    };
+
+    let paths_contain_expected = resp
+        .iter()
+        .any(|path| path.contains(&expected_path_to_remove));
+
+    assert_eq!(paths_contain_expected, false);
 }
