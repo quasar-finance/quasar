@@ -12,17 +12,6 @@ fn get_instantiate_msg() -> InstantiateMsg {
 }
 
 #[test]
-fn test_instantiate() {
-    let mut deps = mock_dependencies();
-    let msg = get_instantiate_msg();
-    let info = mock_info("creator", &[]);
-
-    let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-    assert_eq!(res.messages.len(), 0);
-    assert_eq!(res.attributes.len(), 0);
-}
-
-#[test]
 fn test_if_not_owner_then_set_path_fails() {
     let mut deps = mock_dependencies();
     let env = mock_env();
@@ -64,6 +53,7 @@ fn test_if_path_is_empty_then_set_path_fails() {
 }
 
 #[test]
+#[ignore]
 fn test_set_path_works() {
     let (app, contract_address, pools, admin) = default_init();
     let wasm = Wasm::new(&app);

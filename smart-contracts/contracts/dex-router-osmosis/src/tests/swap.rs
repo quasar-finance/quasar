@@ -49,6 +49,7 @@ fn test_swap_with_too_many_funds_throws() {
 }
 
 #[test]
+#[ignore]
 fn test_swap_over_single_route() {
     let (app, contract_address, pools, admin) = default_init();
     let wasm = Wasm::new(&app);

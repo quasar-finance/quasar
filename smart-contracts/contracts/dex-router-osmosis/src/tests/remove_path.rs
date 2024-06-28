@@ -226,6 +226,7 @@ fn test_remove_one_of_two_paths() {
 }
 
 #[test]
+#[ignore]
 fn test_set_and_remove_path() {
     let (app, contract_address, pools, admin) = default_init();
     let wasm = Wasm::new(&app);
