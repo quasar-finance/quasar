@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cl_vault::{msg::ExtensionExecuteMsgFns, state::VaultConfig};
+use cl_vault::{msg::CreatePosition, state::VaultConfig};
 use interface::cl_vault::ClVaultContract;
 use osmosis_helpers::concentratedliquidity::create_cl_pool;
 
@@ -8,6 +8,10 @@ use cosmwasm_std::{coin, coins, Decimal};
 use cw_orch::prelude::*;
 use cw_orch_osmosis_test_tube::{osmosis_test_tube::Account, OsmosisTestTube};
 use interface::range_middleware::RangeMiddlewareContract;
+use range_middleware::{
+    msg::{ExecuteMsgFns, QueryMsgFns},
+    state::{RangeUpdates, UpdateActions},
+};
 
 #[test]
 fn submit_range_works() {
@@ -85,6 +89,29 @@ fn submit_range_works() {
                 coin(100_000_000_u128, denom0),
                 coin(100_000_000_u128, denom1),
             ]),
+        )
+        .unwrap();
+
+    let res = range_middleware
+        .range_msg(
+            range_middleware::range::execute::RangeExecuteMsg::SubmitNewRange {
+                new_ranges: RangeUpdates {
+                    cl_vault_address: cl_vault.addr_str().unwrap(),
+                    updates: vec![
+                        UpdateActions::CreatePosition(CreatePosition {
+                            lower_price: Decimal::from_str("1.1").unwrap(),
+                            upper_price: Decimal::from_str("1.5").unwrap(),
+                            claim_after: None,
+                        }),
+                        UpdateActions::CreatePosition(CreatePosition {
+                            lower_price: Decimal::from_str("0.5").unwrap(),
+                            upper_price: Decimal::from_str("0.9").unwrap(),
+                            claim_after: None,
+                        }),
+                    ]
+                    .into(),
+                },
+            },
         )
         .unwrap();
 }

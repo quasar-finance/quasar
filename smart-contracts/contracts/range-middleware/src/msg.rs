@@ -13,6 +13,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     /// range operations
     RangeMsg(RangeExecuteMsg),
@@ -21,7 +22,7 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(cw_orch::QueryFns, QueryResponses)]
 pub enum QueryMsg {
     /// range queries
     #[returns(Empty)]
