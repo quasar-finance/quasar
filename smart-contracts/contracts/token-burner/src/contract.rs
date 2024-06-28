@@ -48,8 +48,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[entry_point]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, BurnErrors> {
-    Ok(Response::new().add_attribute("migrate", "successful"))
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, BurnErrors> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    Ok(Response::new().add_attribute("migrate", "succesful"))
 }
 
 pub fn execute_burn(deps: DepsMut, info: MessageInfo) -> Result<Response, BurnErrors> {
