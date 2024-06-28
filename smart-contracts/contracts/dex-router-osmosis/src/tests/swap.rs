@@ -4,7 +4,6 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{coin, Coin, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
-use osmosis_test_tube::cosmrs::proto::tendermint::v0_37::abci::response;
 use osmosis_test_tube::{Module, Wasm};
 use quasar_types::error::FundsError;
 
