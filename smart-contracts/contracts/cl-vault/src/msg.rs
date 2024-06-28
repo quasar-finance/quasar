@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
@@ -175,6 +175,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub dex_router: Addr,
-}
+pub struct MigrateMsg {}
