@@ -2,8 +2,6 @@ package app
 
 import (
 	"fmt"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	"io"
 	"net/http"
 	"os"
@@ -20,6 +18,7 @@ import (
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -34,8 +33,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	quasarante "github.com/quasarlabs/quasarnode/ante"
-	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
+	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
+	"github.com/spf13/cast"
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -43,19 +42,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
+
+	// Quasar imports
+	quasarante "github.com/quasarlabs/quasarnode/ante"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/openapiconsole"
 	appParams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
 	v0 "github.com/quasarlabs/quasarnode/app/upgrades/v0"
-
-	// Quasar imports
+	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
 	"github.com/quasarlabs/quasarnode/docs"
-	"github.com/spf13/cast"
 )
 
 const (
@@ -157,10 +156,6 @@ type QuasarApp struct {
 	sm *module.SimulationManager
 
 	configurator module.Configurator
-}
-
-func (app *QuasarApp) GetStakingKeeper() stakingkeeper.Keeper {
-	return *app.StakingKeeper
 }
 
 // RegisterNodeService registers the node gRPC Query service.
@@ -543,12 +538,6 @@ func (app *QuasarApp) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// Required for ibctesting
-/*
-func (app *QuasarApp) GetStakingKeeper() ibctestingtypes.StakingKeeper {
-	return app.StakingKeeper // Dereferencing the pointer
-}
-*/
 func (app *QuasarApp) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper // This is a *ibckeeper.Keeper
 }

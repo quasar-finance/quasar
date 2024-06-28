@@ -123,7 +123,7 @@ type AppKeepers struct {
 	TfKeeper            tfmodulekeeper.Keeper
 	AuthzKeeper         authzkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
+	ICAHostKeeper       *icahostkeeper.Keeper
 
 	// IBC modules
 	// transfer module
@@ -328,7 +328,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.ScopedICAControllerKeeper,
 		bApp.MsgServiceRouter(),
 	)
-	appKeepers.ICAHostKeeper = icahostkeeper.NewKeeper(
+	icaHostKeeper := icahostkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[icahosttypes.StoreKey],
 		appKeepers.GetSubspace(icahosttypes.SubModuleName),
@@ -339,6 +339,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.ScopedICAHostKeeper,
 		bApp.MsgServiceRouter(),
 	)
+	appKeepers.ICAHostKeeper = &icaHostKeeper
 
 	//icaModule :=
 	//
@@ -511,7 +512,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	// TODO_IMPORTANT - addition of qtransfer module
 	ibcRouter.
 		AddRoute(wasmtypes.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
-		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(appKeepers.ICAHostKeeper)).
+		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(*appKeepers.ICAHostKeeper)).
 		AddRoute(ibctransfertypes.ModuleName, appKeepers.TransferStack).
 		AddRoute(qosmotypes.SubModuleName, qosmo.NewIBCModule(appKeepers.QOsmosisKeeper))
 	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
