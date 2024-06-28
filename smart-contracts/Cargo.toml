@@ -14,7 +14,10 @@ members = [
   # "packages/intergamm-bindings",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
-  "contracts/range-middleware", "packages/interface",
+  "contracts/range-middleware",
+  "contracts/cw-vault-standard",
+  "packages/interface"
+
 ]
 
 [workspace.dependencies]
