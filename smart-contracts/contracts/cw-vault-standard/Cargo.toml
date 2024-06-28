@@ -1,0 +1,30 @@
+[package]
+name = "cw-vault-standard"
+version = "0.3.0"
+edition = "2021"
+authors = ["Sturdy <sturdy@apollo.farm>"]
+license = "Apache-2.0"
+description = "A standard interface for tokenized vaults written in CosmWasm"
+homepage = "https://github.com/apollodao/cw-vault-standard/"
+documentation = "https://docs.rs/cw-vault-standard"
+repository = "https://github.com/apollodao/cw-vault-standard/"
+readme = "README.md"
+
+[features]
+default = []
+lockup = ["cw-utils"]
+force-unlock = []
+keeper = []
+cw4626 = ["cw20"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+cosmwasm-std = "1.2.1"
+schemars = "0.8.11"
+serde = { version = "1.0.152", default-features = false, features = ["derive"] }
+cosmwasm-schema = "1.2.1"
+cw-utils = { version = "1.0.1", optional = true }
+cw20 = { version = "1.0.1", optional = true }

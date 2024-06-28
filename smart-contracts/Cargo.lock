@@ -2513,6 +2513,18 @@ dependencies = [
 [[package]]
 name = "cw-vault-multi-standard"
 version = "0.3.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-utils",
+ "cw20",
+ "schemars",
+ "serde",
+]
+
+[[package]]
+name = "cw-vault-multi-standard"
+version = "0.3.0"
 source = "git+https://github.com/quasar-finance/cw-vault-standard?branch=master#2da85996ead32d50d58eecc8f1d5d245bab0383c"
 dependencies = [
  "cosmwasm-schema 1.5.4",
