@@ -10,7 +10,7 @@ use cw_orch_osmosis_test_tube::{osmosis_test_tube::Account, OsmosisTestTube};
 use interface::range_middleware::RangeMiddlewareContract;
 use range_middleware::{
     msg::{ExecuteMsgFns, QueryMsgFns},
-    range::query::RangeQueryMsgFns,
+    range::{execute::RangeExecuteMsgFns, query::RangeQueryMsgFns},
     state::{RangeUpdates, UpdateActions},
 };
 
@@ -110,13 +110,7 @@ fn submit_range_works() {
         .into(),
     };
 
-    let res = range_middleware
-        .range_msg(
-            range_middleware::range::execute::RangeExecuteMsg::SubmitNewRange {
-                new_ranges: update.clone(),
-            },
-        )
-        .unwrap();
+    let res = range_middleware.submit_new_range(update.clone()).unwrap();
 
     assert_eq!(
         update,
