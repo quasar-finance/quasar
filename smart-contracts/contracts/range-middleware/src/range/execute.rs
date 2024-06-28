@@ -20,6 +20,7 @@ use crate::{
 use super::helpers::is_range_submitter_admin;
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum RangeExecuteMsg {
     /// Submit a range to the range middleware
     SubmitNewRange { new_ranges: RangeUpdates },

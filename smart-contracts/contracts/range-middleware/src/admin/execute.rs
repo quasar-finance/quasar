@@ -9,6 +9,7 @@ use crate::{
 use super::helpers::is_contract_admin;
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum AdminExecuteMsg {
     /// Update the range submitter admin.
     UpdateRangeSubmitterAdmin { new_admin: String },

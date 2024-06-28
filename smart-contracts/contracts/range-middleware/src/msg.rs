@@ -21,6 +21,18 @@ pub enum ExecuteMsg {
     AdminMsg(AdminExecuteMsg),
 }
 
+impl From<RangeExecuteMsg> for ExecuteMsg {
+    fn from(msg: RangeExecuteMsg) -> Self {
+        ExecuteMsg::RangeMsg(msg)
+    }
+}
+
+impl From<AdminExecuteMsg> for ExecuteMsg {
+    fn from(msg: AdminExecuteMsg) -> Self {
+        ExecuteMsg::AdminMsg(msg)
+    }
+}
+
 #[cw_serde]
 #[derive(cw_orch::QueryFns, QueryResponses)]
 pub enum QueryMsg {
