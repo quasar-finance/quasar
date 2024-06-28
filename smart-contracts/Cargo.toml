@@ -16,6 +16,7 @@ members = [
   "contracts/merkle-incentives",
   "contracts/range-middleware",
   "contracts/cw-vault-standard",
+  "contracts/cw-vault-multi-standard",
   "packages/interface"
 
 ]
