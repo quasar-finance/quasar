@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cl_vault::{msg::CreatePosition, state::VaultConfig};
+use cl_vault::{msg::CreatePosition, state::VaultConfig, msg::ExtensionExecuteMsgFns};
 use interface::cl_vault::ClVaultContract;
 use osmosis_helpers::concentratedliquidity::create_cl_pool;
 

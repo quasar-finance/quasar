@@ -12,6 +12,15 @@ use crate::{
     state::{Metadata, VaultConfig},
 };
 
+/// ExecuteMsg for an Autocompounding Vault.
+pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
+
+impl From<ExtensionExecuteMsg> for ExecuteMsg {
+    fn from(msg: ExtensionExecuteMsg) -> Self {
+        ExecuteMsg::VaultExtension(msg)
+    }
+}
+
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
 #[derive(cw_orch::ExecuteFns)]
@@ -38,10 +47,17 @@ pub enum ExtensionExecuteMsg {
 /// Extension messages for Authz. This interface basically reexports certain vault functionality
 /// but sets recipient forcibly to None
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum AuthzExtension {
     ExactDeposit {},
     AnyDeposit { max_slippage: Decimal },
     Redeem { amount: Uint128 },
+}
+
+impl From<AuthzExtension> for ExtensionExecuteMsg {
+    fn from(msg: AuthzExtension) -> Self {
+        ExtensionExecuteMsg::Authz(msg)
+    }
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -74,6 +90,12 @@ pub enum AdminExtensionExecuteMsg {
     },
     /// Build tick exponent cache
     BuildTickCache {},
+}
+
+impl From<AdminExtensionExecuteMsg> for ExtensionExecuteMsg {
+    fn from(msg: AdminExtensionExecuteMsg) -> Self {
+        ExtensionExecuteMsg::Admin(msg)
+    }
 }
 
 /// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position
@@ -145,16 +167,6 @@ pub struct MergePositionMsg {
     pub main_position: bool,
 }
 
-// struct used by swap.rs on swap non vault funds
-#[cw_serde]
-pub struct SwapOperation {
-    pub token_in_denom: String,
-    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
-    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
-}
-
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
@@ -178,6 +190,12 @@ pub enum UserBalanceQueryMsg {
     UserAssetsBalance { user: String },
 }
 
+impl From<UserBalanceQueryMsg> for ExtensionQueryMsg {
+    fn from(msg: UserBalanceQueryMsg) -> Self {
+        ExtensionQueryMsg::Balances(msg)
+    }
+}
+
 /// Extension query messages for related concentrated liquidity
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -195,11 +213,11 @@ pub enum ClQueryMsg {
     MainPosition,
 }
 
-/// ExecuteMsg for an Autocompounding Vault.
-pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
-
-/// QueryMsg for an Autocompounding Vault.
-pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
+impl From<ClQueryMsg> for ExtensionQueryMsg {
+    fn from(msg: ClQueryMsg) -> Self {
+        ExtensionQueryMsg::ConcentratedLiquidity(msg)
+    }
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {
