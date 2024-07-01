@@ -351,8 +351,13 @@ pub fn simulate_swaps(
     path: Vec<SwapAmountInRoute>,
 ) -> Result<Uint128, ContractError> {
     let querier = PoolmanagerQuerier::new(&deps.querier);
-    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path)?;
-    Ok(Uint128::from_str(&response.token_out_amount)?)
+    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path);
+    let token_out_amount = if let Ok(response) = response {
+        Uint128::from_str(&response.token_out_amount)?
+    } else {
+        Uint128::zero()
+    };
+    Ok(token_out_amount)
 }
 
 pub fn query_paths_for_pair(
