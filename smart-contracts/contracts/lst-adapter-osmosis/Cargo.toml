@@ -1,0 +1,48 @@
+[package]
+authors = ["Quasar"]
+edition = "2021"
+name = "lst-adapter-osmosis"
+version = "0.0.1"
+readme = "README.md"
+repository = "https://github.com/quasar-finance/quasar"
+homepage = "https://quasar.fi"
+documentation = ""
+license = "MPL-2.0"
+description = "A cosmwasm contract for routing swaps"
+keywords = ["cosmwasm", "lst", "osmosis"]
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "lst_adapter_osmosis.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["export"]
+export = []
+library = []
+
+[dependencies]
+cosmwasm-std = { workspace = true, features = ["stargate"] }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+thiserror = { workspace = true }
+mars-owner = { workspace = true }
+osmosis-std = { workspace = true }
+quasar-types = { workspace = true }
+abstract-app = { workspace = true }
+abstract-std = { workspace = true }
+abstract-sdk = { workspace = true }
+cw-orch = { workspace = true }
+const_format = { workspace = true }
+
+[dev-dependencies]
+abstract-client = { workspace = true }
+cw-orch-interchain = { workspace = true }
+abstract-interface = { workspace = true }
+abstract-polytone = { workspace = true }
+abstract-cw-orch-polytone = { workspace = true }
+ibc-relayer-types = { workspace = true }
