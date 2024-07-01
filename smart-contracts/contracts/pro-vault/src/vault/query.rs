@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize};
 use schemars::JsonSchema;
 use crate::strategy::strategy::{Strategy, STRATEGY};
  
+// TODO - Recheck the serialization
 #[cw_serde]
 pub enum VaultQueryMsg {
     GetVaultConfig {},

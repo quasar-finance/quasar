@@ -9,6 +9,7 @@ use cosmwasm_schema::cw_serde;
 pub const ALLOCATED_SHARES: Map<&str, Uint128> = Map::new("allocated_shares");
 
 // #[cw_serde]
+// TODO - Recheck serde serialization for the enum.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum ShareType {
     Number,

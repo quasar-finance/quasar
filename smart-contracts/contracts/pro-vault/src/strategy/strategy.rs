@@ -1,6 +1,7 @@
 use cosmwasm_std::{
     ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdResult, 
-    Storage, StdError, Uint128, Decimal, Decimal256
+    Storage, StdError, Uint128, Decimal, Decimal256, Coin,
+    QueryRequest, BankQuery, AllBalanceResponse, BalanceResponse
 };
 
 use serde::{Serialize, Deserialize};
@@ -8,7 +9,7 @@ use cw_storage_plus::{Map, Item};
 use cosmwasm_schema::cw_serde;
 use cw_controllers::Admin;
 use crate::error::ContractError;
-use crate::strategy::error::StrategyError::AdaptorAlreadyExists;
+use crate::strategy::error::StrategyError::{AdaptorAlreadyExists, AdaptorNotFound};
 
 use crate::ownership::ownership::{
     OwnerProposal, Ownership, OwnershipActions, query_owner, query_ownership_proposal,
@@ -36,8 +37,7 @@ impl StrategyKey {
         id.to_be_bytes().to_vec()
     }
 }
-
-// TODO - Creation of unique ID for the adaptor at the time of adding new adaptor. 
+// TODO - Actual adaptor object from the adaptor module to be instaniated.
 #[cw_serde]
 pub struct AdaptorInfo {
     pub name: String,
@@ -60,12 +60,6 @@ pub struct Ratio;
 
 impl Ratio {
  
-
-    pub fn fund_allocation_calc(total_amount: u128, allocation_ratios: Vec<u128>) -> Vec<u128> {
-        let total_ratio: u128 = allocation_ratios.iter().sum();
-        allocation_ratios.iter().map(|&ratio| total_amount * ratio / total_ratio).collect()
-    }
-
     /// Calculates fund allocations based on given allocation percentages.
     /// Returns a tuple containing the allocations and any residual amount.
     /// TODO - Should we use Decimal256 or bigger?
@@ -98,6 +92,12 @@ impl Ratio {
     }
     
 
+    /// Parses a string of custom ratios into a vector of `AdaptorRatio` structs.
+    /// The `custom_ratios` string should contain adaptor ratio pairs separated by commas,
+    /// with each pair formatted as `adaptor_id:ratio`. For example, "adaptor1:30,adaptor2:40".
+    /// Each `adaptor_id` is a string, and each `ratio` should be a parsable integer representing a percentage.
+    /// The function validates that the sum of ratios is 100, returning an error if not.
+    /// The function will return an error if the input string is malformed or if parsing fails.
     pub fn parse_custom_ratios(custom_ratios: String) -> StdResult<Vec<AdaptorRatio>> {
         let ratios: Vec<AdaptorRatio> = custom_ratios.split(',')
             .map(|pair| {
@@ -119,22 +119,32 @@ impl Ratio {
 
 #[cw_serde]
 pub enum StrategyAction {
-    DistributeFundWithPresetAdaptorRatio, // Distributing funds across adaptors as per preset ratios
-    DistributeFundWithCustomAdaptorRatios { custom_ratios: String }, // CustomAdaptorRatio (A1:R1, A2:R2, A3:R3)
-    RemoveAdaptor { unique_id: String }, // Remove Adaptor by unique_id
-    AddNewAdaptor { name: String }, // Add a new adaptor with name and unique_id. Should fail if already one is present.
+    /// Distribute funds across adaptors as per preset ratios
+    DistributeFundWithPresetAdaptorRatio, 
+    /// Distribute funds across adaptors using custom ratios
+    DistributeFundWithCustomAdaptorRatios { custom_ratios: String }, 
+    /// Remove an adaptor by its unique ID
+    RemoveAdaptor { unique_id: String }, 
+    /// Add a new adaptor with the specified name.
+    /// TODO - adaptor type to be added so we can instantiate right adaptor type.
+    AddNewAdaptor { name: String }, 
+    /// Update parameters of the strategy
     UpdateStrategyParams,
+    /// Update the running state of a specific adaptor
     UpdateAdaptorRunningState { unique_id: String },
+    /// Update the running state of the strategy
     UpdateStrategyRunningState,
+    /// Execute ownership-related actions
     Ownership(OwnershipActions),
 }
 
-// TODO - Impl ownership to the strategy.
-
-// Strategy here takes the control of the fund movement from the contract treasury balance to 
-// the pro vault adaptors as per the instructions sent to strategy module in the contract.
-// Fund distribution could be based on preset ratio or sent via external trigger, which depends on how
-// an external strategiest proposal followed by decentralised vote and execution of instructions. 
+// The Strategy module manages the movement of funds from the contract treasury balance 
+// to the various pro vault adaptors according to the instructions it receives.
+// It also acts as an adaptor manager, handling the addition and removal of adaptors, 
+// and managing their IDs and ratios. Fund distribution can be based on preset ratios 
+// or triggered externally, depending on an external strategist's proposal, 
+// which is followed by a decentralized vote (using platforms like daodao or keeper network) 
+// and the execution of instructions. 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Strategy {
     pub id: u64,
@@ -168,18 +178,22 @@ impl Strategy {
                 Self::distribute_funds_with_custom_ratios(deps, env, info, custom_ratios)
             }
             StrategyAction::RemoveAdaptor { unique_id } => {
-                // TODO - Validation checks
+                // Ensure the adaptor exists
+                ensure!(
+                    ADAPTERS.has(deps.storage, unique_id.as_str()),
+                    ContractError::Strategy(AdaptorNotFound { unique_id: unique_id.clone() })
+                );
+
+                // TODO - Authorization check. 
+                // TODO - Adaptor state check. If adaptor is in some specific state like
+                // unbonding. then it can not be removed. IT should first unbond fully 
+                // and clear its fund.
                 ADAPTERS.remove(deps.storage, unique_id.as_str());
                 Ok(Response::new()
-                .add_attribute("action", "remove_adaptor"))
+                    .add_attribute("action", "remove_adaptor")
+                    .add_attribute("unique_id", unique_id))
              }
-            /* 
-            StrategyAction::AddNewAdaptor { name, unique_id } => {
-                // TODO - Validation checks
-                // Use the code from adaptor module to properly register an adaptor with address or so. 
-                Self::add_adapter(deps.storage, AdaptorInfo { name, unique_id })
-            }
-            */
+          
             StrategyAction::AddNewAdaptor { name } => {
                 Self::add_adapter(deps, env, name)
             }
@@ -265,10 +279,13 @@ impl Strategy {
         Ratio::validate_ratios(&ratios)?;
 
         // Fetch the total funds available in the treasury
-        let total_funds = Self::get_treasury_funds(deps.storage)?;
-
+        // let total_funds = Self::get_treasury_funds(deps.storage)?;
+        let denom = "uqsr"; // TODO - Should be coming from the method argument.
+        let total_funds = Self::get_treasury_fund_with_denom(deps.branch(), 
+            &env, denom);
         // Calculate allocations based on custom ratios
-        let (allocations, residual) = Ratio::calculate_fund_allocations(total_funds.u128(), ratios.iter().map(|r| r.ratio).collect())?;
+        let (allocations, residual) = Ratio::calculate_fund_allocations(
+            total_funds?.u128(), ratios.iter().map(|r| r.ratio).collect())?;
 
         // Implement the logic to transfer `allocations[i]` amount to the adaptor with id `ratios[i].adaptor_id`.
         let mut response = Response::new().add_attribute("action", "distribute_funds_with_custom_ratios");
@@ -284,10 +301,26 @@ impl Strategy {
         Ok(response)
     }
 
-    fn get_treasury_funds(storage: &dyn Storage) -> StdResult<Uint128> {
-        // Placeholder function to get the total funds available in the treasury
-        // Replace with actual logic to fetch the treasury balance
-        Ok(Uint128::new(1000))
+    fn get_treasury_funds_all(deps: Deps, env: &Env) -> StdResult<Vec<Coin>> {
+        let contract_address = env.contract.address.clone();
+        let all_balances: AllBalanceResponse = deps.querier.query(
+            &QueryRequest::Bank(BankQuery::AllBalances {
+            address: contract_address.to_string(),
+        }))?;
+    
+        // Return the vector of coins
+        Ok(all_balances.amount)
+    }
+
+    fn get_treasury_fund_with_denom(mut deps: DepsMut, env: &Env, denom: &str) ->  StdResult<Uint128> {
+        let contract_address = env.contract.address.clone();
+        let balance: BalanceResponse = deps.querier.query(&QueryRequest::Bank(BankQuery::Balance {
+            address: contract_address.to_string(),
+            denom: denom.to_string(),
+        }))?;
+    
+        // Return the balance amount as Uint128
+        Ok(balance.amount.amount)
     }
 
     fn transfer_funds_to_adaptor(
@@ -327,7 +360,10 @@ impl Strategy {
         //           and adaptor will take care of further allocation in the actual allocation to yield destination.
         // TODO #4 - Real shares <denoms, amount> to be saved from the yield destinations in the position_manager 
         //           adaptor_position_manager. 
-        let total_funds = Uint128::new(1000); // Placeholder for the actual amount in the treasury.
+        // let total_funds = Uint128::new(1000); // Placeholder for the actual amount in the treasury.
+        let denom = "uqsr"; // TODO - Should be coming from the method argument.
+        let total_funds = Self::get_treasury_fund_with_denom(deps.branch(), 
+            &env, denom)?;
         let ratios = ADAPTOR_RATIOS.range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
             .map(|item| item.map(|(k, v)| AdaptorRatio { adaptor_id: k, ratio: v }))
             .collect::<StdResult<Vec<AdaptorRatio>>>()?;
@@ -343,6 +379,9 @@ impl Strategy {
             // We can implement something like, adaptor type and match statement helper.
             // In the match if it is Mars then we do deposit, for SWAP we do swap operation on the actual adaptor. 
             // Implement the logic to transfer `allocations[i]` amount to the adaptor with id `ratio.adaptor_id`.
+            // The first implementation assume the async operation on the adaptor side for simplicity of testing. 
+            // And also to avoid the complexity of handling multiple adaptors. 
+            // TODO - Reply has to handled once adaptor sync deposit is handled here. 
             Self::transfer_funds_to_adaptor(deps.branch(), &env, &info, &ratio.adaptor_id, allocations[i])?;
             response = response.add_attribute(format!("allocation_{}", ratio.adaptor_id), allocations[i].to_string());
         }

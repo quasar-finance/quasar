@@ -10,7 +10,7 @@ use schemars::JsonSchema;
 
 use crate::error::ContractError;
 use crate::ownership;
-use crate::vault::error::VaultError;
+use crate::vault::error::VaultError::{StrategyAlreadyExists, InvalidVaultState};
 use crate::strategy::strategy::{Strategy, StrategyKey, STRATEGY, STRATEGY_OWNER, STRATEGY_PROPOSAL};
 use crate::ownership::ownership::{
     OwnerProposal, Ownership, OwnershipActions, query_owner, query_ownership_proposal,
@@ -26,13 +26,13 @@ pub const VAULT_PROPOSAL: Item<OwnerProposal> = Item::new("vault_proposal");
 
 // Vault state indicate the running state of the Vault.state (VaultRunningState) , represented by 
 // Vault struct. Vault state is internally used to control which operations are allowed and 
-// which is not based on the current state of the 
+// which is not based on the current state of the vault
 pub const VAULT_STATE: Item<Vault> = Item::new("vault_state");
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)] 
 pub enum VaultRunningState {
-  // Initalized, and waiting come Normal once vault is ready to accept deposit. 
+  // Initalized, and waiting to come Normal once vault is ready to accept deposit. 
   Init, 
   // Normal operating mode
   Running, 
@@ -47,15 +47,13 @@ pub enum VaultRunningState {
 pub enum VaultAction {
     UpdateRunningState {
         new_state: VaultRunningState,
-    },
-    // UpdateVaultOwner {},
+    }, 
     UpdateStrategyOwner {},
     CreateStrategy {
         name: String,
         description: String,
         owner: String,
     },
-    // Try Ownership extension.
     Ownership(OwnershipActions),
 }
 
@@ -85,7 +83,6 @@ impl Vault {
         let owner = VAULT_OWNER.get(deps.as_ref())?;
         ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
 
-        // TODO - State transition logic to be added.
         self.state = new_state;
         self.last_statechange_bh = env.block.height;
 
@@ -120,11 +117,10 @@ impl Vault {
         action: VaultAction,
     ) -> Result<Response, ContractError> {
         let mut vault = VAULT_STATE.load(deps.storage)?;
-        // TODO - 
-        // 1. PROVAULT METHOD PROTECTION BY OWNER
+        // TODO -  
         // 2. STATE WISE ACTION PROTECTION, in which state what action can be performed.
         match action {
-            VaultAction::CreateStrategy { name, description, owner } => {
+            VaultAction::CreateStrategy { name, description, owner } => {               
                 Self::try_create_strategy(deps, env, info, name, description, owner)
             }
             VaultAction::UpdateRunningState { new_state } => {
@@ -191,12 +187,22 @@ impl Vault {
         let owner = VAULT_OWNER.get(deps.as_ref())?;
         ensure!(owner == Some(info.sender.clone()), ContractError::Unauthorized {});
 
+        let vault = VAULT_STATE.load(deps.storage)?;
+
+        // Ensure the vault is in the Init state
+        if vault.state != VaultRunningState::Init {
+            return Err(InvalidVaultState {
+                expected: "Init".to_string(),
+                actual: format!("{:?}", vault.state),
+            }
+            .into());
+        }
 
         // Current implementation support only one strategy in one provault.
         // This implentation can be enhanced to support multiple strategy in the single
         // vault to support complex distribution. 
         if STRATEGY.has(deps.storage, &StrategyKey::new(1)) {
-            return Err(VaultError::StrategyAlreadyExists {}.into());
+            return Err(StrategyAlreadyExists{}.into());
         }
 
         // Strategy object initialization.   
@@ -212,16 +218,20 @@ impl Vault {
         STRATEGY_OWNER.set(deps.branch(), Some(info.sender.clone()));  
 
 
-        // Ownership proposal to be created on the same call. 
+        // Ownership proposal to be created on the same call. Then proposed owner will need 
+        // to claim the ownership of the strategy for performing operations. Till that time 
+        // info.sender can do all the strategy operations.
         let strategy_current_owner = STRATEGY_OWNER.get(deps.as_ref())?.unwrap();
         strategy.handle_ownership_proposal(deps, info, env, 
             proposed_owner.clone(), MAX_DURATION,
             &STRATEGY_OWNER, &STRATEGY_PROPOSAL); 
 
-        // TODO - 
-        // Add adaptors and preset distribution related parameters. 
-        // This could be optional to allow toset those params in a separate transaction 
-        // by the current owner. 
+        // TODO - Near Future Extension:
+        // Add adapters and preset distribution-related parameters. 
+        // These settings could be optional, allowing them to be set in a separate transaction 
+        // by the current owner. If we support adding adapters here, it would orchestrate 
+        // everything in one step. For now, we'll keep it as a separate option using 
+        // add_adaptor methods in the strategy.
         Ok(Response::new()
             .add_attribute("action", "create_strategy")
             .add_attribute("strategy_id", "1")
@@ -231,10 +241,13 @@ impl Vault {
             .add_attribute("strategy_proposed_owner", proposed_owner))
     }
 
-    // TODO - Near future Extension.
+    // TODO - Near Future Extension.
     fn try_update_strategy_owner(
         deps: DepsMut,
     ) -> Result<Response, ContractError> {
+        // let owner = VAULT_OWNER.get(deps.as_ref())?;
+        // ensure!(owner == Some(info.sender), ContractError::Unauthorized {});
+
         // Implementation for UpdateStrategyOwner. It should create a proposal to change the 
         // strategy owner if sender has the authority to propose. In the current implementation
         // only current owner can propose. A design enhancement is added in the comment section of the

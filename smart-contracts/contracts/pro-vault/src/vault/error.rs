@@ -4,6 +4,9 @@ use thiserror::Error;
 pub enum VaultError {
     #[error("Strategy already exists")]
     StrategyAlreadyExists {},
+
+    #[error("Invalid vault state: expected {expected}, but was {actual}")]
+    InvalidVaultState { expected: String, actual: String },
 }
 
 
