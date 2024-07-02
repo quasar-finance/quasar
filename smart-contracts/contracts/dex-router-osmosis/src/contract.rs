@@ -105,7 +105,7 @@ pub fn swap(
         query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
     {
         if best_path.return_amount.is_zero() {
-            return Err(ContractError::NotEnoughLiquidity {
+            return Err(ContractError::FailedBestPathComputation {
                 offer: info.funds[0].clone(),
                 ask_denom: out_denom,
             });

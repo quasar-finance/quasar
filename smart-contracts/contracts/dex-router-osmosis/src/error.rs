@@ -32,8 +32,8 @@ pub enum ContractError {
     #[error("Can't set empty path.")]
     EmptyPath {},
 
-    #[error("Not enough liquidity for swap from {offer:?} to {ask_denom:?}")]
-    NotEnoughLiquidity { offer: Coin, ask_denom: String },
+    #[error("Computation of best path failed for swap from {offer:?} to {ask_denom:?}")]
+    FailedBestPathComputation { offer: Coin, ask_denom: String },
 }
 
 pub fn assert_non_empty_path<T>(path: &[T]) -> Result<(), ContractError> {
