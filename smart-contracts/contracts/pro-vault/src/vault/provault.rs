@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, StdError,
+    ensure, Addr, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Storage, Uint128
 };
 use cw_controllers::Admin;
 use cw_storage_plus::Item;
@@ -11,6 +11,7 @@ use schemars::JsonSchema;
 use crate::error::ContractError;
 use crate::ownership;
 use crate::vault::error::VaultError::{StrategyAlreadyExists, InvalidVaultState};
+use crate::vault::config::update_max_deposit_cap;
 use crate::strategy::strategy::{Strategy, StrategyKey, STRATEGY, STRATEGY_OWNER, STRATEGY_PROPOSAL};
 use crate::ownership::ownership::{
     OwnerProposal, Ownership, OwnershipActions, query_owner, query_ownership_proposal,
@@ -34,9 +35,12 @@ pub const VAULT_STATE: Item<Vault> = Item::new("vault_state");
 pub enum VaultRunningState {
   // Initalized, and waiting to come Normal once vault is ready to accept deposit. 
   Init, 
+  // In this mode, Only config change related operations can be performed. 
+  // No strategy fund related operations, no deposits, Withdraw, or Claim are allowed. 
+  RunningOnlyConfig, 
   // Normal operating mode
   Running, 
-  // Temporary halted
+  // Temporary halted, no strategy or any config operations can be performed. 
   Paused, 
   // Terminated forever 
   Terminated, 
@@ -48,6 +52,9 @@ pub enum VaultAction {
     UpdateRunningState {
         new_state: VaultRunningState,
     }, 
+    UpdateMaxDepositCap {
+        max_deposit_cap: Uint128,
+    },
     UpdateStrategyOwner {},
     CreateStrategy {
         name: String,
@@ -122,6 +129,9 @@ impl Vault {
         match action {
             VaultAction::CreateStrategy { name, description, owner } => {               
                 Self::try_create_strategy(deps, env, info, name, description, owner)
+            }
+            VaultAction::UpdateMaxDepositCap { max_deposit_cap  } => {
+                Self::try_update_max_deposit_cap(deps, env, info, max_deposit_cap)
             }
             VaultAction::UpdateRunningState { new_state } => {
                 Self::try_update_running_state(deps, env, info, new_state)
@@ -241,6 +251,13 @@ impl Vault {
             .add_attribute("strategy_proposed_owner", proposed_owner))
     }
 
+    fn try_update_max_deposit_cap(       
+        mut deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        max_deposit_cap : Uint128) -> Result<Response, ContractError> {
+            update_max_deposit_cap(deps, env, info, max_deposit_cap)
+    }
     // TODO - Near Future Extension.
     fn try_update_strategy_owner(
         deps: DepsMut,

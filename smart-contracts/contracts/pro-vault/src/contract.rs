@@ -234,6 +234,7 @@ fn try_deposit(
     amount: Uint128,
     recipient: Option<String>, // Used for future 
 ) -> Result<Response, ContractError> {
+    // TODO - max deposit cap protection to be added.
     
     // Check if the sent funds match the requested deposit amount
     if info.funds.len() != 1 || info.funds[0].amount != amount {
@@ -285,6 +286,7 @@ fn try_exec_strategy_actions(
     info: MessageInfo,
     action: StrategyAction,
 ) -> Result<Response, ContractError> {
+    // TODO - Vault State protection to be done here.
     Strategy::execute_action(deps, env, info, action)?;
     Ok(Response::new()
         .add_attribute("method", "try_exec_strategy_actions"))
