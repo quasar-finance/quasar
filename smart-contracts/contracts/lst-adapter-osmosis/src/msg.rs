@@ -19,6 +19,7 @@ pub enum LstAdapterExecuteMsg {
     // Only configured vault can execute unbonds
     #[payable]
     Unbond {},
+    Claim {},
 }
 
 #[cw_serde]
