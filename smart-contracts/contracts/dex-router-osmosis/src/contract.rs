@@ -357,6 +357,7 @@ pub fn simulate_swaps(
     path: Vec<SwapAmountInRoute>,
 ) -> Result<Uint128, ContractError> {
     let querier = PoolmanagerQuerier::new(&deps.querier);
+    // First parameter is deprecated. The value 0 is a dummy pool id.
     let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path);
     let token_out_amount = if let Ok(response) = response {
         Uint128::from_str(&response.token_out_amount)?
