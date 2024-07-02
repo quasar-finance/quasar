@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{Coin, OverflowError, StdError};
 use mars_owner::OwnerError;
 use quasar_types::error::FundsError;
 use thiserror::Error;
@@ -31,6 +31,9 @@ pub enum ContractError {
 
     #[error("Can't set empty path.")]
     EmptyPath {},
+
+    #[error("Computation of best path failed for swap from {offer:?} to {ask_denom:?}")]
+    FailedBestPathComputation { offer: Coin, ask_denom: String },
 }
 
 pub fn assert_non_empty_path<T>(path: &[T]) -> Result<(), ContractError> {
