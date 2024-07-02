@@ -104,6 +104,12 @@ pub fn swap(
     } else if let Some(best_path) =
         query_best_path_for_pair(&deps.as_ref(), info.funds[0].clone(), out_denom.clone())?
     {
+        if best_path.return_amount.is_zero() {
+            return Err(ContractError::FailedBestPathComputation {
+                offer: info.funds[0].clone(),
+                ask_denom: out_denom,
+            });
+        }
         best_path.path
     } else {
         return Err(ContractError::NoPathFound {
@@ -351,8 +357,14 @@ pub fn simulate_swaps(
     path: Vec<SwapAmountInRoute>,
 ) -> Result<Uint128, ContractError> {
     let querier = PoolmanagerQuerier::new(&deps.querier);
-    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path)?;
-    Ok(Uint128::from_str(&response.token_out_amount)?)
+    // First parameter is deprecated. The value 0 is a dummy pool id.
+    let response = querier.estimate_swap_exact_amount_in(0, offer.to_string(), path);
+    let token_out_amount = if let Ok(response) = response {
+        Uint128::from_str(&response.token_out_amount)?
+    } else {
+        Uint128::zero()
+    };
+    Ok(token_out_amount)
 }
 
 pub fn query_paths_for_pair(
