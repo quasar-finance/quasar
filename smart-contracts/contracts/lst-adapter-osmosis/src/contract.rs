@@ -9,9 +9,13 @@ use abstract_sdk::{AbstractResponse, IbcInterface, TransferInterface};
 use abstract_std::manager::ModuleInstallConfig;
 use abstract_std::objects::chain_name::ChainName;
 use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock, MessageInfo, Response,
+    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
+    MessageInfo, Response,
 };
 use mars_owner::OwnerInit::SetInitialOwner;
+use osmosis_std::cosmwasm_to_proto_coins;
+use osmosis_std::types::ibc::applications::transfer::v1::MsgTransfer;
+use osmosis_std::types::ibc::core::client::v1::Height;
 use quasar_types::error::assert_funds_single_token;
 
 pub type LstAdapterResult<T = Response> = Result<T, LstAdapterError>;
@@ -97,6 +101,7 @@ pub fn execute_(
 ) -> LstAdapterResult {
     match msg {
         LstAdapterExecuteMsg::Unbond {} => unbond(deps, env, info, app),
+        LstAdapterExecuteMsg::Claim {} => claim(deps, env, info, app),
     }
 }
 
@@ -113,20 +118,64 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     //     info.funds,
     // )?;
     // transfer_msgs.push(ibc_msg);
-    let msg = IbcMsg::Transfer {
-        channel_id: "channel-0".to_string(),
-        to_address: app
+    // "msgs": [
+    //     {
+    //       "type": "cosmos-sdk/MsgTransfer",
+    //       "value": {
+    //         "receiver": "stride1587yfq507a3pmutq4qtw8rx78cpcvga4f8mt5e",
+    //         "sender": "osmo1587yfq507a3pmutq4qtw8rx78cpcvga4zhg8k8",
+    //         "source_channel": "channel-326",
+    //         "source_port": "transfer",
+    //         "timeout_height": {
+    //           "revision_height": "9720877",
+    //           "revision_number": "1"
+    //         },
+    //         "token": {
+    //           "amount": "100000",
+    //           "denom": "ibc/A8CA5EE328FA10C9519DF6057DA1F69682D28F7D0F5CCC7ECB72E3DCA2D157A4"
+    //         }
+    //       }
+    //     }
+    //   ],
+    // let msg = IbcMsg::Transfer {
+    //     channel_id: "channel-0".to_string(),
+    //     to_address: app
+    //         .ibc_client(deps.as_ref())
+    //         .remote_proxy_addr("stargaze")?
+    //         .unwrap(),
+    //     amount: info.funds[0].clone(),
+    //     timeout: IbcTimeout::with_block(IbcTimeoutBlock {
+    //         revision: 5,
+    //         height: env.block.height + 5,
+    //     }),
+    // };
+    let m = MsgTransfer {
+        source_port: "transfer".to_string(),
+        source_channel: "channel-0".to_string(),
+        token: Some(cosmwasm_to_proto_coins(info.funds)[0].clone()),
+        sender: env.contract.address.to_string(),
+        receiver: app
             .ibc_client(deps.as_ref())
             .remote_proxy_addr("stargaze")?
             .unwrap(),
-        amount: info.funds[0].clone(),
-        timeout: IbcTimeout::with_block(IbcTimeoutBlock {
-            revision: 5,
-            height: env.block.height + 5,
+        timeout_height: Some(Height {
+            revision_number: 5,
+            revision_height: env.block.height + 5,
         }),
+        timeout_timestamp: env.block.time.nanos() + 100_000_000_000,
+        memo: "".to_string(),
     };
-    Ok(app.response("unbond").add_message(msg))
+    // let stargate_msg = CosmosMsg::Stargate {
+    //     type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
+    //     value: to_json_binary(&m)?,
+    // };
+    Ok(app.response("unbond").add_message(m))
     // Ok(app.response("unbond").add_messages(transfer_msgs))
+}
+
+fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
+    VAULT.assert_owner(deps.storage, &info.sender)?;
+    Ok(app.response("claim"))
 }
 
 pub fn query_(

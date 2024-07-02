@@ -12,18 +12,19 @@ members = [
   # "contracts/multihop-router",
   # "packages/quasar-types",
   # "packages/intergamm-bindings",
-  "contracts/token-burner",
-  "contracts/cl-vault",
-  "contracts/merkle-incentives",
-  "contracts/range-middleware",
-  "contracts/dex-router-osmosis",
-  "contracts/lst-dex-adapter-osmosis",
+#  "contracts/token-burner",
+#  "contracts/cl-vault",
+  # "contracts/merkle-incentives",
+  # "contracts/range-middleware",
+  # "contracts/dex-router-osmosis",
+  # "contracts/lst-dex-adapter-osmosis",
   "contracts/lst-adapter-osmosis",
 ]
 
 [workspace.dependencies]
 # CosmWasm
 cosmwasm-std = "1.5.4"
+# cosmwasm-std = "2.0.4"
 cosmwasm-schema = "1.5.4"
 cosmwasm-storage = "1.5.2"
 cw-storage-plus = "1.2.0"
@@ -43,7 +44,7 @@ dex-router-osmosis = { path = "contracts/dex-router-osmosis", features = ["libra
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}
 
 # Osmosis
-osmosis-std = "0.25.0"
+osmosis-std = { version = "0.25.0", features = ["stargate"] }
 osmosis-std-derive = "0.20.1"
 
 # Serialization & Tools

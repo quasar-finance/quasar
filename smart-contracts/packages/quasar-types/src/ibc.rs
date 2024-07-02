@@ -68,9 +68,9 @@ pub struct MsgTransfer {
 #[serde(rename_all = "snake_case")]
 pub struct Height {
     #[prost(uint64, optional, tag = "1")]
-    revision_number: Option<u64>,
+    pub revision_number: Option<u64>,
     #[prost(uint64, optional, tag = "2")]
-    revision_height: Option<u64>,
+    pub revision_height: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Message)]
