@@ -18,6 +18,7 @@ members = [
   "contracts/range-middleware",
   "contracts/dex-router-osmosis",
   "contracts/lst-dex-adapter-osmosis",
+  "contracts/redemption-rate-oracle-osmosis",
 ]
 
 [workspace.dependencies]

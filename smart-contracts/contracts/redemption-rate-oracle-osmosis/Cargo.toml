@@ -1,0 +1,57 @@
+[package]
+name = "redemption-rate-oracle-osmosis"
+version = "0.0.1"
+authors = ["Quasar"]
+edition = "2021"
+homepage = ""
+documentation = ""
+repository = ""
+license = "GPL-3.0-or-later"
+keywords = ["cosmos", "cosmwasm", "abstractsdk"]
+resolver = "2"
+
+exclude = ["redemption_rate_oracle_osmosis.wasm", "hash.txt"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "schema"
+required-features = ["schema"]
+
+[features]
+default = ["export"]
+export = []
+daemon-bin = [
+  "cw-orch/daemon",
+  "dep:clap",
+  "dep:abstract-client",
+  "dep:dotenv",
+  "dep:env_logger",
+]
+schema = ["abstract-app/schema"]
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+thiserror = { workspace = true }
+cw-asset = { workspace = true }
+abstract-app = { workspace = true }
+const_format = { workspace = true }
+mars-owner = { workspace = true }
+
+# Dependencies for interface
+cw-orch = { workspace = true }
+abstract-interface = { workspace = true }
+
+# Dependencies for bins
+clap = { workspace = true, optional = true, features = ["derive"] }
+abstract-client = { workspace = true, optional = true }
+dotenv = { workspace = true, optional = true }
+env_logger = { workspace = true, optional = true }
+ica-oracle = { git = "https://github.com/Stride-Labs/ica-oracle", tag="v1.0.0" }
+
+[dev-dependencies]
+abstract-app = { workspace = true, features = ["test-utils"] }
+abstract-client = { workspace = true }

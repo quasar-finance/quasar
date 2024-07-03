@@ -1,0 +1,201 @@
+{
+  "contract_name": "module-schema",
+  "contract_version": "0.22.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InstantiateMsg",
+    "type": "object",
+    "required": [
+      "owner",
+      "stride_oracle"
+    ],
+    "properties": {
+      "owner": {
+        "type": "string"
+      },
+      "stride_oracle": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": false
+  },
+  "execute": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ExecuteMsg",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": [
+          "update"
+        ],
+        "properties": {
+          "update": {
+            "type": "object",
+            "properties": {
+              "stride_oracle": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "update_owner"
+        ],
+        "properties": {
+          "update_owner": {
+            "$ref": "#/definitions/OwnerUpdate"
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "definitions": {
+      "OwnerUpdate": {
+        "oneOf": [
+          {
+            "description": "Proposes a new owner to take role. Only current owner can execute.",
+            "type": "object",
+            "required": [
+              "propose_new_owner"
+            ],
+            "properties": {
+              "propose_new_owner": {
+                "type": "object",
+                "required": [
+                  "proposed"
+                ],
+                "properties": {
+                  "proposed": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Clears the currently proposed owner. Only current owner can execute.",
+            "type": "string",
+            "enum": [
+              "clear_proposed"
+            ]
+          },
+          {
+            "description": "Promotes the proposed owner to be the current one. Only the proposed owner can execute.",
+            "type": "string",
+            "enum": [
+              "accept_proposed"
+            ]
+          },
+          {
+            "description": "Throws away the keys to the Owner role forever. Once done, no owner can ever be set later.",
+            "type": "string",
+            "enum": [
+              "abolish_owner_role"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "query": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "QueryMsg",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": [
+          "redemption_rate"
+        ],
+        "properties": {
+          "redemption_rate": {
+            "type": "object",
+            "required": [
+              "denom"
+            ],
+            "properties": {
+              "denom": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "oracles"
+        ],
+        "properties": {
+          "oracles": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "migrate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "MigrateMsg",
+    "type": "object",
+    "additionalProperties": false
+  },
+  "sudo": null,
+  "responses": {
+    "oracles": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OraclesResponse",
+      "type": "object",
+      "required": [
+        "oracles"
+      ],
+      "properties": {
+        "oracles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OracleInfo"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "OracleInfo": {
+          "type": "object",
+          "required": [
+            "address",
+            "name"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "redemption_rate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Decimal",
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    }
+  }
+}
