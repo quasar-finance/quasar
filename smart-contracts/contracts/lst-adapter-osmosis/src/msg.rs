@@ -1,5 +1,5 @@
 use crate::{contract::LstAdapter, state::IbcConfig};
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use mars_owner::OwnerUpdate;
 
 abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMsg);
@@ -16,10 +16,9 @@ pub struct LstAdapterMigrateMsg {}
 
 #[cw_serde]
 #[derive(cw_orch::ExecuteFns)]
-#[impl_into(ExecuteMsg)]
 pub enum LstAdapterExecuteMsg {
     // Only configured vault can execute unbonds
-    #[payable]
+    #[cw_orch(payable)]
     Unbond {},
     UpdateIbcConfig {
         channel: String,
@@ -35,8 +34,7 @@ pub enum LstAdapterExecuteMsg {
 }
 
 #[cw_serde]
-#[derive(cw_orch::QueryFns)]
-#[impl_into(QueryMsg)]
+#[derive(cw_orch::QueryFns, QueryResponses)]
 pub enum LstAdapterQueryMsg {
     #[returns(IbcConfig)]
     IbcConfig {},
