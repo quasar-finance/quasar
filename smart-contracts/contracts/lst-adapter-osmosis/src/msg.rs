@@ -21,7 +21,6 @@ pub enum LstAdapterExecuteMsg {
     // Only configured vault can execute unbonds
     #[payable]
     Unbond {},
-    Claim {},
     UpdateIbcConfig {
         channel: String,
         revision: Option<u64>,

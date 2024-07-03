@@ -82,7 +82,6 @@ pub fn execute_(
 ) -> LstAdapterResult {
     match msg {
         LstAdapterExecuteMsg::Unbond {} => unbond(deps, env, info, app),
-        LstAdapterExecuteMsg::Claim {} => claim(deps, env, info, app),
         LstAdapterExecuteMsg::UpdateIbcConfig {
             channel,
             revision,
@@ -151,11 +150,6 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     // };
     // Ok(app.response("unbond").add_message(stargate_msg))
     Ok(app.response("unbond").add_messages(transfer_msgs))
-}
-
-fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
-    assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
-    Ok(app.response("claim"))
 }
 
 fn update_ibc_config(
