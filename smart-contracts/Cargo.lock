@@ -2516,6 +2516,7 @@ version = "0.3.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
+ "cw-orch",
  "cw-utils",
  "cw20",
  "schemars",

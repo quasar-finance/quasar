@@ -6,13 +6,14 @@ use crate::extensions::keeper::{KeeperExecuteMsg, KeeperQueryMsg};
 use crate::extensions::lockup::{LockupExecuteMsg, LockupQueryMsg};
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{to_binary, Coin, CosmosMsg, Empty, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Coin, CosmosMsg, Decimal, Empty, StdResult, Uint128, WasmMsg};
 use schemars::JsonSchema;
 
 /// The default ExecuteMsg variants that all vaults must implement.
 /// This enum can be extended with additional variants by defining an extension
 /// enum and then passing it as the generic argument `T` to this enum.
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum VaultStandardExecuteMsg<T = ExtensionExecuteMsg> {
     /// Called to deposit an any of the assets into the vault. Assets are passed in the funds parameter.
     /// This should functions as a deposit function that "just handles the deposit", it might swap user funds to
@@ -25,6 +26,8 @@ pub enum VaultStandardExecuteMsg<T = ExtensionExecuteMsg> {
         /// The optional recipient of the vault token. If not set, the caller
         /// address will be used instead.
         recipient: Option<String>,
+        /// The maximum slippage allowed for swap between vault assets for deposit
+        max_slippage: Decimal,
     },
 
     /// Called to deposit multiple assets into the vault. The assets should be passed in the funds
@@ -63,7 +66,7 @@ impl VaultStandardExecuteMsg {
     pub fn into_cosmos_msg(self, contract_addr: String, funds: Vec<Coin>) -> StdResult<CosmosMsg> {
         Ok(WasmMsg::Execute {
             contract_addr,
-            msg: to_binary(&self)?,
+            msg: to_json_binary(&self)?,
             funds,
         }
         .into())
@@ -104,7 +107,7 @@ where
 
     /// Returns `Uint128` amount of vault tokens that will be returned for the
     /// passed in assets. If the vault cannot accept this set tokens,  
-    /// the query should error. This can be due to wrong ratio's, or 
+    /// the query should error. This can be due to wrong ratio's, or
     /// missing or superfluous assets
     ///
     /// Allows an on-chain or off-chain user to simulate the effects of their
@@ -120,12 +123,11 @@ where
         assets: Vec<Coin>,
     },
 
-
-    /// Returns the ratio in which the underlying assets should be deposited. 
-    /// If no ratio is applicable, should return None. Ratios are expressed 
-    /// as a Vec<Coin>. This should be interpreted as a deposit should be 
+    /// Returns the ratio in which the underlying assets should be deposited.
+    /// If no ratio is applicable, should return None. Ratios are expressed
+    /// as a Vec<Coin>. This should be interpreted as a deposit should be
     /// some multiplicative of the returned vec.
-    /// 
+    ///
     /// A vault does not have to guarantee that this ratio is stable.
     #[returns(Vec<Coin>)]
     DepositRatio,
@@ -179,7 +181,7 @@ where
     /// price-per-share, and instead should reflect the "average-user’s"
     /// price-per-share, meaning what the average user should expect to see
     /// when exchanging to and from.
-    #[returns(Vec<Coin>)]
+    #[returns(Uint128)]
     ConvertToAssets {
         /// The amount of vault tokens to convert to base tokens.
         amount: Uint128,
