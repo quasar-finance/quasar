@@ -2,7 +2,7 @@ use abstract_app::objects::ans_host::AnsHostError;
 use abstract_app::sdk::AbstractSdkError;
 use abstract_app::std::AbstractError;
 use abstract_app::AppError;
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
 use cw_asset::AssetError;
 use quasar_types::error::FundsError;
 use thiserror::Error;
@@ -32,4 +32,7 @@ pub enum DexAdapterError {
 
     #[error("{0}")]
     Funds(#[from] FundsError),
+
+    #[error("{0}")]
+    Overflow(#[from] OverflowError),
 }
