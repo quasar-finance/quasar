@@ -1,7 +1,7 @@
 use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
 };
-use crate::state::{LST_DENOM, VAULT};
+use crate::state::{IbcConfig, IBC_CONFIG, LST_DENOM, OWNER, VAULT};
 use crate::{LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_VERSION};
 use abstract_app::abstract_interface::AbstractInterfaceError;
 use abstract_app::{abstract_interface, AppContract};
@@ -16,7 +16,10 @@ use mars_owner::OwnerInit::SetInitialOwner;
 use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::ibc::applications::transfer::v1::MsgTransfer;
 use osmosis_std::types::ibc::core::client::v1::Height;
+use prost::Message;
 use quasar_types::error::assert_funds_single_token;
+
+const IBC_MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
 pub type LstAdapterResult<T = Response> = Result<T, LstAdapterError>;
 
@@ -55,11 +58,18 @@ impl<Chain: cw_orch::environment::CwEnv> abstract_interface::DependencyCreation
 pub fn instantiate_(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     _app: LstAdapter,
     msg: LstAdapterInstantiateMsg,
 ) -> LstAdapterResult {
     VAULT.initialize(deps.storage, deps.api, SetInitialOwner { owner: msg.vault })?;
+    OWNER.initialize(
+        deps.storage,
+        deps.api,
+        SetInitialOwner {
+            owner: info.sender.to_string(),
+        },
+    )?;
     LST_DENOM.save(deps.storage, &msg.lst_denom)?;
     // app.
     // let msg = MsgTransfer{
@@ -102,6 +112,13 @@ pub fn execute_(
     match msg {
         LstAdapterExecuteMsg::Unbond {} => unbond(deps, env, info, app),
         LstAdapterExecuteMsg::Claim {} => claim(deps, env, info, app),
+        LstAdapterExecuteMsg::UpdateIbcConfig {
+            channel,
+            revision,
+            block_offset,
+            timeout_secs,
+        } => update_ibc_config(deps, info, channel, revision, block_offset, timeout_secs),
+        LstAdapterExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
     }
 }
 
@@ -110,33 +127,14 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     let lst_denom = LST_DENOM.load(deps.storage)?;
     assert_funds_single_token(&info.funds, &lst_denom)?;
 
-    // let mut transfer_msgs = app.bank(deps.as_ref()).deposit(info.funds.clone())?;
-    // // ibc transfer
-    // let ibc_client = app.ibc_client(deps.as_ref());
-    // let ibc_msg = ibc_client.ics20_transfer(
-    //     ChainName::from_chain_id("stargaze-1").to_string(),
-    //     info.funds,
-    // )?;
-    // transfer_msgs.push(ibc_msg);
-    // "msgs": [
-    //     {
-    //       "type": "cosmos-sdk/MsgTransfer",
-    //       "value": {
-    //         "receiver": "stride1587yfq507a3pmutq4qtw8rx78cpcvga4f8mt5e",
-    //         "sender": "osmo1587yfq507a3pmutq4qtw8rx78cpcvga4zhg8k8",
-    //         "source_channel": "channel-326",
-    //         "source_port": "transfer",
-    //         "timeout_height": {
-    //           "revision_height": "9720877",
-    //           "revision_number": "1"
-    //         },
-    //         "token": {
-    //           "amount": "100000",
-    //           "denom": "ibc/A8CA5EE328FA10C9519DF6057DA1F69682D28F7D0F5CCC7ECB72E3DCA2D157A4"
-    //         }
-    //       }
-    //     }
-    //   ],
+    let mut transfer_msgs = app.bank(deps.as_ref()).deposit(info.funds.clone())?;
+    // ibc transfer
+    let ibc_client = app.ibc_client(deps.as_ref());
+    let ibc_msg = ibc_client.ics20_transfer(
+        ChainName::from_chain_id("stargaze-1").to_string(),
+        info.funds,
+    )?;
+    transfer_msgs.push(ibc_msg);
     // let msg = IbcMsg::Transfer {
     //     channel_id: "channel-0".to_string(),
     //     to_address: app
@@ -149,28 +147,28 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     //         height: env.block.height + 5,
     //     }),
     // };
-    let m = MsgTransfer {
-        source_port: "transfer".to_string(),
-        source_channel: "channel-0".to_string(),
-        token: Some(cosmwasm_to_proto_coins(info.funds)[0].clone()),
-        sender: env.contract.address.to_string(),
-        receiver: app
-            .ibc_client(deps.as_ref())
-            .remote_proxy_addr("stargaze")?
-            .unwrap(),
-        timeout_height: Some(Height {
-            revision_number: 5,
-            revision_height: env.block.height + 5,
-        }),
-        timeout_timestamp: env.block.time.nanos() + 100_000_000_000,
-        memo: "".to_string(),
-    };
-    // let stargate_msg = CosmosMsg::Stargate {
-    //     type_url: "/ibc.applications.transfer.v1.MsgTransfer".to_string(),
-    //     value: to_json_binary(&m)?,
+    // let m = MsgTransfer {
+    //     source_port: "transfer".to_string(),
+    //     source_channel: "channel-0".to_string(),
+    //     token: Some(cosmwasm_to_proto_coins(info.funds)[0].clone()),
+    //     sender: env.contract.address.to_string(),
+    //     receiver: app
+    //         .ibc_client(deps.as_ref())
+    //         .remote_proxy_addr("stargaze")?
+    //         .unwrap(),
+    //     timeout_height: Some(Height {
+    //         revision_number: 5,
+    //         revision_height: env.block.height + 5,
+    //     }),
+    //     timeout_timestamp: env.block.time.nanos() + 100_000_000_000,
+    //     memo: "".to_string(),
     // };
-    Ok(app.response("unbond").add_message(m))
-    // Ok(app.response("unbond").add_messages(transfer_msgs))
+    // let stargate_msg = CosmosMsg::Stargate {
+    //     type_url: IBC_MSG_TRANSFER_TYPE_URL.to_string(),
+    //     value: m.encode_to_vec().into(),
+    // };
+    // Ok(app.response("unbond").add_message(stargate_msg))
+    Ok(app.response("unbond").add_messages(transfer_msgs))
 }
 
 fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
@@ -178,17 +176,38 @@ fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdap
     Ok(app.response("claim"))
 }
 
+fn update_ibc_config(
+    deps: DepsMut,
+    info: MessageInfo,
+    channel: String,
+    revision: Option<u64>,
+    block_offset: Option<u64>,
+    timeout_secs: Option<u64>,
+) -> LstAdapterResult {
+    OWNER.assert_owner(deps.storage, &info.sender)?;
+    IBC_CONFIG.save(
+        deps.storage,
+        &IbcConfig {
+            revision,
+            block_offset,
+            timeout_secs,
+            channel,
+        },
+    )?;
+    Ok(Response::default())
+}
+
 pub fn query_(
-    _deps: Deps,
+    deps: Deps,
     _env: Env,
     _app: &LstAdapter,
-    _msg: LstAdapterQueryMsg,
+    msg: LstAdapterQueryMsg,
 ) -> LstAdapterResult<Binary> {
-    Ok(Binary::default())
-    // match msg {
-    //     QueryMsg::Config {} => to_json_binary(&STATE.load(deps.storage)?),
-    //     QueryMsg::Pending { address } => to_json_binary(&query_pending(deps, address)?),
-    // }
+    match msg {
+        LstAdapterQueryMsg::IbcConfig {} => Ok(to_json_binary(
+            &IBC_CONFIG.may_load(deps.storage)?.unwrap_or_default(),
+        )?),
+    }
 }
 
 pub fn migrate_(

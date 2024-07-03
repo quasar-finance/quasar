@@ -3768,6 +3768,7 @@ dependencies = [
  "ibc-relayer-types",
  "mars-owner",
  "osmosis-std",
+ "prost 0.12.6",
  "quasar-types",
  "thiserror",
 ]

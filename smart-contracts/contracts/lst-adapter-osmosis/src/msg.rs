@@ -1,5 +1,6 @@
-use crate::contract::LstAdapter;
+use crate::{contract::LstAdapter, state::IbcConfig};
 use cosmwasm_schema::cw_serde;
+use mars_owner::OwnerUpdate;
 
 abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMsg);
 
@@ -20,17 +21,19 @@ pub enum LstAdapterExecuteMsg {
     #[payable]
     Unbond {},
     Claim {},
+    UpdateIbcConfig {
+        channel: String,
+        revision: Option<u64>,
+        block_offset: Option<u64>,
+        timeout_secs: Option<u64>,
+    },
+    UpdateOwner(OwnerUpdate),
 }
 
 #[cw_serde]
-pub struct IbcConfig {
-    pub source_port: String,
-    pub source_channel: String,
-    pub timeout_height_offset: u64,
-    pub timeout_ns_offset: u64,
-}
-
-#[cw_serde]
+#[derive(cw_orch::QueryFns)]
+#[impl_into(QueryMsg)]
 pub enum LstAdapterQueryMsg {
-    Config {},
+    #[returns(IbcConfig)]
+    IbcConfig {},
 }

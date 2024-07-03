@@ -38,6 +38,7 @@ abstract-std = { workspace = true }
 abstract-sdk = { workspace = true }
 cw-orch = { workspace = true }
 const_format = { workspace = true }
+prost = { workspace = true }
 
 [dev-dependencies]
 abstract-client = { workspace = true }
