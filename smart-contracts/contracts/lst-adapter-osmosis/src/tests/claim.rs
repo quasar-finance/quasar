@@ -7,13 +7,13 @@ use quasar_types::error::FundsError;
 
 #[test]
 fn test_if_not_vault_then_claim_fails() -> anyhow::Result<()> {
-    let app = create_app(vec![], Some("other".to_string()))?.app;
+    let app = create_app(vec![], Some("other".to_string()), None)?.app;
 
     let result = app.claim();
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().downcast::<LstAdapterError>().unwrap(),
-        LstAdapterError::Owner(mars_owner::OwnerError::NotOwner {})
+        LstAdapterError::NotVault {}
     );
     Ok(())
 }

@@ -9,20 +9,20 @@ use quasar_types::error::FundsError;
 
 #[test]
 fn test_if_not_vault_then_unbond_fails() -> anyhow::Result<()> {
-    let app = create_app(vec![], Some("other".to_string()))?.app;
+    let app = create_app(vec![], Some("other".to_string()), None)?.app;
 
     let result = app.unbond(&[]);
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().downcast::<LstAdapterError>().unwrap(),
-        LstAdapterError::Owner(mars_owner::OwnerError::NotOwner {})
+        LstAdapterError::NotVault {}
     );
     Ok(())
 }
 
 #[test]
 fn test_if_missing_funds_then_unbond_fails() -> anyhow::Result<()> {
-    let app = create_app(vec![], None)?.app;
+    let app = create_app(vec![], None, None)?.app;
 
     let result = app.unbond(&[]);
     assert!(result.is_err());
@@ -36,7 +36,7 @@ fn test_if_missing_funds_then_unbond_fails() -> anyhow::Result<()> {
 #[test]
 fn test_if_wrong_denom_then_unbond_fails() -> anyhow::Result<()> {
     let funds = coins(123, "wrong");
-    let app = create_app(funds.clone(), None)?.app;
+    let app = create_app(funds.clone(), None, None)?.app;
 
     let result = app.unbond(&funds);
     assert!(result.is_err());
@@ -50,7 +50,7 @@ fn test_if_wrong_denom_then_unbond_fails() -> anyhow::Result<()> {
 #[test]
 fn test_unbond_sends_ibc_message() -> anyhow::Result<()> {
     let funds = coins(123, LST_DENOM);
-    let env = create_app(funds.clone(), None)?;
+    let env = create_app(funds.clone(), None, None)?;
     let app = env.app;
 
     let ibc_action_result = app.unbond(&funds).unwrap();

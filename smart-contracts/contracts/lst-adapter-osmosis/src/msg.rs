@@ -6,6 +6,7 @@ abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMs
 
 #[cw_serde]
 pub struct LstAdapterInstantiateMsg {
+    pub owner: String,
     pub vault: String,
     pub lst_denom: String,
 }
@@ -27,6 +28,10 @@ pub enum LstAdapterExecuteMsg {
         block_offset: Option<u64>,
         timeout_secs: Option<u64>,
     },
+    Update {
+        vault: Option<String>,
+        lst_denom: Option<String>,
+    },
     UpdateOwner(OwnerUpdate),
 }
 
@@ -36,4 +41,10 @@ pub enum LstAdapterExecuteMsg {
 pub enum LstAdapterQueryMsg {
     #[returns(IbcConfig)]
     IbcConfig {},
+    #[returns(String)]
+    Owner {},
+    #[returns(String)]
+    Vault {},
+    #[returns(String)]
+    LstDenom {},
 }

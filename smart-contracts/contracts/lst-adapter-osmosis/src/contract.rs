@@ -1,8 +1,11 @@
+use crate::error::assert_vault;
 use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
 };
 use crate::state::{IbcConfig, IBC_CONFIG, LST_DENOM, OWNER, VAULT};
-use crate::{LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_VERSION};
+use crate::{
+    LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_NAME, LST_ADAPTER_OSMOSIS_VERSION,
+};
 #[cfg(not(target_arch = "wasm32"))]
 use abstract_app::abstract_interface::AbstractInterfaceError;
 use abstract_app::{abstract_interface, AppContract};
@@ -11,8 +14,8 @@ use abstract_sdk::{AbstractResponse, IbcInterface, TransferInterface};
 use abstract_std::manager::ModuleInstallConfig;
 use abstract_std::objects::chain_name::ChainName;
 use cosmwasm_std::{
-    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, IbcMsg, IbcTimeout, IbcTimeoutBlock,
-    MessageInfo, Response,
+    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, Event, IbcMsg, IbcTimeout,
+    IbcTimeoutBlock, MessageInfo, Response,
 };
 use mars_owner::OwnerInit::SetInitialOwner;
 use osmosis_std::cosmwasm_to_proto_coins;
@@ -60,50 +63,16 @@ impl<Chain: cw_orch::environment::CwEnv> abstract_interface::DependencyCreation
 pub fn instantiate_(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     _app: LstAdapter,
     msg: LstAdapterInstantiateMsg,
 ) -> LstAdapterResult {
-    VAULT.initialize(deps.storage, deps.api, SetInitialOwner { owner: msg.vault })?;
-    OWNER.initialize(
-        deps.storage,
-        deps.api,
-        SetInitialOwner {
-            owner: info.sender.to_string(),
-        },
-    )?;
+    OWNER.initialize(deps.storage, deps.api, SetInitialOwner { owner: msg.owner })?;
+    VAULT.save(deps.storage, &deps.api.addr_validate(&msg.vault)?)?;
     LST_DENOM.save(deps.storage, &msg.lst_denom)?;
-    // app.
-    // let msg = MsgTransfer{
-    //     source_port: ,
-    //     source_channel: ,
-    //     token: ,
-    //     sender: ,
-    //     receiver: ,
-    //     timeout_height: ,
-    //     timeout_timestamp: ,
-    //     memo: ,
-    // };
     Ok(Response::default())
 }
-// pub struct MsgTransfer {
-//     #[prost(string, tag = "1")]
-//     pub source_port: String,
-//     #[prost(string, tag = "2")]
-//     pub source_channel: String,
-//     #[prost(message, optional, tag = "3")]
-//     pub token: ::core::option::Option<osmosis_std::types::cosmos::base::v1beta1::Coin>,
-//     #[prost(string, tag = "4")]
-//     pub sender: String,
-//     #[prost(string, tag = "5")]
-//     pub receiver: String,
-//     #[prost(message, optional, tag = "6")]
-//     pub timeout_height: Option<Height>,
-//     #[prost(uint64, optional, tag = "7")]
-//     pub timeout_timestamp: ::core::option::Option<u64>,
-//     #[prost(string, tag = "8")]
-//     pub memo: String,
-// }
+
 pub fn execute_(
     deps: DepsMut,
     env: Env,
@@ -119,13 +88,24 @@ pub fn execute_(
             revision,
             block_offset,
             timeout_secs,
-        } => update_ibc_config(deps, info, channel, revision, block_offset, timeout_secs),
+        } => update_ibc_config(
+            deps,
+            info,
+            app,
+            channel,
+            revision,
+            block_offset,
+            timeout_secs,
+        ),
         LstAdapterExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
+        LstAdapterExecuteMsg::Update { vault, lst_denom } => {
+            update(deps, info, app, vault, lst_denom)
+        }
     }
 }
 
 fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
-    VAULT.assert_owner(deps.storage, &info.sender)?;
+    assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
     let lst_denom = LST_DENOM.load(deps.storage)?;
     assert_funds_single_token(&info.funds, &lst_denom)?;
 
@@ -174,13 +154,14 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
 }
 
 fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
-    VAULT.assert_owner(deps.storage, &info.sender)?;
+    assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
     Ok(app.response("claim"))
 }
 
 fn update_ibc_config(
     deps: DepsMut,
     info: MessageInfo,
+    app: LstAdapter,
     channel: String,
     revision: Option<u64>,
     block_offset: Option<u64>,
@@ -196,7 +177,24 @@ fn update_ibc_config(
             channel,
         },
     )?;
-    Ok(Response::default())
+    Ok(app.response("update ibc config"))
+}
+
+fn update(
+    deps: DepsMut,
+    info: MessageInfo,
+    app: LstAdapter,
+    vault: Option<String>,
+    lst_denom: Option<String>,
+) -> LstAdapterResult {
+    OWNER.assert_owner(deps.storage, &info.sender)?;
+    if let Some(vault) = vault {
+        VAULT.save(deps.storage, &deps.api.addr_validate(&vault)?)?;
+    }
+    if let Some(lst_denom) = lst_denom {
+        LST_DENOM.save(deps.storage, &lst_denom)?;
+    }
+    Ok(app.response("update"))
 }
 
 pub fn query_(
@@ -209,6 +207,14 @@ pub fn query_(
         LstAdapterQueryMsg::IbcConfig {} => Ok(to_json_binary(
             &IBC_CONFIG.may_load(deps.storage)?.unwrap_or_default(),
         )?),
+        LstAdapterQueryMsg::Owner {} => Ok(to_json_binary(
+            &OWNER
+                .current(deps.storage)?
+                .map(String::from)
+                .unwrap_or_default(),
+        )?),
+        LstAdapterQueryMsg::Vault {} => Ok(to_json_binary(&VAULT.load(deps.storage)?.to_string())?),
+        LstAdapterQueryMsg::LstDenom {} => Ok(to_json_binary(&LST_DENOM.load(deps.storage)?)?),
     }
 }
 

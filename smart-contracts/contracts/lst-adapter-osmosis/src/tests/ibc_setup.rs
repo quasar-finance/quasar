@@ -184,7 +184,11 @@ pub struct TestEnv {
     pub abstr_remote: Abstract<MockBase<MockApiBech32>>,
 }
 
-pub fn create_app(sender_balance: Vec<Coin>, vault: Option<String>) -> anyhow::Result<TestEnv> {
+pub fn create_app(
+    sender_balance: Vec<Coin>,
+    vault: Option<String>,
+    owner: Option<String>,
+) -> anyhow::Result<TestEnv> {
     let mock = MockBech32InterchainEnv::new(vec![(OSMOSIS, "osmosis"), (STARGAZE, "stargaze")]);
 
     let (abstr_origin, abstr_remote) = ibc_abstract_setup(&mock, OSMOSIS, STARGAZE)?;
@@ -194,6 +198,11 @@ pub fn create_app(sender_balance: Vec<Coin>, vault: Option<String>) -> anyhow::R
         create_test_remote_account(&abstr_origin, OSMOSIS, STARGAZE, &mock, None)?;
     let vault = if let Some(vault) = vault {
         mock.chain(OSMOSIS)?.addr_make(vault)
+    } else {
+        mock.chain(OSMOSIS)?.sender()
+    };
+    let owner = if let Some(owner) = owner {
+        mock.chain(OSMOSIS)?.addr_make(owner)
     } else {
         mock.chain(OSMOSIS)?.sender()
     };
@@ -218,6 +227,7 @@ pub fn create_app(sender_balance: Vec<Coin>, vault: Option<String>) -> anyhow::R
     origin_account.install_app(
         &app,
         &LstAdapterInstantiateMsg {
+            owner: owner.to_string(),
             lst_denom: LST_DENOM.to_string(),
             vault: vault.to_string(),
         },
