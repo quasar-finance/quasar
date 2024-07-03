@@ -5,11 +5,7 @@ use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use osmosis_test_tube::{Module, Wasm};
 
-use super::initialize::default_init;
-
-fn get_instantiate_msg() -> InstantiateMsg {
-    InstantiateMsg {}
-}
+use super::initialize::single_cl_pool_fixture;
 
 #[test]
 fn test_if_not_owner_then_set_path_fails() {
@@ -55,7 +51,7 @@ fn test_if_path_is_empty_then_set_path_fails() {
 #[test]
 #[ignore]
 fn test_set_path_works() {
-    let (app, contract_address, pools, admin) = default_init();
+    let (app, contract_address, pools, admin) = single_cl_pool_fixture();
     let wasm = Wasm::new(&app);
 
     for pool in pools.clone() {

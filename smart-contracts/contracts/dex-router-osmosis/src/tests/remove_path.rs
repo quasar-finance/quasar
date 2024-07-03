@@ -1,7 +1,7 @@
 use crate::contract::{execute, instantiate};
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::PATHS;
-use crate::tests::initialize::default_init;
+use crate::tests::initialize::single_cl_pool_fixture;
 use crate::ContractError;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
@@ -228,7 +228,7 @@ fn test_remove_one_of_two_paths() {
 #[test]
 #[ignore]
 fn test_set_and_remove_path() {
-    let (app, contract_address, pools, admin) = default_init();
+    let (app, contract_address, pools, admin) = single_cl_pool_fixture();
     let wasm = Wasm::new(&app);
 
     for pool in pools.clone() {
@@ -261,25 +261,13 @@ fn test_set_and_remove_path() {
         )
         .unwrap();
 
-    let resp: Vec<Vec<SwapAmountInRoute>> = wasm
-        .query(
-            contract_address.as_str(),
-            &QueryMsg::PathsForPair {
-                offer_denom: pools.first().unwrap().denom0.clone(),
-                ask_denom: pools.first().unwrap().denom1.clone(),
-            },
-        )
-        .unwrap();
+    let resp: Result<Vec<Vec<SwapAmountInRoute>>, osmosis_test_tube::RunnerError> = wasm.query(
+        contract_address.as_str(),
+        &QueryMsg::PathsForPair {
+            offer_denom: pools.first().unwrap().denom0.clone(),
+            ask_denom: pools.first().unwrap().denom1.clone(),
+        },
+    );
 
-    // Assert that the set path is included in the response
-    let expected_path_to_remove = SwapAmountInRoute {
-        pool_id: pools.first().unwrap().pool,
-        token_out_denom: pools.first().unwrap().denom1.clone(),
-    };
-
-    let paths_contain_expected = resp
-        .iter()
-        .any(|path| path.contains(&expected_path_to_remove));
-
-    assert_eq!(paths_contain_expected, false);
+    assert!(resp.is_err(), "Path not found");
 }

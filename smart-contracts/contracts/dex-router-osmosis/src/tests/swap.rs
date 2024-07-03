@@ -7,7 +7,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use osmosis_test_tube::{Module, Wasm};
 use quasar_types::error::FundsError;
 
-use super::initialize::default_init;
+use super::initialize::{single_cl_pool_fixture, single_gamm_pool_fixture};
 
 #[test]
 fn test_swap_without_funds_throws() {
@@ -49,8 +49,54 @@ fn test_swap_with_too_many_funds_throws() {
 
 #[test]
 #[ignore]
-fn test_swap_over_single_route() {
-    let (app, contract_address, pools, admin) = default_init();
+fn test_swap_over_singl_cl_route() {
+    let (app, contract_address, pools, admin) = single_cl_pool_fixture();
+    let wasm = Wasm::new(&app);
+
+    for pool in pools.clone() {
+        let _ = wasm
+            .execute(
+                &contract_address.to_string(),
+                &ExecuteMsg::SetPath {
+                    path: vec![pool.pool],
+                    bidirectional: true,
+                    offer_denom: pool.denom0.clone(),
+                    ask_denom: pool.denom1.clone(),
+                },
+                &[],
+                &admin,
+            )
+            .unwrap();
+    }
+
+    let resp: Vec<Vec<SwapAmountInRoute>> = wasm
+        .query(
+            contract_address.as_str(),
+            &QueryMsg::PathsForPair {
+                offer_denom: pools.first().unwrap().denom0.clone(),
+                ask_denom: pools.first().unwrap().denom1.clone(),
+            },
+        )
+        .unwrap();
+
+    let _ = wasm
+        .execute(
+            &contract_address.to_string(),
+            &ExecuteMsg::Swap {
+                out_denom: pools.first().unwrap().denom1.clone(),
+                path: Some(resp.first().unwrap().clone()),
+                minimum_receive: Some(Uint128::new(9500)),
+            },
+            &[Coin::new(10000u128, pools.first().unwrap().denom0.clone())],
+            &admin,
+        )
+        .unwrap();
+}
+
+#[test]
+#[ignore]
+fn test_swap_over_singl_gamm_route() {
+    let (app, contract_address, pools, admin) = single_gamm_pool_fixture();
     let wasm = Wasm::new(&app);
 
     for pool in pools.clone() {
