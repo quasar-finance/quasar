@@ -7,6 +7,7 @@ pub mod ica;
 pub mod icq;
 pub mod lst_adapter;
 pub mod queue;
+pub mod stride;
 pub mod traits;
 pub mod types;
 
