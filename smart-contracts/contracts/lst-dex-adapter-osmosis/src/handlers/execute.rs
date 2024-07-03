@@ -52,9 +52,9 @@ fn swap(
         .redemption_rate;
     let price = Decimal::from_ratio(offer_amount, simulated.return_amount);
     if price.checked_mul(
-        (Decimal::one()
+        Decimal::one()
             .checked_add(slippage.unwrap_or_default())?
-            .checked_add(state.margin)?),
+            .checked_add(state.margin)?,
     )? > redemption_rate
     {
         return Err(DexAdapterError::InvalidPrice {});
