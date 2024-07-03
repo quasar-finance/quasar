@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_binary, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Coin, CosmosMsg, StdResult, Uint128, WasmMsg};
 
 use crate::{ExtensionExecuteMsg, VaultStandardExecuteMsg};
 
@@ -47,7 +47,7 @@ impl ForceUnlockExecuteMsg {
     pub fn into_cosmos_msg(self, contract_addr: String, funds: Vec<Coin>) -> StdResult<CosmosMsg> {
         Ok(WasmMsg::Execute {
             contract_addr,
-            msg: to_binary(&VaultStandardExecuteMsg::VaultExtension(
+            msg: to_json_binary(&VaultStandardExecuteMsg::VaultExtension(
                 ExtensionExecuteMsg::ForceUnlock(self),
             ))?,
             funds,

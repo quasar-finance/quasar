@@ -50,4 +50,5 @@ cw-dex-router = {git = "https://github.com/quasar-finance/cw-dex-router", branch
 cw-orch-osmosis-test-tube = { workspace = true }
 osmosis-helpers = { path = "../../packages/osmosis-helpers" }
 cw-multi-test = { workspace = true }
-interface = {path ="../../packages/interface"}
+interface = {path = "../../packages/interface"}
+cw-vault-multi-standard = { path = "../cw-vault-multi-standard"}
