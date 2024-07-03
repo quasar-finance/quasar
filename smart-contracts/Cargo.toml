@@ -64,7 +64,7 @@ abstract-testing = { version = "0.22.1" }
 abstract-adapter = { version = "0.22.2" }
 abstract-interface = { version = "0.22.0" }
 abstract-client = { version = "0.22.0" }
-cw-orch = { version = "0.22.2" }
+cw-orch = { version = "0.23.0" }
 clap = { version = "4.3.7" }
 const_format = "0.2.32"
 dotenv = "0.15.0"

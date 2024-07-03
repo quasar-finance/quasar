@@ -57,7 +57,6 @@ pub struct FakeLstMigrateMsg {}
 
 #[cw_serde]
 #[derive(cw_orch::ExecuteFns)]
-#[impl_into(ExecuteMsg)]
 pub enum FakeLstExecuteMsg {
     Update { redemption_rate: Decimal },
 }

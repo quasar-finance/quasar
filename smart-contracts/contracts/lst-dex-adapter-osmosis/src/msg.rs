@@ -19,9 +19,8 @@ pub struct DexAdapterInstantiateMsg {
 
 #[cosmwasm_schema::cw_serde]
 #[derive(cw_orch::ExecuteFns)]
-#[impl_into(ExecuteMsg)]
 pub enum DexAdapterExecuteMsg {
-    #[payable]
+    #[cw_orch(payable)]
     Swap { slippage: Option<Decimal> },
 }
 
@@ -30,7 +29,6 @@ pub struct DexAdapterMigrateMsg {}
 
 #[cosmwasm_schema::cw_serde]
 #[derive(QueryResponses, cw_orch::QueryFns)]
-#[impl_into(QueryMsg)]
 pub enum DexAdapterQueryMsg {
     #[returns(ConfigResponse)]
     Config {},
