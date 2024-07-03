@@ -2358,6 +2358,7 @@ dependencies = [
  "osmosis-std",
  "prost 0.12.6",
  "quasar-types",
+ "serde_json",
  "thiserror",
 ]
 

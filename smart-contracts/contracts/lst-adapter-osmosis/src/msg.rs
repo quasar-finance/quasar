@@ -21,6 +21,7 @@ pub enum LstAdapterExecuteMsg {
     #[cw_orch(payable)]
     Unbond {},
     UpdateIbcConfig {
+        remote_chain: String,
         channel: String,
         revision: Option<u64>,
         block_offset: Option<u64>,

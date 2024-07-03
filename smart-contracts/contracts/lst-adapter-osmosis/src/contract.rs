@@ -14,7 +14,7 @@ use abstract_sdk::{AbstractResponse, IbcInterface, TransferInterface};
 use abstract_std::manager::ModuleInstallConfig;
 use abstract_std::objects::chain_name::ChainName;
 use cosmwasm_std::{
-    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, Event, IbcMsg, IbcTimeout,
+    to_json_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, IbcMsg, IbcTimeout,
     IbcTimeoutBlock, MessageInfo, Response,
 };
 use mars_owner::OwnerInit::SetInitialOwner;
@@ -22,7 +22,10 @@ use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::ibc::applications::transfer::v1::MsgTransfer;
 use osmosis_std::types::ibc::core::client::v1::Height;
 use prost::Message;
-use quasar_types::error::assert_funds_single_token;
+use quasar_types::{
+    error::assert_funds_single_token,
+    stride::{get_autopilot_msg, Action},
+};
 
 const IBC_MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
@@ -83,6 +86,7 @@ pub fn execute_(
     match msg {
         LstAdapterExecuteMsg::Unbond {} => unbond(deps, env, info, app),
         LstAdapterExecuteMsg::UpdateIbcConfig {
+            remote_chain,
             channel,
             revision,
             block_offset,
@@ -91,6 +95,7 @@ pub fn execute_(
             deps,
             info,
             app,
+            remote_chain,
             channel,
             revision,
             block_offset,
@@ -113,42 +118,41 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     let ibc_client = app.ibc_client(deps.as_ref());
     let ibc_msg = ibc_client.ics20_transfer(
         ChainName::from_chain_id("stargaze-1").to_string(),
-        info.funds,
+        info.funds.clone(),
     )?;
     transfer_msgs.push(ibc_msg);
-    // let msg = IbcMsg::Transfer {
-    //     channel_id: "channel-0".to_string(),
-    //     to_address: app
-    //         .ibc_client(deps.as_ref())
-    //         .remote_proxy_addr("stargaze")?
-    //         .unwrap(),
-    //     amount: info.funds[0].clone(),
-    //     timeout: IbcTimeout::with_block(IbcTimeoutBlock {
-    //         revision: 5,
-    //         height: env.block.height + 5,
-    //     }),
-    // };
-    // let m = MsgTransfer {
+
+    // let ibc_config = IBC_CONFIG.load(deps.storage)?;
+    // let remote_addr = app
+    //     .ibc_client(deps.as_ref())
+    //     .remote_proxy_addr(&ibc_config.remote_chain)?;
+    // if remote_addr.is_none() {
+    //     return Err(LstAdapterError::MissingRemoteAddress {
+    //         chain: ibc_config.remote_chain,
+    //     });
+    // }
+    // let remote_addr = remote_addr.unwrap();
+    // let autopilot_redeem_msg = get_autopilot_msg(
+    //     Action::RedeemStake,
+    //     remote_addr.as_ref(),
+    //     Some(info.sender.to_string()),
+    // );
+    // let msg = MsgTransfer {
     //     source_port: "transfer".to_string(),
-    //     source_channel: "channel-0".to_string(),
-    //     token: Some(cosmwasm_to_proto_coins(info.funds)[0].clone()),
+    //     source_channel: ibc_config.channel,
+    //     token: Some(info.funds[0].clone().into()),
     //     sender: env.contract.address.to_string(),
-    //     receiver: app
-    //         .ibc_client(deps.as_ref())
-    //         .remote_proxy_addr("stargaze")?
-    //         .unwrap(),
+    //     receiver: remote_addr,
     //     timeout_height: Some(Height {
     //         revision_number: 5,
     //         revision_height: env.block.height + 5,
     //     }),
-    //     timeout_timestamp: env.block.time.nanos() + 100_000_000_000,
-    //     memo: "".to_string(),
+    //     timeout_timestamp: env.block.time.nanos()
+    //         + ibc_config.timeout_secs.unwrap_or_default() * 1_000_000_000,
+    //     memo: serde_json::to_string(&autopilot_redeem_msg)
+    //         .map_err(|err| LstAdapterError::Json(err.to_string()))?,
     // };
-    // let stargate_msg = CosmosMsg::Stargate {
-    //     type_url: IBC_MSG_TRANSFER_TYPE_URL.to_string(),
-    //     value: m.encode_to_vec().into(),
-    // };
-    // Ok(app.response("unbond").add_message(stargate_msg))
+    // Ok(app.response("unbond").add_message(msg))
     Ok(app.response("unbond").add_messages(transfer_msgs))
 }
 
@@ -156,6 +160,7 @@ fn update_ibc_config(
     deps: DepsMut,
     info: MessageInfo,
     app: LstAdapter,
+    remote_chain: String,
     channel: String,
     revision: Option<u64>,
     block_offset: Option<u64>,
@@ -165,6 +170,7 @@ fn update_ibc_config(
     IBC_CONFIG.save(
         deps.storage,
         &IbcConfig {
+            remote_chain,
             revision,
             block_offset,
             timeout_secs,

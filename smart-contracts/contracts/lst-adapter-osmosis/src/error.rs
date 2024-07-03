@@ -29,8 +29,14 @@ pub enum LstAdapterError {
     #[error("{0}")]
     Funds(#[from] FundsError),
 
+    #[error("{0}")]
+    Json(String),
+
     #[error("Only configured vault can unbond or claim.")]
     NotVault {},
+
+    #[error("Missing remote address for {chain}")]
+    MissingRemoteAddress { chain: String },
 }
 
 pub fn assert_vault(sender: &Addr, vault: &Addr) -> Result<(), LstAdapterError> {

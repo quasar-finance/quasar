@@ -9,12 +9,19 @@ use cw_orch_interchain::InterchainEnv;
 fn test_only_owner_can_update_ibc_config() -> anyhow::Result<()> {
     let app = create_app(vec![], None, Some("other_owner".to_string()))?.app;
 
+    let remote_chain = "stride".to_string();
     let revision = Some(1u64);
     let block_offset = Some(2u64);
     let timeout_secs = Some(3u64);
     let channel = "channel-123".to_string();
 
-    let result = app.update_ibc_config(channel.clone(), block_offset, revision, timeout_secs);
+    let result = app.update_ibc_config(
+        remote_chain.clone(),
+        channel.clone(),
+        block_offset,
+        revision,
+        timeout_secs,
+    );
 
     assert_eq!(
         result.unwrap_err().downcast::<LstAdapterError>().unwrap(),
@@ -30,19 +37,27 @@ fn test_update_ibc_config() -> anyhow::Result<()> {
     let result = app.ibc_config()?;
     assert_eq!(result, IbcConfig::default());
 
+    let remote_chain = "stride".to_string();
     let revision = Some(1u64);
     let block_offset = Some(2u64);
     let timeout_secs = Some(3u64);
     let channel = "channel-123".to_string();
 
     assert!(app
-        .update_ibc_config(channel.clone(), block_offset, revision, timeout_secs)
+        .update_ibc_config(
+            remote_chain.clone(),
+            channel.clone(),
+            block_offset,
+            revision,
+            timeout_secs
+        )
         .is_ok());
 
     let result = app.ibc_config()?;
     assert_eq!(
         result,
         IbcConfig {
+            remote_chain,
             revision,
             block_offset,
             timeout_secs,

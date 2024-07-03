@@ -6,6 +6,7 @@ use mars_owner::Owner;
 #[derive(Default)]
 #[cw_serde]
 pub struct IbcConfig {
+    pub remote_chain: String,
     pub channel: String,
     pub revision: Option<u64>,
     pub block_offset: Option<u64>,

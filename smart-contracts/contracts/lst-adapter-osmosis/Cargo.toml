@@ -39,6 +39,7 @@ abstract-sdk = { workspace = true }
 cw-orch = { workspace = true }
 const_format = { workspace = true }
 prost = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 abstract-client = { workspace = true }
