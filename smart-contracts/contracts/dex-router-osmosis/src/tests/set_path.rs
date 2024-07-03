@@ -1,9 +1,14 @@
 use crate::contract::{execute, instantiate};
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::tests::initialize::{
+    init_test_contract, setup_paths, PoolWithDenoms, ADMIN_BALANCE_AMOUNT, DENOM_BASE, DENOM_QUOTE,
+    FEE_DENOM, TESTUBE_BINARY,
+};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+use cosmwasm_std::Coin;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
-use osmosis_test_tube::{Module, Wasm};
+use osmosis_test_tube::{Module, OsmosisTestApp, Wasm};
 
 use super::initialize::single_cl_pool_fixture;
 
@@ -51,24 +56,36 @@ fn test_if_path_is_empty_then_set_path_fails() {
 #[test]
 #[ignore]
 fn test_set_path_works() {
-    let (app, contract_address, pools, admin) = single_cl_pool_fixture();
+    let app = OsmosisTestApp::new();
+
+    // Create new account with initial funds
+    let admin = app
+        .init_account(&[
+            Coin::new(ADMIN_BALANCE_AMOUNT, FEE_DENOM),
+            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+        ])
+        .unwrap();
     let wasm = Wasm::new(&app);
 
-    for pool in pools.clone() {
-        let _ = wasm
-            .execute(
-                &contract_address.to_string(),
-                &ExecuteMsg::SetPath {
-                    path: vec![pool.pool],
-                    bidirectional: true,
-                    offer_denom: pool.denom0.clone(),
-                    ask_denom: pool.denom1.clone(),
-                },
-                &[],
-                &admin,
-            )
-            .unwrap();
-    }
+    let mut pools: Vec<PoolWithDenoms> = vec![];
+    pools = single_cl_pool_fixture(
+        &app,
+        &admin,
+        vec![DENOM_BASE.to_string(), DENOM_QUOTE.to_string()],
+        pools,
+    );
+
+    let contract_address = init_test_contract(&app, &admin, TESTUBE_BINARY);
+
+    setup_paths(
+        &wasm,
+        &contract_address,
+        vec![pools[0].pool],
+        pools[0].denom0.clone(),
+        pools[0].denom1.clone(),
+        &admin,
+    );
 
     let resp: Vec<Vec<SwapAmountInRoute>> = wasm
         .query(

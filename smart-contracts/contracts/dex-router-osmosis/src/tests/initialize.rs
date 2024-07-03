@@ -3,15 +3,15 @@ use std::str::FromStr;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
+use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
 };
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinPool;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::SpotPriceRequest;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::{SpotPriceRequest, SwapAmountInRoute};
 
 use osmosis_test_tube::osmosis_std::types::osmosis::gamm::poolmodels::balancer::v1beta1::MsgCreateBalancerPool;
 use osmosis_test_tube::osmosis_std::types::osmosis::gamm::v1beta1::PoolAsset;
-use osmosis_test_tube::Gamm;
 use osmosis_test_tube::{
     cosmrs::proto::traits::Message,
     osmosis_std::types::osmosis::concentratedliquidity::{
@@ -20,6 +20,7 @@ use osmosis_test_tube::{
     Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, PoolManager,
     SigningAccount, Wasm,
 };
+use osmosis_test_tube::{ExecuteResponse, Gamm};
 
 use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
 
@@ -28,8 +29,9 @@ pub(crate) const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
 pub(crate) const FEE_DENOM: &str = "uosmo";
 pub(crate) const DENOM_BASE: &str = "udydx";
 pub(crate) const DENOM_QUOTE: &str = "uryeth";
-pub(crate) const INTERMEDIATE_BASE: &str = "uinshallah";
-pub(crate) const INTERMEDIATE_QUOTE: &str = "wosmo";
+pub(crate) const INTERMEDIATE_QUOTE: &str = "uwosmo";
+pub(crate) const TESTUBE_BINARY: &str =
+    "./test-tube-build/wasm32-unknown-unknown/release/dex_router_osmosis.wasm";
 
 #[cw_serde]
 pub struct PoolWithDenoms {
@@ -38,65 +40,7 @@ pub struct PoolWithDenoms {
     pub denom1: String,
 }
 
-pub fn single_cl_pool_fixture() -> (OsmosisTestApp, Addr, Vec<PoolWithDenoms>, SigningAccount) {
-    let app = OsmosisTestApp::new();
-
-    // Create new account with initial funds
-    let admin = app
-        .init_account(&[
-            Coin::new(ADMIN_BALANCE_AMOUNT, FEE_DENOM),
-            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-        ])
-        .unwrap();
-
-    let pools: Vec<PoolWithDenoms> = vec![];
-
-    let pools = create_cl_pool(
-        &app,
-        &admin,
-        vec![DENOM_BASE.to_string(), DENOM_QUOTE.to_string()],
-        pools,
-    );
-
-    init_test_contract(
-        app,
-        admin,
-        "./test-tube-build/wasm32-unknown-unknown/release/dex_router_osmosis.wasm",
-        pools,
-    )
-}
-
-pub fn single_gamm_pool_fixture() -> (OsmosisTestApp, Addr, Vec<PoolWithDenoms>, SigningAccount) {
-    let app = OsmosisTestApp::new();
-
-    // Create new account with initial funds
-    let admin = app
-        .init_account(&[
-            Coin::new(ADMIN_BALANCE_AMOUNT, FEE_DENOM),
-            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-        ])
-        .unwrap();
-
-    let pools: Vec<PoolWithDenoms> = vec![];
-
-    let pools = create_gamm_pool(
-        &app,
-        &admin,
-        vec![DENOM_BASE.to_string(), DENOM_QUOTE.to_string()],
-        pools,
-    );
-
-    init_test_contract(
-        app,
-        admin,
-        "./test-tube-build/wasm32-unknown-unknown/release/dex_router_osmosis.wasm",
-        pools,
-    )
-}
-
-pub fn create_cl_pool(
+pub fn single_cl_pool_fixture(
     app: &OsmosisTestApp,
     admin: &SigningAccount,
     denoms: Vec<String>,
@@ -132,52 +76,67 @@ pub fn create_cl_pool(
     .unwrap();
 
     let pools_response = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-    let pool: Pool = Pool::decode(pools_response.pools[0].value.as_slice()).unwrap();
 
-    let tokens_provided = vec![
-        OsmoCoin {
-            denom: cl_pool.denom0.to_string(),
-            amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-        },
-        OsmoCoin {
-            denom: cl_pool.denom1.to_string(),
-            amount: TOKENS_PROVIDED_AMOUNT.to_string(),
-        },
-    ];
-
-    cl.create_position(
-        MsgCreatePosition {
-            pool_id: pool.id,
-            sender: admin.address(),
-            lower_tick: -5000000,
-            upper_tick: 500000,
-            tokens_provided: tokens_provided.clone(),
-            token_min_amount0: "1".to_string(),
-            token_min_amount1: "1".to_string(),
-        },
-        &admin,
-    )
-    .unwrap();
-
-    let spot_price = pm
-        .query_spot_price(&SpotPriceRequest {
-            base_asset_denom: tokens_provided[0].denom.to_string(),
-            quote_asset_denom: tokens_provided[1].denom.to_string(),
-            pool_id: pool.id,
-        })
-        .unwrap();
-    assert_eq!(spot_price.spot_price, "1.000000000000000000");
-
-    pools.push(PoolWithDenoms {
-        pool: pool.id,
-        denom0: cl_pool.denom0,
-        denom1: cl_pool.denom1,
+    // Find the pool with the specified denoms
+    let matching_pool = pools_response.pools.iter().find_map(|pool_any| {
+        if let Ok(pool) = Pool::decode(pool_any.value.as_slice()) {
+            if pool.token0 == cl_pool.denom0 && pool.token1 == cl_pool.denom1 {
+                return Some(pool);
+            }
+        }
+        None
     });
+
+    if let Some(pool) = matching_pool {
+        let mut tokens_provided = vec![
+            OsmoCoin {
+                denom: pool.token0.to_string(),
+                amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+            },
+            OsmoCoin {
+                denom: pool.token1.to_string(),
+                amount: TOKENS_PROVIDED_AMOUNT.to_string(),
+            },
+        ];
+
+        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom));
+
+        cl.create_position(
+            MsgCreatePosition {
+                pool_id: pool.id,
+                sender: admin.address(),
+                lower_tick: -5000000,
+                upper_tick: 500000,
+                tokens_provided: tokens_provided.clone(),
+                token_min_amount0: "1".to_string(),
+                token_min_amount1: "1".to_string(),
+            },
+            &admin,
+        )
+        .unwrap();
+
+        let spot_price = pm
+            .query_spot_price(&SpotPriceRequest {
+                base_asset_denom: tokens_provided[0].denom.to_string(),
+                quote_asset_denom: tokens_provided[1].denom.to_string(),
+                pool_id: pool.id,
+            })
+            .unwrap();
+        assert_eq!(spot_price.spot_price, "1.000000000000000000");
+
+        pools.push(PoolWithDenoms {
+            pool: pool.id,
+            denom0: cl_pool.denom0,
+            denom1: cl_pool.denom1,
+        });
+    } else {
+        println!("Pool with the specified denoms not found.");
+    }
 
     pools
 }
 
-pub fn create_gamm_pool(
+pub fn single_gamm_pool_fixture(
     app: &OsmosisTestApp,
     admin: &SigningAccount,
     denoms: Vec<String>,
@@ -309,24 +268,19 @@ pub fn create_gamm_pool(
     pools
 }
 
-pub fn init_test_contract(
-    app: OsmosisTestApp,
-    admin: SigningAccount,
-    filename: &str,
-    pools: Vec<PoolWithDenoms>,
-) -> (OsmosisTestApp, Addr, Vec<PoolWithDenoms>, SigningAccount) {
+pub fn init_test_contract(app: &OsmosisTestApp, admin: &SigningAccount, filename: &str) -> Addr {
     // Create new osmosis appchain instance
-    let wasm = Wasm::new(&app);
+    let wasm = Wasm::new(app);
 
     // Load compiled wasm bytecode
     let wasm_byte_code = std::fs::read(filename).unwrap();
     let code_id = wasm
-        .store_code(&wasm_byte_code, None, &admin)
+        .store_code(&wasm_byte_code, None, admin)
         .unwrap()
         .data
         .code_id;
 
-    // Instantiate vault
+    // Instantiate dex router
     let contract = wasm
         .instantiate(
             code_id,
@@ -334,34 +288,102 @@ pub fn init_test_contract(
             Some(admin.address().as_str()),
             Some("dex-router-osmosis"),
             &[],
-            &admin,
+            admin,
         )
         .unwrap();
 
-    (app, Addr::unchecked(contract.data.address), pools, admin)
+    Addr::unchecked(contract.data.address)
+}
+
+pub fn setup_paths(
+    wasm: &Wasm<OsmosisTestApp>,
+    contract_address: &Addr,
+    path: Vec<u64>,
+    offer_denom: String,
+    ask_denom: String,
+    admin: &SigningAccount,
+) {
+    wasm.execute(
+        &contract_address.to_string(),
+        &ExecuteMsg::SetPath {
+            path,
+            bidirectional: true,
+            offer_denom,
+            ask_denom,
+        },
+        &[],
+        admin,
+    )
+    .unwrap();
+}
+
+pub fn query_paths(
+    wasm: &Wasm<OsmosisTestApp>,
+    contract_address: &Addr,
+    offer_denom: String,
+    ask_denom: String,
+) -> Result<Vec<Vec<SwapAmountInRoute>>, osmosis_test_tube::RunnerError> {
+    wasm.query(
+        contract_address.as_str(),
+        &QueryMsg::PathsForPair {
+            offer_denom,
+            ask_denom,
+        },
+    )
+}
+pub fn perform_swap(
+    wasm: &Wasm<OsmosisTestApp>,
+    contract_address: &Addr,
+    offer_denom: String,
+    ask_denom: String,
+    path: Vec<Vec<SwapAmountInRoute>>,
+    admin: &SigningAccount,
+) -> Result<ExecuteResponse<MsgExecuteContractResponse>, osmosis_test_tube::RunnerError> {
+    wasm.execute(
+        &contract_address.to_string(),
+        &ExecuteMsg::Swap {
+            out_denom: ask_denom,
+            path: Some(path.first().unwrap().clone()),
+            minimum_receive: Some(Uint128::new(9500)),
+        },
+        &[Coin::new(10000u128, offer_denom)],
+        admin,
+    )
 }
 
 #[test]
 #[ignore]
 fn default_init_works() {
-    let (app, contract_address, pools, admin) = single_cl_pool_fixture();
+    let app = OsmosisTestApp::new();
+
+    // Create new account with initial funds
+    let admin = app
+        .init_account(&[
+            Coin::new(ADMIN_BALANCE_AMOUNT, FEE_DENOM),
+            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+        ])
+        .unwrap();
     let wasm = Wasm::new(&app);
 
-    for pool in pools.clone() {
-        let _ = wasm
-            .execute(
-                &contract_address.to_string(),
-                &ExecuteMsg::SetPath {
-                    path: vec![{ pool.pool }],
-                    bidirectional: true,
-                    offer_denom: pool.denom0,
-                    ask_denom: pool.denom1,
-                },
-                &[],
-                &admin,
-            )
-            .unwrap();
-    }
+    let mut pools: Vec<PoolWithDenoms> = vec![];
+    pools = single_gamm_pool_fixture(
+        &app,
+        &admin,
+        vec![DENOM_BASE.to_string(), DENOM_QUOTE.to_string()],
+        pools,
+    );
+
+    let contract_address = init_test_contract(&app, &admin, TESTUBE_BINARY);
+
+    setup_paths(
+        &wasm,
+        &contract_address,
+        vec![pools[0].pool],
+        pools[0].denom0.clone(),
+        pools[0].denom1.clone(),
+        &admin,
+    );
 
     let resp: BestPathForPairResponse = wasm
         .query(
