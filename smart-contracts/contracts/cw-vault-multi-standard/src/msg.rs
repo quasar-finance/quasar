@@ -18,6 +18,7 @@ pub enum VaultStandardExecuteMsg<T = ExtensionExecuteMsg> {
     /// Called to deposit an any of the assets into the vault. Assets are passed in the funds parameter.
     /// This should functions as a deposit function that "just handles the deposit", it might swap user funds to
     /// the ratio needed. This should support both single sided deposits aswell as unbalanced deposits
+    #[cw_orch(payable)]
     AnyDeposit {
         /// The amount of tokens to deposit.
         amount: Uint128,
@@ -30,6 +31,7 @@ pub enum VaultStandardExecuteMsg<T = ExtensionExecuteMsg> {
         max_slippage: Decimal,
     },
 
+    #[cw_orch(payable)]
     /// Called to deposit multiple assets into the vault. The assets should be passed in the funds
     /// parameter. The vault should either accept funds in the correct ratio and error on incorrect ratio's,
     /// or refund and funds that are not in the correct ratio
