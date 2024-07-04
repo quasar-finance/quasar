@@ -175,7 +175,6 @@ pub struct MergePositionMsg {
 /// QueryMsg for an Autocompounding Vault.
 pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
 
-
 impl From<ExtensionQueryMsg> for QueryMsg {
     fn from(msg: ExtensionQueryMsg) -> Self {
         QueryMsg::VaultExtension(msg)
