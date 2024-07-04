@@ -10,6 +10,7 @@ use crate::{
 use abstract_app::abstract_interface::AbstractInterfaceError;
 use abstract_app::{abstract_interface, AppContract};
 use abstract_sdk::{AbstractResponse, IbcInterface, TransferInterface};
+use abstract_std::ibc::{CallbackResult, IbcResponseMsg};
 #[cfg(not(target_arch = "wasm32"))]
 use abstract_std::manager::ModuleInstallConfig;
 use abstract_std::objects::chain_name::ChainName;
@@ -28,6 +29,7 @@ use quasar_types::{
 };
 
 const IBC_MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
+const IBC_QUERY_REDEMPTION_RATE_ID: &str = "redemption_rate";
 
 pub type LstAdapterResult<T = Response> = Result<T, LstAdapterError>;
 
@@ -43,7 +45,8 @@ const APP: LstAdapter = LstAdapter::new(LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMO
     .with_instantiate(instantiate_)
     .with_execute(execute_)
     .with_query(query_)
-    .with_migrate(migrate_);
+    .with_migrate(migrate_)
+    .with_ibc_callbacks(&[(IBC_QUERY_REDEMPTION_RATE_ID, redemption_rate_callback)]);
 
 #[cfg(feature = "export")]
 abstract_app::export_endpoints!(APP, LstAdapter);
@@ -114,7 +117,6 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     assert_funds_single_token(&info.funds, &lst_denom)?;
 
     let mut transfer_msgs = app.bank(deps.as_ref()).deposit(info.funds.clone())?;
-    // ibc transfer
     let ibc_client = app.ibc_client(deps.as_ref());
     let ibc_msg = ibc_client.ics20_transfer(
         ChainName::from_chain_id("stargaze-1").to_string(),
@@ -195,6 +197,20 @@ fn update(
         LST_DENOM.save(deps.storage, &lst_denom)?;
     }
     Ok(app.response("update"))
+}
+
+fn redemption_rate_callback(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    app: LstAdapter,
+    msg: IbcResponseMsg,
+) -> LstAdapterResult {
+    match msg.result {
+        CallbackResult::Query { query: _, result } => if let Ok(result) = result {},
+        _ => panic!("Expected query result"),
+    }
+    Ok(Response::default())
 }
 
 pub fn query_(
