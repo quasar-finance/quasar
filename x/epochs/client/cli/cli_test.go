@@ -6,11 +6,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/quasarlabs/quasarnode/testutil/network"
 	"github.com/quasarlabs/quasarnode/x/epochs/client/cli"
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
-	tmcli "github.com/cometbft/cometbft/libs/cli"
 )
 
 func setupNetwork(t *testing.T) *network.Network {

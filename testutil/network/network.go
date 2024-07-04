@@ -2,20 +2,19 @@ package network
 
 import (
 	"fmt"
-	"github.com/cosmos/ibc-apps/modules/async-icq/v7/testing/simapp"
 	"testing"
 	"time"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	tmrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	// "github.com/cosmos/cosmos-sdk/simapp"
-	sims "github.com/cosmos/cosmos-sdk/testutil/sims"
-	tmdb "github.com/cometbft/cometbft-db"
-	tmrand "github.com/cometbft/cometbft/libs/rand"
 	pruningtypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
+	// "github.com/cosmos/cosmos-sdk/simapp"
+	sims "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
@@ -39,7 +38,7 @@ func New(t *testing.T, configs ...network.Config) *network.Network {
 	} else {
 		cfg = configs[0]
 	}
-	net := network.New(t, cfg)
+	net, err := network.New(t, , cfg)
 	t.Cleanup(net.Cleanup)
 	return net
 }
@@ -56,14 +55,19 @@ func DefaultConfig() network.Config {
 		AccountRetriever:  authtypes.AccountRetriever{},
 		AppConstructor: func(val network.Validator) servertypes.Application {
 			return app.New(
-				val.Ctx.Logger, tmdb.NewMemDB(), nil, true, map[int64]bool{}, val.Ctx.Config.RootDir, 0,
+				val.Ctx.Logger,
+				tmdb.NewMemDB(),
+				nil,
+				true,
+				map[int64]bool{},
+				val.Ctx.Config.RootDir,
+				0,
 				encoding,
 				// simapp.EmptyAppOptions{},
-				sims.EmptyAppOptions{}
-				app.GetWasmEnabledProposals(),
+				sims.EmptyAppOptions{},
 				app.EmptyWasmOpts,
 				//baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
-				pruningtypes.PruningOptionNothing
+				pruningtypes.PruningOptionNothing,
 				baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 			)
 		},

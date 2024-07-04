@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkmath "cosmossdk.io/math"
 	"fmt"
 	"time"
 
@@ -98,7 +99,7 @@ func (k Keeper) findOsmosisEpochByIdentifier(ctx sdk.Context, identifier string)
 }
 
 // findGaugeWeight iterates over distrInfo.Records and returns the weight of record is it finds and record with given gaugeId.
-func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdk.Int, bool) {
+func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdkmath.Int, bool) {
 	for _, record := range distrInfo.Records {
 		if record.GaugeId == gaugeId {
 			return record.Weight, true

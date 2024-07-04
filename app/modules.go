@@ -51,6 +51,7 @@ import (
 	ibcclientclient "github.com/cosmos/ibc-go/v7/modules/core/02-client/client"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	appparams "github.com/quasarlabs/quasarnode/app/params"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
@@ -116,6 +117,7 @@ var AppModuleBasics = []module.AppModuleBasic{
 	qvestingmodule.AppModuleBasic{},
 	authzmodule.AppModuleBasic{},
 	consensus.AppModuleBasic{},
+	ibctm.AppModuleBasic{},
 }
 
 func appModules(

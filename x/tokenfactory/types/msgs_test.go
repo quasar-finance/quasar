@@ -1,17 +1,15 @@
 package types_test
 
 import (
-	fmt "fmt"
+	"fmt"
 	"testing"
 
-	// "github.com/CosmosTokenFactory/token-factory/app/apptesting"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/testhelpers"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
-
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 )
 
 // // Test authz serialize and de-serializes for tokenfactory msg.

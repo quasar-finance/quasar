@@ -28,7 +28,6 @@ func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		encCdc,
 		// simapp.EmptyAppOptions{},
 		sims.EmptyAppOptions{},
-		app.GetWasmEnabledProposals(),
 		app.EmptyWasmOpts,
 	)
 

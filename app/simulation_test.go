@@ -49,7 +49,6 @@ func BenchmarkSimulation(b *testing.B) {
 		encoding,
 		sims.EmptyAppOptions{},
 		// simapp.EmptyAppOptions{},
-		app.GetWasmEnabledProposals(),
 		app.EmptyWasmOpts,
 	)
 

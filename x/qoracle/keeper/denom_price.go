@@ -1,8 +1,8 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"time"
 )
@@ -22,7 +22,7 @@ func (k Keeper) GetDenomPrice(ctx sdk.Context, denom string) (sdk.Dec, error) {
 	memStore := ctx.KVStore(k.memKey)
 	priceBz := memStore.Get(types.GetDenomPriceKey(denom))
 	if priceBz == nil {
-		return sdk.Dec{}, sdkerrors.Wrapf(types.ErrDenomPriceNotFound, "denom: %s", denom)
+		return sdk.Dec{}, errorsmod.Wrapf(types.ErrDenomPriceNotFound, "denom: %s", denom)
 	}
 
 	var price sdk.Dec
@@ -41,7 +41,7 @@ func (k Keeper) GetDenomPricesUpdatedAt(ctx sdk.Context) (time.Time, error) {
 
 	updatedAt, err := sdk.ParseTimeBytes(memStore.Get(types.KeyMemDenomPricesUpdatedAt))
 	if err != nil {
-		return time.Time{}, sdkerrors.Wrap(err, "failed to parse denom prices updated at")
+		return time.Time{}, errorsmod.Wrap(err, "failed to parse denom prices updated at")
 	}
 	return updatedAt, nil
 }
@@ -59,7 +59,7 @@ func (k Keeper) GetRelativeDenomPrice(ctx sdk.Context, denomIn, denomOut string)
 
 	if denomOutPrice.IsZero() || denomOutPrice.IsNil() || denomOutPrice.IsNegative() {
 		// In this case, division by denomOutPrice is risky
-		return sdk.ZeroDec(), sdkerrors.Wrapf(types.ErrRelativeDenomPriceNotFound,
+		return sdk.ZeroDec(), errorsmod.Wrapf(types.ErrRelativeDenomPriceNotFound,
 			"denomInPrice: %s, denomOutPrice : %s", denomInPrice.String(), denomOutPrice.String())
 	}
 

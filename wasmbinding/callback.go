@@ -4,15 +4,13 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/cometbft/cometbft/libs/log"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmk "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
-func NewCallbackPlugin(k *wasm.Keeper, callBackAddress sdk.AccAddress) *CallbackPlugin {
+// NewCallbackPlugin if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
+func NewCallbackPlugin(k *wasmk.Keeper, callBackAddress sdk.AccAddress) *CallbackPlugin {
 	return &CallbackPlugin{
 		sentMessages:    map[key]sdk.AccAddress{},
 		contractKeeper:  wasmk.NewDefaultPermissionKeeper(k),

@@ -161,7 +161,7 @@ func (suite *HooksTestSuite) receivePacketWithSequence(receiver, memo string, pr
 
 	packet := suite.makeMockPacket(receiver, memo, prevSequence)
 
-	err := suite.chainB.GetQuasarApp().HooksICS4Wrapper.SendPacket(
+	seq, err := suite.chainB.GetQuasarApp().HooksICS4Wrapper.SendPacket(
 		suite.chainB.GetContext(), channelCap, packet)
 	suite.Require().NoError(err, "IBC send failed. Expected success. %s", err)
 

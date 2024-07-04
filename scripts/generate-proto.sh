@@ -1,52 +1,44 @@
 #!/usr/bin/env bash
-# This script does not work with cosmos-sdk v0.46 and newer verisons and therefore is DEPRECATED.
-# for replacement please use protocgen.sh in this directroy.
-set -Cue -o pipefail
 
-project_dir="$(cd "$(dirname "${0}")/.." ; pwd)" # Absolute path to project dir
-build_dir="${BUILD_DIR:-"${project_dir}/build"}"
-tmp_dir="${build_dir}/proto"
+set -o xtrace
+#set -Cue -o pipefail
 
-# Get the path of the cosmos-sdk repo from go/pkg/mod
-locate_cosmos_sdk_dir() {
-  go list -f "{{ .Dir }}" -m github.com/cosmos/cosmos-sdk
-}
+# Determine the absolute path to the project directory
+project_dir="$(cd "$(dirname "${0}")/.." ; pwd)"
+echo "project dir - $project_dir"
 
-# Get the path of the ibc-go repo from go/pkg/mod
-locate_ibc_go_dir() {
-  go list -f "{{ .Dir }}" -m github.com/cosmos/ibc-go/v4
-}
+# Ensure the temporary files are cleaned up
+trap "rm -rf github.com" 0
 
-# Collect all proto dirs
-collect_proto_dirs() {
-  find "$@" -path -prune -o -name "*.proto" -print0 | xargs -0 -n1 dirname | sort | uniq
-}
+# Find all directories containing .proto files
+proto_dirs=$(find ${project_dir}/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 
-mkdir -p "$tmp_dir"
-trap "rm -rf ${tmp_dir}" 0
+echo "DIRES - $proto_dirs"
 
-cosmos_sdk_dir="$(locate_cosmos_sdk_dir)"
-ibc_go_dir="$(locate_ibc_go_dir)"
+# Loop through each directory containing .proto files
+for dir in $proto_dirs; do
+  echo "DIR - $dir"
+  # Loop through each .proto file in the directory
+  for file in $(find "${dir}" -maxdepth 1 -name '*.proto'); do
+    echo "FILE - $file"
+    # Check if the .proto file contains a go_package option
+    if grep go_package $file &>/dev/null; then
+      echo "Before buf"
+      PWD=$(pwd)
+      echo "PWD is - $PWD"
+      # Generate Go code using buf
+      buf generate --template "${project_dir}/proto/buf.gen.gogo.yaml" $file
+    fi
+  done
+done
 
-(
-  cd "$project_dir"
+# Optional: Remove old protobuf generated go files
+find ${project_dir} -path "github.com" -prune -and -name "*.pb*.go" -type f -delete
 
-  while read -r proto_child_dir <&3 ; do
-  echo "$proto_child_dir"
-    protoc \
-      -I "${project_dir}/proto" \
-      -I "${cosmos_sdk_dir}/third_party/proto" \
-      -I "${cosmos_sdk_dir}/proto" \
-      -I "${ibc_go_dir}/proto" \
-      --gocosmos_out=plugins=interfacetype+grpc,\
-Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types:"$tmp_dir" \
-      --grpc-gateway_out=logtostderr=true:"$tmp_dir" \
-      $(find "${proto_child_dir}" -name '*.proto')
-  done 3< <(collect_proto_dirs "${project_dir}/proto")
+echo "Copying ..."
+PWD=$(pwd)
+echo "PWD is - $PWD"
 
-  # Remove any protobuf generated go file
-  find ${project_dir} -name "*.pb*.go" -not -path "${tmp_dir}/*" -type f -delete
-
-  # Copy the generated go files over
-  cp -r "${tmp_dir}/github.com/quasarlabs/quasarnode/"* .
-)
+# Copy the generated Go files to the desired location
+cp -r github.com/quasarlabs/quasarnode/* .
+cp -r github.com github.com.bkp

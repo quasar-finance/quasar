@@ -1,15 +1,9 @@
 package app
 
 import (
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
-
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"fmt"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -35,6 +29,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	"github.com/spf13/cast"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -76,7 +74,7 @@ var (
 	EnableSpecificWasmProposals = ""
 
 	// EmptyWasmOpts defines a type alias for a list of wasm options.
-	EmptyWasmOpts []wasm.Option
+	EmptyWasmOpts []wasmkeeper.Option
 
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
@@ -91,28 +89,6 @@ var (
 
 	Upgrades = []upgrades.Upgrade{v0.Upgrade, v2.Upgrade}
 )
-
-// GetWasmEnabledProposals parses the WasmProposalsEnabled and
-// EnableSpecificWasmProposals values to produce a list of enabled proposals to
-// pass into the application.
-// todo sdk47 - I see all variables are empty and should not needed anymore
-func GetWasmEnabledProposals() []wasm.ProposalType {
-	if EnableSpecificWasmProposals == "" {
-		if WasmProposalsEnabled == "true" {
-			return wasm.EnableAllProposals
-		}
-
-		return wasm.DisableAllProposals
-	}
-
-	chunks := strings.Split(EnableSpecificWasmProposals, ",")
-
-	proposals, err := wasm.ConvertToProposals(chunks)
-	if err != nil {
-		panic(err)
-	}
-	return proposals
-}
 
 // overrideWasmVariables overrides the wasm variables to:
 //   - allow for larger wasm files
@@ -174,7 +150,6 @@ func New(
 	invCheckPeriod uint,
 	encodingConfig appParams.EncodingConfig,
 	appOpts servertypes.AppOptions,
-	wasmEnabledProposals []wasmtypes.ProposalType,
 	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *QuasarApp {
@@ -513,7 +488,7 @@ func (app *QuasarApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
-// TODO - SDK47
+// RegisterTendermintService TODO - SDK47
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *QuasarApp) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(

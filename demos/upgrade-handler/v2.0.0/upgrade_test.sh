@@ -27,12 +27,8 @@ sleep 5
 ./setup_go_relayer.sh
 sleep 20
 
-# IBC testing before upgrade
-echo "ibc transferring uosmo"
-osmosisd tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 1000001uosmo --from bob --keyring-backend test --home $HOME/.osmosis --node http://127.0.0.1:26679 --chain-id osmosis -y --gas-prices 1uosmo
-sleep 10
-quasarnodedv1 query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
-
+# pre upgrade test
+./pre_upgrade.sh
 
 # Define variables
 CHAIN_ID=quasar
@@ -75,6 +71,9 @@ sleep 10
 echo ">>> Killing existing quasarnodedv1 processes..."
 pkill quasarnodedv1 || true
 
-quasarnoded start --home $HOME/.quasarnode  > quasar.log 2>&1 &
+rm quasar.log
+quasarnoded start --home $HOME/.quasarnode  > ./logs/quasar_post_upgrade.log 2>&1 &
 
+sleep 10
 # run ibc send manually and monitor
+./post_upgrade.sh
