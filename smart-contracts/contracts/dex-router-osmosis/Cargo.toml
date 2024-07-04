@@ -20,6 +20,9 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "schema"
+
 [features]
 default = []
 library = []

@@ -35,12 +35,6 @@
               "items": {
                 "$ref": "#/definitions/SwapAmountInRoute"
               }
-            },
-            "to": {
-              "type": [
-                "string",
-                "null"
-              ]
             }
           },
           "additionalProperties": false
@@ -123,9 +117,68 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_owner"
+      ],
+      "properties": {
+        "update_owner": {
+          "$ref": "#/definitions/OwnerUpdate"
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
+    "OwnerUpdate": {
+      "oneOf": [
+        {
+          "description": "Proposes a new owner to take role. Only current owner can execute.",
+          "type": "object",
+          "required": [
+            "propose_new_owner"
+          ],
+          "properties": {
+            "propose_new_owner": {
+              "type": "object",
+              "required": [
+                "proposed"
+              ],
+              "properties": {
+                "proposed": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Clears the currently proposed owner. Only current owner can execute.",
+          "type": "string",
+          "enum": [
+            "clear_proposed"
+          ]
+        },
+        {
+          "description": "Promotes the proposed owner to be the current one. Only the proposed owner can execute.",
+          "type": "string",
+          "enum": [
+            "accept_proposed"
+          ]
+        },
+        {
+          "description": "Throws away the keys to the Owner role forever. Once done, no owner can ever be set later.",
+          "type": "string",
+          "enum": [
+            "abolish_owner_role"
+          ]
+        }
+      ]
+    },
     "SwapAmountInRoute": {
       "type": "object",
       "required": [

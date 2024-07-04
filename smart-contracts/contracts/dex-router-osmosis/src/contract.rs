@@ -10,7 +10,6 @@ use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{
     MsgSwapExactAmountIn, PoolmanagerQuerier, SwapAmountInRoute, TotalPoolLiquidityResponse,
 };
-
 use quasar_types::error::assert_fund_length;
 use std::str::FromStr;
 

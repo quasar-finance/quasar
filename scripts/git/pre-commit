@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+CHANGES=$(git diff --name-only origin/main)
+
+
+if [ -z "$CHANGES" ]
+then
+  echo "No changes"
+  exit 1
+fi
+
+CONTRACT_NAME=lst-dex-adapter-osmosis
+if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
+then
+  echo "Changes in ${CONTRACT_NAME} contract"
+
+  cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
+  cargo run --bin schema --features schema
+  NEW_CHANGES=$(git diff --name-only origin/main)
+  if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
+  then
+    git add schema
+  fi
+
+  cargo fmt --all
+  cd ${REPO_ROOT}
+  git add $CHANGES
+fi
+
+CONTRACT_NAME=dex-router-osmosis
+if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
+then
+  echo "Changes in ${CONTRACT_NAME} contract"
+
+  cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
+
+  # update schemas
+  cargo run --bin schema
+  NEW_CHANGES=$(git diff --name-only origin/main)
+  if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
+  then
+    git add schema
+  fi
+
+  cargo fmt --all
+  cd ${REPO_ROOT}
+  git add $CHANGES
+fi
