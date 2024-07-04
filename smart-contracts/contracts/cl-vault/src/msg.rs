@@ -167,6 +167,15 @@ pub struct MergePositionMsg {
     pub main_position: bool,
 }
 
+/// QueryMsg for an Autocompounding Vault.
+pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
+
+impl From<ExtensionQueryMsg> for QueryMsg {
+    fn from(msg: ExtensionQueryMsg) -> Self {
+        QueryMsg::VaultExtension(msg)
+    }
+}
+
 /// Extension query messages for an apollo autocompounding vault
 #[cw_serde]
 pub enum ExtensionQueryMsg {
