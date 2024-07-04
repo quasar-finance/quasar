@@ -137,7 +137,7 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     // let autopilot_redeem_msg = get_autopilot_msg(
     //     Action::RedeemStake,
     //     remote_addr.as_ref(),
-    //     Some(info.sender.to_string()),
+    //     Some(env.contract.address.to_string()),
     // );
     // let msg = MsgTransfer {
     //     source_port: "transfer".to_string(),
