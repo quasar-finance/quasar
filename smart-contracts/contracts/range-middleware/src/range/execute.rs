@@ -138,13 +138,24 @@ fn execute_pop_update(
             }
         };
 
-        PENDING_RANGES.save(deps.storage, vault_address.clone(), &ranges)?;
+        if ranges.updates.is_empty() {
+            PENDING_RANGES.remove(deps.storage, vault_address.clone());
+            Ok(response
+                .add_attribute("range_executed", "true")
+                .add_attribute("range_executor", info.sender)
+                .add_attribute("range_underlying_contract", vault_address)
+                .add_attribute("action", "execute_new_range")
+                .add_attribute("status", "finished"))
+        } else {
+            PENDING_RANGES.save(deps.storage, vault_address.clone(), &ranges)?;
 
-        Ok(response
-            .add_attribute("range_executed", "true")
-            .add_attribute("range_executor", info.sender)
-            .add_attribute("range_underlying_contract", vault_address)
-            .add_attribute("action", "execute_new_range"))
+            Ok(response
+                .add_attribute("range_executed", "true")
+                .add_attribute("range_executor", info.sender)
+                .add_attribute("range_underlying_contract", vault_address)
+                .add_attribute("action", "execute_new_range")
+                .add_attribute("status", "ongoing"))
+        }
     } else {
         PENDING_RANGES.remove(deps.storage, vault_address.clone());
         Ok(Response::new().add_attribute("range_finished", vault_address))

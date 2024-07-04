@@ -18,6 +18,12 @@ pub struct RangeUpdates {
     pub updates: VecDeque<UpdateActions>,
 }
 
+impl RangeUpdates {
+    pub fn pop_front(&mut self) -> Option<UpdateActions> {
+        self.updates.pop_front()
+    }
+}
+
 #[cw_serde]
 pub enum UpdateActions {
     CreatePosition(CreatePosition),
