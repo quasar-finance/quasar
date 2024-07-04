@@ -1,10 +1,14 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Decimal;
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    query::{PoolResponse, PositionResponse, RangeAdminResponse},
-    state::VaultConfig,
+    query::{
+        AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
+        UserSharesBalanceResponse, VerifyTickCacheResponse,
+    },
+    state::{Metadata, VaultConfig},
 };
 
 /// Extension execute messages for an apollo autocompounding vault
@@ -12,15 +16,30 @@ use crate::{
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
+    /// An interface of certain vault interaction with forced values for authz
+    Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
+    /// provides an entry point for autocompounding idle funds to current position
+    Autocompound {},
     /// Distribute any rewards over all users
-    DistributeRewards {},
-    /// Claim rewards belonging to a single user
-    ClaimRewards {},
+    CollectRewards {},
+    /// MigrationStep
+    MigrationStep { amount_of_users: Uint128 },
+    /// SwapNonVaultFunds
+    SwapNonVaultFunds { swap_operations: Vec<SwapOperation> },
+}
+
+/// Extension messages for Authz. This interface basically reexports certain vault functionality
+/// but sets recipient forcibly to None
+#[cw_serde]
+pub enum AuthzExtension {
+    ExactDeposit {},
+    AnyDeposit { max_slippage: Decimal },
+    Redeem { amount: Uint128 },
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -42,7 +61,17 @@ pub enum AdminExtensionExecuteMsg {
         /// The config updates.
         updates: VaultConfig,
     },
-    ClaimStrategistRewards {},
+    UpdateMetadata {
+        /// The metadata updates.
+        updates: Metadata,
+    },
+    /// Update the dex router address.
+    UpdateDexRouter {
+        /// The new dex router address.
+        address: Option<String>,
+    },
+    /// Build tick exponent cache
+    BuildTickCache {},
 }
 
 #[cw_serde]
@@ -53,11 +82,29 @@ pub struct ModifyRangeMsg {
     pub upper_price: Decimal,
     /// max position slippage
     pub max_slippage: Decimal,
+    /// desired percent of funds to use during the swap step
+    pub ratio_of_swappable_funds_to_use: Decimal,
+    /// twap window to use in seconds
+    pub twap_window_seconds: u64,
+    /// forced swap route to take
+    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
+    /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
+    pub claim_after: Option<u64>,
 }
 
 #[cw_serde]
 pub struct MergePositionMsg {
     pub position_ids: Vec<u64>,
+}
+
+// struct used by swap.rs on swap non vault funds
+#[cw_serde]
+pub struct SwapOperation {
+    pub token_in_denom: String,
+    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// Extension query messages for an apollo autocompounding vault
@@ -69,13 +116,18 @@ pub enum ExtensionQueryMsg {
     Balances(UserBalanceQueryMsg),
     /// Queries related to Concentrated Liquidity
     ConcentratedLiquidity(ClQueryMsg),
+    /// Query the DexRouter address
+    DexRouter {},
 }
 
 /// Extension query messages for user balance related queries
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum UserBalanceQueryMsg {
+    #[returns(UserSharesBalanceResponse)]
     UserSharesBalance { user: String },
-    UserRewards { user: String },
+    #[returns(AssetsBalanceResponse)]
+    UserAssetsBalance { user: String },
 }
 
 /// Extension query messages for related concentrated liquidity
@@ -89,6 +141,8 @@ pub enum ClQueryMsg {
     Position {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
+    #[returns(VerifyTickCacheResponse)]
+    VerifyTickCache,
 }
 
 /// ExecuteMsg for an Autocompounding Vault.
@@ -121,4 +175,6 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub dex_router: Addr,
+}

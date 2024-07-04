@@ -6,8 +6,8 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
+use crate::helpers::generic::{round_up_to_nearest_multiple, sort_tokens};
 use crate::{
-    helpers::{round_up_to_nearest_multiple, sort_tokens},
     state::{POOL_CONFIG, POSITION},
     ContractError,
 };
@@ -79,7 +79,7 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
     let pool = pm_querier.pool(pool_id)?;
 
     match pool.pool {
-        // Some(pool) => Some(Pool::decode(pool.value.as_slice()).unwrap()),
+        // Some(pool) => Some(Pool::decode(pool.value.as_slice())?),
         Some(pool) => {
             let decoded_pool = Message::decode(pool.value.as_ref())?;
             Ok(decoded_pool)
@@ -201,7 +201,14 @@ mod tests {
 
         let position_id = 1;
         POSITION
-            .save(deps.as_mut().storage, &Position { position_id })
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id,
+                    join_time: 0,
+                    claim_after: None,
+                },
+            )
             .unwrap();
 
         let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();

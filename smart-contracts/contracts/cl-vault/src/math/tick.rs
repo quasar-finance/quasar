@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use cosmwasm_std::{Decimal, Decimal256, Storage, Uint128};
+use cosmwasm_std::{Decimal, Decimal256, OverflowError, Storage, Uint128};
 
 use crate::{
     state::{TickExpIndexData, TICK_EXP_CACHE},
@@ -80,7 +80,6 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     Ok(price)
 }
 
-// TODO: hashmaps vs CW maps?
 pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i128, ContractError> {
     if price > Decimal256::from_str(MAX_SPOT_PRICE)?
         || price < Decimal256::from_str(MIN_SPOT_PRICE)?
@@ -88,12 +87,8 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
         return Err(ContractError::PriceBoundError { price });
     }
     if price == Decimal256::one() {
-        // return Ok(0i128);
         return Ok(0i128);
     }
-
-    // TODO: move this to instantiate?
-    build_tick_exp_cache(storage)?;
 
     let mut geo_spacing;
     if price > Decimal256::one() {
@@ -111,17 +106,16 @@ pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i12
             geo_spacing = TICK_EXP_CACHE.load(storage, index)?;
         }
     }
+
     let price_in_this_exponent = price - geo_spacing.initial_price;
 
     let ticks_filled_by_current_spacing =
         price_in_this_exponent / geo_spacing.additive_increment_per_tick;
 
-    // TODO: Optimize this type conversion
     let ticks_filled_uint_floor = ticks_filled_by_current_spacing.to_uint_floor();
     let ticks_filled_int: i128 = Uint128::try_from(ticks_filled_uint_floor)?
         .u128()
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
     let tick_index = geo_spacing.initial_tick as i128 + ticks_filled_int;
 
@@ -135,7 +129,11 @@ fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
     if exponent >= 0 {
         10u128
             .checked_pow(exponent.unsigned_abs() as u32)
-            .ok_or(ContractError::Overflow {})
+            .ok_or(ContractError::OverflowError(OverflowError {
+                operation: cosmwasm_std::OverflowOperation::Pow,
+                operand1: 10u128.to_string(),
+                operand2: (exponent.unsigned_abs() as u32).to_string(),
+            }))
     } else {
         // TODO: write tests for negative exponents as it looks like this will always be 0
         Err(ContractError::CannotHandleNegativePowersInUint {})
@@ -144,9 +142,14 @@ fn pow_ten_internal_u128(exponent: i64) -> Result<u128, ContractError> {
 
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
 fn _pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
-    let p = 10u128
-        .checked_pow(exponent.unsigned_abs() as u32)
-        .ok_or(ContractError::Overflow {})?;
+    let p =
+        10u128
+            .checked_pow(exponent.unsigned_abs() as u32)
+            .ok_or(ContractError::OverflowError(OverflowError {
+                operation: cosmwasm_std::OverflowOperation::Pow,
+                operand1: 10u128.to_string(),
+                operand2: (exponent.unsigned_abs() as u32).to_string(),
+            }))?;
     if exponent >= 0 {
         Ok(Decimal::from_ratio(p, 1u128))
     } else {
@@ -165,24 +168,41 @@ fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> 
     }
 }
 
-fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
+pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> {
     // Build positive indices
     let mut max_price = Decimal256::one();
     let mut cur_exp_index = 0i64;
 
     while max_price < Decimal256::from_str(MAX_SPOT_PRICE)? {
-        let tick_exp_index_data = TickExpIndexData {
-            initial_price: pow_ten_internal_dec_256(cur_exp_index)?,
-            max_price: pow_ten_internal_dec_256(cur_exp_index + 1)?,
-            additive_increment_per_tick: pow_ten_internal_dec_256(
-                EXPONENT_AT_PRICE_ONE + cur_exp_index,
-            )?,
-            initial_tick: (9u128
-                .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
-                .ok_or(ContractError::Overflow {})? as i64)
+        let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
+        let max_price_temp = pow_ten_internal_dec_256(cur_exp_index + 1)?;
+        let additive_increment_per_tick =
+            pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
+
+        let base_tick_value = 9u128
+            .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
+            .ok_or(ContractError::OverflowError(OverflowError {
+                operation: cosmwasm_std::OverflowOperation::Mul,
+                operand1: 9u128.to_string(),
+                operand2: pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?.to_string(),
+            }))? as i64;
+
+        let initial_tick =
+            base_tick_value
                 .checked_mul(cur_exp_index)
-                .ok_or(ContractError::Overflow {})?,
+                .ok_or(ContractError::OverflowError(OverflowError {
+                    operation: cosmwasm_std::OverflowOperation::Mul,
+                    operand1: base_tick_value.to_string(),
+                    operand2: cur_exp_index.to_string(),
+                }))?;
+
+        let tick_exp_index_data = TickExpIndexData {
+            initial_price,
+            max_price: max_price_temp,
+            additive_increment_per_tick,
+            initial_tick,
         };
+
         TICK_EXP_CACHE.save(storage, cur_exp_index, &tick_exp_index_data)?;
 
         max_price = tick_exp_index_data.max_price;
@@ -192,27 +212,81 @@ fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> 
     // Build negative indices
     let mut min_price = Decimal256::one();
     cur_exp_index = -1;
+
     while min_price > Decimal256::from_str(MIN_SPOT_PRICE)? {
         let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
-        let max_price = pow_ten_internal_dec_256(cur_exp_index + 1)?;
+        let max_price_temp = pow_ten_internal_dec_256(cur_exp_index + 1)?;
         let additive_increment_per_tick =
             pow_ten_internal_dec_256(EXPONENT_AT_PRICE_ONE + cur_exp_index)?;
-        let initial_tick = (9u128
+
+        let base_tick_value = 9u128
             .checked_mul(pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?)
-            .ok_or(ContractError::Overflow {})? as i64)
-            .checked_mul(cur_exp_index)
-            .ok_or(ContractError::Overflow {})?;
+            .ok_or(ContractError::OverflowError(OverflowError {
+                operation: cosmwasm_std::OverflowOperation::Mul,
+                operand1: 9u128.to_string(),
+                operand2: pow_ten_internal_u128(-EXPONENT_AT_PRICE_ONE)?.to_string(),
+            }))? as i64;
+
+        let initial_tick =
+            base_tick_value
+                .checked_mul(cur_exp_index)
+                .ok_or(ContractError::OverflowError(OverflowError {
+                    operation: cosmwasm_std::OverflowOperation::Mul,
+                    operand1: base_tick_value.to_string(),
+                    operand2: cur_exp_index.to_string(),
+                }))?;
 
         let tick_exp_index_data = TickExpIndexData {
             initial_price,
-            max_price,
+            max_price: max_price_temp,
             additive_increment_per_tick,
             initial_tick,
         };
+
         TICK_EXP_CACHE.save(storage, cur_exp_index, &tick_exp_index_data)?;
 
         min_price = tick_exp_index_data.initial_price;
         cur_exp_index -= 1;
+    }
+
+    Ok(())
+}
+
+/// Iterate over the the TICK_EXP_CACHE between the MIN_SPOT_PRICE and the MAX_SPOT_PRICE.
+/// If there are any cache items missing, that means that our cache is incorrect.
+pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError> {
+    // iterate over the tick_exp_cache in both directions.
+    // until we reach MAX or MIN price, we should have a cache hit at each increasing or decreasing index
+    let mut max_price = Decimal256::one();
+    let mut positive_index = 0i64;
+    let max_spot_price = Decimal256::from_str(MAX_SPOT_PRICE)?;
+
+    // Verify positive indices
+    while max_price < max_spot_price {
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, positive_index).map_err(|_| {
+            ContractError::TickNotFound {
+                tick: positive_index,
+            }
+        })?;
+
+        max_price = tick_exp_index_data.max_price;
+        positive_index += 1;
+    }
+
+    // Verify negative indices
+    let mut min_price = Decimal256::one();
+    let mut negative_index = 0;
+    let min_spot_price = Decimal256::from_str(MIN_SPOT_PRICE)?;
+
+    while min_price > min_spot_price {
+        let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index).map_err(|_| {
+            ContractError::TickNotFound {
+                tick: negative_index,
+            }
+        })?;
+
+        min_price = tick_exp_index_data.initial_price;
+        negative_index -= 1;
     }
     Ok(())
 }
@@ -220,11 +294,75 @@ fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractError> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::mock_dependencies;
+    use cosmwasm_std::{testing::mock_dependencies, Order};
+
+    #[test]
+    fn test_verify_tick_cache() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        verify_tick_exp_cache(deps.as_ref().storage).unwrap();
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_positive_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, 5);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick: 5 })
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_last_positive_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        let tick = TICK_EXP_CACHE
+            .range(deps.as_ref().storage, None, None, Order::Ascending)
+            .last()
+            .unwrap()
+            .unwrap()
+            .0;
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick })
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_last_negative_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        let tick = TICK_EXP_CACHE
+            .range(deps.as_ref().storage, None, None, Order::Descending)
+            .last()
+            .unwrap()
+            .unwrap()
+            .0;
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, tick);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick })
+    }
+
+    #[test]
+    fn test_verify_tick_cache_finds_missing_negative_ticks() {
+        let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
+        TICK_EXP_CACHE.remove(deps.as_mut().storage, -5);
+        let err = verify_tick_exp_cache(deps.as_ref().storage).unwrap_err();
+        assert_eq!(err, ContractError::TickNotFound { tick: -5 })
+    }
 
     #[test]
     fn test_test_tube_tick_to_price() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let tick_index = 27445000_i128;
         let _expected_price = Decimal256::from_str("30352").unwrap();
@@ -349,6 +487,8 @@ mod tests {
     #[test]
     fn test_price_to_tick() {
         let mut deps = mock_dependencies();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+
         // example1
         let mut price = Decimal256::from_str("30352").unwrap();
         let mut expected_tick_index = 38035200;

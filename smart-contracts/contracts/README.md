@@ -20,7 +20,7 @@ In the smart contracts directory, run:
 docker run --rm -v "$(pwd)":/code \
 --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
 --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-cosmwasm/workspace-optimizer:0.12.6
+cosmwasm/workspace-optimizer:0.16.0
 ```
 this builds all contracts in the contracts directory and places the wasm files in `smart-contracts/artifacts`.
 We need to use the workspace optimizer because we have a separate directory where our packages reside.

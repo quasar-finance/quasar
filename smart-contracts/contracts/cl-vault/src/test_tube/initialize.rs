@@ -1,15 +1,14 @@
 #[cfg(test)]
 pub mod initialize {
-    use std::str::FromStr;
-
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
+    use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
     };
     use osmosis_std::types::osmosis::poolmanager::v1beta1::{
-        MsgSwapExactAmountIn, SwapAmountInRoute,
+        MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
     use osmosis_test_tube::{
@@ -17,52 +16,168 @@ pub mod initialize {
         osmosis_std::types::osmosis::concentratedliquidity::{
             poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool, v1beta1::MsgCreatePosition,
         },
-        Account, ConcentratedLiquidity, GovWithAppAccess, Module, OsmosisTestApp, Wasm,
+        Account, ConcentratedLiquidity, Gamm, GovWithAppAccess, Module, OsmosisTestApp,
+        PoolManager, SigningAccount, TokenFactory, Wasm,
     };
-    use osmosis_test_tube::{PoolManager, SigningAccount, TokenFactory};
+    use std::str::FromStr;
 
-    use crate::helpers::sort_tokens;
+    use crate::helpers::generic::sort_tokens;
     use crate::msg::{
         ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
     };
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
+    use crate::test_tube::helpers::calculate_deposit_ratio;
 
-    pub fn default_init() -> (OsmosisTestApp, Addr, u64, SigningAccount) {
+    pub const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u128;
+    pub const PERFORMANCE_FEE_DEFAULT: u64 = 20;
+
+    // const _TOKENS_PROVIDED_AMOUNT_LOW: &str = "1000000000000000";
+    // const _SPREAD_FACTOR_LOW: &str = "0.01";
+    // pub const _MAX_SLIPPAGE_LOW: u64 = 9900; // this should be inline with the pool spread_factor
+
+    const TOKENS_PROVIDED_AMOUNT_HIGH: &str = "100000000000000000000";
+    pub const SPREAD_FACTOR_HIGH: &str = "0.1";
+    pub const MAX_SLIPPAGE_HIGH: u64 = 9000; // this should be inline with the pool spread_factor
+
+    pub const DENOM_BASE: &str = "uatom";
+    pub const DENOM_QUOTE: &str = "ubtc";
+    pub const DENOM_REWARD: &str = "ustrd";
+
+    pub const ACCOUNTS_NUM: u64 = 10;
+    pub const ACCOUNTS_INIT_BALANCE: u128 = 1_000_000_000_000_000;
+    pub const DEPOSIT_AMOUNT: u128 = 5_000_000_000;
+
+    pub const INITIAL_POSITION_BURN: u128 = 1_000_000;
+
+    // Fixtures: Default variants
+
+    pub fn fixture_default(
+        performance_fee: u64,
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
         init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
-                Coin::new(1_000_000_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000_000_000, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
             ],
             MsgCreateConcentratedPool {
                 sender: "overwritten".to_string(),
-                denom0: "uatom".to_string(),
-                denom1: "uosmo".to_string(),
+                denom0: DENOM_BASE.to_string(),
+                denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
+                    .unwrap()
+                    .atomics()
+                    .to_string(),
             },
-            -2000,
-            2000,
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
             vec![
                 v1beta1::Coin {
-                    denom: "uatom".to_string(),
-                    amount: "1000000000000".to_string(),
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
                 v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: "1000000000000".to_string(),
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
                 },
             ],
             Uint128::zero(),
             Uint128::zero(),
+            performance_fee,
         )
     }
 
-    // admin should be on accs[0] if this is called to init
-    /// this returns the testube app, contract_address, pool_id
-    /// sender is overwritten by the admin
-    // bad function but it's finnee
+    // pub fn _fixture_default_less_slippage(
+    // ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
+    //     init_test_contract(
+    //         "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+    //         &[
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+    //             Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+    //         ],
+    //         MsgCreateConcentratedPool {
+    //             sender: "overwritten".to_string(),
+    //             denom0: DENOM_BASE.to_string(),
+    //             denom1: DENOM_QUOTE.to_string(),
+    //             tick_spacing: 100,
+    //             spread_factor: Decimal::from_str(SPREAD_FACTOR_LOW)
+    //                 .unwrap()
+    //                 .atomics()
+    //                 .to_string(),
+    //         },
+    //         -5000000, // 0.5 spot price
+    //         500000,   // 1.5 spot price
+    //         vec![
+    //             v1beta1::Coin {
+    //                 denom: DENOM_BASE.to_string(),
+    //                 amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
+    //             },
+    //             v1beta1::Coin {
+    //                 denom: DENOM_QUOTE.to_string(),
+    //                 amount: TOKENS_PROVIDED_AMOUNT_LOW.to_string(),
+    //             },
+    //         ],
+    //         Uint128::zero(),
+    //         Uint128::zero(),
+    //     )
+    // }
+
+    pub fn fixture_dex_router(
+        performance_fee: u64,
+    ) -> (
+        OsmosisTestApp,
+        Addr,
+        Addr,
+        u64,
+        Vec<u64>,
+        SigningAccount,
+        f64,
+        String,
+    ) {
+        init_test_contract_with_dex_router_and_swap_pools(
+            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            "../dex-router-osmosis/test-tube-build/wasm32-unknown-unknown/release/dex_router_osmosis.wasm",
+            &[
+                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_REWARD),
+            ],
+            MsgCreateConcentratedPool {
+                sender: "overwritten".to_string(),
+                denom0: DENOM_BASE.to_string(),
+                denom1: DENOM_QUOTE.to_string(),
+                tick_spacing: 100,
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
+                    .unwrap()
+                    .atomics()
+                    .to_string(),
+            },
+            -5000000, // 0.5 spot price
+            500000,   // 1.5 spot price
+            vec![
+                v1beta1::Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+                v1beta1::Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: TOKENS_PROVIDED_AMOUNT_HIGH.to_string(),
+                },
+            ],
+            Uint128::zero(),
+            Uint128::zero(),
+            performance_fee,
+        )
+    }
+
+    // INIT PRIVATE METHODS
+
+    // TODO: This is pub because of the proptest still not having a default_init implementation
     pub fn init_test_contract(
         filename: &str,
         admin_balance: &[Coin],
@@ -72,16 +187,14 @@ pub mod initialize {
         mut tokens_provided: Vec<v1beta1::Coin>,
         token_min_amount0: Uint128,
         token_min_amount1: Uint128,
-    ) -> (OsmosisTestApp, Addr, u64, SigningAccount) {
-        // create new osmosis appchain instance.
+        performance_fee: u64,
+    ) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
+        // Create new osmosis appchain instance
         let app = OsmosisTestApp::new();
-
-        // create new account with initial funds
-        let admin = app.init_account(admin_balance).unwrap();
-
-        // `Wasm` is the module we use to interact with cosmwasm releated logic on the appchain
-        // it implements `Module` trait which you will see more later.
+        let pm = PoolManager::new(&app);
+        let cl = ConcentratedLiquidity::new(&app);
         let wasm = Wasm::new(&app);
+        let admin = app.init_account(admin_balance).unwrap();
 
         // Load compiled wasm bytecode
         let wasm_byte_code = std::fs::read(filename).unwrap();
@@ -91,15 +204,13 @@ pub mod initialize {
             .data
             .code_id;
 
-        // setup a CL pool
-        let cl = ConcentratedLiquidity::new(&app);
+        // Setup a dummy CL pool to work with
         let gov = GovWithAppAccess::new(&app);
         gov.propose_and_execute(
             CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
             CreateConcentratedLiquidityPoolsProposal {
-                title: "Create concentrated uosmo:usdc pool".to_string(),
-                description: "Create concentrated uosmo:usdc pool, so that we can trade it"
-                    .to_string(),
+                title: "CL Pool".to_string(),
+                description: "So that we can trade it".to_string(),
                 pool_records: vec![PoolRecord {
                     denom0: pool.denom0,
                     denom1: pool.denom1,
@@ -108,162 +219,354 @@ pub mod initialize {
                 }],
             },
             admin.address(),
-            false,
             &admin,
         )
         .unwrap();
 
+        // Get just created pool information by querying all the pools, and taking the first one
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
+        // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
-                                                               // create a basic position on the pool
-        let initial_position = MsgCreatePosition {
-            pool_id: pool.id,
-            sender: admin.address(),
-            lower_tick,
-            upper_tick,
+
+        // Create a first position in the pool with the admin user
+        let create_position = cl
+            .create_position(
+                MsgCreatePosition {
+                    pool_id: vault_pool.id,
+                    sender: admin.address(),
+                    lower_tick,
+                    upper_tick,
+                    tokens_provided: tokens_provided.clone(),
+                    token_min_amount0: token_min_amount0.to_string(),
+                    token_min_amount1: token_min_amount1.to_string(),
+                },
+                &admin,
+            )
+            .unwrap();
+
+        // Get and assert spot price is 1.0
+        let spot_price = pm
+            .query_spot_price(&SpotPriceRequest {
+                base_asset_denom: tokens_provided[0].denom.to_string(),
+                quote_asset_denom: tokens_provided[1].denom.to_string(),
+                pool_id: vault_pool.id,
+            })
+            .unwrap();
+        assert_eq!(spot_price.spot_price, "1.000000000000000000");
+
+        let (deposit_ratio, deposit_ratio_approx) = calculate_deposit_ratio(
+            spot_price.spot_price,
             tokens_provided,
-            token_min_amount0: token_min_amount0.to_string(),
-            token_min_amount1: token_min_amount1.to_string(),
-        };
-        let _position = cl.create_position(initial_position, &admin).unwrap();
+            create_position.data.amount0,
+            create_position.data.amount1,
+            DENOM_BASE.to_string(),
+            DENOM_QUOTE.to_string(),
+        );
 
-        // move the tick to the initial position, if we don't do this, the position the contract is instantiated
-        let pm = PoolManager::new(&app);
-        pm.swap_exact_amount_in(
-            MsgSwapExactAmountIn {
-                sender: admin.address(),
-                routes: vec![SwapAmountInRoute {
-                    pool_id: pool.id,
-                    token_out_denom: pool.token0.clone(),
-                }],
-                token_in: Some(v1beta1::Coin {
-                    denom: pool.token1.clone(),
-                    amount: "1000000000".to_string(),
-                }),
-                token_out_min_amount: "1".to_string(),
-            },
-            &admin,
-        )
-        .unwrap();
+        // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
+        app.increase_time(1000000);
 
-        let instantiate_msg = InstantiateMsg {
-            admin: admin.address(),
-            pool_id: pool.id,
-            config: VaultConfig {
-                performance_fee: Decimal::percent(5),
-                treasury: Addr::unchecked(admin.address()),
-                swap_max_slippage: Decimal::percent(5),
-            },
-            vault_token_subdenom: "utestvault".to_string(),
-            range_admin: admin.address(),
-            initial_lower_tick: lower_tick,
-            initial_upper_tick: upper_tick,
-            thesis: "provide big swap efficiency".to_string(),
-            name: "good contract".to_string(),
-        };
-
-        // Instantiate
+        // Instantiate vault
         let contract = wasm
             .instantiate(
                 code_id,
-                &instantiate_msg,
+                &InstantiateMsg {
+                    admin: admin.address(),
+                    pool_id: vault_pool.id,
+                    config: VaultConfig {
+                        performance_fee: Decimal::percent(performance_fee),
+                        treasury: Addr::unchecked(admin.address()),
+                        swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        dex_router: Addr::unchecked(admin.address()), // Just to fulfill bech32 requirement
+                    },
+                    vault_token_subdenom: "utestvault".to_string(),
+                    range_admin: admin.address(),
+                    initial_lower_tick: lower_tick,
+                    initial_upper_tick: upper_tick,
+                    thesis: "Provide big swap efficiency".to_string(),
+                    name: "Contract".to_string(),
+                },
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
-                sort_tokens(vec![coin(5000, pool.token0), coin(507, pool.token1)]).as_ref(),
+                sort_tokens(vec![
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1),
+                ])
+                .as_ref(),
                 &admin,
             )
             .unwrap();
 
-        (app, Addr::unchecked(contract.data.address), pool.id, admin)
+        (
+            app,
+            Addr::unchecked(contract.data.address),
+            vault_pool.id,
+            admin,
+            deposit_ratio,
+            deposit_ratio_approx,
+        )
     }
 
-    #[test]
-    #[ignore]
-    fn contract_init_works() {
-        let (app, contract, cl_pool_id, admin) = init_test_contract(
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: "uatom".to_string(),
-                denom1: "uosmo".to_string(),
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
-            },
-            -50000,
-            50000,
-            vec![
-                v1beta1::Coin {
-                    denom: "uatom".to_string(),
-                    amount: "10000000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: "10000000000".to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-        );
-        let alice = app
-            .init_account(&[
-                Coin::new(1_000_000_000_000, "uatom"),
-                Coin::new(1_000_000_000_000, "uosmo"),
-            ])
-            .unwrap();
-
-        let wasm = Wasm::new(&app);
-
-        // do a swap to move the cur tick
+    fn init_test_contract_with_dex_router_and_swap_pools(
+        filename_cl: &str,
+        filename_dex: &str,
+        admin_balance: &[Coin],
+        pool: MsgCreateConcentratedPool,
+        lower_tick: i64,
+        upper_tick: i64,
+        mut tokens_provided: Vec<v1beta1::Coin>,
+        token_min_amount0: Uint128,
+        token_min_amount1: Uint128,
+        performance_fee: u64,
+    ) -> (
+        OsmosisTestApp,
+        Addr,
+        Addr,
+        u64,
+        Vec<u64>,
+        SigningAccount,
+        f64,
+        String,
+    ) {
+        // Create new osmosis appchain instance
+        let app = OsmosisTestApp::new();
         let pm = PoolManager::new(&app);
-        pm.swap_exact_amount_in(
-            MsgSwapExactAmountIn {
-                sender: alice.address(),
-                routes: vec![SwapAmountInRoute {
-                    pool_id: cl_pool_id,
-                    token_out_denom: "uatom".to_string(),
+        let gm = Gamm::new(&app);
+        let cl = ConcentratedLiquidity::new(&app);
+        let wasm = Wasm::new(&app);
+        let admin = app.init_account(admin_balance).unwrap();
+
+        // Swap pools where the first one is CL for the vault_pool
+        let pools_coins = vec![
+            vec![
+                Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+                Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+            ],
+            vec![
+                Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+                Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+            ],
+            vec![
+                Coin {
+                    denom: DENOM_BASE.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+                Coin {
+                    denom: DENOM_REWARD.to_string(),
+                    amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
+                },
+            ],
+        ];
+
+        // Load compiled wasm bytecode
+        let wasm_byte_code_cl = std::fs::read(filename_cl).unwrap();
+        let code_id_cl = wasm
+            .store_code(&wasm_byte_code_cl, None, &admin)
+            .unwrap()
+            .data
+            .code_id;
+
+        // Load compiled wasm bytecode
+        let wasm_byte_code_dex = std::fs::read(filename_dex).unwrap();
+        let code_id_dex = wasm
+            .store_code(&wasm_byte_code_dex, None, &admin)
+            .unwrap()
+            .data
+            .code_id;
+
+        // Setup a dummy CL pool to work with the CL Vault contract
+        let gov = GovWithAppAccess::new(&app);
+        gov.propose_and_execute(
+            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
+            CreateConcentratedLiquidityPoolsProposal {
+                title: "CL Pool".to_string(),
+                description: "So that we can trade it".to_string(),
+                pool_records: vec![PoolRecord {
+                    denom0: pool.denom0,
+                    denom1: pool.denom1,
+                    tick_spacing: pool.tick_spacing,
+                    spread_factor: pool.spread_factor,
                 }],
-                token_in: Some(v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: "1000".to_string(),
-                }),
-                token_out_min_amount: "1".to_string(),
             },
-            &alice,
+            admin.address(),
+            &admin,
         )
         .unwrap();
 
-        let _result = wasm
-            .execute(
-                contract.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                    ModifyRangeMsg {
-                        lower_price: Decimal::from_str("0.993").unwrap(),
-                        upper_price: Decimal::from_str("1.002").unwrap(),
-                        max_slippage: Decimal::permille(5),
-                    },
-                )),
-                &[],
+        // Get just created pool information by querying all the pools, and taking the first one
+        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap(); // we only have one here as we then create legacy gAMM Balancer pools
+
+        // Create Balancer pools with previous vec of vec of coins
+        // TODO: We could be using a mixed set of CL and gAMM pools here
+        let mut lp_pools = vec![];
+        for pool_coins in &pools_coins {
+            let lp_pool = gm.create_basic_pool(&pool_coins, &admin).unwrap();
+            lp_pools.push(lp_pool.data.pool_id);
+        }
+
+        // Here we have 4 pools in pools_ids where the index 0 is the cl_pool id
+
+        // Sort tokens alphabetically by denom name or Osmosis will return an error
+        tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
+
+        // Create a first position in the pool with the admin user
+        let create_position = cl
+            .create_position(
+                MsgCreatePosition {
+                    pool_id: vault_pool.id,
+                    sender: admin.address(),
+                    lower_tick,
+                    upper_tick,
+                    tokens_provided: tokens_provided.clone(),
+                    token_min_amount0: token_min_amount0.to_string(),
+                    token_min_amount1: token_min_amount1.to_string(),
+                },
                 &admin,
             )
             .unwrap();
+
+        // Get and assert spot price is 1.0
+        let spot_price = pm
+            .query_spot_price(&SpotPriceRequest {
+                base_asset_denom: tokens_provided[0].denom.to_string(),
+                quote_asset_denom: tokens_provided[1].denom.to_string(),
+                pool_id: vault_pool.id,
+            })
+            .unwrap();
+        assert_eq!(spot_price.spot_price, "1.000000000000000000");
+
+        let (deposit_ratio, deposit_ratio_approx) = calculate_deposit_ratio(
+            spot_price.spot_price,
+            tokens_provided,
+            create_position.data.amount0,
+            create_position.data.amount1,
+            DENOM_BASE.to_string(),
+            DENOM_QUOTE.to_string(),
+        );
+
+        // Increment the app time for twaps to function, this is needed to do not fail on querying a twap for a timeframe higher than the chain existence
+        app.increase_time(1000000);
+
+        // Instantiate Dex Router
+        let contract_dex_router = wasm
+            .instantiate(
+                code_id_dex,
+                &DexInstantiate {},
+                Some(admin.address().as_str()),
+                Some("dex-router"),
+                sort_tokens(vec![]).as_ref(),
+                &admin,
+            )
+            .unwrap();
+
+        // Here we pass only the 3x swap LP pools, not the Vault CL pool id 1
+        set_dex_router_paths(
+            &app,
+            contract_dex_router.data.address.to_string(),
+            &lp_pools,
+            &pools_coins,
+            &admin,
+        );
+
+        // Instantiate vault
+        let contract_cl = wasm
+            .instantiate(
+                code_id_cl,
+                &InstantiateMsg {
+                    admin: admin.address(),
+                    pool_id: vault_pool.id,
+                    config: VaultConfig {
+                        performance_fee: Decimal::percent(performance_fee),
+                        treasury: Addr::unchecked(admin.address()),
+                        swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        dex_router: Addr::unchecked(contract_dex_router.clone().data.address),
+                    },
+                    vault_token_subdenom: "utestvault".to_string(),
+                    range_admin: admin.address(),
+                    initial_lower_tick: lower_tick,
+                    initial_upper_tick: upper_tick,
+                    thesis: "Provide big swap efficiency".to_string(),
+                    name: "Contract".to_string(),
+                },
+                Some(admin.address().as_str()),
+                Some("cl-vault"),
+                sort_tokens(vec![
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1),
+                ])
+                .as_ref(),
+                &admin,
+            )
+            .unwrap();
+
+        (
+            app,
+            Addr::unchecked(contract_cl.data.address),
+            Addr::unchecked(contract_dex_router.data.address),
+            vault_pool.id,
+            lp_pools,
+            admin,
+            deposit_ratio,
+            deposit_ratio_approx,
+        )
     }
+
+    fn set_dex_router_paths(
+        app: &OsmosisTestApp,
+        dex_router: String,
+        pools: &Vec<u64>,
+        pools_coins: &Vec<Vec<Coin>>,
+        admin: &SigningAccount,
+    ) {
+        let wasm = Wasm::new(app);
+        assert_eq!(pools.len(), pools_coins.len());
+
+        // Set Dex Router contract paths
+        for (index, pool_id) in pools.iter().enumerate() {
+            wasm.execute(
+                &dex_router,
+                &DexExecuteMsg::SetPath {
+                    offer_denom: pools_coins[index][0].denom.to_string(),
+                    ask_denom: pools_coins[index][1].denom.to_string(),
+                    path: vec![*pool_id],
+                    bidirectional: true,
+                },
+                vec![].as_ref(),
+                &admin,
+            )
+            .unwrap();
+        }
+    }
+
+    // TESTS
 
     #[test]
     #[ignore]
-    fn default_init_works() {
-        let (app, contract_address, _cl_pool_id, _admin) = default_init();
+    fn fixture_default_works() {
+        let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
+            fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let tf = TokenFactory::new(&app);
+        let pm = PoolManager::new(&app);
 
         let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        let vault_pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
 
         let resp = wasm
             .query::<QueryMsg, PoolResponse>(
@@ -274,15 +577,15 @@ pub mod initialize {
             )
             .unwrap();
 
-        assert_eq!(resp.pool_config.pool_id, pool.id);
-        assert_eq!(resp.pool_config.token0, pool.token0);
-        assert_eq!(resp.pool_config.token1, pool.token1);
+        assert_eq!(resp.pool_config.pool_id, vault_pool.id);
+        assert_eq!(resp.pool_config.token0, vault_pool.token0);
+        assert_eq!(resp.pool_config.token1, vault_pool.token1);
 
         let resp = wasm
             .query::<QueryMsg, VaultInfoResponse>(contract_address.as_str(), &QueryMsg::Info {})
             .unwrap();
 
-        assert_eq!(resp.tokens, vec![pool.token0, pool.token1]);
+        assert_eq!(resp.tokens, vec![vault_pool.token0, vault_pool.token1]);
         assert_eq!(
             resp.vault_token,
             tf.query_denoms_from_creator(&QueryDenomsFromCreatorRequest {
@@ -291,5 +594,54 @@ pub mod initialize {
             .unwrap()
             .denoms[0]
         );
+
+        // Create Alice account
+        let alice = app
+            .init_account(&[
+                Coin::new(1_000_000_000_000, "uosmo"),
+                Coin::new(1_000_000_000_000, DENOM_BASE),
+                Coin::new(1_000_000_000_000, DENOM_QUOTE),
+            ])
+            .unwrap();
+
+        // Swap some funds as Alice to move the pool's curent tick
+        pm.swap_exact_amount_in(
+            MsgSwapExactAmountIn {
+                sender: alice.address(),
+                routes: vec![SwapAmountInRoute {
+                    pool_id: cl_pool_id,
+                    token_out_denom: DENOM_BASE.to_string(),
+                }],
+                token_in: Some(v1beta1::Coin {
+                    denom: DENOM_QUOTE.to_string(),
+                    amount: "1000".to_string(),
+                }),
+                token_out_min_amount: "1".to_string(),
+            },
+            &alice,
+        )
+        .unwrap();
+
+        // Increment the app time for twaps to function
+        app.increase_time(1000000);
+
+        // Update range of vault as Admin
+        wasm.execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                ModifyRangeMsg {
+                    lower_price: Decimal::from_str("0.993").unwrap(),
+                    upper_price: Decimal::from_str("1.002").unwrap(),
+                    max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                    ratio_of_swappable_funds_to_use: Decimal::one(),
+                    twap_window_seconds: 45,
+                    forced_swap_route: None,
+                    claim_after: None,
+                },
+            )),
+            &[],
+            &admin,
+        )
+        .unwrap();
     }
 }

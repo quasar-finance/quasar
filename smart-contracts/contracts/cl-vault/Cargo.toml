@@ -2,7 +2,7 @@
 authors = ["LaurensKubat <32776056+LaurensKubat@users.noreply.github.com>"]
 edition = "2021"
 name = "cl-vault"
-version = "0.1.0"
+version = "0.3.0"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -36,36 +36,28 @@ library = []
 optimize = """docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.12.10
+  cosmwasm/rust-optimizer:0.16.0
 """
 
 [dependencies]
-apollo-cw-asset = "0.1.0"
-cosmwasm-schema = "1.1.3"
-cosmwasm-std = "1.1.3"
-cosmwasm-storage = "1.1.3"
-cw-controllers = "1.0.1"
-cw-dex = "0.1.1"
-cw-dex-router = {version = "0.1.0", features = ["library"]}
-cw-storage-plus = "1.0.1"
-cw-utils = "0.16.0"
-cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
-cw-vault-token = "0.1.0"
-cw2 = "1.0.1"
-cw20 = "1.0.1"
-cw20-base = "1.0.1"
-derive_builder = "0.11.2"
-liquidity-helper = "0.1.0"
-num_enum = "0.6.1"
-osmosis-std = "0.17.0-rc0"
-prost = {version = "0.11", default-features = false}
-schemars = "0.8.10"
-semver = "1"
-serde = {version = "1.0.145", default-features = false, features = ["derive"]}
-thiserror = {version = "1.0.31"}
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+num_enum = { workspace = true }
+apollo-cw-asset = { workspace = true }
+dex-router-osmosis = {workspace = true}
+
+## todo update this in dex router code first as this has been deprecated
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
 
 [dev-dependencies]
-cw-multi-test = "0.16.2"
-osmosis-test-tube = {git = 'https://github.com/osmosis-labs/test-tube.git', version = "17.0.0-rc0"}
-prost = {version = "0.11", default-features = false}
-proptest = "1.2.0"
+osmosis-test-tube = { workspace = true }
+proptest = { workspace = true }

@@ -45,7 +45,7 @@ impl CoinRatio {
         if total_weight.is_zero() {
             total_weight = Decimal::one();
         }
-        for mut coin_weight in self.ratio.iter_mut() {
+        for coin_weight in self.ratio.iter_mut() {
             coin_weight.weight = coin_weight.weight.checked_div(total_weight)?;
         }
         Ok(self.ratio.clone())

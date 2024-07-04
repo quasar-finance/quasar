@@ -10,7 +10,7 @@ use cosmwasm_std::{
     MemoryStorage, StdError,
 };
 use cw_multi_test::{
-    ibc::Ibc, App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Module,
+    App, AppBuilder, BankKeeper, CosmosRouter, DistributionKeeper, FailingModule, Ibc, Module,
     StakeKeeper, WasmKeeper,
 };
 use vault_rewards::state::DistributionSchedule;
@@ -189,7 +189,7 @@ impl QuasarVaultSuite {
         //     primitive.clone(),
         //     CosmosMsg::Ibc(IbcMsg::SendPacket {
         //         channel_id: "channel-0".to_string(),
-        //         data: to_binary(&ibc_channel_open_msg)?,
+        //         data: to_json_binary(&ibc_channel_open_msg)?,
         //         timeout: IbcTimeout::with_block(IbcTimeoutBlock {
         //             revision: 1,
         //             height: app.block_info().height + 5,
@@ -238,7 +238,7 @@ impl QuasarVaultSuite {
                     ],
                     deposit_denom: LOCAL_DENOM.to_string(),
                 }),
-                &funds.unwrap_or(vec![]),
+                &funds.unwrap_or_default(),
                 "vault_contract",
                 Some(deployer.to_string()), // admin: Option<String>, will need this for upgrading
             )

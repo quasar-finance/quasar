@@ -63,7 +63,7 @@ var (
 	}
 )
 
-func TestWasmdTestSuite(t *testing.T) {
+func TestWasmdLPRetryTestSuite(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -73,14 +73,14 @@ func TestWasmdTestSuite(t *testing.T) {
 	b.Link(testsuite.Quasar2OsmosisPath)
 	b.AutomatedRelay()
 
-	s := &WasmdTestSuite{
+	s := &WasmdLPRetryTestSuite{
 		E2EBuilder:   b,
 		E2ETestSuite: b.Build(),
 	}
 	suite.Run(t, s)
 }
 
-type WasmdTestSuite struct {
+type WasmdLPRetryTestSuite struct {
 	E2EBuilder *testsuite.E2ETestSuiteBuilder
 
 	*testsuite.E2ETestSuite
@@ -101,7 +101,7 @@ type WasmdTestSuite struct {
 	VaultStoreID     uint64
 }
 
-func (s *WasmdTestSuite) SetupSuite() {
+func (s *WasmdLPRetryTestSuite) SetupSuite() {
 	t := s.T()
 	ctx := context.Background()
 
@@ -130,7 +130,7 @@ func (s *WasmdTestSuite) SetupSuite() {
 	s.CreatePools(ctx)
 }
 
-func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
+func (s *WasmdLPRetryTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	t := s.T()
 	ctx := context.Background()
 	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init1, init2, init3})
@@ -216,7 +216,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_JoinPoolRetry() {
 	s.Require().Equal(int64(0), balanceIca3After)
 }
 
-func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
+func (s *WasmdLPRetryTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	t := s.T()
 	ctx := context.Background()
 	basicVaultAddress, lpAddresses := s.deployContracts(ctx, []map[string]any{init4, init5, init6})
@@ -327,7 +327,7 @@ func (s *WasmdTestSuite) TestLpStrategyContract_ExitPoolRetry() {
 	s.Require().True(userBalance > int64(14_999_999))
 }
 
-func (s *WasmdTestSuite) deployContracts(ctx context.Context, inits []map[string]any) (string, []string) {
+func (s *WasmdLPRetryTestSuite) deployContracts(ctx context.Context, inits []map[string]any) (string, []string) {
 	t := s.T()
 
 	t.Log("Deploy the lp strategy contract")
@@ -387,7 +387,7 @@ func (s *WasmdTestSuite) deployContracts(ctx context.Context, inits []map[string
 	return basicVaultAddress, []string{lpAddress1, lpAddress2, lpAddress3}
 }
 
-func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wallet {
+func (s *WasmdLPRetryTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wallet {
 	t := s.T()
 
 	t.Log("Create testing account on Quasar chain with some QSR tokens for fees")
@@ -411,7 +411,7 @@ func (s *WasmdTestSuite) createUserAndCheckBalances(ctx context.Context) *ibc.Wa
 	return acc
 }
 
-func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
+func (s *WasmdLPRetryTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
 	t := s.T()
 
 	s.ExecuteContract(
@@ -429,7 +429,7 @@ func (s *WasmdTestSuite) executeBond(ctx context.Context, acc *ibc.Wallet, basic
 	s.Require().NoError(err)
 }
 
-func (s *WasmdTestSuite) executeUnbond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
+func (s *WasmdLPRetryTestSuite) executeUnbond(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
 	t := s.T()
 
 	s.ExecuteContract(
@@ -447,7 +447,7 @@ func (s *WasmdTestSuite) executeUnbond(ctx context.Context, acc *ibc.Wallet, bas
 	s.Require().NoError(err)
 }
 
-func (s *WasmdTestSuite) executeClaim(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
+func (s *WasmdLPRetryTestSuite) executeClaim(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) {
 	t := s.T()
 
 	s.ExecuteContract(
@@ -464,7 +464,7 @@ func (s *WasmdTestSuite) executeClaim(ctx context.Context, acc *ibc.Wallet, basi
 	s.Require().NoError(err)
 }
 
-func (s *WasmdTestSuite) executeClearCache(ctx context.Context, basicVaultAddress string) {
+func (s *WasmdLPRetryTestSuite) executeClearCache(ctx context.Context, basicVaultAddress string) {
 	t := s.T()
 
 	s.ExecuteContract(
@@ -482,14 +482,14 @@ func (s *WasmdTestSuite) executeClearCache(ctx context.Context, basicVaultAddres
 	s.Require().NoError(err)
 }
 
-func (s *WasmdTestSuite) executeSandwichAttackJoin(ctx context.Context) {
+func (s *WasmdLPRetryTestSuite) executeSandwichAttackJoin(ctx context.Context) {
 	// Sandwich-attack as we know in this test how we are going to swap, we clone the tx and we execute it before the ICQ/ICA is doing the job simulating a front-run sandwich attack
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "stake1", "1")
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "usdc", "2")
 	s.SwapTokenOnOsmosis(ctx, s.Osmosis(), s.E2EBuilder.OsmosisAccounts.Treasury.KeyName, "3333333uosmo", "1", "fakestake", "3")
 }
 
-func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
+func (s *WasmdLPRetryTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAddresses []string, seqs []uint64, chans []string) {
 	for i := range seqs {
 		s.ExecuteContract(
 			ctx,
@@ -506,7 +506,7 @@ func (s *WasmdTestSuite) executeRetry(ctx context.Context, acc *ibc.Wallet, lpAd
 	}
 }
 
-func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) int64 {
+func (s *WasmdLPRetryTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wallet, basicVaultAddress string) int64 {
 	var data testsuite.ContractBalanceData
 	balanceBytes := s.ExecuteContractQuery(
 		ctx,
@@ -526,7 +526,7 @@ func (s *WasmdTestSuite) getUserSharesBalance(ctx context.Context, acc *ibc.Wall
 	return balance
 }
 
-func (s *WasmdTestSuite) getPrimitiveIcaAddresses(ctx context.Context, lpAddresses []string) []string {
+func (s *WasmdLPRetryTestSuite) getPrimitiveIcaAddresses(ctx context.Context, lpAddresses []string) []string {
 	var icaAddresses []string
 	for _, lpAddress := range lpAddresses {
 		var icaAddress testsuite.ContractIcaAddressData
@@ -546,7 +546,7 @@ func (s *WasmdTestSuite) getPrimitiveIcaAddresses(ctx context.Context, lpAddress
 	return icaAddresses
 }
 
-func (s *WasmdTestSuite) getTrappedErrors(ctx context.Context, lpAddresses []string) []map[string]interface{} {
+func (s *WasmdLPRetryTestSuite) getTrappedErrors(ctx context.Context, lpAddresses []string) []map[string]interface{} {
 	var trappedErrors []map[string]interface{}
 	for _, lpAddress := range lpAddresses {
 		var trappedErrors1 testsuite.ContractTrappedErrorsData

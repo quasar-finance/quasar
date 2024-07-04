@@ -4,9 +4,8 @@ pub mod helpers;
 mod instantiate;
 mod math;
 pub mod msg;
-mod query;
+pub mod query;
 mod reply;
-mod rewards;
 pub mod state;
 mod vault;
 
@@ -22,5 +21,8 @@ mod test_helpers;
 macro_rules! debug {
     ($deps: ident, $tag:literal, $($arg:tt)*) => {
         $deps.api.debug(format!(concat!($tag, " :{:?}"), $($arg)*).as_str())
+    };
+    ($deps: ident, $tag:literal) => {
+        $deps.api.debug($tag)
     };
 }

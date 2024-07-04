@@ -6,6 +6,7 @@ tmp/
 *.tmp
 *.log
 __debug_bin
+*.iml
 
 release/
 build/
@@ -16,6 +17,12 @@ vue/
 
 **/**/artifacts
 **/**/target
+**/**/test-tube-build
 local_testnet_run-*nodes/
 
 containers_homes/
+
+# Cargo+Git helper file (https://github.com/rust-lang/cargo/blob/0.44.1/src/cargo/sources/git/utils.rs#L320-L327)
+**/.cargo-ok
+**/*.rs.bk
+

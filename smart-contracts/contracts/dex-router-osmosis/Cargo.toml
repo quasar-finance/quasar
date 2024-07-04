@@ -1,0 +1,39 @@
+[package]
+authors = ["Quasar"]
+edition = "2021"
+name = "dex-router-osmosis"
+version = "0.0.1"
+readme = "README.md"
+repository = "https://github.com/quasar-finance/quasar"
+homepage = "https://quasar.fi"
+documentation = ""
+license = "MPL-2.0"
+description = "A cosmwasm contract for routing swaps"
+keywords = ["cosmwasm", "dex", "router", "osmosis"]
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "dex_router_osmosis.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+library = []
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw2 = { workspace = true }
+thiserror = { workspace = true }
+mars-owner = { workspace = true }
+osmosis-std = { workspace = true }
+quasar-types = { workspace = true }
+prost = { workspace = true }
+
+[dev-dependencies]
+osmosis-test-tube = { workspace = true }

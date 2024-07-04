@@ -242,7 +242,7 @@ pub fn calculate_claim(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, MockQuerier},
-        to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
+        to_json_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
 
     use crate::{
@@ -335,7 +335,7 @@ mod tests {
 
         let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
-            data: to_binary(&packet).unwrap(),
+            data: to_json_binary(&packet).unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         });
 

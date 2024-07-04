@@ -2,6 +2,7 @@ use cosmwasm_std::{
     coin, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, StdError, SubMsg, SubMsgResult,
     Uint128,
 };
+use osmosis_std::try_proto_to_cosmwasm_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     MsgCreatePositionResponse, Pool,
 };
@@ -10,15 +11,16 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::must_pay_one_or_two;
+use crate::helpers::assert::must_pay_one_or_two;
+use crate::helpers::getters::get_asset0_value;
+use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
-use crate::rewards::CoinList;
 use crate::state::{
-    Metadata, PoolConfig, Position, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, RANGE_ADMIN,
-    STRATEGIST_REWARDS, VAULT_CONFIG, VAULT_DENOM,
+    Metadata, MigrationStatus, PoolConfig, Position, ADMIN_ADDRESS, METADATA, MIGRATION_STATUS,
+    POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG, VAULT_DENOM,
 };
-use crate::vault::concentrated_liquidity::create_position;
+use crate::vault::concentrated_liquidity::{create_position, get_position};
 use crate::ContractError;
 
 pub fn handle_instantiate(
@@ -34,6 +36,11 @@ pub fn handle_instantiate(
         )));
     }
 
+    build_tick_exp_cache(deps.storage)?;
+    verify_tick_exp_cache(deps.storage)?;
+
+    deps.api.addr_validate(msg.config.dex_router.as_str())?;
+
     VAULT_CONFIG.save(deps.storage, &msg.config)?;
 
     let pool: Pool = PoolmanagerQuerier::new(&deps.querier)
@@ -42,8 +49,7 @@ pub fn handle_instantiate(
         .ok_or(ContractError::PoolNotFound {
             pool_id: msg.pool_id,
         })?
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
     POOL_CONFIG.save(
         deps.storage,
@@ -53,8 +59,6 @@ pub fn handle_instantiate(
             token1: pool.token1.clone(),
         },
     )?;
-
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
 
     METADATA.save(
         deps.storage,
@@ -68,6 +72,7 @@ pub fn handle_instantiate(
 
     ADMIN_ADDRESS.save(deps.storage, &admin)?;
     RANGE_ADMIN.save(deps.storage, &deps.api.addr_validate(&msg.range_admin)?)?;
+    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Closed)?;
 
     let create_denom_msg: CosmosMsg = MsgCreateDenom {
         sender: env.contract.address.to_string(),
@@ -119,16 +124,45 @@ pub fn handle_instantiate_create_position_reply(
         deps.storage,
         &Position {
             position_id: response.position_id,
+            join_time: env.block.time.seconds(),
+            claim_after: None,
         },
     )?;
 
-    let liquidity_amount = Decimal::raw(response.liquidity_created.parse()?);
+    let position_info = get_position(deps.storage, &deps.querier)?;
+    // Check if asset0 and asset1 are present, and handle the case where they are not.
+    let asset0 = position_info
+        .asset0
+        .ok_or_else(|| ContractError::MissingAssetInfo {
+            asset: "asset0".to_string(),
+        })?;
+    let asset1 = position_info
+        .asset1
+        .ok_or_else(|| ContractError::MissingAssetInfo {
+            asset: "asset1".to_string(),
+        })?;
+
+    let assets = try_proto_to_cosmwasm_coins(vec![asset0, asset1])?;
+    let free_asset0 = deps
+        .querier
+        .query_balance(&env.contract.address, assets[0].denom.clone())?;
+    let free_asset1 = deps
+        .querier
+        .query_balance(&env.contract.address, assets[1].denom.clone())?;
+
+    let asset_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        assets[0].amount + free_asset0.amount,
+        assets[1].amount + free_asset1.amount,
+    )?;
+
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
 
     // todo do we want to mint the initial mint to the instantiater, or just not care?
     let mint_msg = MsgMint {
         sender: env.contract.address.to_string(),
-        amount: Some(coin(liquidity_amount.atomics().u128(), vault_denom).into()),
+        amount: Some(coin(asset_value.u128(), vault_denom).into()),
         mint_to_address: env.contract.address.to_string(),
     };
 

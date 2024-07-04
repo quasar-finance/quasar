@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
     use osmosis_std::types::cosmos::bank::v1beta1::{QueryBalanceRequest, QueryBalanceResponse};
     use osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::PositionByIdRequest;
@@ -14,27 +14,30 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::helpers::generic::sort_tokens;
+    use crate::query::AssetsBalanceResponse;
+    use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;
+    use crate::test_tube::initialize::initialize::{MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
     use crate::{
-        helpers::sort_tokens,
         math::tick::tick_to_price,
         msg::{ExecuteMsg, ExtensionQueryMsg, ModifyRangeMsg, QueryMsg},
         query::{PositionResponse, TotalVaultTokenSupplyResponse},
-        query::{TotalAssetsResponse, UserBalanceResponse},
+        query::{TotalAssetsResponse, UserSharesBalanceResponse},
         test_tube::initialize::initialize::init_test_contract,
     };
 
     const ITERATIONS_NUMBER: usize = 1000;
     const ACCOUNTS_NUMBER: u64 = 10;
-    const ACCOUNTS_INITIAL_BALANCE: u128 = 1_000_000_000_000;
-    const DENOM_BASE: &str = "ZZZZZ"; //"ibc/0CD3A0285E1341859B5E86B6AB7682F023D03E97607CCC1DC95706411D866DF7";
+    const ACCOUNTS_INITIAL_BALANCE: u128 = 100_000_000_000_000_000;
+    const DENOM_BASE: &str = "ZZZZZ";
     const DENOM_QUOTE: &str =
-        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858"; //"ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2";
+        "ibc/D189335C6E4A68B513C10AB227BF1C1D38C746766278BA3EEB4FB14124F1D858";
 
     #[derive(Clone, Copy, Debug)]
     enum Action {
         Deposit,
         Withdraw,
-        Swap,
+        //Swap,
         UpdateRange,
     }
 
@@ -44,9 +47,11 @@ mod tests {
         contract_address: &Addr,
         account: &SigningAccount,
         percentage: f64,
+        denom0: &str,
+        denom1: &str,
     ) {
         // Get user DENOM_BASE balance
-        let balance_asset0 = get_user_denom_balance(bank, account, DENOM_BASE);
+        let balance_asset0 = get_user_denom_balance(bank, account, denom0);
         let balance0_str = balance_asset0.balance.unwrap().amount;
         let balance0_f64: f64 = balance0_str
             .parse()
@@ -54,7 +59,7 @@ mod tests {
         let amount0 = (balance0_f64 * (percentage / 100.0)).round() as u128;
 
         // Get user DENOM_QUOTE balance
-        let balance_asset1 = get_user_denom_balance(bank, account, DENOM_QUOTE);
+        let balance_asset1 = get_user_denom_balance(bank, account, denom1);
         let balance1_str = balance_asset1.balance.unwrap().amount;
         let balance1_f64: f64 = balance1_str
             .parse()
@@ -79,10 +84,10 @@ mod tests {
         // Initialize an empty Vec<Coin> and push only non zero amount coins
         let mut coins_to_deposit = Vec::new();
         if adjusted_amount0 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount0, DENOM_BASE));
+            coins_to_deposit.push(Coin::new(adjusted_amount0, denom0));
         }
         if adjusted_amount1 > 0 {
-            coins_to_deposit.push(Coin::new(adjusted_amount1, DENOM_QUOTE));
+            coins_to_deposit.push(Coin::new(adjusted_amount1, denom1));
         }
 
         // Check if coins_to_deposit is not empty before proceeding or skip the iteration
@@ -103,7 +108,7 @@ mod tests {
             .execute(
                 contract_address.as_str(),
                 &ExecuteMsg::ExactDeposit { recipient: None }, // Nice to have: Make recipient random
-                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit.rs::execute_exact_deposit
+                &sort_tokens(coins_to_deposit), // TODO: Why our contract, before adding a message/submessage cannot handle a sort? like first line of deposit::execute_exact_deposit
                 account,
             )
             .unwrap();
@@ -165,7 +170,7 @@ mod tests {
         account: &SigningAccount,
         percentage: f64,
     ) {
-        let balance = get_user_shares_balance(wasm, contract_address, account); // TODO: get user shares balance
+        let balance = get_user_shares_balance(wasm, contract_address, account);
         let amount = (balance.balance.u128() as f64 * (percentage / 100.0)).round() as u128;
 
         // // Before queries
@@ -175,6 +180,21 @@ mod tests {
         //     get_vault_position_assets(wasm, contract_address);
         // let user_shares_balance_before: UserBalanceResponse =
         //     get_user_shares_balance(wasm, contract_address, account);
+
+        let _user_assets_bal: AssetsBalanceResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
+                    crate::msg::UserBalanceQueryMsg::UserAssetsBalance {
+                        user: account.address(),
+                    },
+                )),
+            )
+            .unwrap();
+
+        let _vault_total_shares: TotalAssetsResponse = wasm
+            .query(contract_address.as_str(), &QueryMsg::TotalAssets {})
+            .unwrap();
 
         // Execute withdraw
         let withdraw_position: ExecuteResponse<MsgExecuteContractResponse> = wasm
@@ -240,7 +260,7 @@ mod tests {
         // );
     }
 
-    fn swap(
+    fn _swap(
         _wasm: &Wasm<OsmosisTestApp>,
         bank: &Bank<OsmosisTestApp>,
         _contract_address: &Addr,
@@ -294,7 +314,11 @@ mod tests {
                     ModifyRangeMsg {
                         lower_price: Decimal::new(Uint128::new(new_lower_price)),
                         upper_price: Decimal::new(Uint128::new(new_upper_price)),
-                        max_slippage: Decimal::bps(5), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH), // optimize and check how this fits in the strategy as it could trigger organic errors we dont want to test
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        forced_swap_route: None,
+                        claim_after: None,
                     },
                 )),
                 &[],
@@ -317,7 +341,7 @@ mod tests {
         .unwrap()
     }
 
-    fn get_vault_shares_balance(
+    fn _get_vault_shares_balance(
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
     ) -> TotalVaultTokenSupplyResponse {
@@ -340,7 +364,7 @@ mod tests {
         wasm: &Wasm<OsmosisTestApp>,
         contract_address: &Addr,
         account: &SigningAccount,
-    ) -> UserBalanceResponse {
+    ) -> UserSharesBalanceResponse {
         wasm.query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::Balances(
@@ -383,68 +407,12 @@ mod tests {
         }
     }
 
-    // HELPERS
-
-    fn get_event_attributes_by_ty_and_key(
-        response: &ExecuteResponse<MsgExecuteContractResponse>,
-        ty: &str,
-        keys: Vec<&str>,
-    ) -> Vec<Attribute> {
-        response
-            .events
-            .iter()
-            .filter(|event| event.ty == ty)
-            .flat_map(|event| event.attributes.clone())
-            .filter(|attribute| keys.contains(&attribute.key.as_str()))
-            .collect()
-    }
-
-    fn get_event_value_amount_numeric(value: &String) -> u128 {
-        // Find the position where the non-numeric part starts
-        let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
-        // Extract the numeric part from the string
-        let numeric_part = &value[0..pos];
-        // Try to parse the numeric string to u128
-        numeric_part.parse::<u128>().unwrap()
-    }
-
-    // ASSERT METHODS
-
-    // TODO: REMOVE THIS DEPRECATED
-    /*fn assert_deposit_withdraw(
-        wasm: &Wasm<OsmosisTestApp>,
-        contract_address: &Addr,
-        accounts: &Vec<SigningAccount>,
-        accounts_shares_balance: HashMap<String, Uint128>,
-    ) {
-        // TODO: multi-query foreach user created previously
-        for account in accounts {
-            let shares = get_user_shares_balance(wasm, contract_address, account);
-
-            // Check that the current account iterated shares balance is the same we expect from Hashmap
-            assert_eq!(
-                shares.balance,
-                accounts_shares_balance.get(&account.address()).unwrap()
-            );
-        }
-    }*/
-
-    /*
-    fn assert_swap() {
-        todo!()
-    }
-
-    fn assert_update_range() {
-        todo!()
-    }
-    */
-
     // COMPOSE STRATEGY
 
     // get_initial_range generates random lower and upper ticks for the initial position
     prop_compose! {
         // TODO: evaluate if lower_tick and upper_tick are too much arbitrary
-        fn get_initial_range()(lower_tick in 1i64..1_000_000, upper_tick in 1_000_001i64..2_000_000) -> (i64, i64) {
+        fn get_initial_range()(lower_tick in -300_000i64..0, upper_tick in 1i64..500_000) -> (i64, i64) {
             (lower_tick, upper_tick)
         }
     }
@@ -476,9 +444,17 @@ mod tests {
         }
     }
 
-    // TESTS
+    fn get_cases() -> u32 {
+        std::env::var("PROPTEST_CASES")
+            .unwrap_or("100".to_string())
+            .parse()
+            .unwrap()
+    }
 
+    // TESTS
     proptest! {
+        // setup the config with amount of cases, usable for setting different values on ci vs local
+        #![proptest_config(ProptestConfig::with_cases(get_cases()))]
         #[test]
         #[ignore]
         fn test_complete_works(
@@ -488,12 +464,12 @@ mod tests {
             account_indexes in get_account_index_list()
         ) {
             // Creating test core
-            let (app, contract_address, cl_pool_id, admin_account) = init_test_contract(
+            let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
                 "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
                 &[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_BASE),
-                    Coin::new(100_000_000_000_000_000_000_000, DENOM_QUOTE),
+                    Coin::new(340282366920938463463374607431768211455, "uosmo"),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
+                    Coin::new(340282366920938463463374607431768211455, DENOM_QUOTE),
                 ],
                 MsgCreateConcentratedPool {
                     sender: "overwritten".to_string(),
@@ -507,15 +483,16 @@ mod tests {
                 vec![
                     v1beta1::Coin {
                         denom: DENOM_BASE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                     v1beta1::Coin {
                         denom: DENOM_QUOTE.to_string(),
-                        amount: "100000000000000000".to_string(),
+                        amount: "1000000000000000000".to_string(),
                     },
                 ],
                 Uint128::zero(),
                 Uint128::zero(),
+                PERFORMANCE_FEE_DEFAULT
             );
             let wasm = Wasm::new(&app);
             let cl = ConcentratedLiquidity::new(&app);
@@ -524,7 +501,7 @@ mod tests {
             // Create a fixed number of accounts using app.init_accounts() function from test-tube, and assign a fixed initial balance for all of them
             let accounts = app
                 .init_accounts(&[
-                    Coin::new(100_000_000_000_000_000_000_000, "uosmo"),
+                    Coin::new(ACCOUNTS_INITIAL_BALANCE, "uosmo"),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_BASE),
                     Coin::new(ACCOUNTS_INITIAL_BALANCE, DENOM_QUOTE),
                 ], ACCOUNTS_NUMBER)
@@ -532,27 +509,23 @@ mod tests {
 
             // Make one arbitrary deposit foreach one of the created accounts using 10.00% of its balance, to avoid complications on withdrawing without any position
             for i in 0..ACCOUNTS_NUMBER {
-                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00);
+                deposit(&wasm, &bank, &contract_address, &accounts[i as usize], 10.00, DENOM_BASE, DENOM_QUOTE);
             }
 
             // Iterate iterations times
             for i in 0..ITERATIONS_NUMBER {
                 match actions[i] {
                     Action::Deposit => {
-                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
+                        deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);
                     },
                     Action::Withdraw => {
                         withdraw(&wasm, &contract_address, &accounts[account_indexes[i] as usize], percentages[i]);
-                        //assert_deposit_withdraw(&wasm, &contract_address, &accounts);
                     },
-                    Action::Swap => {
-                        swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
-                        //assert_swap(); // todo!()
-                    },
+                    // Action::Swap => {
+                    //     swap(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], cl_pool_id);
+                    // },
                     Action::UpdateRange => {
                         update_range(&wasm, &cl, &contract_address, percentages[i], &admin_account);
-                        //assert_update_range(); // todo!()
                     },
                 }
             }

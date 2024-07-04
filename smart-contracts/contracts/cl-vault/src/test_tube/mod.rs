@@ -1,9 +1,10 @@
 mod admin;
+mod any_deposit;
+mod authz;
+mod autocompound;
 mod deposit_withdraw;
-mod initialize;
+pub mod helpers;
+pub mod initialize;
 mod proptest;
 mod range;
 mod rewards;
-
-#[cfg(test)]
-pub(crate) use crate::test_tube::initialize::initialize::default_init;

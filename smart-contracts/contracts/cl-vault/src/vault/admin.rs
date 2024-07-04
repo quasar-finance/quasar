@@ -1,9 +1,10 @@
-use crate::error::ContractResult;
-use crate::helpers::{assert_admin, sort_tokens};
-use crate::rewards::CoinList;
-use crate::state::{VaultConfig, ADMIN_ADDRESS, RANGE_ADMIN, STRATEGIST_REWARDS, VAULT_CONFIG};
+use crate::helpers::assert::assert_admin;
+use crate::math::tick::build_tick_exp_cache;
+use crate::state::{
+    Metadata, VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, METADATA, RANGE_ADMIN, VAULT_CONFIG,
+};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{BankMsg, DepsMut, MessageInfo, Response};
+use cosmwasm_std::{Decimal, DepsMut, MessageInfo, Response, StdError};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
@@ -18,35 +19,17 @@ pub(crate) fn execute_admin(
         AdminExtensionExecuteMsg::UpdateConfig { updates } => {
             execute_update_config(deps, info, updates)
         }
+        AdminExtensionExecuteMsg::UpdateMetadata { updates } => {
+            execute_update_metadata(deps, info, updates)
+        }
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
         }
-        AdminExtensionExecuteMsg::ClaimStrategistRewards {} => {
-            execute_claim_strategist_rewards(deps, info)
+        AdminExtensionExecuteMsg::UpdateDexRouter { address } => {
+            execute_update_dex_router(deps, info, address)
         }
+        AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
     }
-}
-
-pub fn execute_claim_strategist_rewards(
-    deps: DepsMut,
-    info: MessageInfo,
-) -> ContractResult<Response> {
-    let range_admin = RANGE_ADMIN.load(deps.storage)?;
-    if info.sender != range_admin {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    // get the currently attained rewards
-    let rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    // empty the saved rewards
-    STRATEGIST_REWARDS.save(deps.storage, &CoinList::new())?;
-
-    Ok(Response::new()
-        .add_attribute("rewards", format!("{:?}", rewards.coins()))
-        .add_message(BankMsg::Send {
-            to_address: range_admin.to_string(),
-            amount: sort_tokens(rewards.coins()),
-        }))
 }
 
 /// Updates the admin of the contract.
@@ -66,7 +49,8 @@ pub fn execute_update_admin(
     ADMIN_ADDRESS.save(deps.storage, &new_admin)?;
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
 }
@@ -89,9 +73,37 @@ pub fn execute_update_range_admin(
     RANGE_ADMIN.save(deps.storage, &new_admin)?;
 
     Ok(Response::new()
-        .add_attribute("action", "execute_update_admin")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_range_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
+}
+
+/// Updates the dex router address
+pub fn execute_update_dex_router(
+    deps: DepsMut,
+    info: MessageInfo,
+    address: Option<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    let previous_router = RANGE_ADMIN.load(deps.storage)?;
+    match address.clone() {
+        Some(address) => {
+            let new_router = deps.api.addr_validate(&address)?;
+            DEX_ROUTER.save(deps.storage, &new_router.clone())?;
+        }
+        None => {
+            DEX_ROUTER.remove(deps.storage);
+        }
+    }
+
+    Ok(Response::new()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_dex_router")
+        .add_attribute("previous_router", previous_router)
+        .add_attribute("new_router", address.unwrap_or("none".to_owned())))
 }
 
 /// Updates the configuration of the contract.
@@ -107,66 +119,72 @@ pub fn execute_update_config(
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
     assert_admin(deps.as_ref(), &info.sender)?;
 
+    deps.api.addr_validate(updates.dex_router.as_str())?;
+    deps.api.addr_validate(updates.treasury.as_str())?;
+    // a performance fee of more than 1 means that the performance fee is more than 100%
+    if updates.performance_fee > Decimal::one() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "performance fee cannot be more than 1.0",
+        )));
+    }
+
     VAULT_CONFIG.save(deps.storage, &updates)?;
 
     Ok(Response::default()
-        .add_attribute("action", "execute_update_config")
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_config")
         .add_attribute("updates", format!("{:?}", updates)))
+}
+
+pub fn execute_update_metadata(
+    deps: DepsMut,
+    info: MessageInfo,
+    updates: Metadata,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    METADATA.save(deps.storage, &updates)?;
+
+    Ok(Response::default()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "update_metadata")
+        .add_attribute("updates", format!("{:?}", updates)))
+}
+
+// Rebuild the tick exponent cache as admin
+pub fn execute_build_tick_exp_cache(
+    deps: DepsMut,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.as_ref(), &info.sender)?;
+
+    build_tick_exp_cache(deps.storage)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "build_tick_exp_cache"))
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
+
     use super::*;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_info},
-        Addr, CosmosMsg, Decimal, Uint128,
+        Addr, Decimal, Uint128,
     };
 
     #[test]
-    fn test_execute_claim_strategist_rewards_success() {
-        let range_admin = Addr::unchecked("bob");
+    fn test_execute_build_tick_exp_cache() {
         let mut deps = mock_dependencies();
-        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-        STRATEGIST_REWARDS
-            .save(
-                deps.as_mut().storage,
-                &CoinList::from_coins(rewards.clone()),
-            )
-            .unwrap();
 
-        RANGE_ADMIN
-            .save(deps.as_mut().storage, &range_admin)
-            .unwrap();
-
-        let response =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info(range_admin.as_str(), &[]))
-                .unwrap();
-        assert_eq!(
-            CosmosMsg::Bank(BankMsg::Send {
-                to_address: range_admin.to_string(),
-                amount: sort_tokens(rewards)
-            }),
-            response.messages[0].msg
-        )
-    }
-
-    #[test]
-    fn test_execute_claim_strategist_rewards_not_admin() {
-        let range_admin = Addr::unchecked("bob");
-        let mut deps = mock_dependencies();
-        let rewards = vec![coin(12304151, "uosmo"), coin(5415123, "uatom")];
-        STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::from_coins(rewards))
-            .unwrap();
-
-        RANGE_ADMIN
-            .save(deps.as_mut().storage, &range_admin)
-            .unwrap();
-
-        let err =
-            execute_claim_strategist_rewards(deps.as_mut(), mock_info("alice", &[])).unwrap_err();
-        assert_eq!(ContractError::Unauthorized {}, err)
+        build_tick_exp_cache(&mut deps.storage).unwrap();
+        let verify_resp = verify_tick_exp_cache(&mut deps.storage).unwrap();
+        assert_eq!((), verify_resp);
     }
 
     #[test]
@@ -315,6 +333,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -326,6 +345,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("new_dex_router"),
         };
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
@@ -343,6 +363,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -354,6 +375,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("new_dex_router"),
         };
         let info_not_admin = mock_info("not_admin", &[]);
 
@@ -371,6 +393,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -382,6 +405,7 @@ mod tests {
             treasury: Addr::unchecked("new_treasury"),
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("new_dex_router"),
         };
 
         let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
@@ -397,6 +421,7 @@ mod tests {
             treasury: Addr::unchecked("old_treasury"),
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
+            dex_router: Addr::unchecked("old_dex_router"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -412,6 +437,88 @@ mod tests {
             VAULT_CONFIG.load(deps.as_mut().storage).unwrap(),
             old_config
         );
+    }
+
+    #[test]
+    fn test_execute_update_metadata_success() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        assert!(execute_update_metadata(deps.as_mut(), info_admin, new_metadata.clone()).is_ok());
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), new_metadata);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_not_admin() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+        let info_not_admin = mock_info("not_admin", &[]);
+
+        assert!(execute_update_metadata(deps.as_mut(), info_not_admin, new_metadata).is_err());
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), old_metadata);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_with_funds() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let new_metadata = Metadata {
+            name: "new_name".to_string(),
+            thesis: "new_thesis".to_string(),
+        };
+
+        let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
+
+        let result = execute_update_metadata(deps.as_mut(), info_admin_with_funds, new_metadata);
+        assert!(result.is_err(), "Expected Err, but got: {:?}", result);
+    }
+
+    #[test]
+    fn test_execute_update_metadata_same_metadata() {
+        let admin = Addr::unchecked("admin");
+        let old_metadata = Metadata {
+            name: "old_name".to_string(),
+            thesis: "old_thesis".to_string(),
+        };
+        let mut deps = mock_dependencies();
+        ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
+        METADATA.save(deps.as_mut().storage, &old_metadata).unwrap();
+
+        let info_admin: MessageInfo = mock_info("admin", &[]);
+
+        let res = execute_update_metadata(deps.as_mut(), info_admin, old_metadata.clone());
+        assert!(res.is_ok());
+        assert_eq!(METADATA.load(deps.as_mut().storage).unwrap(), old_metadata);
     }
 
     #[test]

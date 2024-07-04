@@ -114,17 +114,17 @@ mod tests {
     use cosmwasm_std::{Binary, Coin, CosmosMsg, IbcMsg};
     use osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceResponse;
     use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v2::QuerySpotPriceResponse, lockup::LockedResponse},
+        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::lockup::LockedResponse,
     };
 
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, StdError, Timestamp, Uint128,
+        to_json_binary, Addr, StdError, Timestamp, Uint128,
     };
     use osmosis_std::types::osmosis::gamm::v1beta1::{
         QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+        QuerySpotPriceResponse,
     };
     use prost::Message;
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
@@ -754,7 +754,12 @@ mod tests {
             ),
         };
 
-        let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+        let res = handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            to_json_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
 
         // we do NOT transfer any token here, failed bonds were already transferred to the contract before failing and stay there
         // as we do not have any bond_queue items, we return None here
@@ -964,7 +969,12 @@ mod tests {
             ),
         };
 
-        let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+        let res = handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            to_json_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
 
         // get the pending bonds total amount
         let pending_total_amount = pending_bonds

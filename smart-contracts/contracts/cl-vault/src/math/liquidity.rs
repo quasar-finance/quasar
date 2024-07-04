@@ -1,5 +1,5 @@
 use crate::ContractError;
-use cosmwasm_std::{Decimal, Decimal256, StdError, Uint256, Uint512};
+use cosmwasm_std::{Decimal, Decimal256, OverflowError, StdError, Uint256, Uint512};
 
 /// liquidity0 calculates the amount of liquitiy gained from adding an amount of token0 to a position
 pub fn _liquidity0(
@@ -32,13 +32,18 @@ pub fn _liquidity0(
     // Should we check here that the leftover bytes are zero? that is technically an overflow
     let result_bytes: [u8; 64] = result.to_le_bytes();
     for b in result_bytes[32..64].iter() {
-        if b != &0_u8 {
-            return Err(ContractError::Overflow {});
+        if *b != 0_u8 {
+            return Err(ContractError::OverflowError(OverflowError {
+                operation: cosmwasm_std::OverflowOperation::Mul, // this is just a mock
+                operand1: result.to_string(),
+                operand2: "Conversion to Decimal".to_string(), // this too as we have no operand2 on this conversion step
+            }));
         }
     }
+
     let intermediate = Uint256::from_le_bytes(result_bytes[..32].try_into().unwrap());
     // we use Decimal256 to
-    let intermediate_2 = Decimal256::from_atomics(intermediate, 36).unwrap();
+    let intermediate_2 = Decimal256::from_atomics(intermediate, 36)?;
 
     // since we start with Decimal and multiply with big_factor, we expect to be able to convert back here
     Ok(Decimal::new(intermediate_2.atomics().try_into()?))
