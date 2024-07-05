@@ -1,13 +1,12 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
 };
 use cw2::set_contract_version;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 
 use crate::error::ContractError;
-use crate::helpers::generic::sort_tokens;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
@@ -20,8 +19,7 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::state::{
-    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
-    VAULT_CONFIG,
+    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, VAULT_CONFIG
 };
 use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
@@ -237,19 +235,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
 
     // Declare response object as mut
-    let mut response = Response::new().add_attribute("migrate", "successful");
-
-    // Conditionally add a bank send message if the strategist rewards state is not empty
-    let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    if !strategist_rewards.is_empty() {
-        let bank_send_msg = BankMsg::Send {
-            to_address: new_vault_config.treasury.to_string(),
-            amount: sort_tokens(strategist_rewards.coins()),
-        };
-        response = response.add_message(bank_send_msg);
-    }
-    // Remove the state
-    STRATEGIST_REWARDS.remove(deps.storage);
+    let response = Response::new().add_attribute("migrate", "successful");
 
     //POSITION state migration
     let old_position = OLD_POSITION.load(deps.storage)?;
@@ -281,18 +267,14 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 mod tests {
     use super::*;
     use crate::{
-        helpers::coinlist::CoinList,
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
-        test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
-    use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
+    use crate::{test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
-        Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
+        Addr, Decimal, SubMsg, Uint128,
     };
-    use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
-    use prost::Message;
     use std::str::FromStr;
 
     pub fn mock_migrate(
@@ -311,22 +293,8 @@ mod tests {
         OLD_VAULT_CONFIG.remove(deps.storage);
         VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
 
-        MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
-
         // Declare response object as mut
-        let mut response = Response::new().add_attribute("migrate", "successful");
-
-        // Conditionally add a bank send message if the strategist rewards state is not empty
-        let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-        if !strategist_rewards.is_empty() {
-            let bank_send_msg = BankMsg::Send {
-                to_address: new_vault_config.treasury.to_string(),
-                amount: sort_tokens(strategist_rewards.coins()),
-            };
-            response = response.add_message(bank_send_msg);
-        }
-        // Remove the state
-        STRATEGIST_REWARDS.remove(deps.storage);
+        let response = Response::new().add_attribute("migrate", "successful");
         let old_position = OLD_POSITION.load(deps.storage)?;
 
         let new_position: Position = Position {
@@ -362,9 +330,6 @@ mod tests {
                     swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                 },
             )
-            .unwrap();
-        STRATEGIST_REWARDS
-            .save(&mut deps.storage, &CoinList::new())
             .unwrap();
 
         mock_migrate(

@@ -121,14 +121,6 @@ pub enum RewardsStatus {
     Distributing,
 }
 
-/// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-#[deprecated]
-pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
-
-/// Shared collection+distribution states
-#[deprecated]
-pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-
 /// Swap helper states
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");

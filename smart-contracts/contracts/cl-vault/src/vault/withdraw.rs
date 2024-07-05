@@ -21,7 +21,6 @@ use crate::{
 
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
-#[allow(clippy::unnecessary_fallible_conversions)]
 pub fn execute_withdraw(
     deps: DepsMut,
     env: &Env,
@@ -165,7 +164,7 @@ mod tests {
     use crate::helpers::coinlist::CoinList;
     use crate::{
         // rewards::CoinList,
-        state::{PoolConfig, STRATEGIST_REWARDS},
+        state::{PoolConfig},
         test_helpers::mock_deps_with_querier_with_balance,
     };
     use cosmwasm_std::{
@@ -187,10 +186,6 @@ mod tests {
         );
         let env = mock_env();
 
-        // TODO_FUTURE: We should remove this in the next patch or just adjust now accordingly as we depcreate this state
-        STRATEGIST_REWARDS
-            .save(deps.as_mut().storage, &CoinList::new())
-            .unwrap();
         VAULT_DENOM
             .save(deps.as_mut().storage, &"share_token".to_string())
             .unwrap();
