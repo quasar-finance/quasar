@@ -164,7 +164,7 @@ mod tests {
     use crate::helpers::coinlist::CoinList;
     use crate::{
         // rewards::CoinList,
-        state::{PoolConfig},
+        state::PoolConfig,
         test_helpers::mock_deps_with_querier_with_balance,
     };
     use cosmwasm_std::{

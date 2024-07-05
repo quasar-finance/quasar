@@ -1,10 +1,9 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
-use cw2::set_contract_version;
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cw2::{ensure_from_older_version, set_contract_version};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
+use serde::de;
 
 use crate::error::ContractError;
 use crate::helpers::prepend::prepend_claim_msg;
@@ -19,14 +18,12 @@ use crate::query::{
 };
 use crate::reply::Replies;
 use crate::state::{
-    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, VAULT_CONFIG
+    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, VAULT_CONFIG,
 };
 use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
-use crate::vault::autocompound::{
-    execute_autocompound, handle_autocompound_reply,
-};
+use crate::vault::autocompound::{execute_autocompound, handle_autocompound_reply};
 use crate::vault::distribution::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
@@ -221,133 +218,37 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-    let new_vault_config = VaultConfig {
-        performance_fee: old_vault_config.performance_fee,
-        treasury: old_vault_config.treasury,
-        swap_max_slippage: old_vault_config.swap_max_slippage,
-        dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-    };
+    ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    // cw2::set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    OLD_VAULT_CONFIG.remove(deps.storage);
-    VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
-
-    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
-
-    // Declare response object as mut
-    let response = Response::new().add_attribute("migrate", "successful");
-
-    //POSITION state migration
-    let old_position = OLD_POSITION.load(deps.storage)?;
-
-    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
-    let pos_response = cl_querier.position_by_id(old_position.position_id)?;
-
-    let new_position: Position = Position {
-        position_id: old_position.position_id,
-        join_time: pos_response
-            .position
-            .unwrap()
-            .position
-            .unwrap()
-            .join_time
-            .unwrap()
-            .seconds
-            .unsigned_abs(),
-        claim_after: None,
-    };
-
-    POSITION.save(deps.storage, &new_position)?;
-    OLD_POSITION.remove(deps.storage);
-
-    Ok(response)
+    Ok(Response::new()
+        .add_attribute("migrate", "succesful")
+        .add_attribute("contract_name", CONTRACT_NAME)
+        .add_attribute("contract_version", CONTRACT_VERSION))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
-    };
-    use crate::{test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
+    use crate::state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION};
+    use crate::test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
         Addr, Decimal, SubMsg, Uint128,
     };
+    use cw2::assert_contract_version;
     use std::str::FromStr;
-
-    pub fn mock_migrate(
-        deps: DepsMut,
-        _env: Env,
-        msg: MigrateMsg,
-    ) -> Result<Response, ContractError> {
-        let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-        let new_vault_config = VaultConfig {
-            performance_fee: old_vault_config.performance_fee,
-            treasury: old_vault_config.treasury,
-            swap_max_slippage: old_vault_config.swap_max_slippage,
-            dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-        };
-
-        OLD_VAULT_CONFIG.remove(deps.storage);
-        VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
-
-        // Declare response object as mut
-        let response = Response::new().add_attribute("migrate", "successful");
-        let old_position = OLD_POSITION.load(deps.storage)?;
-
-        let new_position: Position = Position {
-            position_id: old_position.position_id,
-            join_time: 0,
-            claim_after: None,
-        };
-
-        POSITION.save(deps.storage, &new_position)?;
-
-        OLD_POSITION.remove(deps.storage);
-
-        Ok(response)
-    }
-
+    
     #[test]
-    fn test_migrate_position_state() {
+    fn migrate_cw2_works() {
         let mut deps = mock_dependencies();
         let env = mock_env();
 
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
 
-        // Mock a previous state item
-        OLD_POSITION
-            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
-            .unwrap();
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::from_str("0.2").unwrap(),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                },
-            )
-            .unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {  }).unwrap();
 
-        mock_migrate(
-            deps.as_mut(),
-            env,
-            MigrateMsg {
-                dex_router: new_dex_router,
-            },
-        )
-        .unwrap();
-
-        let position = POSITION.load(deps.as_mut().storage).unwrap();
-
-        assert_eq!(position.position_id, 1);
-        assert_eq!(position.join_time, 0);
-        assert!(position.claim_after.is_none());
-
-        let old_position = OLD_POSITION.may_load(deps.as_mut().storage).unwrap();
-        assert!(old_position.is_none());
+        assert_contract_version(deps.as_mut().storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
     }
 }
