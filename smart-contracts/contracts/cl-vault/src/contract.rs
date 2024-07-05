@@ -27,7 +27,7 @@ use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
-    execute_autocompound, execute_migration_step, handle_autocompound_reply,
+    execute_autocompound, handle_autocompound_reply,
 };
 use crate::vault::distribution::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
@@ -134,9 +134,6 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
-                }
-                crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
-                    execute_migration_step(deps, env, amount_of_users)
                 }
             }
         }

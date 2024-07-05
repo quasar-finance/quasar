@@ -1,19 +1,13 @@
-use cosmwasm_std::Order;
 use cosmwasm_std::{
     to_json_binary, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
 };
-use osmosis_std::cosmwasm_to_proto_coins;
-use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::helpers::assert::must_pay_one_or_two_from_balance;
-use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_unused_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
-#[allow(deprecated)]
-use crate::state::USER_REWARDS;
 use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
 use crate::vault::concentrated_liquidity::create_position;
 use crate::ContractError;
@@ -107,78 +101,4 @@ pub fn handle_autocompound_reply(
             "position_ids",
             format!("{:?}", vec![create_position_message.position_id]),
         ))
-}
-
-// Migration is a to-depreacate entrypoint useful to migrate from Distribute to Accumulate after Autocompound implementation
-pub fn execute_migration_step(
-    deps: DepsMut,
-    env: Env,
-    amount_of_users: Uint128,
-) -> Result<Response, ContractError> {
-    let mut migration_status = MIGRATION_STATUS.load(deps.storage)?;
-
-    if matches!(migration_status, MigrationStatus::Closed) {
-        return Err(ContractError::MigrationStatusClosed {});
-    }
-
-    let mut outputs = Vec::new();
-    let mut addresses = Vec::new();
-    let mut total_amount = CoinList::new();
-
-    // Iterate user rewards in a paginated fashion
-    #[allow(deprecated)]
-    for item in USER_REWARDS
-        .range(deps.storage, None, None, Order::Ascending)
-        .take(amount_of_users.u128() as usize)
-    {
-        let (address, rewards) = item?;
-
-        // We always push the address in order to remove it later
-        addresses.push(address.clone());
-        // If there are no rewards, we skip the address or we will get invalid_coins error
-        // This is because USER_REWARDS is holding 0 amount coins. rewards.coins() only returns a list of coins with non-zero amounts, which it could be empty
-        if rewards.coins().is_empty() {
-            continue;
-        }
-        outputs.push(Output {
-            address: address.to_string(),
-            coins: cosmwasm_to_proto_coins(rewards.coins().iter().cloned()),
-        });
-        total_amount.add(rewards)?;
-    }
-
-    // Remove processed rewards in a separate iteration.
-    #[allow(deprecated)]
-    for addr in addresses {
-        USER_REWARDS.remove(deps.storage, addr);
-    }
-
-    // Check if this is the last execution.
-    #[allow(deprecated)]
-    let is_last_execution = USER_REWARDS
-        .range(deps.storage, None, None, Order::Ascending)
-        .next()
-        .is_none();
-    if is_last_execution {
-        migration_status = MigrationStatus::Closed;
-        MIGRATION_STATUS.save(deps.storage, &migration_status)?;
-    }
-
-    let mut response = Response::new();
-    // Only if there are rewards append the send_message
-    if !total_amount.is_empty() {
-        let send_message = MsgMultiSend {
-            inputs: vec![Input {
-                address: env.contract.address.to_string(),
-                coins: cosmwasm_to_proto_coins(total_amount.coins().iter().cloned()),
-            }],
-            outputs,
-        };
-        response = response.add_message(send_message);
-    }
-    response = response
-        .add_attribute("migration_status", format!("{:?}", migration_status))
-        .add_attribute("is_last_execution", is_last_execution.to_string());
-
-    Ok(response)
 }

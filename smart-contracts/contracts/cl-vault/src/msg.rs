@@ -27,8 +27,6 @@ pub enum ExtensionExecuteMsg {
     Autocompound {},
     /// Distribute any rewards over all users
     CollectRewards {},
-    /// MigrationStep
-    MigrationStep { amount_of_users: Uint128 },
     /// SwapNonVaultFunds
     SwapNonVaultFunds { swap_operations: Vec<SwapOperation> },
 }
