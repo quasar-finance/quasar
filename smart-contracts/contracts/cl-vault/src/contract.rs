@@ -19,7 +19,6 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-#[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
@@ -244,7 +243,6 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     let mut response = Response::new().add_attribute("migrate", "successful");
 
     // Conditionally add a bank send message if the strategist rewards state is not empty
-    #[allow(deprecated)]
     let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
     if !strategist_rewards.is_empty() {
         let bank_send_msg = BankMsg::Send {
@@ -254,7 +252,6 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         response = response.add_message(bank_send_msg);
     }
     // Remove the state
-    #[allow(deprecated)]
     STRATEGIST_REWARDS.remove(deps.storage);
 
     //POSITION state migration
@@ -291,7 +288,6 @@ mod tests {
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
-    #[allow(deprecated)]
     use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
     use cosmwasm_std::{
         coin,
@@ -324,7 +320,6 @@ mod tests {
         let mut response = Response::new().add_attribute("migrate", "successful");
 
         // Conditionally add a bank send message if the strategist rewards state is not empty
-        #[allow(deprecated)]
         let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
         if !strategist_rewards.is_empty() {
             let bank_send_msg = BankMsg::Send {
@@ -334,7 +329,6 @@ mod tests {
             response = response.add_message(bank_send_msg);
         }
         // Remove the state
-        #[allow(deprecated)]
         STRATEGIST_REWARDS.remove(deps.storage);
         let old_position = OLD_POSITION.load(deps.storage)?;
 
@@ -372,7 +366,6 @@ mod tests {
                 },
             )
             .unwrap();
-        #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(&mut deps.storage, &CoinList::new())
             .unwrap();
@@ -418,7 +411,6 @@ mod tests {
                 },
             )
             .unwrap();
-        #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(&mut deps.storage, &CoinList::new())
             .unwrap();
@@ -444,7 +436,6 @@ mod tests {
         assert_eq!(migration_status, MigrationStatus::Open);
 
         // Assert STRATEGIST_REWARDS state have been correctly removed by unwrapping the error
-        #[allow(deprecated)]
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
 
         // Execute one migration step and assert the correct behavior
@@ -486,7 +477,6 @@ mod tests {
             coin(1000u128, DENOM_REWARD),
         ];
         for i in 0..10 {
-            #[allow(deprecated)]
             USER_REWARDS
                 .save(
                     deps.as_mut().storage,
@@ -496,7 +486,6 @@ mod tests {
                 .unwrap();
         }
         // Mock STRATEGIST_REWARDS in order to have something to distribute
-        #[allow(deprecated)]
         STRATEGIST_REWARDS
             .save(
                 deps.as_mut().storage,
@@ -525,7 +514,6 @@ mod tests {
         }
 
         // Assert USER_REWARDS state have been correctly removed by unwrapping the error
-        #[allow(deprecated)]
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
 
         // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
@@ -571,7 +559,6 @@ mod tests {
 
         // Assert USER_REWARDS state have been correctly removed by unwrapping the error
         for i in 0..10 {
-            #[allow(deprecated)]
             USER_REWARDS
                 .load(deps.as_mut().storage, Addr::unchecked(format!("user{}", i)))
                 .unwrap_err();

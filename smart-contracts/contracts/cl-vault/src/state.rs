@@ -51,10 +51,13 @@ pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade // TODO: Deprecate!
 #[cw_serde]
+#[deprecated]
 pub enum MigrationStatus {
     Open,
     Closed,
 }
+
+#[deprecated]
 pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
 
 /// POOL_CONFIG
