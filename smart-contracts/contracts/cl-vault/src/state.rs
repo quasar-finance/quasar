@@ -114,13 +114,6 @@ pub struct CurrentDeposit {
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
 
-#[cw_serde]
-pub enum RewardsStatus {
-    Ready,
-    Collecting,
-    Distributing,
-}
-
 /// Swap helper states
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
