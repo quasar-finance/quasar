@@ -98,7 +98,7 @@ pub fn execute_move_position(
         claim_after_secs: claim_after.unwrap_or_default(),
     };
 
-    execute_move_range_ticks(deps, env, old_position_id, modify_range_config, claim_after)
+    execute_move_range_ticks(deps, env, old_position_id, modify_range_config)
 }
 
 /// This function is the entrypoint into the deposit-swap-merge routine that will go through the following steps
@@ -112,7 +112,6 @@ pub fn execute_move_range_ticks(
     env: &Env,
     old_position_id: u64,
     modify_range_config: ModifyRangeState,
-    claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
     // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
 
@@ -136,17 +135,6 @@ pub fn execute_move_range_ticks(
         &Some(modify_range_config),
     )?;
 
-    // // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
-    // let position_state = POSITION.load(deps.storage)?;
-    // POSITION.save(
-    //     deps.storage,
-    //     &Position {
-    //         position_id: position_state.position_id,
-    //         join_time: env.block.time.seconds(),
-    //         claim_after,
-    //     },
-    // )?;
-
     Ok(Response::default()
         .add_submessage(SubMsg::reply_on_success(
             withdraw_msg,
@@ -155,7 +143,8 @@ pub fn execute_move_range_ticks(
         .add_attribute("method", "execute")
         .add_attribute("action", "update_range_ticks")
         .add_attribute("position_id", position.position_id.to_string())
-        .add_attribute("liquidity_amount", position.liquidity))
+        .add_attribute("liquidity_amount", position.liquidity)
+    )
 }
 
 // do create new position
