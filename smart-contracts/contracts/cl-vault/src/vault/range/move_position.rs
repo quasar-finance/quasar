@@ -95,7 +95,7 @@ pub fn execute_move_position(
         twap_window_seconds,
         recommended_swap_route,
         force_swap_route,
-        claim_after: claim_after.unwrap_or_default(),
+        claim_after_secs: claim_after.unwrap_or_default(),
     };
 
     execute_move_range_ticks(deps, env, old_position_id, modify_range_config, claim_after)
@@ -304,7 +304,7 @@ pub fn do_swap_deposit_merge(
     let target_upper_tick = modify_range_state.upper_tick;
     let ratio_of_swappable_funds_to_use = modify_range_state.ratio_of_swappable_funds_to_use;
     let twap_window_seconds = modify_range_state.twap_window_seconds;
-    let claim_after = modify_range_state.claim_after;
+    let claim_after = modify_range_state.claim_after_secs;
 
     let (balance0, balance1) = (
         refunded_amounts.0.checked_multiply_ratio(
@@ -374,7 +374,7 @@ pub fn do_swap_deposit_merge(
                 // if position not found, then we should panic here anyway ?
                 position_id: position_id.expect("position id should be set if no swap is needed"),
                 join_time: env.block.time.seconds(),
-                claim_after: Some(modify_range_state.claim_after),
+                claim_after: Some(modify_range_state.claim_after_secs),
             },
         )?;
 
@@ -830,7 +830,7 @@ mod tests {
                     twap_window_seconds: 45,
                     recommended_swap_route: None,
                     force_swap_route: false,
-                    claim_after: 0,
+                    claim_after_secs: 0,
                 }),
             )
             .unwrap();
