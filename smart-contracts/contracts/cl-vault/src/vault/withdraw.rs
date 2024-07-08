@@ -14,7 +14,7 @@ use crate::{
     helpers::{get_asset0_value, get_unused_balances, sort_tokens},
     query::query_total_assets,
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, MAIN_POSITION, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{CURRENT_WITHDRAWER, MAIN_POSITION_ID, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::concentrated_liquidity::withdraw_from_position,
     ContractError,
 };
@@ -76,7 +76,7 @@ pub fn execute_withdraw(
         .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
         .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
 
-    let main_position_id = MAIN_POSITION.load(deps.storage)?;
+    let main_position_id = MAIN_POSITION_ID.load(deps.storage)?;
     let main_position = get_parsed_position(&deps.querier, main_position_id)?;
     let main_postion_value = get_asset0_value(
         deps.storage,
@@ -184,7 +184,7 @@ fn withdraw_from_main(
         .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
     println!("user_value: {:?}", user_value);
 
-    let main_position_id = MAIN_POSITION.load(deps.storage)?;
+    let main_position_id = MAIN_POSITION_ID.load(deps.storage)?;
     let main_position = get_parsed_position(&deps.querier, main_position_id)?;
     println!("main_position: {:?}", main_position);
 

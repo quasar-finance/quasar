@@ -121,7 +121,7 @@ mod tests {
 
     use crate::{
         helpers::get_depositable_tokens,
-        state::{MAIN_POSITION, POSITIONS},
+        state::{MAIN_POSITION_ID, POSITIONS},
         test_helpers::FullPositionBuilder,
     };
     use crate::{
@@ -283,7 +283,7 @@ mod tests {
             .unwrap();
 
         let position_id = 1;
-        MAIN_POSITION
+        MAIN_POSITION_ID
             .save(deps.as_mut().storage, &position_id)
             .unwrap();
         POSITIONS
@@ -418,7 +418,7 @@ mod tests {
             custom_query_type: PhantomData,
         };
 
-        MAIN_POSITION
+        MAIN_POSITION_ID
             .save(deps.as_mut().storage, &position_id)
             .unwrap();
         POSITIONS

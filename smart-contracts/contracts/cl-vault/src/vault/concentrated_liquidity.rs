@@ -231,7 +231,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        state::{PoolConfig, Position, MAIN_POSITION, POSITIONS},
+        state::{PoolConfig, Position, MAIN_POSITION_ID, POSITIONS},
         test_helpers::{FullPositionBuilder, QuasarQuerier},
     };
     use cosmwasm_std::{
@@ -320,7 +320,7 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        MAIN_POSITION
+        MAIN_POSITION_ID
             .save(deps.as_mut().storage, &position_id)
             .unwrap();
         POSITIONS

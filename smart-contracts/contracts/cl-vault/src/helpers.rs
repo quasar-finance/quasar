@@ -6,7 +6,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 use crate::rewards::CoinList;
-use crate::state::{ADMIN_ADDRESS, MAIN_POSITION};
+use crate::state::{ADMIN_ADDRESS, MAIN_POSITION_ID};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
@@ -159,7 +159,7 @@ pub fn get_depositable_tokens(
     token0: Coin,
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
-    let main_position = MAIN_POSITION.load(deps.storage)?;
+    let main_position = MAIN_POSITION_ID.load(deps.storage)?;
     let position = get_position(&deps.querier, main_position)?;
     let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
     let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;

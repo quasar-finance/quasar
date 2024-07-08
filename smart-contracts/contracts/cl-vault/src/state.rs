@@ -83,7 +83,7 @@ pub struct Position {
 
 // positions in the contract, the key should be the same as the position's id in Osmosis
 pub const POSITIONS: Map<u64, Position> = Map::new("positions");
-pub const MAIN_POSITION: Item<u64> = Item::new("main_position");
+pub const MAIN_POSITION_ID: Item<u64> = Item::new("main_position_id");
 pub const CURRENT_POSITION_ID: Item<u64> = Item::new("current_position_id");
 pub const CURRENT_CLAIM_AFTER: Item<Option<u64>> = Item::new("current_claim_after");
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");

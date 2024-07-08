@@ -2,7 +2,7 @@ use crate::helpers::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
 use crate::rewards::CoinList;
 use crate::state::{
-    PoolConfig, ADMIN_ADDRESS, MAIN_POSITION, METADATA, POOL_CONFIG, SHARES, VAULT_DENOM,
+    PoolConfig, ADMIN_ADDRESS, MAIN_POSITION_ID, METADATA, POOL_CONFIG, SHARES, VAULT_DENOM,
 };
 use crate::state::{Position, DEX_ROUTER, POSITIONS};
 use crate::vault::concentrated_liquidity::{get_position, get_positions};
@@ -264,6 +264,6 @@ pub fn query_total_vault_token_supply(
 }
 
 pub fn query_main_position(deps: Deps) -> Result<MainPositionResponse, ContractError> {
-    let position_id = MAIN_POSITION.load(deps.storage)?;
+    let position_id = MAIN_POSITION_ID.load(deps.storage)?;
     Ok(MainPositionResponse { position_id })
 }

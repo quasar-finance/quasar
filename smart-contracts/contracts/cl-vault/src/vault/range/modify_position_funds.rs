@@ -8,7 +8,7 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     rewards::CoinList,
-    state::{CURRENT_POSITION_ID, MAIN_POSITION, POOL_CONFIG, POSITIONS},
+    state::{CURRENT_POSITION_ID, MAIN_POSITION_ID, POOL_CONFIG, POSITIONS},
     vault::concentrated_liquidity::{create_position, get_position, withdraw_from_position},
     ContractError,
 };
@@ -61,7 +61,7 @@ pub fn handle_range_add_to_position_reply(
     let current_id = CURRENT_POSITION_ID.load(deps.storage)?;
 
     // create the main
-    let main_position = current_id == MAIN_POSITION.load(deps.storage)?;
+    let main_position = current_id == MAIN_POSITION_ID.load(deps.storage)?;
 
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {

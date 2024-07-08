@@ -15,7 +15,7 @@ use crate::{
     msg::MergePositionMsg,
     reply::Replies,
     state::{
-        CurrentMergePosition, Position, CURRENT_MERGE, CURRENT_MERGE_POSITION, MAIN_POSITION,
+        CurrentMergePosition, Position, CURRENT_MERGE, CURRENT_MERGE_POSITION, MAIN_POSITION_ID,
         MERGE_MAIN_POSITION, POOL_CONFIG, POSITIONS,
     },
     vault::concentrated_liquidity::create_position,
@@ -201,7 +201,7 @@ pub fn handle_merge_create_position_reply(
 
     let is_main_position = MERGE_MAIN_POSITION.load(deps.storage)?;
     if is_main_position {
-        MAIN_POSITION.save(deps.storage, &response.position_id)?
+        MAIN_POSITION_ID.save(deps.storage, &response.position_id)?
     }
 
     let cur = CURRENT_MERGE_POSITION.load(deps.storage)?;
