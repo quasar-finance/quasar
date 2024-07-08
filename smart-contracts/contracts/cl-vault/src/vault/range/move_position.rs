@@ -49,7 +49,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 
-/// This function is the entrypoint into the dsm routine that will go through the following steps
+/// This function is the entrypoint into the deposit-swap-merge routine that will go through the following steps
 /// * how much liq do we have in current range
 /// * so how much of each asset given liq would we have at current price
 /// * how much of each asset do we need to move to get to new range
@@ -101,7 +101,7 @@ pub fn execute_move_position(
     execute_move_range_ticks(deps, env, old_position_id, modify_range_config, claim_after)
 }
 
-/// This function is the entrypoint into the dsm routine that will go through the following steps
+/// This function is the entrypoint into the deposit-swap-merge routine that will go through the following steps
 /// * how much liq do we have in current range
 /// * so how much of each asset given liq would we have at current price
 /// * how much of each asset do we need to move to get to new range
