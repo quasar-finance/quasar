@@ -51,10 +51,13 @@ pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 /// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade // TODO: Deprecate!
 #[cw_serde]
+#[deprecated]
 pub enum MigrationStatus {
     Open,
     Closed,
 }
+
+#[deprecated]
 pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
 
 /// POOL_CONFIG
@@ -110,21 +113,6 @@ pub struct CurrentDeposit {
 }
 
 pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
-
-#[cw_serde]
-pub enum RewardsStatus {
-    Ready,
-    Collecting,
-    Distributing,
-}
-
-/// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-#[deprecated]
-pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
-
-/// Shared collection+distribution states
-#[deprecated]
-pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
 /// Swap helper states
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
