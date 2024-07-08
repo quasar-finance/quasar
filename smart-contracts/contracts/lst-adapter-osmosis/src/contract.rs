@@ -1,5 +1,3 @@
-use std::cmp::min;
-
 use crate::error::{assert_observer, assert_vault};
 use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
@@ -8,36 +6,30 @@ use crate::state::{
     Denoms, IbcConfig, UnbondInfo, UnbondStatus, DENOMS, IBC_CONFIG, OBSERVER, ORACLE, OWNER,
     REDEEMED_BALANCE, TOTAL_BALANCE, UNBONDING, UNBOND_PERIOD_SECS, VAULT,
 };
-use crate::{
-    LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_NAME, LST_ADAPTER_OSMOSIS_VERSION,
-};
+use crate::{LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_VERSION};
 #[cfg(not(target_arch = "wasm32"))]
 use abstract_app::abstract_interface::AbstractInterfaceError;
 use abstract_app::{abstract_interface, AppContract};
 use abstract_sdk::{AbstractResponse, IbcInterface, TransferInterface};
-use abstract_std::ibc::{CallbackResult, IbcResponseMsg};
 #[cfg(not(target_arch = "wasm32"))]
 use abstract_std::manager::ModuleInstallConfig;
 use abstract_std::objects::chain_name::ChainName;
 use cosmwasm_std::{
-    coins, to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env, Event,
-    IbcMsg, IbcTimeout, IbcTimeoutBlock, MessageInfo, Response, StdError, StdResult, Storage,
-    Timestamp, Uint128,
+    coin, coins, to_json_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env,
+    MessageInfo, QuerierWrapper, Response, StdError, StdResult, Storage, Timestamp, Uint128,
 };
 use ica_oracle::msg::{
     QueryMsg as StrideQueryMsg, RedemptionRateResponse as StrideRedemptionRateResponse,
 };
 use mars_owner::OwnerInit::SetInitialOwner;
-use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::ibc::applications::transfer::v1::MsgTransfer;
 use osmosis_std::types::ibc::core::client::v1::Height;
 use prost::Message;
 use quasar_types::{
     error::assert_funds_single_token,
+    query::query_contract_balance,
     stride::{get_autopilot_msg, Action},
 };
-
-const IBC_MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
 pub type LstAdapterResult<T = Response> = Result<T, LstAdapterError>;
 
@@ -176,12 +168,10 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     let denoms = DENOMS.load(deps.storage)?;
     assert_funds_single_token(&info.funds, &denoms.lst)?;
     let redemption_rate = query_redemption_rate(deps.as_ref())?;
-    let unbond_balance = deps
-        .querier
-        .query_balance(env.contract.address, denoms.lst)?;
+    let unbond_amount = query_contract_balance(&deps.querier, &env, &denoms.lst)?;
     let pending = record_pending_unbond(
         deps.storage,
-        unbond_balance.amount.checked_mul_floor(redemption_rate)?,
+        unbond_amount.checked_mul_floor(redemption_rate)?,
         env.block.time,
     )?;
 
@@ -190,7 +180,7 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
         return Ok(response);
     }
 
-    let unbond_funds = vec![unbond_balance];
+    let unbond_funds = coins(unbond_amount.into(), denoms.lst);
     let mut transfer_msgs = app.bank(deps.as_ref()).deposit(unbond_funds.clone())?;
     let ibc_client = app.ibc_client(deps.as_ref());
     let ibc_msg = ibc_client.ics20_transfer(
@@ -309,10 +299,7 @@ fn confirm_unbond_finished(
         }
         let mut redeemed_balance = REDEEMED_BALANCE.load(deps.storage)?;
         let denoms = DENOMS.load(deps.storage)?;
-        let contract_balance = deps
-            .querier
-            .query_balance(env.contract.address.clone(), denoms.underlying)?
-            .amount;
+        let contract_balance = query_contract_balance(&deps.querier, &env, &denoms.underlying)?;
         redeemed_balance += unbond_info.amount;
         if redeemed_balance > contract_balance {
             return Err(LstAdapterError::StillWaitingForFunds {});
@@ -411,11 +398,9 @@ fn update(
 fn get_balance(deps: Deps, env: Env) -> Result<Uint128, LstAdapterError> {
     let total_balance = TOTAL_BALANCE.load(deps.storage)?;
     let denoms = DENOMS.load(deps.storage)?;
-    let lst_balance = deps
-        .querier
-        .query_balance(env.contract.address, denoms.lst)?;
+    let lst_balance = query_contract_balance(&deps.querier, &env, &denoms.lst)?;
     let redemption_rate = query_redemption_rate(deps)?;
-    Ok(total_balance.checked_add(lst_balance.amount.checked_mul_floor(redemption_rate)?)?)
+    Ok(total_balance.checked_add(lst_balance.checked_mul_floor(redemption_rate)?)?)
 }
 
 pub fn query_(
@@ -449,9 +434,10 @@ pub fn query_(
 
 fn get_underlying_balance(deps: &Deps, env: &Env) -> StdResult<Coin> {
     let denoms = DENOMS.load(deps.storage)?;
-    Ok(deps
-        .querier
-        .query_balance(env.contract.address.clone(), denoms.underlying)?)
+    Ok(coin(
+        query_contract_balance(&deps.querier, &env, &denoms.underlying)?.into(),
+        denoms.underlying,
+    ))
 }
 
 fn get_active_unbonding(deps: &Deps, time: Timestamp) -> StdResult<Vec<UnbondInfo>> {
