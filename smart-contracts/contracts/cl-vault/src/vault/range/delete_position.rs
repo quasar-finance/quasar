@@ -6,6 +6,11 @@ use crate::{
     ContractError,
 };
 
+/// Delete a positon and remove it from being tracked in the vault.
+/// Any position should be deleted explicitly through this method instead of withdrawing the entire
+/// liquidity.
+/// The main position of the vault cannot be deleted, but can only have less
+/// than the total liquidity removed from it.
 pub fn delete_position(
     deps: DepsMut,
     env: &Env,

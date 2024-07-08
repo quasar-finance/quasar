@@ -13,8 +13,8 @@ use crate::{
     ContractError,
 };
 
-/// increase the amount of funds in a position. These funds have to be part of the free funds
-/// Any refund is then again ignored
+/// increase the amount of funds in a position. These funds have to be part of the free balance
+/// Any refund is then again ignored and returned to the free balance of the contract
 pub fn increase_position_funds(
     deps: DepsMut,
     env: &Env,
@@ -85,7 +85,6 @@ pub fn handle_range_add_to_position_reply(
 /// decrease the amount of funds in a position, these funds are returned to the vaults free balance.
 /// To completely withdraw a position, use delete position
 pub fn decrease_position_funds(
-    deps: DepsMut,
     env: &Env,
     position_id: u64,
     liquidity: Decimal256,

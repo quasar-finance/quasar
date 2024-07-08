@@ -11,6 +11,8 @@ use crate::{
     ContractError,
 };
 
+/// Create a new position using the free balance in the contract. The entire fee balance will be used 
+/// to create this position
 pub fn create_new_position(
     deps: DepsMut,
     env: &Env,
