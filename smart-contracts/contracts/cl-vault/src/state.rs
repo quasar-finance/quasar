@@ -154,7 +154,7 @@ pub struct ModifyRangeState {
     // whether or not to force the swap route
     pub force_swap_route: bool,
     // only claim the created position after claim_after amount of seconds
-    pub claim_after: u64,
+    pub claim_after_secs: u64,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
