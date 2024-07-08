@@ -2206,6 +2206,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ica-oracle"
+version = "1.0.0"
+source = "git+https://github.com/Stride-Labs/ica-oracle?tag=v1.0.0#2fdf76f3ba4fad6a20a6d10d77c0511f2439b6c3"
+dependencies = [
+ "cosmwasm-schema 1.5.4",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "hex",
+ "sha2 0.10.8",
+ "thiserror",
+]
+
+[[package]]
 name = "ics23"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2354,6 +2368,7 @@ dependencies = [
  "cw-orch-interchain",
  "cw-storage-plus",
  "ibc-relayer-types",
+ "ica-oracle",
  "mars-owner",
  "osmosis-std",
  "prost 0.12.6",

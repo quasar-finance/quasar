@@ -1,5 +1,9 @@
-use crate::{contract::LstAdapter, state::IbcConfig};
+use crate::{
+    contract::LstAdapter,
+    state::{Denoms, IbcConfig, UnbondInfo},
+};
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Decimal, Timestamp, Uint128};
 use mars_owner::OwnerUpdate;
 
 abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMsg);
@@ -8,7 +12,10 @@ abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMs
 pub struct LstAdapterInstantiateMsg {
     pub owner: String,
     pub vault: String,
-    pub lst_denom: String,
+    pub observer: String,
+    pub denoms: Denoms,
+    pub stride_oracle: String,
+    pub unbond_period_secs: u64,
 }
 
 #[cw_serde]
@@ -17,19 +24,31 @@ pub struct LstAdapterMigrateMsg {}
 #[cw_serde]
 #[derive(cw_orch::ExecuteFns)]
 pub enum LstAdapterExecuteMsg {
-    // Only configured vault can execute unbonds
+    // vault methods
     #[cw_orch(payable)]
     Unbond {},
+    Claim {},
+    // observer methods
+    ConfirmUnbond {
+        amount: Uint128,
+    },
+    ConfirmUnbondFinished {
+        unbond_start_time: Timestamp,
+    },
+    // owner methods
     UpdateIbcConfig {
-        remote_chain: String,
         channel: String,
+        remote_chain: String,
         revision: Option<u64>,
         block_offset: Option<u64>,
         timeout_secs: Option<u64>,
     },
     Update {
+        denoms: Option<Denoms>,
+        stride_oracle: Option<String>,
         vault: Option<String>,
-        lst_denom: Option<String>,
+        observer: Option<String>,
+        unbond_period_secs: Option<u64>,
     },
     UpdateOwner(OwnerUpdate),
 }
@@ -44,5 +63,13 @@ pub enum LstAdapterQueryMsg {
     #[returns(String)]
     Vault {},
     #[returns(String)]
-    LstDenom {},
+    Oracle {},
+    #[returns(Denoms)]
+    Denoms {},
+    #[returns(Decimal)]
+    RedemptionRate {},
+    #[returns(Vec<UnbondInfo>)]
+    PendingUnbonds {},
+    #[returns(Uint128)]
+    BalanceInUnderlying {},
 }

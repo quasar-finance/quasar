@@ -1,5 +1,5 @@
-use std::str::FromStr;
-
+use crate::state::Denoms;
+use crate::tests::fake_stride_oracle::{FakeStrideOracle, FakeStrideOracleInstantiateMsg};
 use abstract_cw_orch_polytone::Polytone;
 use abstract_interface::{
     Abstract, AbstractAccount, AccountDetails, AppDeployer, DeployStrategy, ManagerExecFns,
@@ -10,11 +10,13 @@ use abstract_std::ibc_client::{ExecuteMsgFns, QueryMsgFns};
 use abstract_std::objects::UncheckedChannelEntry;
 use abstract_std::objects::{account::AccountTrace, chain_name::ChainName, AccountId};
 use abstract_std::ICS20;
+use cosmwasm_std::Decimal;
 use cw_orch::mock::cw_multi_test::MockApiBech32;
 use cw_orch::mock::MockBase;
 use cw_orch::{anyhow, prelude::*};
 use cw_orch_interchain::{prelude::*, InterchainError};
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
+use std::str::FromStr;
 
 use crate::msg::LstAdapterInstantiateMsg;
 use crate::{
@@ -25,6 +27,8 @@ use crate::{
 const TEST_ACCOUNT_NAME: &str = "account-test";
 const TEST_ACCOUNT_DESCRIPTION: &str = "Description of an account";
 const TEST_ACCOUNT_LINK: &str = "https://google.com";
+pub const UNBOND_PERIOD: u64 = 1234u64;
+pub const REDEMPTION_RATE_PERCENT: u64 = 123;
 
 pub fn create_test_remote_account<Chain: IbcQueryHandler, IBC: InterchainEnv<Chain>>(
     abstr_origin: &Abstract<Chain>,
@@ -173,6 +177,7 @@ pub fn ibc_abstract_setup<Chain: IbcQueryHandler, IBC: InterchainEnv<Chain>>(
 }
 
 pub const LST_DENOM: &str = "lst_denom";
+pub const DENOM: &str = "uosmo";
 pub const STARGAZE: &str = "stargaze-1";
 pub const OSMOSIS: &str = "osmosis-1";
 
@@ -182,13 +187,10 @@ pub struct TestEnv {
     pub origin_account: AbstractAccount<MockBase<MockApiBech32>>,
     pub remote_account_id: AccountId,
     pub abstr_remote: Abstract<MockBase<MockApiBech32>>,
+    pub oracle_app: FakeStrideOracle<MockBase<MockApiBech32>>,
 }
 
-pub fn create_app(
-    sender_balance: Vec<Coin>,
-    vault: Option<String>,
-    owner: Option<String>,
-) -> anyhow::Result<TestEnv> {
+pub fn create_app(sender_balance: Vec<Coin>, vault: Option<String>) -> anyhow::Result<TestEnv> {
     let mock = MockBech32InterchainEnv::new(vec![(OSMOSIS, "osmosis"), (STARGAZE, "stargaze")]);
 
     let (abstr_origin, abstr_remote) = ibc_abstract_setup(&mock, OSMOSIS, STARGAZE)?;
@@ -201,11 +203,7 @@ pub fn create_app(
     } else {
         mock.chain(OSMOSIS)?.sender()
     };
-    let owner = if let Some(owner) = owner {
-        mock.chain(OSMOSIS)?.addr_make(owner)
-    } else {
-        mock.chain(OSMOSIS)?.sender()
-    };
+    let owner = mock.chain(OSMOSIS)?.sender();
 
     if !sender_balance.is_empty() {
         mock.chain(OSMOSIS)?
@@ -224,12 +222,26 @@ pub fn create_app(
 
     app.deploy(LST_ADAPTER_OSMOSIS_VERSION.parse()?, DeployStrategy::Try)?;
 
+    let oracle_app: FakeStrideOracle<MockBech32> =
+        FakeStrideOracle::new("fake-stride-oracle", mock.chain(OSMOSIS)?.clone());
+    oracle_app.upload()?;
+    let init_msg = FakeStrideOracleInstantiateMsg {
+        redemption_rate: Decimal::percent(REDEMPTION_RATE_PERCENT),
+    };
+    oracle_app.instantiate(&init_msg, None, None)?;
+
     origin_account.install_app(
         &app,
         &LstAdapterInstantiateMsg {
             owner: owner.to_string(),
-            lst_denom: LST_DENOM.to_string(),
+            denoms: Denoms {
+                lst: LST_DENOM.to_string(),
+                underlying: DENOM.to_string(),
+            },
             vault: vault.to_string(),
+            observer: vault.to_string(),
+            stride_oracle: oracle_app.addr_str()?,
+            unbond_period_secs: UNBOND_PERIOD,
         },
         None,
     )?;
@@ -282,5 +294,6 @@ pub fn create_app(
         origin_account,
         remote_account_id,
         abstr_remote,
+        oracle_app,
     })
 }

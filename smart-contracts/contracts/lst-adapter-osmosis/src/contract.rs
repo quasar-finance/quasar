@@ -1,8 +1,13 @@
-use crate::error::assert_vault;
+use std::cmp::min;
+
+use crate::error::{assert_observer, assert_vault};
 use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
 };
-use crate::state::{IbcConfig, IBC_CONFIG, LST_DENOM, OWNER, VAULT};
+use crate::state::{
+    Denoms, IbcConfig, UnbondInfo, UnbondStatus, DENOMS, IBC_CONFIG, OBSERVER, ORACLE, OWNER,
+    REDEEMED_BALANCE, TOTAL_BALANCE, UNBONDING, UNBOND_PERIOD_SECS, VAULT,
+};
 use crate::{
     LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_NAME, LST_ADAPTER_OSMOSIS_VERSION,
 };
@@ -15,8 +20,12 @@ use abstract_std::ibc::{CallbackResult, IbcResponseMsg};
 use abstract_std::manager::ModuleInstallConfig;
 use abstract_std::objects::chain_name::ChainName;
 use cosmwasm_std::{
-    to_json_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, IbcMsg, IbcTimeout,
-    IbcTimeoutBlock, MessageInfo, Response,
+    coins, to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Decimal, Deps, DepsMut, Env, Event,
+    IbcMsg, IbcTimeout, IbcTimeoutBlock, MessageInfo, Response, StdError, StdResult, Storage,
+    Timestamp, Uint128,
+};
+use ica_oracle::msg::{
+    QueryMsg as StrideQueryMsg, RedemptionRateResponse as StrideRedemptionRateResponse,
 };
 use mars_owner::OwnerInit::SetInitialOwner;
 use osmosis_std::cosmwasm_to_proto_coins;
@@ -29,7 +38,6 @@ use quasar_types::{
 };
 
 const IBC_MSG_TRANSFER_TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
-const IBC_QUERY_REDEMPTION_RATE_ID: &str = "redemption_rate";
 
 pub type LstAdapterResult<T = Response> = Result<T, LstAdapterError>;
 
@@ -45,8 +53,7 @@ const APP: LstAdapter = LstAdapter::new(LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMO
     .with_instantiate(instantiate_)
     .with_execute(execute_)
     .with_query(query_)
-    .with_migrate(migrate_)
-    .with_ibc_callbacks(&[(IBC_QUERY_REDEMPTION_RATE_ID, redemption_rate_callback)]);
+    .with_migrate(migrate_);
 
 #[cfg(feature = "export")]
 abstract_app::export_endpoints!(APP, LstAdapter);
@@ -75,7 +82,13 @@ pub fn instantiate_(
 ) -> LstAdapterResult {
     OWNER.initialize(deps.storage, deps.api, SetInitialOwner { owner: msg.owner })?;
     VAULT.save(deps.storage, &deps.api.addr_validate(&msg.vault)?)?;
-    LST_DENOM.save(deps.storage, &msg.lst_denom)?;
+    OBSERVER.save(deps.storage, &deps.api.addr_validate(&msg.observer)?)?;
+    DENOMS.save(deps.storage, &msg.denoms)?;
+    ORACLE.save(deps.storage, &deps.api.addr_validate(&msg.stride_oracle)?)?;
+    UNBONDING.save(deps.storage, &vec![])?;
+    UNBOND_PERIOD_SECS.save(deps.storage, &msg.unbond_period_secs)?;
+    REDEEMED_BALANCE.save(deps.storage, &Uint128::zero())?;
+    TOTAL_BALANCE.save(deps.storage, &Uint128::zero())?;
     Ok(Response::default())
 }
 
@@ -88,6 +101,11 @@ pub fn execute_(
 ) -> LstAdapterResult {
     match msg {
         LstAdapterExecuteMsg::Unbond {} => unbond(deps, env, info, app),
+        LstAdapterExecuteMsg::ConfirmUnbond { amount } => confirm_unbond(deps, info, app, amount),
+        LstAdapterExecuteMsg::ConfirmUnbondFinished { unbond_start_time } => {
+            confirm_unbond_finished(deps, env, info, app, unbond_start_time)
+        }
+        LstAdapterExecuteMsg::Claim {} => claim(deps, env, info, app),
         LstAdapterExecuteMsg::UpdateIbcConfig {
             remote_chain,
             channel,
@@ -105,22 +123,79 @@ pub fn execute_(
             timeout_secs,
         ),
         LstAdapterExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
-        LstAdapterExecuteMsg::Update { vault, lst_denom } => {
-            update(deps, info, app, vault, lst_denom)
-        }
+        LstAdapterExecuteMsg::Update {
+            vault,
+            denoms,
+            observer,
+            stride_oracle,
+            unbond_period_secs: unbond_period,
+        } => update(
+            deps,
+            info,
+            app,
+            vault,
+            observer,
+            denoms,
+            stride_oracle,
+            unbond_period,
+        ),
     }
+}
+
+fn record_pending_unbond(
+    storage: &mut dyn Storage,
+    amount: Uint128,
+    time: Timestamp,
+) -> Result<bool, LstAdapterError> {
+    let mut unbonding = UNBONDING.load(storage)?;
+    let pending = unbonding
+        .last()
+        .map(|info| info.status.clone())
+        .unwrap_or(UnbondStatus::Confirmed)
+        == UnbondStatus::Unconfirmed;
+    if !pending {
+        unbonding.push(UnbondInfo {
+            amount,
+            unbond_start: time,
+            status: UnbondStatus::Unconfirmed,
+        });
+        UNBONDING.save(storage, &unbonding)?;
+        TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
+            balance
+                .checked_add(amount)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })
+        })?;
+    }
+    Ok(pending)
 }
 
 fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
     assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
-    let lst_denom = LST_DENOM.load(deps.storage)?;
-    assert_funds_single_token(&info.funds, &lst_denom)?;
+    let denoms = DENOMS.load(deps.storage)?;
+    assert_funds_single_token(&info.funds, &denoms.lst)?;
+    let redemption_rate = query_redemption_rate(deps.as_ref())?;
+    let unbond_balance = deps
+        .querier
+        .query_balance(env.contract.address, denoms.lst)?;
+    let pending = record_pending_unbond(
+        deps.storage,
+        unbond_balance.amount.checked_mul_floor(redemption_rate)?,
+        env.block.time,
+    )?;
 
-    let mut transfer_msgs = app.bank(deps.as_ref()).deposit(info.funds.clone())?;
+    let response = app.response("unbond");
+    if pending {
+        return Ok(response);
+    }
+
+    let unbond_funds = vec![unbond_balance];
+    let mut transfer_msgs = app.bank(deps.as_ref()).deposit(unbond_funds.clone())?;
     let ibc_client = app.ibc_client(deps.as_ref());
     let ibc_msg = ibc_client.ics20_transfer(
         ChainName::from_chain_id("stargaze-1").to_string(),
-        info.funds.clone(),
+        unbond_funds,
     )?;
     transfer_msgs.push(ibc_msg);
 
@@ -139,6 +214,7 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     //     remote_addr.as_ref(),
     //     Some(env.contract.address.to_string()),
     // );
+    // let timeout_timestamp = if let Some(timeout_secs) = ibc_config.timeout_secs { env.block.time.nanos() + timeout_secs * 1_000_000_000 } else { 0u64 };
     // let msg = MsgTransfer {
     //     source_port: "transfer".to_string(),
     //     source_channel: ibc_config.channel,
@@ -149,13 +225,134 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     //         revision_number: 5,
     //         revision_height: env.block.height + 5,
     //     }),
-    //     timeout_timestamp: env.block.time.nanos()
-    //         + ibc_config.timeout_secs.unwrap_or_default() * 1_000_000_000,
+    //     timeout_timestamp,
     //     memo: serde_json::to_string(&autopilot_redeem_msg)
     //         .map_err(|err| LstAdapterError::Json(err.to_string()))?,
     // };
     // Ok(app.response("unbond").add_message(msg))
-    Ok(app.response("unbond").add_messages(transfer_msgs))
+    Ok(response.add_messages(transfer_msgs))
+}
+
+fn adjust_total_balance(
+    storage: &mut dyn Storage,
+    amount: Uint128,
+    final_amount: Uint128,
+) -> StdResult<()> {
+    if final_amount == amount {
+    } else if final_amount > amount {
+        TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
+            balance
+                .checked_add(final_amount)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })?
+                .checked_sub(amount)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })
+        })?;
+    } else {
+        TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
+            balance
+                .checked_add(amount)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })?
+                .checked_sub(final_amount)
+                .map_err(|err| StdError::GenericErr {
+                    msg: err.to_string(),
+                })
+        })?;
+    }
+    Ok(())
+}
+
+fn confirm_unbond(
+    deps: DepsMut,
+    info: MessageInfo,
+    app: LstAdapter,
+    amount: Uint128,
+) -> LstAdapterResult {
+    assert_observer(&info.sender, &OBSERVER.load(deps.storage)?)?;
+    let mut unbonding = UNBONDING.load(deps.storage)?;
+    let last = unbonding.last_mut();
+    if let Some(last) = last {
+        if last.status == UnbondStatus::Unconfirmed {
+            last.status = UnbondStatus::Confirmed;
+            adjust_total_balance(deps.storage, last.amount, amount)?;
+            last.amount = amount;
+            UNBONDING.save(deps.storage, &unbonding)?;
+
+            return Ok(app.response("confirm unbond"));
+        }
+    }
+
+    Err(LstAdapterError::NothingToConfirm {})
+}
+
+fn confirm_unbond_finished(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    app: LstAdapter,
+    unbond_start_time: Timestamp,
+) -> LstAdapterResult {
+    assert_observer(&info.sender, &OBSERVER.load(deps.storage)?)?;
+    let mut unbonding = UNBONDING.load(deps.storage)?;
+    let unbond_info = unbonding.iter().find(|info| {
+        info.status == UnbondStatus::Confirmed && info.unbond_start == unbond_start_time
+    });
+    if let Some(unbond_info) = unbond_info {
+        let unbond_period_secs = UNBOND_PERIOD_SECS.load(deps.storage)?;
+        if unbond_info.unbond_start.seconds() + unbond_period_secs > env.block.time.seconds() {
+            return Err(LstAdapterError::NothingToConfirm {});
+        }
+        let mut redeemed_balance = REDEEMED_BALANCE.load(deps.storage)?;
+        let denoms = DENOMS.load(deps.storage)?;
+        let contract_balance = deps
+            .querier
+            .query_balance(env.contract.address.clone(), denoms.underlying)?
+            .amount;
+        redeemed_balance += unbond_info.amount;
+        if redeemed_balance > contract_balance {
+            return Err(LstAdapterError::StillWaitingForFunds {});
+        }
+        REDEEMED_BALANCE.save(deps.storage, &redeemed_balance)?;
+        unbonding.pop();
+        UNBONDING.save(deps.storage, &unbonding)?;
+        return Ok(app.response("confirm unbond finished"));
+    }
+
+    Err(LstAdapterError::NoPendingUnbond {})
+}
+
+fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
+    assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
+    let underlying_balance = get_underlying_balance(&deps.as_ref(), &env)?;
+    let total_balance = TOTAL_BALANCE.load(deps.storage)?;
+    let unbonding = UNBONDING.load(deps.storage)?;
+    let unbonding_amount = unbonding.iter().map(get_info_amount).sum();
+    if underlying_balance.amount.is_zero() || total_balance <= unbonding_amount {
+        return Err(LstAdapterError::NothingToClaim {});
+    }
+
+    let redeemed_balance = REDEEMED_BALANCE.load(deps.storage)?;
+    REDEEMED_BALANCE.save(deps.storage, &Uint128::zero())?;
+    let msg = BankMsg::Send {
+        to_address: info.sender.to_string(),
+        amount: vec![underlying_balance.clone()],
+    };
+
+    let unbonding = get_active_unbonding(&deps.as_ref(), env.block.time)?;
+    UNBONDING.save(deps.storage, &unbonding)?;
+    TOTAL_BALANCE.update(deps.storage, |balance| -> StdResult<Uint128> {
+        balance
+            .checked_sub(redeemed_balance)
+            .map_err(|err| StdError::GenericErr {
+                msg: err.to_string(),
+            })
+    })?;
+    Ok(app.response("claim").add_message(msg))
 }
 
 fn update_ibc_config(
@@ -173,10 +370,10 @@ fn update_ibc_config(
         deps.storage,
         &IbcConfig {
             remote_chain,
+            channel,
             revision,
             block_offset,
             timeout_secs,
-            channel,
         },
     )?;
     Ok(app.response("update ibc config"))
@@ -187,35 +384,43 @@ fn update(
     info: MessageInfo,
     app: LstAdapter,
     vault: Option<String>,
-    lst_denom: Option<String>,
+    observer: Option<String>,
+    denoms: Option<Denoms>,
+    stride_oracle: Option<String>,
+    unbond_period: Option<u64>,
 ) -> LstAdapterResult {
     OWNER.assert_owner(deps.storage, &info.sender)?;
     if let Some(vault) = vault {
         VAULT.save(deps.storage, &deps.api.addr_validate(&vault)?)?;
     }
-    if let Some(lst_denom) = lst_denom {
-        LST_DENOM.save(deps.storage, &lst_denom)?;
+    if let Some(observer) = observer {
+        OBSERVER.save(deps.storage, &deps.api.addr_validate(&observer)?)?;
+    }
+    if let Some(denoms) = denoms {
+        DENOMS.save(deps.storage, &denoms)?;
+    }
+    if let Some(stride_oracle) = stride_oracle {
+        ORACLE.save(deps.storage, &deps.api.addr_validate(&stride_oracle)?)?;
+    }
+    if let Some(unbond_period) = unbond_period {
+        UNBOND_PERIOD_SECS.save(deps.storage, &unbond_period)?;
     }
     Ok(app.response("update"))
 }
 
-fn redemption_rate_callback(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    app: LstAdapter,
-    msg: IbcResponseMsg,
-) -> LstAdapterResult {
-    match msg.result {
-        CallbackResult::Query { query: _, result } => if let Ok(result) = result {},
-        _ => panic!("Expected query result"),
-    }
-    Ok(Response::default())
+fn get_balance(deps: Deps, env: Env) -> Result<Uint128, LstAdapterError> {
+    let total_balance = TOTAL_BALANCE.load(deps.storage)?;
+    let denoms = DENOMS.load(deps.storage)?;
+    let lst_balance = deps
+        .querier
+        .query_balance(env.contract.address, denoms.lst)?;
+    let redemption_rate = query_redemption_rate(deps)?;
+    Ok(total_balance.checked_add(lst_balance.amount.checked_mul_floor(redemption_rate)?)?)
 }
 
 pub fn query_(
     deps: Deps,
-    _env: Env,
+    env: Env,
     _app: &LstAdapter,
     msg: LstAdapterQueryMsg,
 ) -> LstAdapterResult<Binary> {
@@ -230,8 +435,47 @@ pub fn query_(
                 .unwrap_or_default(),
         )?),
         LstAdapterQueryMsg::Vault {} => Ok(to_json_binary(&VAULT.load(deps.storage)?.to_string())?),
-        LstAdapterQueryMsg::LstDenom {} => Ok(to_json_binary(&LST_DENOM.load(deps.storage)?)?),
+        LstAdapterQueryMsg::Oracle {} => {
+            Ok(to_json_binary(&ORACLE.load(deps.storage)?.to_string())?)
+        }
+        LstAdapterQueryMsg::Denoms {} => Ok(to_json_binary(&DENOMS.load(deps.storage)?)?),
+        LstAdapterQueryMsg::RedemptionRate {} => Ok(to_json_binary(&query_redemption_rate(deps)?)?),
+        LstAdapterQueryMsg::PendingUnbonds {} => {
+            Ok(to_json_binary(&UNBONDING.load(deps.storage)?)?)
+        }
+        LstAdapterQueryMsg::BalanceInUnderlying {} => Ok(to_json_binary(&get_balance(deps, env)?)?),
     }
+}
+
+fn get_underlying_balance(deps: &Deps, env: &Env) -> StdResult<Coin> {
+    let denoms = DENOMS.load(deps.storage)?;
+    Ok(deps
+        .querier
+        .query_balance(env.contract.address.clone(), denoms.underlying)?)
+}
+
+fn get_active_unbonding(deps: &Deps, time: Timestamp) -> StdResult<Vec<UnbondInfo>> {
+    let unbonding = UNBONDING.load(deps.storage)?;
+    let unbond_period_secs = UNBOND_PERIOD_SECS.load(deps.storage)?;
+    Ok(unbonding
+        .into_iter()
+        .filter(|info| info.unbond_start.plus_seconds(unbond_period_secs) > time)
+        .collect())
+}
+
+fn get_info_amount(info: &UnbondInfo) -> Uint128 {
+    info.amount
+}
+
+fn query_redemption_rate(deps: Deps) -> StdResult<Decimal> {
+    let response: StrideRedemptionRateResponse = deps.querier.query_wasm_smart(
+        ORACLE.load(deps.storage)?,
+        &StrideQueryMsg::RedemptionRate {
+            denom: DENOMS.load(deps.storage)?.lst,
+            params: None,
+        },
+    )?;
+    Ok(response.redemption_rate)
 }
 
 pub fn migrate_(
