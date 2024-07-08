@@ -241,6 +241,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 /// This leaves us with the correct setting of POSITIONS, MAIN_POSITION_ID and the removal of POSITION
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     // position was left unaltered so we don't need to change this
     const POSITION: Item<Position> = Item::new("position");
 
@@ -254,6 +256,8 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     Ok(Response::new()
         .add_attribute("migrate", "succesful")
         .add_attribute("main_position", position.position_id.to_string())
+        .add_attribute("contract_name", CONTRACT_NAME)
+        .add_attribute("contract_version", CONTRACT_VERSION)
     )
 }
 
@@ -273,6 +277,7 @@ mod tests {
         Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
     };
     use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
+    use cw2::assert_contract_version;
     use prost::Message;
     use std::str::FromStr;
 
@@ -290,5 +295,36 @@ mod tests {
         };
 
     use super::*;
+
+    #[test]
+    fn migrate_positions_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        const POSITION: Item<Position> = Item::new("position");
+        let position = Position { position_id: 2, join_time: 3, claim_after: None };
+        POSITION.save(deps.as_mut().storage, &position).unwrap();
+        
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {  }).unwrap();
+
+        assert!(!POSITION.exists(deps.as_ref().storage));
+        assert_eq!(MAIN_POSITION_ID.load(deps.as_ref().storage).unwrap(), position.position_id);
+        assert_eq!(POSITIONS.load(deps.as_ref().storage, position.position_id).unwrap(), position)
+    }
+
+    #[test]
+    fn migrate_cw2_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        const POSITION: Item<Position> = Item::new("position");
+        POSITION.save(deps.as_mut().storage, &Position { position_id: 2, join_time: 3, claim_after: None }).unwrap();
+
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {  }).unwrap();
+
+        assert_contract_version(deps.as_mut().storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
+    }
 }
 }
