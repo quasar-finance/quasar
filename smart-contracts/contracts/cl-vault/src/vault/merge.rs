@@ -63,7 +63,7 @@ pub fn execute_merge_position(
                 range = Some(CurrentMergePosition {
                     lower_tick: p.lower_tick,
                     upper_tick: p.upper_tick,
-                    claim_after: position.claim_after,
+                    claim_after_secs: position.claim_after,
                 })
             }
 
@@ -211,7 +211,7 @@ pub fn handle_merge_create_position_reply(
         &Position {
             position_id: response.position_id,
             join_time: env.block.time.seconds(),
-            claim_after: cur.claim_after,
+            claim_after: cur.claim_after_secs,
         },
     )?;
 

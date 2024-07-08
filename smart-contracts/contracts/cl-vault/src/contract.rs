@@ -4,6 +4,7 @@ use cosmwasm_std::{
     to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
 };
 use cw2::set_contract_version;
+use cw_storage_plus::Item;
 
 use crate::error::ContractError;
 use crate::helpers::sort_tokens;
@@ -21,6 +22,7 @@ use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
 };
+use crate::state::{Position, MAIN_POSITION_ID, POSITIONS};
 #[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
@@ -214,39 +216,41 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
     }
 }
 
+/// For migrating from single position to multirange, we need to take do the following:
+/// - Take the current position of the vault
+///   - Save that position as the main positon
+///   - Save that position as a position in the POSITIONS map
+/// - remove the position from the old key
+/// For review verification, the following items are changed:
+/// - POSITION (removed)
+/// - POSITIONS (newly added)
+/// - MAIN_POSITION_ID (newly added)
+/// - CURRENT_POSITION_ID (newly added)
+/// - CURRENT_CLAIM_AFTER (newly added)
+/// - MERGE_MAIN_POSITION (newly added)
+/// and claim_after_secs is added to
+/// - CurrentMergePosition
+/// - ModifyRangeState
+/// 
+/// Of these changed items CURRENT_POSITION_ID, CURRENT_CLAIM_AFTER, MERGE_MAIN_POSITION, CurrentMergePosition and ModifyRangeState
+/// are set before they are are read, so do not need to be set in the migrations (reviewers should verify this).
+/// This leaves us with the correct setting of POSITIONS, MAIN_POSITION_ID and the removal of POSITION
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-    let new_vault_config = VaultConfig {
-        performance_fee: old_vault_config.performance_fee,
-        treasury: old_vault_config.treasury,
-        swap_max_slippage: old_vault_config.swap_max_slippage,
-        dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-    };
+    // position was left unaltered so we don't need to change this
+    const POSITION: Item<Position> = Item::new("position");
 
-    OLD_VAULT_CONFIG.remove(deps.storage);
-    VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
+    let position = POSITION.load(deps.storage)?;
 
-    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
+    MAIN_POSITION_ID.save(deps.storage, &position.position_id)?;
+    POSITIONS.save(deps.storage, position.position_id, &position)?;
 
-    // Declare response object as mut
-    let mut response = Response::new().add_attribute("migrate", "successful");
+    POSITION.remove(deps.storage);
 
-    // Conditionally add a bank send message if the strategist rewards state is not empty
-    #[allow(deprecated)]
-    let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    if !strategist_rewards.is_empty() {
-        let bank_send_msg = BankMsg::Send {
-            to_address: new_vault_config.treasury.to_string(),
-            amount: sort_tokens(strategist_rewards.coins()),
-        };
-        response = response.add_message(bank_send_msg);
-    }
-    // Remove the state
-    #[allow(deprecated)]
-    STRATEGIST_REWARDS.remove(deps.storage);
-
-    Ok(response)
+    Ok(Response::new()
+        .add_attribute("migrate", "succesful")
+        .add_attribute("main_position", position.position_id.to_string())
+    )
 }
 
 #[cfg(test)]
@@ -271,192 +275,4 @@ mod tests {
     use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
 
     use super::*;
-
-    #[test]
-    fn test_migrate_no_rewards() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        // Declare new items for states
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-
-        // Mock a previous state item
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::from_str("0.2").unwrap(),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                },
-            )
-            .unwrap();
-
-        let _ = migrate(
-            deps.as_mut(),
-            env.clone(),
-            MigrateMsg {
-                dex_router: new_dex_router.clone(),
-            },
-        );
-
-        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
-        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
-
-        // Assert new VAULT_CONFIG.dex_router field have correct value
-        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
-        assert_eq!(vault_config.dex_router, new_dex_router);
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Open);
-
-        // Assert STRATEGIST_REWARDS state have been correctly removed by unwrapping the error
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
-
-        // Execute one migration step and assert the correct behavior
-        execute_migration_step(deps.as_mut(), env, Uint128::one()).unwrap();
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Closed);
-    }
-
-    #[test]
-    fn test_migrate_with_rewards_execute_steps() {
-        let env = mock_env();
-        let mut deps = mock_dependencies();
-
-        // Declare new items for states
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-
-        // Mock a previous state item
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::from_str("0.2").unwrap(),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                },
-            )
-            .unwrap();
-
-        // Mock USER_REWARDS in order to have something to iterate over
-        let rewards_coins = vec![
-            coin(1000u128, DENOM_BASE),
-            coin(1000u128, DENOM_QUOTE),
-            coin(1000u128, DENOM_REWARD),
-        ];
-        for i in 0..10 {
-            #[allow(deprecated)]
-            USER_REWARDS
-                .save(
-                    deps.as_mut().storage,
-                    Addr::unchecked(format!("user{}", i)),
-                    &CoinList::from_coins(rewards_coins.clone()),
-                )
-                .unwrap();
-        }
-        // Mock STRATEGIST_REWARDS in order to have something to distribute
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS
-            .save(
-                deps.as_mut().storage,
-                &CoinList::from_coins(rewards_coins.clone()),
-            )
-            .unwrap();
-
-        let migrate_resp = migrate(
-            deps.as_mut(),
-            env.clone(),
-            MigrateMsg {
-                dex_router: new_dex_router.clone(),
-            },
-        )
-        .unwrap();
-        if let Some(SubMsg {
-            msg: CosmosMsg::Bank(BankMsg::Send { to_address, amount }),
-            ..
-        }) = migrate_resp.messages.get(0)
-        {
-            assert_eq!(to_address, "treasury");
-            assert_eq!(amount, &rewards_coins);
-        } else {
-            panic!("Expected BankMsg::Send message in the response");
-        }
-
-        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
-
-        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
-        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
-
-        // Assert new VAULT_CONFIG.dex_router field have correct value
-        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
-        assert_eq!(vault_config.dex_router, new_dex_router);
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Open);
-
-        // Execute 9 migration steps paginating by 2 users_amount.
-        // leaving the last user to close the migration in the last step
-        for i in 0..9 {
-            let migration_step =
-                execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
-
-            assert_multi_send(
-                &migration_step.messages[0].msg,
-                &format!("user{}", i),
-                &rewards_coins,
-            );
-
-            // Assert new MIGRATION_STATUS state have correct value
-            let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-            assert_eq!(migration_status, MigrationStatus::Open);
-        }
-
-        // Execute the last migration step
-        let migration_step =
-            execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
-        assert_multi_send(
-            &migration_step.messages[0].msg,
-            &"user9".to_string(),
-            &rewards_coins,
-        );
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Closed);
-
-        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
-        for i in 0..10 {
-            #[allow(deprecated)]
-            USER_REWARDS
-                .load(deps.as_mut().storage, Addr::unchecked(format!("user{}", i)))
-                .unwrap_err();
-        }
-    }
-
-    fn assert_multi_send(msg: &CosmosMsg, expected_user: &String, user_rewards_coins: &Vec<Coin>) {
-        if let CosmosMsg::Stargate { type_url, value } = msg {
-            // Decode and validate the MsgMultiSend message
-            // This has been decoded manually rather than encoding the expected message because its simpler to assert the values
-            assert_eq!(type_url, "/cosmos.bank.v1beta1.MsgMultiSend");
-            let msg: MsgMultiSend =
-                MsgMultiSend::decode(value.as_slice()).expect("Failed to decode MsgMultiSend");
-            for output in msg.outputs {
-                assert_eq!(&output.address, expected_user);
-                assert_eq!(
-                    output.coins,
-                    cosmwasm_to_proto_coins(user_rewards_coins.iter().cloned())
-                );
-            }
-        } else {
-            panic!("Expected Stargate message type, found another.");
-        }
-    }
 }
