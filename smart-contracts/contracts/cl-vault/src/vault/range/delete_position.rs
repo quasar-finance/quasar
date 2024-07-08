@@ -1,7 +1,7 @@
 use cosmwasm_std::{DepsMut, Env, Response, StdError};
 
 use crate::{
-    state::{MAIN_POSITION, POSITIONS},
+    state::{MAIN_POSITION_ID, POSITIONS},
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
@@ -11,7 +11,7 @@ pub fn delete_position(
     env: &Env,
     position_id: u64,
 ) -> Result<Response, ContractError> {
-    if position_id == MAIN_POSITION.load(deps.storage)? {
+    if position_id == MAIN_POSITION_ID.load(deps.storage)? {
         return Err(ContractError::Std(StdError::generic_err(
             "Cannot delete main position",
         )));

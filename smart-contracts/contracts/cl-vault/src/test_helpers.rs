@@ -25,7 +25,7 @@ use osmosis_std::types::{
 
 use crate::math::tick::tick_to_price;
 use crate::state::{
-    PoolConfig, Position, VaultConfig, MAIN_POSITION, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
+    PoolConfig, Position, VaultConfig, MAIN_POSITION_ID, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
     VAULT_CONFIG,
 };
 
@@ -218,7 +218,7 @@ pub fn mock_deps_with_querier_with_balance(
         )
         .unwrap();
 
-    MAIN_POSITION.save(storage, &1).unwrap();
+    MAIN_POSITION_ID.save(storage, &1).unwrap();
     POSITIONS
         .save(
             storage,
@@ -276,7 +276,7 @@ pub fn mock_deps_with_querier_with_balance_with_positions(
         .unwrap();
 
     let mp = main_position.position.unwrap();
-    MAIN_POSITION.save(storage, &mp.position_id).unwrap();
+    MAIN_POSITION_ID.save(storage, &mp.position_id).unwrap();
     POSITIONS
         .save(
             storage,
@@ -418,7 +418,7 @@ pub fn mock_deps_with_querier(
 
     let storage = &mut deps.storage;
 
-    MAIN_POSITION.save(storage, &position_id).unwrap();
+    MAIN_POSITION_ID.save(storage, &position_id).unwrap();
     POSITIONS
         .save(
             storage,

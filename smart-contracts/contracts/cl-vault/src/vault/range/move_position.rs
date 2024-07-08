@@ -8,7 +8,7 @@ use crate::{
     reply::Replies,
     state::{
         ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP,
-        MAIN_POSITION, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
+        MAIN_POSITION_ID, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
         SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
@@ -604,7 +604,7 @@ pub fn handle_iteration_create_position_reply(
         .target_range_position_ids
         .push(create_position_message.position_id);
 
-    let main = MAIN_POSITION.load(deps.storage)?;
+    let main = MAIN_POSITION_ID.load(deps.storage)?;
     let main_position = swap_deposit_merge_state
         .target_range_position_ids
         .iter()
