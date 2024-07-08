@@ -98,7 +98,7 @@ pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge
 pub struct CurrentMergePosition {
     pub lower_tick: i64,
     pub upper_tick: i64,
-    pub claim_after: Option<u64>,
+    pub claim_after_secs: Option<u64>,
 }
 
 pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("current_merge_position");
