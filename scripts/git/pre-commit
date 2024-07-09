@@ -13,40 +13,64 @@ then
   exit 1
 fi
 
-CONTRACT_NAME=lst-dex-adapter-osmosis
-if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
-then
-  echo "Changes in ${CONTRACT_NAME} contract"
-
-  cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
-  cargo run --bin schema --features schema
-  NEW_CHANGES=$(git diff --name-only origin/main)
-  if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
+update_schemas_and_formatting() {
+  local contract=$1
+  if [[ $CHANGES == *contracts/${contract}* ]]
   then
-    git add schema
+    echo "Changes in ${contract} contract"
+
+    cd ${REPO_ROOT}/smart-contracts/contracts/${contract}
+    cargo run --bin schema --features schema
+    NEW_CHANGES=$(git diff --name-only origin/main)
+    if [[ $NEW_CHANGES == *contracts/${contract}/schema* ]]
+    then
+      git add schema
+    fi
+
+    cargo fmt --all
+    cd ${REPO_ROOT}
+    NEW_CHANGES=$(git diff --name-only origin/main)
+    git add $NEW_CHANGES
   fi
+}
 
-  cargo fmt --all
-  cd ${REPO_ROOT}
-  git add $CHANGES
-fi
+update_schemas_and_formatting lst-dex-adapter-osmosis
+update_schemas_and_formatting dex-router-osmosis
 
-CONTRACT_NAME=dex-router-osmosis
-if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
-then
-  echo "Changes in ${CONTRACT_NAME} contract"
+# CONTRACT_NAME=lst-dex-adapter-osmosis
+# if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
+# then
+#   echo "Changes in ${CONTRACT_NAME} contract"
 
-  cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
+#   cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
+#   cargo run --bin schema --features schema
+#   NEW_CHANGES=$(git diff --name-only origin/main)
+#   if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
+#   then
+#     git add schema
+#   fi
 
-  # update schemas
-  cargo run --bin schema
-  NEW_CHANGES=$(git diff --name-only origin/main)
-  if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
-  then
-    git add schema
-  fi
+#   cargo fmt --all
+#   cd ${REPO_ROOT}
+#   git add $CHANGES
+# fi
 
-  cargo fmt --all
-  cd ${REPO_ROOT}
-  git add $CHANGES
-fi
+# CONTRACT_NAME=dex-router-osmosis
+# if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
+# then
+#   echo "Changes in ${CONTRACT_NAME} contract"
+
+#   cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
+
+#   # update schemas
+#   cargo run --bin schema
+#   NEW_CHANGES=$(git diff --name-only origin/main)
+#   if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
+#   then
+#     git add schema
+#   fi
+
+#   cargo fmt --all
+#   cd ${REPO_ROOT}
+#   git add $CHANGES
+# fi

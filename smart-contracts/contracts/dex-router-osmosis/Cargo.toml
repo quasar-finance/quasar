@@ -26,6 +26,7 @@ name = "schema"
 [features]
 default = []
 library = []
+schema = []
 
 [dependencies]
 cosmwasm-std = { workspace = true }
