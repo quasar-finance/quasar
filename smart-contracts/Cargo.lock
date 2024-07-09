@@ -3815,6 +3815,7 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "dotenv",
  "env_logger",
+ "lst-adapter-osmosis",
  "quasar-types",
  "thiserror",
  "wyndex-bundle",

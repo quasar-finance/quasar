@@ -8,7 +8,6 @@ use cosmwasm_std::StdError;
 use cosmwasm_std::{to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response};
 use cw_asset::AssetError;
 use cw_storage_plus::Item;
-use quasar_types::lst_adapter::RedemptionRate;
 use thiserror::Error;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -102,9 +101,7 @@ pub fn query_(
     msg: FakeLstQueryMsg,
 ) -> Result<Binary, ContractError> {
     match msg {
-        FakeLstQueryMsg::RedemptionRate {} => Ok(to_json_binary(&RedemptionRate {
-            redemption_rate: STATE.load(deps.storage)?,
-        })?),
+        FakeLstQueryMsg::RedemptionRate {} => Ok(to_json_binary(&STATE.load(deps.storage)?)?),
     }
 }
 

@@ -424,15 +424,6 @@ fn get_underlying_balance(deps: &Deps, env: &Env) -> StdResult<Coin> {
     ))
 }
 
-fn get_active_unbonding(deps: &Deps, time: Timestamp) -> StdResult<Vec<UnbondInfo>> {
-    let unbonding = UNBONDING.load(deps.storage)?;
-    let unbond_period_secs = UNBOND_PERIOD_SECS.load(deps.storage)?;
-    Ok(unbonding
-        .into_iter()
-        .filter(|info| info.unbond_start.plus_seconds(unbond_period_secs) > time)
-        .collect())
-}
-
 fn get_info_amount(info: &UnbondInfo) -> Uint128 {
     info.amount
 }

@@ -105,6 +105,19 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "claimable"
+      ],
+      "properties": {
+        "claimable": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }
