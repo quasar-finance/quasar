@@ -53,6 +53,9 @@ pub enum LstAdapterError {
     #[error("Nothing to confirm.")]
     NothingToConfirm {},
 
+    #[error("Unbond is not finished.")]
+    UnbondNotFinished {},
+
     #[error("No pending unbond.")]
     NoPendingUnbond {},
 

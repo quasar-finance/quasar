@@ -8,11 +8,10 @@ repository = "https://github.com/quasar-finance/quasar"
 homepage = "https://quasar.fi"
 documentation = ""
 license = "MPL-2.0"
-description = "A cosmwasm contract for routing swaps"
+description = "A cosmwasm adapter contract for unbonding stride LSTs on osmosis"
 keywords = ["cosmwasm", "lst", "osmosis"]
 
 exclude = [
-  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "lst_adapter_osmosis.wasm",
   "hash.txt",
 ]

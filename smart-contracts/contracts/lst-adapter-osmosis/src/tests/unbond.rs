@@ -312,7 +312,7 @@ fn test_confirm_finished_fails_before_expiration() -> anyhow::Result<()> {
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().downcast::<LstAdapterError>()?,
-        LstAdapterError::NothingToConfirm {}
+        LstAdapterError::UnbondNotFinished {}
     );
 
     Ok(())

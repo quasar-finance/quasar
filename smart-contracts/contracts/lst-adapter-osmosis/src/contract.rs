@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use crate::error::{assert_observer, assert_vault};
 use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
@@ -171,14 +169,14 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
     assert_funds_single_token(&info.funds, &denoms.lst)?;
     let redemption_rate = query_redemption_rate(deps.as_ref())?;
     let unbond_amount = query_contract_balance(&deps.querier, &env, &denoms.lst)?;
-    let pending = record_pending_unbond(
+    let previous_unbond_pending = record_pending_unbond(
         deps.storage,
         unbond_amount.checked_mul_floor(redemption_rate)?,
         env.block.time,
     )?;
 
     let response = app.response("unbond");
-    if pending {
+    if previous_unbond_pending {
         return Ok(response);
     }
 
@@ -230,35 +228,17 @@ fn adjust_total_balance(
     amount: Uint128,
     final_amount: Uint128,
 ) -> StdResult<()> {
-    match amount.cmp(&final_amount) {
-        Ordering::Greater => {
-            TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
-                balance
-                    .checked_add(amount)
-                    .map_err(|err| StdError::GenericErr {
-                        msg: err.to_string(),
-                    })?
-                    .checked_sub(final_amount)
-                    .map_err(|err| StdError::GenericErr {
-                        msg: err.to_string(),
-                    })
-            })?;
-        }
-        Ordering::Less => {
-            TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
-                balance
-                    .checked_add(final_amount)
-                    .map_err(|err| StdError::GenericErr {
-                        msg: err.to_string(),
-                    })?
-                    .checked_sub(amount)
-                    .map_err(|err| StdError::GenericErr {
-                        msg: err.to_string(),
-                    })
-            })?;
-        }
-        Ordering::Equal => {}
-    };
+    TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
+        balance
+            .checked_add(final_amount)
+            .map_err(|err| StdError::GenericErr {
+                msg: err.to_string(),
+            })?
+            .checked_sub(amount)
+            .map_err(|err| StdError::GenericErr {
+                msg: err.to_string(),
+            })
+    })?;
     Ok(())
 }
 
@@ -300,7 +280,7 @@ fn confirm_unbond_finished(
     if let Some(unbond_info) = unbond_info {
         let unbond_period_secs = UNBOND_PERIOD_SECS.load(deps.storage)?;
         if unbond_info.unbond_start.seconds() + unbond_period_secs > env.block.time.seconds() {
-            return Err(LstAdapterError::NothingToConfirm {});
+            return Err(LstAdapterError::UnbondNotFinished {});
         }
         let mut redeemed_balance = REDEEMED_BALANCE.load(deps.storage)?;
         let denoms = DENOMS.load(deps.storage)?;
