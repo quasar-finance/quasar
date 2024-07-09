@@ -517,7 +517,7 @@ dependencies = [
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-asset",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-storage-plus 1.2.0",
  "cw20 0.10.3",
  "schemars",
@@ -539,7 +539,7 @@ dependencies = [
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-asset",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-storage-plus 1.2.0",
  "cw20 1.1.2",
  "schemars",
@@ -625,7 +625,7 @@ dependencies = [
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-controllers",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-ownable",
  "cw-paginate",
  "cw-semver",
@@ -657,7 +657,7 @@ dependencies = [
  "cw-address-like",
  "cw-asset",
  "cw-controllers",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-storage-plus 1.2.0",
  "cw2 1.1.2",
  "log",
@@ -840,7 +840,7 @@ dependencies = [
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-asset",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-storage-plus 1.2.0",
  "cw20 1.1.2",
  "schemars",
@@ -1040,7 +1040,7 @@ dependencies = [
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-asset",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-storage-plus 1.2.0",
  "cw-utils",
  "cw20 1.1.2",
@@ -1061,7 +1061,7 @@ dependencies = [
  "cw-asset",
  "cw-clearable",
  "cw-controllers",
- "cw-orch",
+ "cw-orch 0.22.2",
  "cw-ownable",
  "cw-semver",
  "cw-storage-plus 1.2.0",
@@ -2246,9 +2246,9 @@ dependencies = [
 
 [[package]]
 name = "cw-orch-daemon"
-version = "0.22.1"
+version = "0.23.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "495e43e9a64b9ed0d6808e0f0170590b282f9606227b8b2a55492d2b054c42b4"
+checksum = "3da5ddf3e3d51a72acdca54aaa89a3828bb26b720648b3c10bd9ec5cefc7c49c"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -2264,14 +2264,17 @@ dependencies = [
  "dirs",
  "ed25519-dalek",
  "eyre",
+ "file-lock",
  "flate2",
  "hex",
  "hkd32",
  "lazy_static",
  "log",
+ "once_cell",
  "prost 0.12.6",
  "prost-types 0.12.3",
  "rand_core 0.6.4",
+ "regex",
  "reqwest",
  "ring",
  "ripemd",
@@ -2616,7 +2619,7 @@ version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "526e39bb20534e25a1cd0386727f0038f4da294e5e535729ba3ef54055246abd"
 dependencies = [
- "cosmwasm-schema",
+ "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-utils",
  "schemars",
@@ -3282,7 +3285,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http",
- "indexmap",
+ "indexmap 2.1.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -3303,6 +3306,12 @@ name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
+
+[[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hermit-abi"
@@ -6384,7 +6393,7 @@ dependencies = [
  "cosmwasm-std",
  "cw-asset",
  "cw-controllers",
- "cw-orch",
+ "cw-orch 0.22.2",
  "wyndex 1.1.2 (git+https://github.com/cosmorama/wynddex.git?tag=v1.1.2)",
  "wyndex-factory",
  "wyndex-multi-hop",

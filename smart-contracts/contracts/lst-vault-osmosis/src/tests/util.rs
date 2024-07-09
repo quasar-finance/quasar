@@ -27,7 +27,7 @@ pub fn get_init_msg() -> InstantiateMsg {
 
 pub fn mock_wasm_querier_with_lst_adapter(
     lst_adapter: String,
-    lst_pending: u128,
+    lst_adapter_balance: u128,
     lst_claimable: u128,
 ) -> Box<impl Fn(&WasmQuery) -> QuerierResult> {
     Box::from(move |request: &WasmQuery| -> QuerierResult {
@@ -37,7 +37,7 @@ pub fn mock_wasm_querier_with_lst_adapter(
                     let msg: LstAdapterQueryMsg = from_json(&msg).unwrap();
                     match msg {
                         LstAdapterQueryMsg::BalanceInUnderlying {} => {
-                            let response = Uint128::from(lst_pending);
+                            let response = Uint128::from(lst_adapter_balance);
                             return SystemResult::Ok(ContractResult::Ok(
                                 to_json_binary(&response).unwrap(),
                             ));

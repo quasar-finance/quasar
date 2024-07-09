@@ -1,5 +1,5 @@
-use crate::state::Claim;
-use cosmwasm_schema::cw_serde;
+use crate::state::{Claim, Config};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Decimal, Uint128};
 
 #[cw_serde]
@@ -24,13 +24,12 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
+    #[returns(Config)]
     Config {},
+    #[returns(Vec<Claim>)]
     Pending { address: String },
-    //    Claimable { address: String },
-    // simulate?
-}
-#[cw_serde]
-pub struct PendingResponse {
-    pub pending: Vec<Claim>,
+    #[returns(Uint128)]
+    Claimable { address: String },
 }

@@ -1,6 +1,7 @@
 use crate::contract::{execute, instantiate, query};
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, PendingResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, QueryMsg};
+use crate::state::Claim;
 use crate::tests::util::{
     get_fund_denom, get_init_msg, mock_wasm_querier_with_lst_adapter, CREATOR, DEPOSIT_DENOM,
     TEST_LST_ADAPTER, TEST_UNBONDING_PERIOD, USER,
@@ -92,7 +93,7 @@ fn withdraw_registers_pending_claim() {
         .into()
     );
 
-    let pending: PendingResponse = from_json(
+    let pending: Vec<Claim> = from_json(
         query(
             deps.as_ref(),
             env.clone(),
@@ -103,10 +104,10 @@ fn withdraw_registers_pending_claim() {
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(pending.pending.len(), 1);
-    assert_eq!(pending.pending[0].amount.u128(), 2000);
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].amount.u128(), 2000);
     assert_eq!(
-        pending.pending[0].expiration,
+        pending[0].expiration,
         env.block.time.plus_seconds(TEST_UNBONDING_PERIOD)
     );
 }
@@ -187,7 +188,7 @@ fn claim_succeeds_after_expiration() {
         .into()
     );
 
-    let pending: PendingResponse = from_json(
+    let pending: Vec<Claim> = from_json(
         query(
             deps.as_ref(),
             env.clone(),
@@ -198,7 +199,7 @@ fn claim_succeeds_after_expiration() {
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(pending.pending.len(), 0);
+    assert_eq!(pending.len(), 0);
 }
 
 #[test]

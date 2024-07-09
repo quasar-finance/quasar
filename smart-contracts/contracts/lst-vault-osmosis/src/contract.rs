@@ -1,7 +1,7 @@
 use std::vec;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, PendingResponse, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::state::{Claim, Config, PENDING, STATE};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -251,18 +251,27 @@ fn swap(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_json_binary(&STATE.load(deps.storage)?),
         QueryMsg::Pending { address } => to_json_binary(&query_pending(deps, address)?),
+        QueryMsg::Claimable { address } => to_json_binary(&query_claimable(deps, env, address)?),
     }
 }
 
-fn query_pending(deps: Deps, address: String) -> StdResult<PendingResponse> {
+fn query_pending(deps: Deps, address: String) -> StdResult<Vec<Claim>> {
     let claims = PENDING.may_load(deps.storage, deps.api.addr_validate(&address)?)?;
-    Ok(PendingResponse {
-        pending: claims.unwrap_or_default(),
-    })
+    Ok(claims.unwrap_or_default())
+}
+
+fn query_claimable(deps: Deps, env: Env, address: String) -> StdResult<Uint128> {
+    let claims = PENDING.may_load(deps.storage, deps.api.addr_validate(&address)?)?;
+    Ok(claims
+        .unwrap_or_default()
+        .iter()
+        .filter(|claim| claim.expiration <= env.block.time)
+        .map(|claim| claim.amount)
+        .sum())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
