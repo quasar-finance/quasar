@@ -1,5 +1,7 @@
 use cosmwasm_schema::cw_serde;
-use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg, VaultStandardInfoResponse};
+// use cw_vault_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg, VaultStandardInfoResponse};
+use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg, VaultStandardInfoResponse};
+
 use crate::vault::provault::VaultAction;
 use crate::vault::config::Config;
 use crate::strategy::strategy::StrategyAction; 

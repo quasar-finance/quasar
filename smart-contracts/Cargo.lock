@@ -2454,6 +2454,7 @@ dependencies = [
  "cw-controllers",
  "cw-storage-plus",
  "cw-utils",
+ "cw-vault-multi-standard",
  "cw-vault-standard",
  "cw2",
  "cw20",

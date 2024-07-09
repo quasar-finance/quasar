@@ -41,9 +41,23 @@ pub fn execute(
 
     match msg {
         // TODO - Multi Vault Standard to be used after basic testing. 
+        /* 
         ExecuteMsg::Deposit { amount, recipient } => { 
             let _ = try_deposit(deps, env, info, amount, recipient);},
         ExecuteMsg::Redeem { recipient, amount } => todo!(),
+        */
+        ExecuteMsg::AnyDeposit {
+            amount: _,
+            asset: _,
+            recipient: _,
+            max_slippage:_,
+        } => unimplemented!(),
+        ExecuteMsg::ExactDeposit { recipient } => {
+            let _ = try_deposit(deps, env, info, recipient);
+        }
+        ExecuteMsg::Redeem { recipient, amount } => {
+             todo!()
+        }
         ExecuteMsg::VaultExtension(extension_msg) => {
             match extension_msg {
                  ExtensionExecuteMsg::ProExtension(pro_msg) => {
@@ -154,7 +168,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Info {} => {
             query_vault_info(deps)
         },
-        QueryMsg::PreviewDeposit { amount } => {
+        QueryMsg::PreviewDeposit { assets } => {
             // NOT REQUIRED NOW: Implement the logic for PreviewDeposit query
             todo!()
         },
@@ -165,6 +179,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::TotalAssets {} => {
             query_total_assets()
         },
+        QueryMsg::DepositRatio{} => {todo!()},
         QueryMsg::TotalVaultTokenSupply {} => {
             query_total_vault_token_supply()
         },
@@ -235,16 +250,23 @@ fn try_deposit(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    amount: Uint128,
+    // amount: Uint128,
     recipient: Option<String>, // Used for future 
 ) -> Result<Response, ContractError> {
     // TODO - max deposit cap protection to be added.
     
     // Check if the sent funds match the requested deposit amount
+    /*
     if info.funds.len() != 1 || info.funds[0].amount != amount {
         return Err(ContractError::Std(StdError::generic_err("Incorrect deposit amount")));
     }
- 
+    */
+    if info.funds.len() != 1 || info.funds[0].amount <= Uint128::zero() {
+        return Err(ContractError::Std(StdError::generic_err("Incorrect deposit amount")));
+    }
+
+    let amount = info.funds[0].amount;
+
     // Whitelist denom verification.
     let denom = &info.funds[0].denom; 
     if !WHITELIST_DENOMS.has(deps.storage, denom) {

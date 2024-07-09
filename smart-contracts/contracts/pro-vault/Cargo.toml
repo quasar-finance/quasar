@@ -49,6 +49,7 @@ schemars = "0.8.10"
 thiserror = "1.0.58"
 cw20 = { version = "1.1.2", optional = true }
 cw-vault-standard = { git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", features = ["lockup", "force-unlock"]}
 cw-asset = { workspace = true, optional = true }
 abstract-sdk = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-sdk", tag = "v0.22.1" }
 abstract-std = { git = "https://github.com/AbstractSDK/abstract.git", package = "abstract-std", tag = "v0.22.1" }
