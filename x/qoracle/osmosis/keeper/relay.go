@@ -1,13 +1,11 @@
 package keeper
 
 import (
-	//	"cosmossdk.io/errors"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
+	errorsmod "cosmossdk.io/errors"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
-	// sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
@@ -241,27 +239,27 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 	var ackData icqtypes.InterchainQueryPacketAck
 	if err := types.ModuleCdc.UnmarshalJSON(ack.GetResult(), &ackData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq packet acknowledgement data")
+		return errorsmod.Wrapf(err, "could not unmarshal icq packet acknowledgement data")
 	}
 	resps, err := icqtypes.DeserializeCosmosResponse(ackData.Data)
 	if err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq acknowledgement data to cosmos response")
+		return errorsmod.Wrapf(err, "could not unmarshal icq acknowledgement data to cosmos response")
 	}
 
 	var packetData icqtypes.InterchainQueryPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &packetData); err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq packet data")
+		return errorsmod.Wrapf(err, "could not unmarshal icq packet data")
 	}
 	reqs, err := icqtypes.DeserializeCosmosQuery(packetData.Data)
 	if err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal icq packet data to cosmos query")
+		return errorsmod.Wrapf(err, "could not unmarshal icq packet data to cosmos query")
 	}
 
 	cacheCtx, writeCache := ctx.CacheContext()
 
 	for i, req := range reqs {
 		if err := k.handleOsmosisICQResponse(cacheCtx, req, resps[i]); err != nil {
-			return sdkerrors.Wrapf(err, "could not handle icq response of request %d", i)
+			return errorsmod.Wrapf(err, "could not handle icq response of request %d", i)
 		}
 	}
 
@@ -309,7 +307,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQuery, resp abcitypes.ResponseQuery) error {
 	if resp.IsErr() {
-		return sdkerrors.Wrapf(types.ErrFailedICQResponse, "icq response failed with code %d", resp.GetCode())
+		return errorsmod.Wrapf(types.ErrFailedICQResponse, "icq response failed with code %d", resp.GetCode())
 	}
 
 	switch req.Path {
@@ -328,7 +326,7 @@ func (k Keeper) handleOsmosisICQResponse(ctx sdk.Context, req abcitypes.RequestQ
 	case types.OsmosisQueryDistrInfoPath:
 		return k.handleOsmosisDistrInfoResponse(ctx, req, resp)
 	default:
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "icq response handler for path %s not found", req.Path)
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "icq response handler for path %s not found", req.Path)
 	}
 }
 
@@ -347,7 +345,7 @@ func (k Keeper) handleOsmosisPoolResponse(ctx sdk.Context, req abcitypes.Request
 	var pool balancerpool.Pool
 	err := pool.Unmarshal(qresp.GetPool().GetValue())
 	if err != nil {
-		return sdkerrors.Wrapf(err, "could not unmarshal pool")
+		return errorsmod.Wrapf(err, "could not unmarshal pool")
 	}
 
 	k.SetPool(ctx, pool)
@@ -401,7 +399,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 		k.Logger(ctx).Error("osmosis param request state is timed out.",
 			"packet", packet.String())
 		paramsState.Fail()
-		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
+		return errorsmod.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
 	}
 
 	incentivizedPoolsState := k.GetRequestState(ctx, types.KeyIncentivizedPoolsRequestState)
@@ -409,7 +407,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 		k.Logger(ctx).Error("osmosis incentivized pools state request is timed out.",
 			"packet", packet.String())
 		incentivizedPoolsState.Fail()
-		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
+		return errorsmod.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
 
 	}
 
@@ -418,10 +416,10 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 		k.Logger(ctx).Error("osmosis pool request is timed out.",
 			"packet", packet.String())
 		poolsState.Fail()
-		return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
+		return errorsmod.Wrapf(types.ErrOsmosisICQTimedOut, "osmosis req packet timedout. packet %s", packet.String())
 	}
 
 	k.Logger(ctx).Error("Unknown timeout for the icq channel.", "packet", packet.String())
-	return sdkerrors.Wrapf(types.ErrOsmosisICQTimedOut, "Unknown osmosis req packet timed out. packet %s", packet.String())
+	return errorsmod.Wrapf(types.ErrOsmosisICQTimedOut, "Unknown osmosis req packet timed out. packet %s", packet.String())
 
 }

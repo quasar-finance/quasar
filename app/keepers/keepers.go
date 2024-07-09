@@ -15,6 +15,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -74,9 +75,6 @@ import (
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tfmodulekeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
-	//consensus "github.com/cosmos/cosmos-sdk/x/consensus"
-	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
-	//consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 )
 
 const (
@@ -474,7 +472,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	supportedFeatures := "iterator,staking,stargate"
+	supportedFeatures := "cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_4,iterator,staking,stargate"
 
 	wasmKeeper := wasmkeeper.NewKeeper(
 		appCodec,

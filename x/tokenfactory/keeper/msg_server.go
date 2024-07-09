@@ -2,9 +2,9 @@ package keeper
 
 import (
 	"context"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )

@@ -5,12 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	//	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
@@ -104,7 +103,7 @@ func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packe
 	fullAck := ContractAck{ContractResult: response.Data, IbcAck: ack.Acknowledgement()}
 	bz, err = json.Marshal(fullAck)
 	if err != nil {
-		return channeltypes.NewErrorAcknowledgement(sdkerrors.Wrap(err, "cannot marshal the contract acknowledgement"))
+		return channeltypes.NewErrorAcknowledgement(errorsmod.Wrap(err, "cannot marshal the contract acknowledgement"))
 	}
 
 	return channeltypes.NewResultAcknowledgement(bz)
@@ -156,7 +155,7 @@ func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteCon
 func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
 
 			if err := execMsg.ValidateBasic(); err != nil {
-				return nil, sdkerrors.Wrap(err, "invalid wasm contract execution message")
+				return nil, errorsmod.Wrap(err, "invalid wasm contract execution message")
 			}
 			wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
 			return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
@@ -209,7 +208,7 @@ func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bo
 	wasm, ok := wasmRaw.(map[string]interface{})
 	if !ok {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, "wasm metadata is not a JSON map object")
+			errorsmod.Wrap(types.ErrInvalidMetadataFormat, "wasm metadata is not a JSON map object")
 	}
 
 	// Get the contract
@@ -217,32 +216,32 @@ func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bo
 	if !ok {
 		// The tokens will be returned
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrapf(types.ErrInvalidMetadataFormat, `could not find key wasm["contract"]`)
+			errorsmod.Wrapf(types.ErrInvalidMetadataFormat, `could not find key wasm["contract"]`)
 	}
 
 	contractAddr, err = sdk.AccAddressFromBech32(contract)
 	if err != nil {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["contract"] is not a valid bech32 address`)
+			errorsmod.Wrap(types.ErrInvalidMetadataFormat, `wasm["contract"] is not a valid bech32 address`)
 	}
 
 	// The contract and the receiver should be the same for the packet to be valid
 	if contract != receiver {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["contract"] should be the same as the receiver of the packet`)
+			errorsmod.Wrap(types.ErrInvalidMetadataFormat, `wasm["contract"] should be the same as the receiver of the packet`)
 	}
 
 	// Ensure the message key is provided
 	if wasm["msg"] == nil {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `could not find key wasm["msg"]`)
+			errorsmod.Wrap(types.ErrInvalidMetadataFormat, `could not find key wasm["msg"]`)
 	}
 
 	// Make sure the msg key is a map. If it isn't, return an error
 	_, ok = wasm["msg"].(map[string]interface{})
 	if !ok {
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrap(types.ErrInvalidMetadataFormat, `wasm["msg"] is not a map object`)
+			errorsmod.Wrap(types.ErrInvalidMetadataFormat, `wasm["msg"] is not a map object`)
 	}
 
 	// Get the message string by serializing the map
@@ -250,7 +249,7 @@ func validateAndParseTransferMemo(memo string, receiver string) (isWasmRouted bo
 	if err != nil {
 		// The tokens will be returned
 		return isWasmRouted, sdk.AccAddress{}, nil,
-			sdkerrors.Wrapf(types.ErrInvalidMetadataFormat, `could not marshal wasm["msg"] field back to json: %s`, err)
+			errorsmod.Wrapf(types.ErrInvalidMetadataFormat, `could not marshal wasm["msg"] field back to json: %s`, err)
 	}
 
 	return isWasmRouted, contractAddr, msgBytes, nil
@@ -273,7 +272,7 @@ func (h WasmHooks) OnAcknowledgementPacketOverride(im IBCMiddleware, ctx sdk.Con
 
 	contractAddr, err := sdk.AccAddressFromBech32(transferPacket.GetSender())
 	if err != nil {
-		return sdkerrors.Wrap(err, "failed to decode transfer packet sender address")
+		return errorsmod.Wrap(err, "failed to decode transfer packet sender address")
 	}
 	contractInfo := h.wasmKeeper.GetContractInfo(ctx, contractAddr)
 
@@ -309,7 +308,7 @@ func (h WasmHooks) OnAcknowledgementPacketOverride(im IBCMiddleware, ctx sdk.Con
 			"contract_address", contractAddr,
 			"error", err,
 		)
-		return sdkerrors.Wrap(err, "contract returned error for acknowledgment")
+		return errorsmod.Wrap(err, "contract returned error for acknowledgment")
 	}
 
 	return nil
@@ -319,7 +318,7 @@ func unmarshalTransferPacket(packet channeltypes.Packet) (transfertypes.Fungible
 	var transferPacket transfertypes.FungibleTokenPacketData
 	err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &transferPacket)
 	if err != nil {
-		return transferPacket, sdkerrors.Wrap(err, "cannot unmarshal ICS-20 transfer packet data")
+		return transferPacket, errorsmod.Wrap(err, "cannot unmarshal ICS-20 transfer packet data")
 	}
 
 	return transferPacket, nil
@@ -329,7 +328,7 @@ func unmarshalAcknowledgement(acknowledgement []byte) (channeltypes.Acknowledgem
 	var ack channeltypes.Acknowledgement
 	err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack)
 	if err != nil {
-		return ack, sdkerrors.Wrap(err, "cannot unmarshal ICS-20 transfer packet acknowledgement")
+		return ack, errorsmod.Wrap(err, "cannot unmarshal ICS-20 transfer packet acknowledgement")
 	}
 	return ack, nil
 }
@@ -367,7 +366,7 @@ func (h WasmHooks) OnTimeoutPacketOverride(im IBCMiddleware, ctx sdk.Context, pa
 
 	contractAddr, err := sdk.AccAddressFromBech32(transferPacket.GetSender())
 	if err != nil {
-		return sdkerrors.Wrap(err, "failed to decode transfer packet sender address")
+		return errorsmod.Wrap(err, "failed to decode transfer packet sender address")
 	}
 	contractInfo := h.wasmKeeper.GetContractInfo(ctx, contractAddr)
 	// Skip if there's no contract with this address (it's a regular address) or the contract doesn't support IBC
@@ -394,7 +393,7 @@ func (h WasmHooks) OnTimeoutPacketOverride(im IBCMiddleware, ctx sdk.Context, pa
 			"contract_address", contractAddr,
 			"error", err,
 		)
-		return sdkerrors.Wrap(err, "contract returned error for timeout")
+		return errorsmod.Wrap(err, "contract returned error for timeout")
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
@@ -65,9 +66,8 @@ func CreateRandomAccounts(numAccts int) []sdk.AccAddress {
 // FundAcc funds target address with specified amount.
 func (ts *TestSetup) FundAcc(t testing.TB, acc sdk.AccAddress, amounts sdk.Coins) {
 	// TODO - implement alternative solution to the simapp.FundAcc
-	// err := simapp.FundAccount(ts.Keepers.BankKeeper, ts.Ctx, acc, amounts)
-	// require.NoError(t, err)
-	require.NoError(t, nil)
+	err := testutil.FundAccount(ts.Keepers.BankKeeper, ts.Ctx, acc, amounts)
+	require.NoError(t, err)
 }
 
 // FundModuleAcc funds target modules with specified amount.
@@ -130,9 +130,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	stakingKeeper := factory.StakingKeeper(paramsKeeper, accountKeeper, bankKeeper)
-	distrKeeper := factory.DistributionKeeper(paramsKeeper, accountKeeper, bankKeeper, stakingKeeper,
-		"feeCollectorName", blockedMaccAddresses)
+	stakingKeeper := factory.StakingKeeper(accountKeeper, bankKeeper)
+	distrKeeper := factory.DistributionKeeper(accountKeeper, bankKeeper, stakingKeeper, "feeCollectorName")
 	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())

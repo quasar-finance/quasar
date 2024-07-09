@@ -43,6 +43,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
+	ibctestingtypes "github.com/cosmos/ibc-go/v7/testing/types"
 
 	// Quasar imports
 	quasarante "github.com/quasarlabs/quasarnode/ante"
@@ -118,7 +119,7 @@ func init() {
 // capabilities aren't needed for testing.
 type QuasarApp struct {
 	*baseapp.BaseApp
-	keepers.AppKeepers
+	*keepers.AppKeepers
 
 	cdc               *codec.LegacyAmino
 	appCodec          codec.Codec
@@ -132,11 +133,6 @@ type QuasarApp struct {
 	sm *module.SimulationManager
 
 	configurator module.Configurator
-}
-
-// RegisterNodeService registers the node gRPC Query service.
-func (app *QuasarApp) RegisterNodeService(clientCtx client.Context) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
 }
 
 // New returns a reference to an initialized blockchain app
@@ -170,7 +166,7 @@ func New(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	app := &QuasarApp{
-		AppKeepers:        keepers.AppKeepers{},
+		AppKeepers:        &keepers.AppKeepers{},
 		BaseApp:           bApp,
 		cdc:               cdc,
 		appCodec:          appCodec,
@@ -375,7 +371,7 @@ func (app *QuasarApp) setupUpgradeHandlers() {
 				app.mm,
 				app.configurator,
 				app.BaseApp,
-				&app.AppKeepers,
+				app.AppKeepers,
 			),
 		)
 	}
@@ -431,6 +427,11 @@ func (app *QuasarApp) BlockedModuleAccountAddrs() map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	return modAccAddrs
+}
+
+// RegisterNodeService registers the node gRPC Query service.
+func (app *QuasarApp) RegisterNodeService(clientCtx client.Context) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
 }
 
 // TODO AG: move the below function to a test package
@@ -523,4 +524,8 @@ func (app *QuasarApp) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 func (app *QuasarApp) GetTxConfig() client.TxConfig {
 	return MakeEncodingConfig().TxConfig
+}
+
+func (app *QuasarApp) GetStakingKeeper() ibctestingtypes.StakingKeeper {
+	return app.StakingKeeper
 }

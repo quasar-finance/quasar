@@ -6,6 +6,9 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	"testing"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -15,9 +18,6 @@ import (
 	"github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 	"github.com/stretchr/testify/require"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmdb "github.com/cometbft/cometbft-db"
 )
 
 func QVestingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
@@ -26,8 +26,8 @@ func QVestingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()

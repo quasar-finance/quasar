@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/types"
+	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	// "github.com/cosmos/cosmos-sdk/simapp"
 	sims "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -38,7 +38,12 @@ func New(t *testing.T, configs ...network.Config) *network.Network {
 	} else {
 		cfg = configs[0]
 	}
-	net, err := network.New(t, , cfg)
+
+	// todo there is an issue in sdk testutil where it takes chain ID as empty in the network.New startInProcess fn
+	net, err := network.New(t, t.TempDir(), cfg)
+	if err != nil {
+		panic(err)
+	}
 	t.Cleanup(net.Cleanup)
 	return net
 }
@@ -53,22 +58,19 @@ func DefaultConfig() network.Config {
 		LegacyAmino:       encoding.Amino,
 		InterfaceRegistry: encoding.InterfaceRegistry,
 		AccountRetriever:  authtypes.AccountRetriever{},
-		AppConstructor: func(val network.Validator) servertypes.Application {
+		AppConstructor: func(val network.ValidatorI) servertypes.Application {
 			return app.New(
-				val.Ctx.Logger,
+				val.GetCtx().Logger,
 				tmdb.NewMemDB(),
 				nil,
 				true,
 				map[int64]bool{},
-				val.Ctx.Config.RootDir,
+				val.GetCtx().Config.RootDir,
 				0,
 				encoding,
-				// simapp.EmptyAppOptions{},
 				sims.EmptyAppOptions{},
 				app.EmptyWasmOpts,
-				//baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
-				pruningtypes.PruningOptionNothing,
-				baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
+				baseapp.SetMinGasPrices(val.GetAppConfig().MinGasPrices),
 			)
 		},
 		GenesisState:    app.ModuleBasics.DefaultGenesis(encoding.Marshaler),

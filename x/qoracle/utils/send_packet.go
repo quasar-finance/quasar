@@ -1,10 +1,9 @@
 package utils
 
 import (
-	//	"cosmossdk.io/errors"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
@@ -27,7 +26,7 @@ func SendPacket(
 ) (channeltypes.Packet, error) {
 	sourceChannelEnd, found := channelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
 	if !found {
-		return channeltypes.Packet{}, sdkerrors.Wrapf(
+		return channeltypes.Packet{}, errorsmod.Wrapf(
 			sdkerrors.ErrUnknownRequest,
 			"unknown port %s channel %s",
 			sourcePort,
@@ -40,12 +39,12 @@ func SendPacket(
 	// get the next sequence
 	sequence, found := channelKeeper.GetNextSequenceSend(ctx, sourcePort, sourceChannel)
 	if !found {
-		return channeltypes.Packet{}, sdkerrors.Wrapf(channeltypes.ErrSequenceSendNotFound, "failed to retrieve next sequence send for channel %s on port %s", sourceChannel, sourcePort)
+		return channeltypes.Packet{}, errorsmod.Wrapf(channeltypes.ErrSequenceSendNotFound, "failed to retrieve next sequence send for channel %s on port %s", sourceChannel, sourcePort)
 	}
 
 	chanCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePort, sourceChannel))
 	if !ok {
-		return channeltypes.Packet{}, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound,
+		return channeltypes.Packet{}, errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound,
 			"module does not own channel capability")
 	}
 
@@ -96,7 +95,7 @@ func convertRelativeToAbsoluteTimeout(
 
 	clientHeight, ok := clientState.GetLatestHeight().(clienttypes.Height)
 	if !ok {
-		return clienttypes.ZeroHeight(), 0, sdkerrors.Wrapf(sdkerrors.ErrInvalidHeight, "invalid height type. expected type: %T, got: %T",
+		return clienttypes.ZeroHeight(), 0, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "invalid height type. expected type: %T, got: %T",
 			clienttypes.Height{}, clientHeight)
 	}
 

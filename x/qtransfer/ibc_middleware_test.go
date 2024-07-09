@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
@@ -44,7 +45,6 @@ func TestIBCHooksTestSuite(t *testing.T) {
 	suite.Run(t, new(HooksTestSuite))
 }
 
-// ToDo: Move this to quasar testing to avoid repetition
 func NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 	path := ibctesting.NewPath(chainA, chainB)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
@@ -58,7 +58,7 @@ func NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 func (suite *HooksTestSuite) TestOnRecvPacketHooks() {
 	var (
 		trace    transfertypes.DenomTrace
-		amount   sdk.Int
+		amount   sdkmath.Int
 		receiver string
 		status   qtransfertestutils.Status
 	)
@@ -94,13 +94,28 @@ func (suite *HooksTestSuite) TestOnRecvPacketHooks() {
 			trace = transfertypes.ParseDenomTrace(sdk.DefaultBondDenom)
 
 			// send coin from chainA to chainB
-			transferMsg := transfertypes.NewMsgTransfer(path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, sdk.NewCoin(trace.IBCDenom(), amount), suite.chainA.SenderAccount.GetAddress().String(), receiver, clienttypes.NewHeight(1, 110), 0)
+			transferMsg := transfertypes.NewMsgTransfer(
+				path.EndpointA.ChannelConfig.PortID,
+				path.EndpointA.ChannelID,
+				sdk.NewCoin(trace.IBCDenom(), amount),
+				suite.chainA.SenderAccount.GetAddress().String(),
+				receiver,
+				clienttypes.NewHeight(1, 110),
+				0,
+				"",
+			)
 			_, err := suite.chainA.SendMsgs(transferMsg)
 			suite.Require().NoError(err) // message committed
 
 			tc.malleate(&status)
 
-			data := transfertypes.NewFungibleTokenPacketData(trace.GetFullDenomPath(), amount.String(), suite.chainA.SenderAccount.GetAddress().String(), receiver)
+			data := transfertypes.NewFungibleTokenPacketData(
+				trace.GetFullDenomPath(),
+				amount.String(),
+				suite.chainA.SenderAccount.GetAddress().String(),
+				receiver,
+				"",
+			)
 			packet := channeltypes.NewPacket(data.GetBytes(), seq, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, clienttypes.NewHeight(1, 100), 0)
 
 			ack := suite.chainB.GetQuasarApp().TransferStack.
@@ -129,7 +144,7 @@ func (suite *HooksTestSuite) TestOnRecvPacketHooks() {
 	}
 }
 
-func (suite *HooksTestSuite) makeMockPacket(receiver, memo string, prevSequence uint64) channeltypes.Packet {
+func (suite *HooksTestSuite) makeMockPacket(receiver, memo string, prevSequence uint64, height clienttypes.Height) channeltypes.Packet {
 	packetData := transfertypes.FungibleTokenPacketData{
 		Denom:    sdk.DefaultBondDenom,
 		Amount:   "1",
@@ -145,24 +160,31 @@ func (suite *HooksTestSuite) makeMockPacket(receiver, memo string, prevSequence 
 		suite.path.EndpointB.ChannelID,
 		suite.path.EndpointA.ChannelConfig.PortID,
 		suite.path.EndpointA.ChannelID,
-		clienttypes.NewHeight(0, 100),
+		height,
 		0,
 	)
 }
 
-func (suite *HooksTestSuite) receivePacket(receiver, memo string) []byte {
-	return suite.receivePacketWithSequence(receiver, memo, 0)
+func (suite *HooksTestSuite) receivePacket(receiver, memo string, height clienttypes.Height) []byte {
+	return suite.receivePacketWithSequence(receiver, memo, 0, height)
 }
 
-func (suite *HooksTestSuite) receivePacketWithSequence(receiver, memo string, prevSequence uint64) []byte {
+func (suite *HooksTestSuite) receivePacketWithSequence(receiver, memo string, prevSequence uint64, height clienttypes.Height) []byte {
 	channelCap := suite.chainB.GetChannelCapability(
 		suite.path.EndpointB.ChannelConfig.PortID,
 		suite.path.EndpointB.ChannelID)
 
-	packet := suite.makeMockPacket(receiver, memo, prevSequence)
+	packet := suite.makeMockPacket(receiver, memo, prevSequence, height)
 
-	seq, err := suite.chainB.GetQuasarApp().HooksICS4Wrapper.SendPacket(
-		suite.chainB.GetContext(), channelCap, packet)
+	_, err := suite.chainB.GetQuasarApp().HooksICS4Wrapper.SendPacket(
+		suite.chainB.GetContext(),
+		channelCap,
+		suite.path.EndpointB.ChannelConfig.PortID,
+		suite.path.EndpointB.ChannelID,
+		height,
+		0,
+		packet.Data,
+	)
 	suite.Require().NoError(err, "IBC send failed. Expected success. %s", err)
 
 	// Update both clients
@@ -187,10 +209,11 @@ func (suite *HooksTestSuite) receivePacketWithSequence(receiver, memo string, pr
 
 func (suite *HooksTestSuite) TestRecvTransferWithMetadata() {
 	// Setup contract
+	suite.SetupTest()
 	suite.chainA.StoreContractCode(&suite.Suite, "./bytecode/echo.wasm")
 	addr := suite.chainA.InstantiateContract(&suite.Suite, "{}")
 
-	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr))
+	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr), clienttypes.NewHeight(1, 25))
 
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
@@ -206,12 +229,12 @@ func (suite *HooksTestSuite) TestFundsAreTransferredToTheContract() {
 	addr := suite.chainA.InstantiateContract(&suite.Suite, "{}")
 
 	// Check that the contract has no funds
-	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0))
+	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0, clienttypes.NewHeight(0, 100)))
 	balance := suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC
-	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr))
+	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"echo": {"msg": "test"} } } }`, addr), clienttypes.NewHeight(1, 25))
 
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
@@ -231,12 +254,12 @@ func (suite *HooksTestSuite) TestFundsAreReturnedOnFailedContractExec() {
 	addr := suite.chainA.InstantiateContract(&suite.Suite, "{}")
 
 	// Check that the contract has no funds
-	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0))
+	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0, clienttypes.NewHeight(0, 100)))
 	balance := suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC with a message that the contract will reject
-	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"not_echo": {"msg": "test"} } } }`, addr))
+	ackBytes := suite.receivePacket(addr.String(), fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"not_echo": {"msg": "test"} } } }`, addr), clienttypes.NewHeight(1, 25))
 
 	var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
 	err := json.Unmarshal(ackBytes, &ack)
@@ -276,7 +299,7 @@ func (suite *HooksTestSuite) TestPacketsThatShouldBeSkipped() {
 	}
 
 	for _, tc := range testCases {
-		ackBytes := suite.receivePacketWithSequence(receiver, tc.memo, sequence)
+		ackBytes := suite.receivePacketWithSequence(receiver, tc.memo, sequence, clienttypes.NewHeight(1, 100))
 		ackStr := string(ackBytes)
 
 		var ack map[string]string // This can't be unmarshalled to Acknowledgement because it's fetched from the events
@@ -298,14 +321,16 @@ func (suite *HooksTestSuite) TestFundTracking() {
 	addr := suite.chainA.InstantiateContract(&suite.Suite, `{"count": 0}`)
 
 	// Check that the contract has no funds
-	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0))
+	localDenom := qtransfer.MustExtractDenomFromPacketOnRecv(suite.makeMockPacket("", "", 0, clienttypes.NewHeight(0, 100)))
 	balance := suite.chainA.GetQuasarApp().BankKeeper.GetBalance(suite.chainA.GetContext(), addr, localDenom)
 	suite.Require().Equal(sdk.NewInt(0), balance.Amount)
 
 	// Execute the contract via IBC
 	suite.receivePacket(
 		addr.String(),
-		fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"increment": {} } } }`, addr))
+		fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"increment": {} } } }`, addr),
+		clienttypes.NewHeight(1, 100),
+	)
 
 	state := suite.chainA.QueryContract(
 		&suite.Suite, addr,
@@ -319,7 +344,7 @@ func (suite *HooksTestSuite) TestFundTracking() {
 
 	suite.receivePacketWithSequence(
 		addr.String(),
-		fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"increment": {} } } }`, addr), 1)
+		fmt.Sprintf(`{"wasm": {"contract": "%s", "msg": {"increment": {} } } }`, addr), 1, clienttypes.NewHeight(1, 25))
 
 	state = suite.chainA.QueryContract(
 		&suite.Suite, addr,

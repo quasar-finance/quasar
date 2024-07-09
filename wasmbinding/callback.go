@@ -116,7 +116,7 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 	resp := new(bytes.Buffer)
 	err := m.Marshal(resp, response)
 	if err != nil {
-		return sdkerrors.Wrap(err, "ibc ack callback marshalling")
+		return errorsmod.Wrap(err, "ibc ack callback marshalling")
 	}
 
 	data, err := json.Marshal(ContractAck{
@@ -133,13 +133,13 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 	})
 
 	if err != nil {
-		return sdkerrors.Wrap(err, "ibc ack callback")
+		return errorsmod.Wrap(err, "ibc ack callback")
 	}
 	c.Logger(ctx).Info(fmt.Sprintf("Preparing callback message: %v", string(data)))
 
 	_, err = c.contractKeeper.Execute(ctx, addr, c.callBackAddress, data, nil)
 	if err != nil {
-		return sdkerrors.Wrap(err, "ack callback execute")
+		return errorsmod.Wrap(err, "ack callback execute")
 	}
 
 	return nil
