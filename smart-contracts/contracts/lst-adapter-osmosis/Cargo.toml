@@ -17,6 +17,10 @@ exclude = [
   "hash.txt",
 ]
 
+[[bin]]
+name = "schema"
+required-features = ["schema"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -24,6 +28,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["export"]
 export = []
 library = []
+schema = ["abstract-app/schema"]
 
 [dependencies]
 cosmwasm-std = { workspace = true, features = ["stargate"] }

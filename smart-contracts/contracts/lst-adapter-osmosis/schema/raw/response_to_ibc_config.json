@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IbcConfig",
+  "type": "object",
+  "required": [
+    "channel",
+    "remote_chain"
+  ],
+  "properties": {
+    "block_offset": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "channel": {
+      "type": "string"
+    },
+    "remote_chain": {
+      "type": "string"
+    },
+    "revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "timeout_secs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false
+}
