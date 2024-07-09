@@ -18,59 +18,29 @@ update_schemas_and_formatting() {
   if [[ $CHANGES == *contracts/${contract}* ]]
   then
     echo "Changes in ${contract} contract"
-
     cd ${REPO_ROOT}/smart-contracts/contracts/${contract}
-    cargo run --bin schema --features schema
+
+    # generate schemas
+    cargo schema
     NEW_CHANGES=$(git diff --name-only origin/main)
-    if [[ $NEW_CHANGES == *contracts/${contract}/schema* ]]
+    if [[ $NEW_CHANGES == *schema/* ]]
     then
       git add schema
+    else
+      echo "No schema changes for ${contract}."
     fi
 
+    # fix formatting
     cargo fmt --all
     cd ${REPO_ROOT}
-    NEW_CHANGES=$(git diff --name-only origin/main)
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=A)
     git add $NEW_CHANGES
   fi
 }
 
 update_schemas_and_formatting lst-dex-adapter-osmosis
 update_schemas_and_formatting dex-router-osmosis
-
-# CONTRACT_NAME=lst-dex-adapter-osmosis
-# if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
-# then
-#   echo "Changes in ${CONTRACT_NAME} contract"
-
-#   cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
-#   cargo run --bin schema --features schema
-#   NEW_CHANGES=$(git diff --name-only origin/main)
-#   if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
-#   then
-#     git add schema
-#   fi
-
-#   cargo fmt --all
-#   cd ${REPO_ROOT}
-#   git add $CHANGES
-# fi
-
-# CONTRACT_NAME=dex-router-osmosis
-# if [[ $CHANGES == *contracts/${CONTRACT_NAME}* ]]
-# then
-#   echo "Changes in ${CONTRACT_NAME} contract"
-
-#   cd ${REPO_ROOT}/smart-contracts/contracts/${CONTRACT_NAME}
-
-#   # update schemas
-#   cargo run --bin schema
-#   NEW_CHANGES=$(git diff --name-only origin/main)
-#   if [[ $CHANGES == *contracts/${CONTRACT_NAME}/schema* ]]
-#   then
-#     git add schema
-#   fi
-
-#   cargo fmt --all
-#   cd ${REPO_ROOT}
-#   git add $CHANGES
-# fi
+update_schemas_and_formatting token-burner
+update_schemas_and_formatting cl-vault
+update_schemas_and_formatting merkle-incentives
+update_schemas_and_formatting range-middleware

@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "range_executor_admin",
+    "range_submitter_admin"
+  ],
+  "properties": {
+    "range_executor_admin": {
+      "type": "string"
+    },
+    "range_submitter_admin": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
