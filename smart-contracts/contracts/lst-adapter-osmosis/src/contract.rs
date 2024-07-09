@@ -380,6 +380,8 @@ fn update(
 
 fn get_balance(deps: Deps, env: Env) -> Result<Uint128, LstAdapterError> {
     let total_balance = TOTAL_BALANCE.load(deps.storage)?;
+    // we only update the total balance when we start the unbonding process
+    // therefore we have to add the underlying tokens corresponding to the lst tokens that are hold by this contract
     let denoms = DENOMS.load(deps.storage)?;
     let lst_balance = query_contract_balance(&deps.querier, &env, &denoms.lst)?;
     let redemption_rate = query_redemption_rate(deps)?;
@@ -448,6 +450,7 @@ fn get_claimable(deps: &Deps, env: &Env) -> LstAdapterResult<Coin> {
         .filter(|info| info.unbond_start.plus_seconds(unbond_period_secs) <= env.block.time)
         .collect();
 
+    // if there are expired unbondings for which we didn't get a confirmation yet we have to block the associated tokens
     let claimable = if unbonding_expired.is_empty() {
         underlying_balance
     } else {
