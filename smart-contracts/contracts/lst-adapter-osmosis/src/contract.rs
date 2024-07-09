@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::error::{assert_observer, assert_vault};
 use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
@@ -228,32 +230,35 @@ fn adjust_total_balance(
     amount: Uint128,
     final_amount: Uint128,
 ) -> StdResult<()> {
-    if final_amount == amount {
-    } else if final_amount > amount {
-        TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
-            balance
-                .checked_add(final_amount)
-                .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
-                })?
-                .checked_sub(amount)
-                .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
-                })
-        })?;
-    } else {
-        TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
-            balance
-                .checked_add(amount)
-                .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
-                })?
-                .checked_sub(final_amount)
-                .map_err(|err| StdError::GenericErr {
-                    msg: err.to_string(),
-                })
-        })?;
-    }
+    match amount.cmp(&final_amount) {
+        Ordering::Greater => {
+            TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
+                balance
+                    .checked_add(amount)
+                    .map_err(|err| StdError::GenericErr {
+                        msg: err.to_string(),
+                    })?
+                    .checked_sub(final_amount)
+                    .map_err(|err| StdError::GenericErr {
+                        msg: err.to_string(),
+                    })
+            })?;
+        }
+        Ordering::Less => {
+            TOTAL_BALANCE.update(storage, |balance| -> StdResult<Uint128> {
+                balance
+                    .checked_add(final_amount)
+                    .map_err(|err| StdError::GenericErr {
+                        msg: err.to_string(),
+                    })?
+                    .checked_sub(amount)
+                    .map_err(|err| StdError::GenericErr {
+                        msg: err.to_string(),
+                    })
+            })?;
+        }
+        Ordering::Equal => {}
+    };
     Ok(())
 }
 
@@ -342,6 +347,7 @@ fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdap
     Ok(app.response("claim").add_message(msg))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_ibc_config(
     deps: DepsMut,
     info: MessageInfo,
@@ -366,6 +372,7 @@ fn update_ibc_config(
     Ok(app.response("update ibc config"))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update(
     deps: DepsMut,
     info: MessageInfo,
@@ -435,7 +442,7 @@ pub fn query_(
 fn get_underlying_balance(deps: &Deps, env: &Env) -> StdResult<Coin> {
     let denoms = DENOMS.load(deps.storage)?;
     Ok(coin(
-        query_contract_balance(&deps.querier, &env, &denoms.underlying)?.into(),
+        query_contract_balance(&deps.querier, env, &denoms.underlying)?.into(),
         denoms.underlying,
     ))
 }
