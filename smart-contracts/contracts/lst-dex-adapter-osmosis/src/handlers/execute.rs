@@ -5,7 +5,6 @@ use crate::{
     state::{RECIPIENT, STATE},
     DexAdapterError,
 };
-
 use abstract_app::{sdk::TransferInterface, traits::AbstractResponse};
 use cosmwasm_std::{Decimal, DepsMut, Env, MessageInfo, SubMsg};
 use cw_asset::Asset;

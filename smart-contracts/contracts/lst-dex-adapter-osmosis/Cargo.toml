@@ -22,6 +22,7 @@ required-features = ["schema"]
 [features]
 default = ["export"]
 export = []
+library = []
 daemon-bin = [
   "cw-orch/daemon",
   "dep:clap",

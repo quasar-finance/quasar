@@ -3813,6 +3813,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "lst-vault-osmosis"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema 1.5.4",
+ "cosmwasm-std",
+ "cw-storage-plus 1.2.0",
+ "cw2 1.1.2",
+ "lst-adapter-osmosis",
+ "lst-dex-adapter-osmosis",
+ "osmosis-std",
+ "quasar-types",
+ "thiserror",
+]
+
+[[package]]
 name = "mars-owner"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
