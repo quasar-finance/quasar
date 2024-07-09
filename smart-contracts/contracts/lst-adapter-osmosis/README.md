@@ -31,6 +31,7 @@ Assuming no claiming of "donations", the claim process looks as follows:
 In order to track the tokens that correspond to the lst-adapter, two internal variables are used
  * TOTAL_BALANCE: tracks the total balance in terms of the underlying token
  * REDEEMED_BALANCE: tracks the amount of unclaimed and redeemed tokens
+ 
 These variables allow us to track funds, without interference through "donations". In order to keep the complexity of the interference of "donations" low, these are added to the lst-vault balance at two places:
  * "donations" in terms of the underlying token are accounted for during the claim process, (i.e. the calling contract should call Claim in a SubMsg in order to correctly parse the received amount either from events or through a query)
  * "donations" in terms of the lst-token are accounted for when an LST-transfer to stride is initiated
