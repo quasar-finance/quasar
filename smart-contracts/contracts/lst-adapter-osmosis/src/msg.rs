@@ -3,7 +3,7 @@ use crate::{
     state::{Denoms, IbcConfig, UnbondInfo},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Decimal, Timestamp, Uint128};
+use cosmwasm_std::{Coin, Decimal, Timestamp, Uint128};
 use mars_owner::OwnerUpdate;
 
 abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMsg);
@@ -72,4 +72,6 @@ pub enum LstAdapterQueryMsg {
     PendingUnbonds {},
     #[returns(Uint128)]
     BalanceInUnderlying {},
+    #[returns(Coin)]
+    Claimable {},
 }

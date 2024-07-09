@@ -274,10 +274,11 @@ fn confirm_unbond_finished(
 ) -> LstAdapterResult {
     assert_observer(&info.sender, &OBSERVER.load(deps.storage)?)?;
     let mut unbonding = UNBONDING.load(deps.storage)?;
-    let unbond_info = unbonding.iter().find(|info| {
+    let pos = unbonding.iter().position(|info| {
         info.status == UnbondStatus::Confirmed && info.unbond_start == unbond_start_time
     });
-    if let Some(unbond_info) = unbond_info {
+    if let Some(pos) = pos {
+        let unbond_info = unbonding.remove(pos);
         let unbond_period_secs = UNBOND_PERIOD_SECS.load(deps.storage)?;
         if unbond_info.unbond_start.seconds() + unbond_period_secs > env.block.time.seconds() {
             return Err(LstAdapterError::UnbondNotFinished {});
@@ -290,7 +291,6 @@ fn confirm_unbond_finished(
             return Err(LstAdapterError::StillWaitingForFunds {});
         }
         REDEEMED_BALANCE.save(deps.storage, &redeemed_balance)?;
-        unbonding.pop();
         UNBONDING.save(deps.storage, &unbonding)?;
         return Ok(app.response("confirm unbond finished"));
     }
@@ -300,11 +300,9 @@ fn confirm_unbond_finished(
 
 fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
     assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
-    let underlying_balance = get_underlying_balance(&deps.as_ref(), &env)?;
-    let total_balance = TOTAL_BALANCE.load(deps.storage)?;
-    let unbonding = UNBONDING.load(deps.storage)?;
-    let unbonding_amount = unbonding.iter().map(get_info_amount).sum();
-    if underlying_balance.amount.is_zero() || total_balance <= unbonding_amount {
+    let claimable = get_claimable(&deps.as_ref(), &env)?;
+
+    if claimable.amount.is_zero() {
         return Err(LstAdapterError::NothingToClaim {});
     }
 
@@ -312,11 +310,9 @@ fn claim(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdap
     REDEEMED_BALANCE.save(deps.storage, &Uint128::zero())?;
     let msg = BankMsg::Send {
         to_address: info.sender.to_string(),
-        amount: vec![underlying_balance.clone()],
+        amount: vec![claimable],
     };
 
-    let unbonding = get_active_unbonding(&deps.as_ref(), env.block.time)?;
-    UNBONDING.save(deps.storage, &unbonding)?;
     TOTAL_BALANCE.update(deps.storage, |balance| -> StdResult<Uint128> {
         balance
             .checked_sub(redeemed_balance)
@@ -416,6 +412,7 @@ pub fn query_(
             Ok(to_json_binary(&UNBONDING.load(deps.storage)?)?)
         }
         LstAdapterQueryMsg::BalanceInUnderlying {} => Ok(to_json_binary(&get_balance(deps, env)?)?),
+        LstAdapterQueryMsg::Claimable {} => Ok(to_json_binary(&get_claimable(&deps, &env)?)?),
     }
 }
 
@@ -449,6 +446,30 @@ fn query_redemption_rate(deps: Deps) -> StdResult<Decimal> {
         },
     )?;
     Ok(response.redemption_rate)
+}
+
+fn get_claimable(deps: &Deps, env: &Env) -> LstAdapterResult<Coin> {
+    let mut underlying_balance = get_underlying_balance(deps, env)?;
+    let unbonding = UNBONDING.load(deps.storage)?;
+    let unbond_period_secs = UNBOND_PERIOD_SECS.load(deps.storage)?;
+    let unbonding_expired: Vec<UnbondInfo> = unbonding
+        .into_iter()
+        .filter(|info| info.unbond_start.plus_seconds(unbond_period_secs) <= env.block.time)
+        .collect();
+
+    let claimable = if unbonding_expired.is_empty() {
+        underlying_balance
+    } else {
+        let blocked = unbonding_expired.iter().map(get_info_amount).sum();
+        if blocked < underlying_balance.amount {
+            underlying_balance.amount = underlying_balance.amount.checked_sub(blocked)?;
+            underlying_balance
+        } else {
+            coin(0u128, underlying_balance.denom)
+        }
+    };
+
+    Ok(claimable)
 }
 
 pub fn migrate_(

@@ -228,10 +228,14 @@ fn test_claim_multiple_deposits_and_random_donation() -> anyhow::Result<()> {
     let _ = env.mock.wait_ibc(OSMOSIS, ibc_action_result)?;
 
     let redeemable0 = amount0 * redemption_rate;
-    let total_redeemable = redeemable0 + amount1 * redemption_rate;
+    let redeemable1 = amount1 * redemption_rate;
+    let total_redeemable = redeemable0 + redeemable1;
 
     let balance = app.balance_in_underlying()?;
     assert_eq!(balance, total_redeemable);
+
+    let claimable = app.claimable()?;
+    assert_eq!(claimable.amount, Uint128::zero());
 
     let result = app.claim();
     assert!(result.is_err());
@@ -243,17 +247,32 @@ fn test_claim_multiple_deposits_and_random_donation() -> anyhow::Result<()> {
         &app.address()?,
         coins((donation + redeemable0).into(), DENOM),
     )?;
+    let claimable = app.claimable()?;
+    assert_eq!(claimable.amount, donation);
     assert!(app.confirm_unbond_finished(start_time).is_ok());
+    let cb = osmosis.query_balance(&app.address()?, DENOM)?;
+    assert_eq!(cb, redeemable0 + donation);
+    let pending = app.pending_unbonds()?;
+    assert_eq!(pending.len(), 1);
+    assert_eq!(
+        pending[0],
+        UnbondInfo {
+            amount: redeemable1,
+            unbond_start: osmosis.block_info()?.time,
+            status: UnbondStatus::Unconfirmed
+        }
+    );
+    let claimable = app.claimable()?;
+    assert_eq!(claimable.amount, redeemable0 + donation);
 
-    let expected_contract_balance = amount0 * redemption_rate + amount1 * redemption_rate;
+    let expected_contract_balance = redeemable0 + redeemable1;
     assert_eq!(app.balance_in_underlying()?, expected_contract_balance);
 
     assert!(app.claim().is_ok());
     let claimed = osmosis.query_balance(&osmosis.sender(), DENOM)?;
     assert_eq!(claimed, redeemable0 + donation);
 
-    let expected_contract_balance = amount1 * redemption_rate;
-    assert_eq!(app.balance_in_underlying()?, expected_contract_balance);
+    assert_eq!(app.balance_in_underlying()?, redeemable1);
 
     Ok(())
 }
