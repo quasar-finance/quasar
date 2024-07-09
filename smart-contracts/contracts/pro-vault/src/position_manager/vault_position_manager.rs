@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128};
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult, Uint128};
 use cw_storage_plus::{Item, Map};
 use serde::{Serialize, Deserialize};
 use schemars::JsonSchema;
@@ -7,19 +7,25 @@ use crate::proshare::share_allocator::{ShareConfig, calculate_shares};
 
 // Define the item for the total shares in the vault and a map for deposits
 pub const PROVAULT_POSITION: Item<ProVaultPosition> = Item::new("provault_position");
+// Map for storing deposits
 pub const DEPOSITS: Map<u64, Deposit> = Map::new("deposits");
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ProVaultPosition {
-    pub provault_share_balance: Vec<Coin>,  // Total pro vault shares
-    pub outstanding_shares: Uint128,
-    pub outstanding_deposit_amount: Uint128,
+    pub total_shares: Uint128,             // Total shares in the vault
+    pub total_assets: Uint128,             // Total asset under management 
+    pub outstanding_shares: Uint128,       // Shares allocated to connected adapters
+    pub outstanding_deposit_amount: Uint128, // Total deposit amount in the vault
 }
 
 impl ProVaultPosition {
-    pub fn new(provault_share_balance: Vec<Coin>, outstanding_shares: Uint128, outstanding_deposit_amount: Uint128) -> Self {
+    pub fn new(total_shares: Uint128, 
+        total_assets: Uint128, 
+        outstanding_shares: Uint128, 
+        outstanding_deposit_amount: Uint128) -> Self {
         Self {
-            provault_share_balance,
+            total_shares,
+            total_assets,
             outstanding_shares,
             outstanding_deposit_amount,
         }
@@ -40,7 +46,9 @@ pub fn initialize(
     _info: MessageInfo,
 ) -> StdResult<Response> {
     // Initialize the provault position with an empty balance
-    PROVAULT_POSITION.save(deps.storage, &ProVaultPosition::new(vec![], Uint128::zero(), Uint128::zero()))?;
+    PROVAULT_POSITION.save(deps.storage, 
+        &ProVaultPosition::new(Uint128::zero(),Uint128::zero(),
+         Uint128::zero(), Uint128::zero()))?;
 
     Ok(Response::new().add_attribute("method", "initialize"))
 }
@@ -52,32 +60,21 @@ pub fn deposit(
     amount: Uint128,
     config: &ShareConfig,
 ) -> StdResult<Response> {
-    // Calculate the number of shares to allocate based on the amount deposited
-    let shares = calculate_shares(amount, config);
-
     // Load the provault position or create a new one if it doesn't exist
-    let mut provault_position = PROVAULT_POSITION.load(deps.storage)?;
+    let mut provault_position = PROVAULT_POSITION
+        .may_load(deps.storage)?
+        .unwrap_or_else(|| ProVaultPosition::new(Uint128::zero(),Uint128::zero(),
+                         Uint128::zero(), Uint128::zero()));
 
-    // Update the provault position with the new shares
-    let mut found = false;
-    for coin in &mut provault_position.provault_share_balance {
-        if coin.denom == config.share_denom {
-            coin.amount += shares;
-            found = true;
-            break;
-        }
-    }
-    if !found {
-        provault_position.provault_share_balance.push(Coin {
-            denom: config.share_denom.clone(),
-            amount: shares,
-        });
-    }
+    // Calculate the number of shares to allocate based on the amount deposited
+    let shares = calculate_shares(amount, 
+        provault_position.total_shares,
+        provault_position.total_assets);
 
-    // Update outstanding shares and deposit amount. This represent the
-    // amount of share to be distributed further to yield destination via 
-    // adaptors by the strategy.
-    provault_position.outstanding_shares += shares;
+    // Update the provault position with the new shares, its also total share
+    provault_position.total_shares += shares;
+    // Track shares and assets allocated to connected adapters
+    provault_position.outstanding_shares += shares; 
     provault_position.outstanding_deposit_amount += amount;
 
     // Save the updated provault position
@@ -85,16 +82,12 @@ pub fn deposit(
 
     // Generate a unique deposit ID
     let deposit_id = DEPOSITS
-    .keys(deps.storage, None, None, Order::Descending)
-    .next()
-    .map(|key| key.unwrap_or(0) + 1)
-    .unwrap_or(1);
+        .keys(deps.storage, None, None, Order::Descending)
+        .next()
+        .map(|key| key.unwrap_or(0) + 1)
+        .unwrap_or(1);
 
-    // Create a new deposit record. 
-    // TODO - This record should be used by the strategy to seamlessly 
-    // distribute the deposited funds to yeild adaptors to earn yield.
-    // NOTE- Deposit object and outstanding_share/deposit_amount should
-    // be updated in sync
+    // Create a new deposit record
     let deposit = Deposit {
         id: deposit_id,
         depositor: info.sender.clone(),

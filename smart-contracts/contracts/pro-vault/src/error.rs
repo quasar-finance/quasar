@@ -61,6 +61,9 @@ pub enum ContractError {
     #[error("{0}")]
     MoneyMarket(#[from] MoneyMarketError),
 
+    #[error("Insufficient share found in storage")]
+    InsufficientShares,
+
     #[error("Oracle contract not set")]
     OracleContractNotSet,
     

@@ -2,6 +2,7 @@ use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, Response, StdError, St
 use cw_storage_plus::Map;
 use serde::{Serialize, Deserialize};
 use schemars::JsonSchema;
+use crate::position_manager::vault_position_manager::{PROVAULT_POSITION, ProVaultPosition};
 
 use crate::proshare::share_allocator::{ShareConfig, calculate_shares};
 
@@ -31,21 +32,30 @@ pub fn allocate_position(
     amount: Uint128,
     config: &ShareConfig,
 ) -> StdResult<Response> {
-    // Calculate the number of shares to allocate based on the amount
-    let shares = calculate_shares(amount, config);
+    
+   // Load the provault position or create a new one if it doesn't exist
+   let mut provault_position: ProVaultPosition = PROVAULT_POSITION
+   .may_load(deps.storage)?
+   .unwrap_or_else(|| ProVaultPosition::new(Uint128::zero(),Uint128::zero(),
+                    Uint128::zero(), Uint128::zero()));
+
 
     // Load the user's position or create a new one if it doesn't exist
     let mut position = USER_POSITIONS.may_load(deps.storage, &info.sender)?
         .unwrap_or_else(|| UserPosition::new(info.sender.clone(), 
             Uint128::zero()));
-
-    // Update the user's position with the new shares
+    
+    // Calculate the number of shares to allocate based on the amount
+    let shares = calculate_shares(amount,provault_position.total_shares,
+         provault_position.total_assets);
+     
     position.shares += shares;
-
-    // Save the updated position
     USER_POSITIONS.save(deps.storage, &info.sender, &position)?;
 
-    Ok(Response::new().add_attribute("method", "allocate_position"))
+    Ok(Response::new().
+        add_attribute("method", "allocate_position").
+        add_attribute("new_allocated_share", shares).
+        add_attribute("total_user_share", position.shares))
 }
 
 pub fn query_position(deps: Deps, address: Addr) -> StdResult<UserPosition> {

@@ -1,7 +1,9 @@
-use cw_storage_plus::Map;
+use cw_storage_plus::{Map, Item};
+use cw_vault_standard::{VaultStandardInfoResponse, VaultInfoResponse};
+
 use cosmwasm_std::{
     entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, 
-    StdResult, StdError, Uint128, BankMsg,CosmosMsg,Attribute
+    StdResult, StdError, Uint128, BankMsg,CosmosMsg,Attribute, to_json_binary
     };
 
     use crate::error::ContractError;
@@ -27,12 +29,9 @@ use crate::position_manager::user_position_manager::{allocate_position as user_a
 
 
 pub const WHITELIST_DENOMS: Map<&str, bool> = Map::new("whitelist_denoms");
+pub const VAULT_STANDARD_INFO: Item<VaultStandardInfoResponse> = Item::new("vault_standard_info");
 
 
-  
-// TODO - 
-// 1. Locality of local variables to be strucured, that will reduce number of imports from
-// other modules and will make the contract.rs cleaner, smaller, and easy to read and maintain.
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -41,7 +40,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
 
     match msg {
-        // TODO - Error Handling and propagation.
+        // TODO - Multi Vault Standard to be used after basic testing. 
         ExecuteMsg::Deposit { amount, recipient } => { 
             let _ = try_deposit(deps, env, info, amount, recipient);},
         ExecuteMsg::Redeem { recipient, amount } => todo!(),
@@ -70,7 +69,9 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    // Ensure the admin and vault owner are the same
+    // Ensure the admin and vault owner are the same at the time of initialization.
+    // This is to keep it simple during initial phases. 
+    // TODO - Future Extension for directly adding a separate owner.
     if msg.provault_config.admin != info.sender {
         return Err(ContractError::AdminVaultOwnerMismatch {});
     }
@@ -95,7 +96,9 @@ pub fn instantiate(
     })?;
 
     // Initialize the whitelist-denoms that are allowed to deposit in this 
-    // instance of contract
+    // instance of contract. 
+    // TODO - Initially it is a single denom deposit. So multiple 
+    // entries in the whitelist should not be allowed.
    for denom in msg.whitelisted_denoms {
         WHITELIST_DENOMS.save(deps.storage, &denom, &true)?;
     }
@@ -105,11 +108,18 @@ pub fn instantiate(
 
     // Initialize the vault state
     let mut vault = Vault::new();
-    let update_state_response = vault.update_state(deps, env, 
+    let update_state_response = vault.update_state(deps.branch(), env, 
         info_clone, VaultRunningState::Init)
         .map_err(|e| {
             ContractError::UpdateVaultStateError(e.to_string())
         })?;
+
+    // Initialize vault standard info in storage
+    let vault_standard_info = VaultStandardInfoResponse {
+        version: 1, // Assuming version 1 for now
+        extensions: vec![], // List your extensions here
+    };
+    VAULT_STANDARD_INFO.save(deps.storage, &vault_standard_info)?;
 
     // Emit events using the new function
     Ok(emit_instantiate_events(&info, &config, update_state_response.attributes))
@@ -126,9 +136,7 @@ fn emit_instantiate_events(
         .add_attribute("vault_owner", info.sender.to_string())
         .add_attribute("max_deposit_cap", config.max_deposit_cap.to_string())
         .add_attribute("deposit_denom", config.deposit_denom.clone())
-//        .add_attribute("share_denom", config.share_denom.clone())
         .add_attribute("share_denom", config.share_denom.clone().unwrap_or_else(|| "".to_string()))
-
         .add_attribute("max_strategy_inst", config.max_strategy_inst.to_string())
         .add_attribute("admin", config.admin.to_string())
         .add_attributes(update_state_attributes) // Merge attributes from update_state
@@ -141,28 +149,24 @@ fn emit_instantiate_events(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::VaultStandardInfo {} => {
-            // TODO: Implement the logic for VaultStandardInfo query
-            todo!()
+            query_vault_standard_info(deps)
         },
         QueryMsg::Info {} => {
-            // TODO: Implement the logic for Info query
-            todo!()
+            query_vault_info(deps)
         },
         QueryMsg::PreviewDeposit { amount } => {
-            // TODO: Implement the logic for PreviewDeposit query
+            // NOT REQUIRED NOW: Implement the logic for PreviewDeposit query
             todo!()
         },
         QueryMsg::PreviewRedeem { amount } => {
-            // TODO: Implement the logic for PreviewRedeem query
+            // NOT REQUIRED NOW: Implement the logic for PreviewRedeem query
             todo!()
         },
         QueryMsg::TotalAssets {} => {
-            // TODO: Implement the logic for TotalAssets query
-            todo!()
+            query_total_assets()
         },
         QueryMsg::TotalVaultTokenSupply {} => {
-            // TODO: Implement the logic for TotalVaultTokenSupply query
-            todo!()
+            query_total_vault_token_supply()
         },
         QueryMsg::ConvertToShares { amount } => {
             // TODO: Implement the logic for ConvertToShares query
@@ -256,7 +260,7 @@ fn try_deposit(
     // a. Store the deposited value in storage from the user with block height 
     // b. Store the oracle pricing that should be used for share calculation. 
     // c. Deploy the fund across the adaptors. 
-    // d. On successfully adaptor deployment, we do the calculation, and allocate share based on 
+    // d. On successfully adaptor fund deployment, we do the calculation, and allocate share based on 
     //    previously stored values 
 
     // DUMMY IMPLEMENTATION FOR SHARE FOR TESTING
@@ -267,8 +271,10 @@ fn try_deposit(
     // let allocate_response = allocate_shares(deps, env.clone(), info.clone(), recipient.clone(), amount, &share_config)?; 
     
     // First, allocate shares for the user
-    let user_allocate_resp = user_allocate_position(deps.branch(), env.clone(), info.clone(), amount, &share_config)?;
-    let vault_deposit_resp = vault_deposit(deps, env.clone(), info.clone(), amount, &share_config)?;
+    let user_allocate_resp = user_allocate_position(deps.branch(), env.clone(), 
+        info.clone(), amount, &share_config)?;
+    let vault_deposit_resp = vault_deposit(deps, env.clone(), 
+        info.clone(), amount, &share_config)?;
 
     Ok(Response::new()
     .add_attribute("method", "try_deposit")
@@ -302,6 +308,34 @@ fn try_exec_vault_actions(
     Vault::execute_action(deps, env, info, action)?;
     Ok(Response::new()
         .add_attribute("method", "try_exec_vault_actions"))
+}
+
+
+// Queries implementations
+fn query_vault_standard_info(deps: Deps) -> StdResult<Binary> {
+    let info = VAULT_STANDARD_INFO.load(deps.storage)?;
+    to_json_binary(&info)
+}
+
+fn query_vault_info(deps: Deps) -> StdResult<Binary> {
+    let config = VAULT_CONFIG.load(deps.storage)?;
+    let response = VaultInfoResponse {
+        base_token: config.deposit_denom,
+        vault_token: config.share_denom.unwrap_or_else(|| "".to_string()),
+    };
+    to_json_binary(&response)
+}
+
+fn query_total_assets() -> StdResult<Binary> {
+    // Dummy implementation for TotalAssets query
+    let total_assets = Uint128::zero();
+    to_json_binary(&total_assets)
+}
+
+fn query_total_vault_token_supply() -> StdResult<Binary> {
+    // Dummy implementation for TotalVaultTokenSupply query
+    let total_vault_token_supply = Uint128::zero();
+    to_json_binary(&total_vault_token_supply)
 }
 
 #[cfg(test)]

@@ -82,7 +82,7 @@ impl Vault {
 
     pub fn update_state(
         &mut self,
-        deps: DepsMut,
+        mut deps: DepsMut,
         env: Env,
         info: MessageInfo,
         new_state: VaultRunningState,
