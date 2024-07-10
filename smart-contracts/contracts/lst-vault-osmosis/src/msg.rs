@@ -11,6 +11,7 @@ pub struct InstantiateMsg {
     pub lst_adapter: String,
     pub lst_denom: LstDenom,
     pub unbonding_time_seconds: u64,
+    pub subdenom: String,
 }
 
 #[cw_serde]

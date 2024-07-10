@@ -19,19 +19,14 @@ use osmosis_std::types::cosmos::base::v1beta1::Coin as ProtoCoin;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::{MsgBurn, MsgMint};
 use quasar_types::abstract_sdk::ExecuteMsg as AbstractExecuteMsg;
-use quasar_types::denoms::LstDenom;
+use quasar_types::denoms::{get_factory_denom, LstDenom};
 use quasar_types::error::assert_funds_single_token;
 use quasar_types::query::query_contract_balance;
 
 const CONTRACT_NAME: &str = "quasar:quasar-lst-vault-osmosis";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub const SUBDENOM: &str = "uqlst";
 pub const SWAP_REPLY_ID: u64 = 1;
-
-pub fn get_factory_denom(addr: &str, subdenom: &str) -> String {
-    format!("factory/{}/{}", addr, subdenom)
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -51,14 +46,14 @@ pub fn instantiate(
             dex_adapter: deps.api.addr_validate(&msg.dex_adapter)?,
             lst_adapter: deps.api.addr_validate(&msg.lst_adapter)?,
             lst_denom: msg.lst_denom,
-            denom: get_factory_denom(env.contract.address.as_ref(), SUBDENOM),
+            denom: get_factory_denom(env.contract.address.as_ref(), &msg.subdenom),
             unbonding_time_seconds: msg.unbonding_time_seconds,
         },
     )?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::new().add_message(MsgCreateDenom {
         sender: env.contract.address.to_string(),
-        subdenom: SUBDENOM.to_string(),
+        subdenom: msg.subdenom,
     }))
 }
 

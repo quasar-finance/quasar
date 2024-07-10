@@ -1,4 +1,3 @@
-use crate::contract::{get_factory_denom, SUBDENOM};
 use crate::msg::InstantiateMsg;
 use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
 use cosmwasm_std::{
@@ -7,7 +6,7 @@ use cosmwasm_std::{
 };
 use lst_adapter_osmosis::msg::LstAdapterQueryMsg;
 use lst_adapter_osmosis::state::UnbondInfo;
-use quasar_types::denoms::LstDenom;
+use quasar_types::denoms::{get_factory_denom, LstDenom};
 
 pub const DEPOSIT_DENOM: &str = "uosmo";
 pub const LST_DENOM: &str = "ustosmo";
@@ -17,6 +16,7 @@ pub const TEST_UNBONDING_PERIOD: u64 = 20000;
 pub const CREATOR: &str = "creator";
 pub const USER: &str = "user";
 pub const OWNER: &str = "owner";
+pub const SUBDENOM: &str = "uqlst";
 
 pub fn get_init_msg() -> InstantiateMsg {
     InstantiateMsg {
@@ -28,6 +28,7 @@ pub fn get_init_msg() -> InstantiateMsg {
             underlying: DEPOSIT_DENOM.to_string(),
         },
         unbonding_time_seconds: TEST_UNBONDING_PERIOD,
+        subdenom: SUBDENOM.to_string(),
     }
 }
 
