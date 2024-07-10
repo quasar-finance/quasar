@@ -1,0 +1,8 @@
+[alias]
+wasm = "build --release --target wasm32-unknown-unknown"
+schema = "cargo run --bin schema --features schema"
+lint = "clippy -- -D warnings"
+lint-fix = "clippy --fix -- -D warnings"
+unit-test = "test --lib"
+test-vault = "test --lib -p basic-vault"
+clip = "clippy -- --D warnings --A deprecated"
