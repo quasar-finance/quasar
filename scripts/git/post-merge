@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+BRANCH_NAME=$(git branch | grep "*" | sed "s/\* //")
+
+if [[ "$BRANCH_NAME" == "main" ]]; then
+    # remove stale remote tracking branches
+    git remote prune origin
+
+    # remove each local branch which had a remote tracking branch that does not exist any more
+    git for-each-ref --format '%(refname:short) %(upstream:track)' |
+        awk '$2 == "[gone]" {print $1}' |
+        xargs -r git branch -D
+fi

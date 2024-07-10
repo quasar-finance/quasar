@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+CHANGES=$(git diff --name-only origin/main)
+
+
+if [ -z "$CHANGES" ]
+then
+  echo "No changes"
+  exit 1
+fi
+
+update_schemas_and_formatting() {
+  local contract=$1
+  if [[ $CHANGES == *contracts/${contract}* ]]
+  then
+    echo "Changes in ${contract} contract"
+    cd ${REPO_ROOT}/smart-contracts/contracts/${contract}
+
+    # generate schemas
+    cargo schema
+    NEW_CHANGES=$(git diff --name-only origin/main)
+    if [[ $NEW_CHANGES == *schema/* ]]
+    then
+      git add schema
+    else
+      echo "No schema changes for ${contract}."
+    fi
+
+    # fix formatting
+    cargo fmt --all
+    cd ${REPO_ROOT}
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=A)
+    git add $NEW_CHANGES
+  fi
+}
+
+update_schemas_and_formatting lst-dex-adapter-osmosis
+update_schemas_and_formatting dex-router-osmosis
+update_schemas_and_formatting token-burner
+update_schemas_and_formatting cl-vault
+update_schemas_and_formatting merkle-incentives
+update_schemas_and_formatting range-middleware

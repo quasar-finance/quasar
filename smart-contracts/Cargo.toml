@@ -10,8 +10,6 @@ members = [
   # "contracts/basic-vault",
   # "contracts/vault-rewards",
   # "contracts/multihop-router",
-  # "packages/quasar-types",
-  # "packages/intergamm-bindings",
   "contracts/token-burner",
   "contracts/cl-vault",
   "contracts/merkle-incentives",
