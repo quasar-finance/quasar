@@ -5,39 +5,21 @@ name = "cl-vault"
 version = "0.3.0"
 
 exclude = [
-  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
-  "contract.wasm",
+  "cl_vault.wasm",
   "hash.txt",
 ]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[profile.release]
-codegen-units = 1
-debug = false
-debug-assertions = false
-incremental = false
-lto = true
-opt-level = 3
-overflow-checks = true
-panic = 'abort'
-rpath = false
+[[bin]]
+name = "schema"
 
 [features]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
-
-[package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)":/code \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.16.0
-"""
 
 [dependencies]
 cosmwasm-std = { workspace = true }
@@ -54,8 +36,6 @@ cw2 = { workspace = true }
 num_enum = { workspace = true }
 apollo-cw-asset = { workspace = true }
 dex-router-osmosis = {workspace = true}
-
-## todo update this in dex router code first as this has been deprecated
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
 
 [dev-dependencies]

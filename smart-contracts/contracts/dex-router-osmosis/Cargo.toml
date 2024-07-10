@@ -12,13 +12,15 @@ description = "A cosmwasm contract for routing swaps"
 keywords = ["cosmwasm", "dex", "router", "osmosis"]
 
 exclude = [
-  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "dex_router_osmosis.wasm",
   "hash.txt",
 ]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "schema"
 
 [features]
 default = []

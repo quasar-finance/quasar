@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [ amd64, arm64 ]
+        arch: [ amd64 ]
         targetos: [ linux ]
     permissions:
       contents: write
@@ -116,11 +116,7 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Install just via cargo
-        run: cargo install just
       
-      # This is the new one
       - name: Move smart contracts
         if: env.GIT_DIFF
         run: |
