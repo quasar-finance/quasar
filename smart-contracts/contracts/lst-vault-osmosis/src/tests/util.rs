@@ -13,6 +13,7 @@ pub const LST_DENOM: &str = "ustosmo";
 pub const TEST_LST_ADAPTER: &str = "test-lst-adapter";
 pub const TEST_DEX_ADAPTER: &str = "test-dex-adapter";
 pub const TEST_UNBONDING_PERIOD: u64 = 20000;
+pub const TEST_UNBONDING_BUFFER: u64 = 10000;
 pub const CREATOR: &str = "creator";
 pub const USER: &str = "user";
 pub const OWNER: &str = "owner";
@@ -28,6 +29,7 @@ pub fn get_init_msg() -> InstantiateMsg {
             underlying: DEPOSIT_DENOM.to_string(),
         },
         unbonding_time_seconds: TEST_UNBONDING_PERIOD,
+        unbonding_buffer_seconds: TEST_UNBONDING_BUFFER,
         subdenom: SUBDENOM.to_string(),
     }
 }

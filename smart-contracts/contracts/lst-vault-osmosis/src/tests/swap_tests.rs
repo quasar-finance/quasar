@@ -3,7 +3,8 @@ use crate::error::ContractError;
 use crate::msg::ExecuteMsg;
 use crate::tests::util::{
     get_fund_denom, get_init_msg, mock_wasm_querier_with_lst_adapter, CREATOR, DEPOSIT_DENOM,
-    LST_DENOM, OWNER, TEST_DEX_ADAPTER, TEST_LST_ADAPTER, TEST_UNBONDING_PERIOD, USER,
+    LST_DENOM, OWNER, TEST_DEX_ADAPTER, TEST_LST_ADAPTER, TEST_UNBONDING_BUFFER,
+    TEST_UNBONDING_PERIOD, USER,
 };
 use cosmwasm_std::testing::{
     mock_dependencies, mock_dependencies_with_balances, mock_env, mock_info, MOCK_CONTRACT_ADDR,
@@ -154,7 +155,7 @@ fn swap_succeeds_if_unlocking_funds_cover_blocked_funds() {
         0,
         vec![UnbondInfo {
             amount: Uint128::from(100_000u128),
-            unbond_start: env.block.time.minus_hours(4),
+            unbond_start: env.block.time.minus_seconds(TEST_UNBONDING_BUFFER),
             status: UnbondStatus::Confirmed,
         }],
     ));

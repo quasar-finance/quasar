@@ -11,6 +11,9 @@ pub struct InstantiateMsg {
     pub lst_adapter: String,
     pub lst_denom: LstDenom,
     pub unbonding_time_seconds: u64,
+    // When swapping, we check for pending withdrawals and unbonds to determine the available funds.
+    // As we don't know exactly when unbonded tokens are available, we need a buffer.
+    pub unbonding_buffer_seconds: u64,
     pub subdenom: String,
 }
 
@@ -30,6 +33,7 @@ pub enum ExecuteMsg {
         lst_adapter: Option<String>,
         lst_denom: Option<LstDenom>,
         unbonding_time_seconds: Option<u64>,
+        unbonding_buffer_seconds: Option<u64>,
     },
     UpdateOwner(OwnerUpdate),
 }

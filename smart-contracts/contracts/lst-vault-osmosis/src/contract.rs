@@ -48,6 +48,7 @@ pub fn instantiate(
             lst_denom: msg.lst_denom,
             denom: get_factory_denom(env.contract.address.as_ref(), &msg.subdenom),
             unbonding_time_seconds: msg.unbonding_time_seconds,
+            unbonding_buffer_seconds: msg.unbonding_buffer_seconds,
         },
     )?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -75,6 +76,7 @@ pub fn execute(
             lst_adapter,
             lst_denom,
             unbonding_time_seconds,
+            unbonding_buffer_seconds,
         } => update(
             deps,
             info,
@@ -82,6 +84,7 @@ pub fn execute(
             lst_adapter,
             lst_denom,
             unbonding_time_seconds,
+            unbonding_buffer_seconds,
         ),
         ExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
     }
@@ -244,9 +247,8 @@ fn get_blocked_amount(deps: Deps) -> StdResult<Uint128> {
             let unbond_info = &mut pending_unbonds[idx];
             if unbond_info
                 .unbond_start
-                .plus_seconds(config.unbonding_time_seconds)
-                .plus_hours(3)
-                < claim.expiration
+                .plus_seconds(config.unbonding_time_seconds + config.unbonding_buffer_seconds)
+                <= claim.expiration
             {
                 if amount <= unbond_info.amount {
                     unbond_info.amount -= amount;
@@ -254,7 +256,6 @@ fn get_blocked_amount(deps: Deps) -> StdResult<Uint128> {
                     break;
                 } else {
                     amount -= unbond_info.amount;
-                    unbond_info.amount = Uint128::zero();
                     idx += 1;
                 }
             } else {
@@ -299,6 +300,7 @@ fn update(
     lst_adapter: Option<String>,
     lst_denom: Option<LstDenom>,
     unbonding_time_seconds: Option<u64>,
+    unbonding_buffer_seconds: Option<u64>,
 ) -> Result<Response, ContractError> {
     OWNER.assert_owner(deps.storage, &info.sender)?;
     let dex_adapter = if let Some(dex_adapter) = dex_adapter {
@@ -317,6 +319,8 @@ fn update(
         config.lst_denom = lst_denom.unwrap_or(config.lst_denom);
         config.unbonding_time_seconds =
             unbonding_time_seconds.unwrap_or(config.unbonding_time_seconds);
+        config.unbonding_buffer_seconds =
+            unbonding_buffer_seconds.unwrap_or(config.unbonding_buffer_seconds);
         Ok(config)
     })?;
     Ok(Response::default())

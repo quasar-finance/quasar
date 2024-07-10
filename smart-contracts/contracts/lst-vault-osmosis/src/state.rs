@@ -11,6 +11,7 @@ pub struct Config {
     pub lst_denom: LstDenom,
     pub denom: String,
     pub unbonding_time_seconds: u64,
+    pub unbonding_buffer_seconds: u64,
 }
 
 #[cw_serde]
