@@ -3831,6 +3831,7 @@ dependencies = [
  "cw2 1.1.2",
  "lst-adapter-osmosis",
  "lst-dex-adapter-osmosis",
+ "mars-owner",
  "osmosis-std",
  "quasar-types",
  "thiserror",

@@ -29,3 +29,4 @@ osmosis-std = { workspace = true }
 quasar-types = { workspace = true }
 lst-dex-adapter-osmosis = { workspace = true }
 lst-adapter-osmosis = { workspace = true }
+mars-owner = { workspace = true }

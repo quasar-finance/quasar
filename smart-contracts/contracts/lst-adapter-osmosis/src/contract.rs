@@ -3,7 +3,7 @@ use crate::msg::{
     LstAdapterExecuteMsg, LstAdapterInstantiateMsg, LstAdapterMigrateMsg, LstAdapterQueryMsg,
 };
 use crate::state::{
-    Denoms, IbcConfig, UnbondInfo, UnbondStatus, DENOMS, IBC_CONFIG, OBSERVER, ORACLE, OWNER,
+    IbcConfig, UnbondInfo, UnbondStatus, IBC_CONFIG, LST_DENOM, OBSERVER, ORACLE, OWNER,
     REDEEMED_BALANCE, TOTAL_BALANCE, UNBONDING, UNBOND_PERIOD_SECS, VAULT,
 };
 use crate::{LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_VERSION};
@@ -22,6 +22,7 @@ use ica_oracle::msg::{
     QueryMsg as StrideQueryMsg, RedemptionRateResponse as StrideRedemptionRateResponse,
 };
 use mars_owner::OwnerInit::SetInitialOwner;
+use quasar_types::denoms::LstDenom;
 // use osmosis_std::types::ibc::applications::transfer::v1::MsgTransfer;
 // use osmosis_std::types::ibc::core::client::v1::Height;
 // use prost::Message;
@@ -75,7 +76,7 @@ pub fn instantiate_(
     OWNER.initialize(deps.storage, deps.api, SetInitialOwner { owner: msg.owner })?;
     VAULT.save(deps.storage, &deps.api.addr_validate(&msg.vault)?)?;
     OBSERVER.save(deps.storage, &deps.api.addr_validate(&msg.observer)?)?;
-    DENOMS.save(deps.storage, &msg.denoms)?;
+    LST_DENOM.save(deps.storage, &msg.denoms)?;
     ORACLE.save(deps.storage, &deps.api.addr_validate(&msg.stride_oracle)?)?;
     UNBONDING.save(deps.storage, &vec![])?;
     UNBOND_PERIOD_SECS.save(deps.storage, &msg.unbond_period_secs)?;
@@ -117,7 +118,7 @@ pub fn execute_(
         LstAdapterExecuteMsg::UpdateOwner(update) => Ok(OWNER.update(deps, info, update)?),
         LstAdapterExecuteMsg::Update {
             vault,
-            denoms,
+            lst_denom,
             observer,
             stride_oracle,
             unbond_period_secs: unbond_period,
@@ -127,7 +128,7 @@ pub fn execute_(
             app,
             vault,
             observer,
-            denoms,
+            lst_denom,
             stride_oracle,
             unbond_period,
         ),
@@ -165,10 +166,10 @@ fn record_pending_unbond(
 
 fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAdapterResult {
     assert_vault(&info.sender, &VAULT.load(deps.storage)?)?;
-    let denoms = DENOMS.load(deps.storage)?;
-    assert_funds_single_token(&info.funds, &denoms.lst)?;
+    let lst_denom = LST_DENOM.load(deps.storage)?;
+    assert_funds_single_token(&info.funds, &lst_denom.denom)?;
     let redemption_rate = query_redemption_rate(deps.as_ref())?;
-    let unbond_amount = query_contract_balance(&deps.querier, &env, &denoms.lst)?;
+    let unbond_amount = query_contract_balance(&deps.querier, &env, &lst_denom.denom)?;
     let previous_unbond_pending = record_pending_unbond(
         deps.storage,
         unbond_amount.checked_mul_floor(redemption_rate)?,
@@ -180,7 +181,7 @@ fn unbond(deps: DepsMut, env: Env, info: MessageInfo, app: LstAdapter) -> LstAda
         return Ok(response);
     }
 
-    let unbond_funds = coins(unbond_amount.into(), denoms.lst);
+    let unbond_funds = coins(unbond_amount.into(), lst_denom.denom);
     let mut transfer_msgs = app.bank(deps.as_ref()).deposit(unbond_funds.clone())?;
     let ibc_client = app.ibc_client(deps.as_ref());
     let ibc_msg = ibc_client.ics20_transfer(
@@ -284,8 +285,8 @@ fn confirm_unbond_finished(
             return Err(LstAdapterError::UnbondNotFinished {});
         }
         let mut redeemed_balance = REDEEMED_BALANCE.load(deps.storage)?;
-        let denoms = DENOMS.load(deps.storage)?;
-        let contract_balance = query_contract_balance(&deps.querier, &env, &denoms.underlying)?;
+        let lst_denom = LST_DENOM.load(deps.storage)?;
+        let contract_balance = query_contract_balance(&deps.querier, &env, &lst_denom.underlying)?;
         redeemed_balance += unbond_info.amount;
         if redeemed_balance > contract_balance {
             return Err(LstAdapterError::StillWaitingForFunds {});
@@ -355,7 +356,7 @@ fn update(
     app: LstAdapter,
     vault: Option<String>,
     observer: Option<String>,
-    denoms: Option<Denoms>,
+    lst_denom: Option<LstDenom>,
     stride_oracle: Option<String>,
     unbond_period: Option<u64>,
 ) -> LstAdapterResult {
@@ -366,8 +367,8 @@ fn update(
     if let Some(observer) = observer {
         OBSERVER.save(deps.storage, &deps.api.addr_validate(&observer)?)?;
     }
-    if let Some(denoms) = denoms {
-        DENOMS.save(deps.storage, &denoms)?;
+    if let Some(lst_denom) = lst_denom {
+        LST_DENOM.save(deps.storage, &lst_denom)?;
     }
     if let Some(stride_oracle) = stride_oracle {
         ORACLE.save(deps.storage, &deps.api.addr_validate(&stride_oracle)?)?;
@@ -382,8 +383,8 @@ fn get_balance(deps: Deps, env: Env) -> Result<Uint128, LstAdapterError> {
     let total_balance = TOTAL_BALANCE.load(deps.storage)?;
     // we only update the total balance when we start the unbonding process
     // therefore we have to add the underlying tokens corresponding to the lst tokens that are hold by this contract
-    let denoms = DENOMS.load(deps.storage)?;
-    let lst_balance = query_contract_balance(&deps.querier, &env, &denoms.lst)?;
+    let lst_denom = LST_DENOM.load(deps.storage)?;
+    let lst_balance = query_contract_balance(&deps.querier, &env, &lst_denom.denom)?;
     let redemption_rate = query_redemption_rate(deps)?;
     Ok(total_balance.checked_add(lst_balance.checked_mul_floor(redemption_rate)?)?)
 }
@@ -408,7 +409,7 @@ pub fn query_(
         LstAdapterQueryMsg::Oracle {} => {
             Ok(to_json_binary(&ORACLE.load(deps.storage)?.to_string())?)
         }
-        LstAdapterQueryMsg::Denoms {} => Ok(to_json_binary(&DENOMS.load(deps.storage)?)?),
+        LstAdapterQueryMsg::LstDenom {} => Ok(to_json_binary(&LST_DENOM.load(deps.storage)?)?),
         LstAdapterQueryMsg::RedemptionRate {} => Ok(to_json_binary(&query_redemption_rate(deps)?)?),
         LstAdapterQueryMsg::PendingUnbonds {} => {
             Ok(to_json_binary(&UNBONDING.load(deps.storage)?)?)
@@ -419,10 +420,10 @@ pub fn query_(
 }
 
 fn get_underlying_balance(deps: &Deps, env: &Env) -> StdResult<Coin> {
-    let denoms = DENOMS.load(deps.storage)?;
+    let lst_denom = LST_DENOM.load(deps.storage)?;
     Ok(coin(
-        query_contract_balance(&deps.querier, env, &denoms.underlying)?.into(),
-        denoms.underlying,
+        query_contract_balance(&deps.querier, env, &lst_denom.underlying)?.into(),
+        lst_denom.underlying,
     ))
 }
 
@@ -434,7 +435,7 @@ fn query_redemption_rate(deps: Deps) -> StdResult<Decimal> {
     let response: StrideRedemptionRateResponse = deps.querier.query_wasm_smart(
         ORACLE.load(deps.storage)?,
         &StrideQueryMsg::RedemptionRate {
-            denom: DENOMS.load(deps.storage)?.lst,
+            denom: LST_DENOM.load(deps.storage)?.denom,
             params: None,
         },
     )?;

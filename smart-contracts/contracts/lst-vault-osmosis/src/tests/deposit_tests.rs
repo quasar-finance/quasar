@@ -59,6 +59,7 @@ fn first_successful_deposit_mints_fund_tokens_according_to_first_provided_asset(
         TEST_LST_ADAPTER.to_owned(),
         0,
         0,
+        vec![],
     ));
     let env = mock_env();
 
@@ -112,6 +113,7 @@ fn second_successful_deposit_mints_fund_tokens_according_to_share_of_assets() {
         TEST_LST_ADAPTER.to_owned(),
         0,
         0,
+        vec![],
     ));
 
     let msg = get_init_msg();

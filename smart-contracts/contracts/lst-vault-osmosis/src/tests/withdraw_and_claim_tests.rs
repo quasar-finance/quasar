@@ -68,6 +68,7 @@ fn withdraw_registers_pending_claim() {
         TEST_LST_ADAPTER.to_owned(),
         0,
         0,
+        vec![],
     ));
     let env = mock_env();
 
@@ -125,6 +126,7 @@ fn claim_fails_before_expiration() {
         TEST_LST_ADAPTER.to_owned(),
         0,
         0,
+        vec![],
     ));
     let env = mock_env();
 
@@ -159,6 +161,7 @@ fn claim_succeeds_after_expiration() {
         TEST_LST_ADAPTER.to_owned(),
         0,
         0,
+        vec![],
     ));
     let mut env = mock_env();
 
@@ -183,7 +186,7 @@ fn claim_succeeds_after_expiration() {
         response.messages[0].msg,
         BankMsg::Send {
             to_address: USER.to_string(),
-            amount: vec![Coin::new(2000, fund_denom)]
+            amount: vec![Coin::new(2000, DEPOSIT_DENOM)]
         }
         .into()
     );
@@ -217,6 +220,7 @@ fn claim_triggers_claim_from_lst_adapter_if_necessary() {
         TEST_LST_ADAPTER.to_owned(),
         lst_pending,
         lst_claimable,
+        vec![],
     ));
     let mut env = mock_env();
 
@@ -250,7 +254,7 @@ fn claim_triggers_claim_from_lst_adapter_if_necessary() {
         response.messages[1].msg,
         BankMsg::Send {
             to_address: USER.to_string(),
-            amount: vec![Coin::new(2000, fund_denom)]
+            amount: vec![Coin::new(2000, DEPOSIT_DENOM)]
         }
         .into()
     );
@@ -271,6 +275,7 @@ fn claim_fails_if_insufficent_funds_are_available() {
         TEST_LST_ADAPTER.to_owned(),
         lst_pending,
         lst_claimable,
+        vec![],
     ));
     let mut env = mock_env();
 

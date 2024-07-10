@@ -1,4 +1,5 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{OverflowError, StdError};
+use mars_owner::OwnerError;
 use quasar_types::error::FundsError;
 use thiserror::Error;
 
@@ -15,4 +16,10 @@ pub enum ContractError {
 
     #[error("{0}")]
     Funds(#[from] FundsError),
+
+    #[error("{0}")]
+    Overflow(#[from] OverflowError),
+
+    #[error("{0}")]
+    Owner(#[from] OwnerError),
 }

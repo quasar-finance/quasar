@@ -1,4 +1,3 @@
-use crate::state::Denoms;
 use crate::tests::fake_stride_oracle::{FakeStrideOracle, FakeStrideOracleInstantiateMsg};
 use abstract_cw_orch_polytone::Polytone;
 use abstract_interface::{
@@ -16,6 +15,7 @@ use cw_orch::mock::MockBase;
 use cw_orch::{anyhow, prelude::*};
 use cw_orch_interchain::{prelude::*, InterchainError};
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
+use quasar_types::denoms::LstDenom;
 use std::str::FromStr;
 
 use crate::msg::LstAdapterInstantiateMsg;
@@ -234,8 +234,8 @@ pub fn create_app(sender_balance: Vec<Coin>, vault: Option<String>) -> anyhow::R
         &app,
         &LstAdapterInstantiateMsg {
             owner: owner.to_string(),
-            denoms: Denoms {
-                lst: LST_DENOM.to_string(),
+            denoms: LstDenom {
+                denom: LST_DENOM.to_string(),
                 underlying: DENOM.to_string(),
             },
             vault: vault.to_string(),

@@ -6,6 +6,8 @@ use cosmwasm_std::{
     Uint128, WasmQuery,
 };
 use lst_adapter_osmosis::msg::LstAdapterQueryMsg;
+use lst_adapter_osmosis::state::UnbondInfo;
+use quasar_types::denoms::LstDenom;
 
 pub const DEPOSIT_DENOM: &str = "uosmo";
 pub const LST_DENOM: &str = "ustosmo";
@@ -14,13 +16,17 @@ pub const TEST_DEX_ADAPTER: &str = "test-dex-adapter";
 pub const TEST_UNBONDING_PERIOD: u64 = 20000;
 pub const CREATOR: &str = "creator";
 pub const USER: &str = "user";
+pub const OWNER: &str = "owner";
 
 pub fn get_init_msg() -> InstantiateMsg {
     InstantiateMsg {
+        owner: OWNER.to_string(),
         dex_adapter: TEST_DEX_ADAPTER.to_string(),
         lst_adapter: TEST_LST_ADAPTER.to_string(),
-        deposit_denom: DEPOSIT_DENOM.to_string(),
-        lst_denom: LST_DENOM.to_string(),
+        lst_denom: LstDenom {
+            denom: LST_DENOM.to_string(),
+            underlying: DEPOSIT_DENOM.to_string(),
+        },
         unbonding_time_seconds: TEST_UNBONDING_PERIOD,
     }
 }
@@ -29,6 +35,7 @@ pub fn mock_wasm_querier_with_lst_adapter(
     lst_adapter: String,
     lst_adapter_balance: u128,
     lst_claimable: u128,
+    pending_unbonds: Vec<UnbondInfo>,
 ) -> Box<impl Fn(&WasmQuery) -> QuerierResult> {
     Box::from(move |request: &WasmQuery| -> QuerierResult {
         match request {
@@ -52,6 +59,11 @@ pub fn mock_wasm_querier_with_lst_adapter(
                             let response = Uint128::from(lst_claimable);
                             return SystemResult::Ok(ContractResult::Ok(
                                 to_json_binary(&response).unwrap(),
+                            ));
+                        }
+                        LstAdapterQueryMsg::PendingUnbonds {} => {
+                            return SystemResult::Ok(ContractResult::Ok(
+                                to_json_binary(&pending_unbonds).unwrap(),
                             ));
                         }
                         _ => {

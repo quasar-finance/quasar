@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Timestamp, Uint128};
 use cw_storage_plus::Item;
 use mars_owner::Owner;
+use quasar_types::denoms::LstDenom;
 
 #[derive(Default)]
 #[cw_serde]
@@ -26,14 +27,8 @@ pub struct UnbondInfo {
     pub status: UnbondStatus,
 }
 
-#[cw_serde]
-pub struct Denoms {
-    pub lst: String,
-    pub underlying: String,
-}
-
 // configuration
-pub const DENOMS: Item<Denoms> = Item::new("denoms");
+pub const LST_DENOM: Item<LstDenom> = Item::new("lst_denom");
 pub const UNBOND_PERIOD_SECS: Item<u64> = Item::new("unbond_period");
 pub const OWNER: Owner = Owner::new("owner");
 pub const VAULT: Item<Addr> = Item::new("vault");

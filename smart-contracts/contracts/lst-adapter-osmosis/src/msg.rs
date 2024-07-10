@@ -1,10 +1,11 @@
 use crate::{
     contract::LstAdapter,
-    state::{Denoms, IbcConfig, UnbondInfo},
+    state::{IbcConfig, UnbondInfo},
 };
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Coin, Decimal, Timestamp, Uint128};
 use mars_owner::OwnerUpdate;
+use quasar_types::denoms::LstDenom;
 
 abstract_app::app_msg_types!(LstAdapter, LstAdapterExecuteMsg, LstAdapterQueryMsg);
 
@@ -13,7 +14,7 @@ pub struct LstAdapterInstantiateMsg {
     pub owner: String,
     pub vault: String,
     pub observer: String,
-    pub denoms: Denoms,
+    pub denoms: LstDenom,
     pub stride_oracle: String,
     pub unbond_period_secs: u64,
 }
@@ -44,7 +45,7 @@ pub enum LstAdapterExecuteMsg {
         timeout_secs: Option<u64>,
     },
     Update {
-        denoms: Option<Denoms>,
+        lst_denom: Option<LstDenom>,
         stride_oracle: Option<String>,
         vault: Option<String>,
         observer: Option<String>,
@@ -64,8 +65,8 @@ pub enum LstAdapterQueryMsg {
     Vault {},
     #[returns(String)]
     Oracle {},
-    #[returns(Denoms)]
-    Denoms {},
+    #[returns(LstDenom)]
+    LstDenom {},
     #[returns(Decimal)]
     RedemptionRate {},
     #[returns(Vec<UnbondInfo>)]

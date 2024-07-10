@@ -1,10 +1,11 @@
 use crate::msg::{LstAdapterExecuteMsgFns, LstAdapterQueryMsgFns};
-use crate::state::{Denoms, IbcConfig};
+use crate::state::IbcConfig;
 use crate::tests::ibc_setup::{create_app, DENOM, LST_DENOM, OSMOSIS};
 use crate::LstAdapterError;
 use cw_orch::anyhow;
 use cw_orch::contract::interface_traits::CallAs;
 use cw_orch_interchain::InterchainEnv;
+use quasar_types::denoms::LstDenom;
 
 #[test]
 fn test_only_owner_can_update_ibc_config() -> anyhow::Result<()> {
@@ -92,12 +93,12 @@ fn test_update() -> anyhow::Result<()> {
     let env = create_app(vec![], None)?;
     let app = env.app;
 
-    assert_eq!(app.denoms()?.lst, LST_DENOM);
+    assert_eq!(app.lst_denom()?.denom, LST_DENOM);
     let other_denom = "other_denom".to_string();
     assert!(app
         .update(
-            Some(Denoms {
-                lst: other_denom.clone(),
+            Some(LstDenom {
+                denom: other_denom.clone(),
                 underlying: DENOM.to_string()
             }),
             None,
@@ -106,7 +107,7 @@ fn test_update() -> anyhow::Result<()> {
             None
         )
         .is_ok());
-    assert_eq!(app.denoms()?.lst, other_denom);
+    assert_eq!(app.lst_denom()?.denom, other_denom);
 
     let new_vault = env
         .mock
@@ -126,8 +127,8 @@ fn test_update() -> anyhow::Result<()> {
         .to_string();
     assert!(app
         .update(
-            Some(Denoms {
-                lst: other_denom.clone(),
+            Some(LstDenom {
+                denom: other_denom.clone(),
                 underlying: DENOM.to_string()
             }),
             None,
@@ -136,7 +137,7 @@ fn test_update() -> anyhow::Result<()> {
             Some(new_vault.clone())
         )
         .is_ok());
-    assert_eq!(app.denoms()?.lst, other_denom);
+    assert_eq!(app.lst_denom()?.denom, other_denom);
     assert_eq!(app.vault()?, new_vault);
     Ok(())
 }
