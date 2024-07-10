@@ -1,9 +1,12 @@
 use crate::{
     helpers::{
-        assert::assert_range_admin, generic::extract_attribute_value_by_ty_and_key, getters::{
+        assert::assert_range_admin,
+        generic::extract_attribute_value_by_ty_and_key,
+        getters::{
             get_single_sided_deposit_0_to_1_swap_amount,
             get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances,
-        }, msgs::swap_msg
+        },
+        msgs::swap_msg,
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
@@ -20,8 +23,8 @@ use crate::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction,
-    MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
+    SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
@@ -673,7 +676,10 @@ mod tests {
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
-        helpers::getters::get_range_admin, math::tick::build_tick_exp_cache, state::{MODIFY_RANGE_STATE, RANGE_ADMIN}, test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance}
+        helpers::getters::get_range_admin,
+        math::tick::build_tick_exp_cache,
+        state::{MODIFY_RANGE_STATE, RANGE_ADMIN},
+        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
     };
 
     #[test]

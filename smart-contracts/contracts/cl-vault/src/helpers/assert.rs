@@ -1,6 +1,9 @@
 use cosmwasm_std::{coin, Addr, Coin, Deps, MessageInfo, Storage};
 
-use crate::{state::{ADMIN_ADDRESS, RANGE_ADMIN}, ContractError};
+use crate::{
+    state::{ADMIN_ADDRESS, RANGE_ADMIN},
+    ContractError,
+};
 
 /// This function compares the address of the message sender (caller) with the current admin
 /// address stored in the state. This provides a convenient way to verify if the caller

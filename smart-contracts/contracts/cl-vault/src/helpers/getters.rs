@@ -9,7 +9,8 @@ use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage, Uint128, Uint256
+    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
+    Uint128, Uint256,
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
