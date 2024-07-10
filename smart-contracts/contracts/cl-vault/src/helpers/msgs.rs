@@ -30,15 +30,13 @@ pub fn refund_bank_msg(
 
     if let Some(refund0) = refund0 {
         if refund0.amount > Uint128::zero() {
-            attributes.push(attr("refund0_amount", refund0.amount));
-            attributes.push(attr("refund0_denom", refund0.denom.as_str()));
+            attributes.push(attr("refund0", refund0.amount));
             coins.push(refund0)
         }
     }
     if let Some(refund1) = refund1 {
         if refund1.amount > Uint128::zero() {
-            attributes.push(attr("refund1_amount", refund1.amount));
-            attributes.push(attr("refund1_denom", refund1.denom.as_str()));
+            attributes.push(attr("refund1", refund1.amount));
             coins.push(refund1)
         }
     }

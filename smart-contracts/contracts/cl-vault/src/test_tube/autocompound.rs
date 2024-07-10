@@ -138,7 +138,7 @@ mod tests {
 
             // Assert balance refunded is either the expected value or not empty for token0
             let refund0_amount =
-                get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund0_amount"]);
+                get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund0"]);
             let mut refund0_amount_parsed: u128 = 0;
             if expected_refund0 > 0 {
                 assert_approx_eq!(
@@ -159,7 +159,7 @@ mod tests {
 
             // Assert balance refunded is either the expected value or not empty for token1
             let refund1_amount =
-                get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund1_amount"]);
+                get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund1"]);
             let mut refund1_amount_parsed: u128 = 0;
             if expected_refund1 > 0 {
                 assert_approx_eq!(
