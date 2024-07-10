@@ -8,6 +8,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Concentratedliq
 
 use crate::error::ContractError;
 use crate::helpers::generic::sort_tokens;
+use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
@@ -39,7 +40,7 @@ use crate::vault::merge::{
     handle_merge_withdraw_position_reply,
 };
 use crate::vault::range::{
-    execute_update_range, get_range_admin, handle_initial_create_position_reply,
+    execute_update_range, handle_initial_create_position_reply,
     handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
     handle_withdraw_position_reply,
 };
