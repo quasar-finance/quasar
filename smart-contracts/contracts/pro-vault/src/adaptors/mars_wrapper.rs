@@ -1,3 +1,6 @@
+// As of now the mars adaptor is implemented here, it should be separated out as a separate contract. 
+// After successful testing I will do that.
+
 use cosmwasm_std::{
     to_binary, Addr, Coin, CosmosMsg, Deps, DepsMut, QuerierWrapper, Response, StdError, StdResult, Uint128, WasmMsg, wasm_execute, Decimal,
 };

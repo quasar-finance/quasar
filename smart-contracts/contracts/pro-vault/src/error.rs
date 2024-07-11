@@ -10,7 +10,7 @@ use abstract_money_market_standard::MoneyMarketError;
 
 
 // TODO - All module errors to be re-structured, and localized.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),

@@ -359,7 +359,6 @@ fn query_total_vault_token_supply() -> StdResult<Binary> {
     let total_vault_token_supply = Uint128::zero();
     to_json_binary(&total_vault_token_supply)
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -379,11 +378,12 @@ mod tests {
                 admin: "admin".to_string(),
                 max_deposit_cap: Uint128::new(1000000),
                 deposit_denom: "uosmo".to_string(),
-                share_denom: "share".to_string(),
+                share_denom: Some("share".to_string()),
                 max_strategy_inst: Uint64::new(10),
             },
             name: "test_name".to_string(),
             thesis: "test_thesis".to_string(),
+            whitelisted_denoms: vec!["uosmo".to_string()],
         };
         let info = mock_info("admin", &[]);
 
@@ -399,9 +399,9 @@ mod tests {
             attr("share_denom", "share"),
             attr("max_strategy_inst", "10"),
             attr("admin", "admin"),
-            attr("action", "update_state"),
-            attr("new_state", "Init"),
-            attr("last_statechange_bh", "12345"), // This might be the block height
+            attr("action", "update_state"),   
+            attr("new_state", "Init"),       
+            attr("last_statechange_bh", mock_env().block.height.to_string()),
         ]);
 
         // Check state
@@ -409,7 +409,7 @@ mod tests {
         assert_eq!(config, Config {
             max_deposit_cap: Uint128::new(1000000),
             deposit_denom: "uosmo".to_string(),
-            share_denom: "share".to_string(),
+            share_denom: Some("share".to_string()),
             max_strategy_inst: Uint64::new(10),
             admin: "admin".to_string(),
         });
@@ -428,11 +428,12 @@ mod tests {
                 admin: "admin".to_string(),
                 max_deposit_cap: Uint128::new(1000000),
                 deposit_denom: "uosmo".to_string(),
-                share_denom: "share".to_string(),
+                share_denom: Some("share".to_string()),
                 max_strategy_inst: Uint64::new(10),
             },
             name: "test_name".to_string(),
             thesis: "test_thesis".to_string(),
+            whitelisted_denoms: vec!["uosmo".to_string()],
         };
         let info = mock_info("not_admin", &[]);
 
