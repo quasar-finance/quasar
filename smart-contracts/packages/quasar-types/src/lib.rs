@@ -5,8 +5,9 @@ pub mod error;
 pub mod ibc;
 pub mod ica;
 pub mod icq;
-pub mod lst_adapter;
+pub mod query;
 pub mod queue;
+pub mod stride;
 pub mod traits;
 pub mod types;
 

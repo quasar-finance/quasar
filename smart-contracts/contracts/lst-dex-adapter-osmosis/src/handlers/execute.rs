@@ -9,7 +9,7 @@ use crate::{
 use abstract_app::{sdk::TransferInterface, traits::AbstractResponse};
 use cosmwasm_std::{Decimal, DepsMut, Env, MessageInfo, SubMsg};
 use cw_asset::Asset;
-use quasar_types::lst_adapter::{QueryMsg as LstQueryMsg, RedemptionRate};
+use lst_adapter_osmosis::msg::LstAdapterQueryMsg;
 use quasar_types::{abstract_sdk::QueryMsg as AbstractQueryMsg, error::assert_funds_single_token};
 
 pub fn execute_handler(
@@ -43,13 +43,10 @@ fn swap(
         state.receive_asset.clone(),
         state.pool.clone(),
     )?;
-    let redemption_rate = deps
-        .querier
-        .query_wasm_smart::<RedemptionRate>(
-            state.lst_adapter,
-            &AbstractQueryMsg::Module(LstQueryMsg::RedemptionRate {}),
-        )?
-        .redemption_rate;
+    let redemption_rate = deps.querier.query_wasm_smart::<Decimal>(
+        state.lst_adapter,
+        &AbstractQueryMsg::Module(LstAdapterQueryMsg::RedemptionRate {}),
+    )?;
     let price = Decimal::from_ratio(offer_amount, simulated.return_amount);
     if price.checked_mul(
         Decimal::one()

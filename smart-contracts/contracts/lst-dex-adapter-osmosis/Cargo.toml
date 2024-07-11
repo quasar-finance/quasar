@@ -51,6 +51,7 @@ dotenv = { workspace = true, optional = true }
 env_logger = { workspace = true, optional = true }
 abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", tag="v0.22.1", default-features = false }
 quasar-types = { workspace = true }
+lst-adapter-osmosis = { workspace = true }
 
 [dev-dependencies]
 abstract-client = { workspace = true }

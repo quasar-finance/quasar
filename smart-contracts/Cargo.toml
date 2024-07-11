@@ -16,6 +16,7 @@ members = [
   "contracts/range-middleware",
   "contracts/dex-router-osmosis",
   "contracts/lst-dex-adapter-osmosis",
+  "contracts/lst-adapter-osmosis",
 ]
 
 [workspace.dependencies]
@@ -35,6 +36,8 @@ apollo-cw-asset = "0.1.2"
 mars-owner = "2.0.0"
 quasar-types = { path = "packages/quasar-types" }
 dex-router-osmosis = { path = "contracts/dex-router-osmosis", features = ["library"] }
+lst-dex-adapter-osmosis = { path = "contracts/lst-dex-adapter-osmosis", features = ["library"] }
+lst-adapter-osmosis = { path = "contracts/lst-adapter-osmosis", features = ["library"] }
 
 # SDK
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}
@@ -62,11 +65,15 @@ abstract-testing = { version = "0.22.1" }
 abstract-adapter = { version = "0.22.2" }
 abstract-interface = { version = "0.22.0" }
 abstract-client = { version = "0.22.0" }
+abstract-polytone = { version = "1.0.5" }
+abstract-cw-orch-polytone = { version = "2.0.0" }
 cw-orch = { version = "0.23.0" }
+cw-orch-interchain = { version = "0.1.0" }
 clap = { version = "4.3.7" }
 const_format = "0.2.32"
 dotenv = "0.15.0"
 env_logger = "0.11.3"
+ibc-relayer-types = "0.25"
 
 # Testing
 cw-multi-test = "1.2.0"
