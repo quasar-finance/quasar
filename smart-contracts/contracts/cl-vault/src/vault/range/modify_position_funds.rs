@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    to_json_binary, Coin, Decimal256, DepsMut, Env, Response, SubMsg, SubMsgResult, Uint128,
+    to_json_binary, Coin, Decimal256, Deps, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult,
+    Uint128,
 };
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
@@ -9,7 +10,9 @@ use crate::{
     reply::Replies,
     rewards::CoinList,
     state::{CURRENT_POSITION_ID, MAIN_POSITION_ID, POOL_CONFIG, POSITIONS},
-    vault::concentrated_liquidity::{create_position, get_position, withdraw_from_position},
+    vault::concentrated_liquidity::{
+        create_position, get_parsed_position, get_position, withdraw_from_position,
+    },
     ContractError,
 };
 
@@ -22,7 +25,7 @@ pub fn increase_position_funds(
     token0: Coin,
     token1: Coin,
 ) -> Result<Response, ContractError> {
-    let current_id = CURRENT_POSITION_ID.save(deps.storage, &position_id)?;
+    CURRENT_POSITION_ID.save(deps.storage, &position_id)?;
     let position = get_position(&deps.querier, position_id)?.position.unwrap();
 
     let pool = POOL_CONFIG.load(deps.storage)?;
@@ -85,10 +88,19 @@ pub fn handle_range_add_to_position_reply(
 /// decrease the amount of funds in a position, these funds are returned to the vaults free balance.
 /// To completely withdraw a position, use delete position
 pub fn decrease_position_funds(
+    deps: Deps,
     env: &Env,
     position_id: u64,
     liquidity: Decimal256,
 ) -> Result<Response, ContractError> {
+    let position = get_parsed_position(&deps.querier, position_id)?;
+
+    if liquidity >= position.position.liquidity {
+        return Err(ContractError::Std(StdError::generic_err(
+            "cannot delete position by decreasing funds, use delete position insted",
+        )));
+    }
+
     let msg = withdraw_from_position(env, position_id, liquidity)?;
 
     Ok(Response::new().add_message(msg))
