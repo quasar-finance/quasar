@@ -107,11 +107,15 @@ fn submit_range_works() {
                 lower_price: Decimal::from_str("1.1").unwrap(),
                 upper_price: Decimal::from_str("1.5").unwrap(),
                 claim_after: None,
+                max_token0: None,
+                max_token1: None,
             }),
             UpdateActions::CreatePosition(CreatePosition {
                 lower_price: Decimal::from_str("0.5").unwrap(),
                 upper_price: Decimal::from_str("0.9").unwrap(),
                 claim_after: None,
+                max_token0: None,
+                max_token1: None,
             }),
         ]
         .into(),

@@ -90,7 +90,7 @@ pub struct Position {
 pub const POSITIONS: Map<u64, Position> = Map::new("positions");
 pub const MAIN_POSITION_ID: Item<u64> = Item::new("main_position_id");
 pub const CURRENT_POSITION_ID: Item<u64> = Item::new("current_position_id");
-pub const CURRENT_CLAIM_AFTER: Item<Option<u64>> = Item::new("current_claim_after");
+pub const CURRENT_CLAIM_AFTER_SECS: Item<Option<u64>> = Item::new("current_claim_after_secs");
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
 /// boolean signifying whether the current executing merge is for the main position

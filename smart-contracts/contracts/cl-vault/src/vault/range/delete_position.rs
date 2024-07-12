@@ -23,6 +23,8 @@ pub fn delete_position(
     }
 
     // query the position
+
+    // TODO add parsed position helper
     let position = get_position(&deps.querier, position_id)?;
 
     // withdraw all funds from the position

@@ -143,8 +143,7 @@ pub fn execute_move_range_ticks(
         .add_attribute("method", "execute")
         .add_attribute("action", "update_range_ticks")
         .add_attribute("position_id", position.position_id.to_string())
-        .add_attribute("liquidity_amount", position.liquidity)
-    )
+        .add_attribute("liquidity_amount", position.liquidity))
 }
 
 // do create new position
