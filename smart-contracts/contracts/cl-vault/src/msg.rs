@@ -134,6 +134,9 @@ pub struct CreatePosition {
     pub lower_price: Decimal,
     /// The upper price of the new position
     pub upper_price: Decimal,
+    /// TODO add max_token options
+    pub max_token0: Option<Uint128>,
+    pub max_token1: Option<Uint128>,
     /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
     pub claim_after: Option<u64>,
 }

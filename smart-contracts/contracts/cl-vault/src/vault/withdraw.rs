@@ -25,7 +25,7 @@ use super::concentrated_liquidity::{get_parsed_position, get_positions};
 // any locked shares are sent in amount, due to a lack of tokenfactory hooks during development
 // currently that functions as a bandaid
 pub fn execute_withdraw(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: &Env,
     info: MessageInfo,
     recipient: Option<String>,
@@ -164,6 +164,7 @@ pub fn handle_withdraw_user_reply(
 
 /// Withdraw user funds from the main position. This relies on calculating based on the amount of funds the user owns
 /// expressed in asset0
+// TODO add cw-safety to the calculations here: https://github.com/EntropicLabs/cw-safety/
 fn withdraw_from_main(
     deps: DepsMut,
     env: &Env,
@@ -177,16 +178,13 @@ fn withdraw_from_main(
         assets.token1.amount,
     )?;
     let total_supply = query_total_vault_token_supply(deps.as_ref())?.total;
-    println!("shares_to_withdraw: {:?}", shares_to_withdraw);
 
     let user_value = Decimal256::from_ratio(shares_to_withdraw, 1_u128)
         .checked_mul(Decimal256::from_ratio(total_value, 1_u128))?
         .checked_div(Decimal256::from_ratio(total_supply, 1_u128))?;
-    println!("user_value: {:?}", user_value);
 
     let main_position_id = MAIN_POSITION_ID.load(deps.storage)?;
     let main_position = get_parsed_position(&deps.querier, main_position_id)?;
-    println!("main_position: {:?}", main_position);
 
     let main_postion_value = get_asset0_value(
         deps.storage,
@@ -194,12 +192,10 @@ fn withdraw_from_main(
         main_position.asset0.amount,
         main_position.asset1.amount,
     )?;
-    println!("main_postion_value: {:?}", main_postion_value);
 
     // User value * Main position liquidity / Main position value = user value
     let withdraw_liquidity = (user_value * main_position.position.liquidity)
         / Decimal256::from_ratio(main_postion_value, 1_u128);
-    println!("withdraw_liquidity: {:?}", withdraw_liquidity);
 
     Ok(withdraw_from_position(
         &env,
@@ -210,6 +206,7 @@ fn withdraw_from_main(
 
 /// Withdraw user funds pro rato from the different positions and any free balance according to the percentage of
 /// vault shares that the user burns
+// TODO add cw-safety to the calculations here: https://github.com/EntropicLabs/cw-safety/
 fn withdraw_pro_rato(
     deps: DepsMut,
     env: &Env,
@@ -246,20 +243,20 @@ fn withdraw_pro_rato(
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // TODO replace dust with queries for balance
     let unused_balances = get_unused_balances(&deps.querier, env)?;
-    let dust0: Uint256 = unused_balances
+    let balance0: Uint256 = unused_balances
         .find_coin(pool_config.token0.clone())
         .amount
         .into();
-    let dust1: Uint256 = unused_balances
+    let balance1: Uint256 = unused_balances
         .find_coin(pool_config.token1.clone())
         .amount
         .into();
 
-    let user_dust0: Uint128 = dust0
+    let user_balance0: Uint128 = balance0
         .checked_mul(shares_to_withdraw.into())?
         .checked_div(total_shares.into())?
         .try_into()?;
-    let user_dust1: Uint128 = dust1
+    let user_balance1: Uint128 = balance1
         .checked_mul(shares_to_withdraw.into())?
         .checked_div(total_shares.into())?
         .try_into()?;
@@ -267,8 +264,8 @@ fn withdraw_pro_rato(
 
     // send the user's share of the free balance to the the user
     let send = CoinList::from_coins(vec![
-        coin(user_dust0.u128(), pool_config.token0),
-        coin(user_dust1.u128(), pool_config.token1),
+        coin(user_balance0.u128(), pool_config.token0),
+        coin(user_balance1.u128(), pool_config.token1),
     ])
     .to_bank_send(user);
 

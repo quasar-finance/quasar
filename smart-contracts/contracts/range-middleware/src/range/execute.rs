@@ -115,7 +115,9 @@ fn execute_pop_update(
 
     let vault_address = deps.api.addr_validate(&vault_address)?;
 
+    // TODO make this a may load and error nicely on non existing
     let mut ranges = PENDING_RANGES.load(deps.storage, vault_address.clone())?;
+
     let next = ranges.updates.pop_front();
     if let Some(next) = next {
         let response = match next {
@@ -129,6 +131,11 @@ fn execute_pop_update(
                     address: vault_address.to_string(),
                 })?;
 
+                // TODO This should be refactored somewhat to allow for better reading, refactoring this requires
+                // swap code to be refactored too
+
+                // TODO this needs a good comment to explain how this works together
+                // if the entire ratio was not executed, repeat the action to partially funds
                 if params.ratio_of_swappable_funds_to_use < Decimal::one() {
                     ranges
                         .updates
@@ -297,6 +304,8 @@ mod tests {
             lower_price: Decimal::from_ratio(1_u128, 2_u128),
             upper_price: Decimal::one(),
             claim_after: None,
+            max_token0: None,
+            max_token1: None,
         }));
 
         let range_update = RangeUpdates {
@@ -364,6 +373,8 @@ mod tests {
             lower_price: Decimal::from_ratio(1_u128, 2_u128),
             upper_price: Decimal::one(),
             claim_after: None,
+            max_token0: None,
+            max_token1: None,
         }));
 
         let mut range_update = RangeUpdates {

@@ -22,12 +22,12 @@ use crate::rewards::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
     prepend_claim_msg,
 };
-use crate::state::{Position, MAIN_POSITION_ID, POSITIONS};
 #[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
 };
+use crate::state::{Position, MAIN_POSITION_ID, POSITIONS};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
@@ -231,7 +231,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 /// and claim_after_secs is added to
 /// - CurrentMergePosition
 /// - ModifyRangeState
-/// 
+///
 /// Of these changed items CURRENT_POSITION_ID, CURRENT_CLAIM_AFTER, MERGE_MAIN_POSITION, CurrentMergePosition and ModifyRangeState
 /// are set before they are are read, so do not need to be set in the migrations (reviewers should verify this).
 /// This leaves us with the correct setting of POSITIONS, MAIN_POSITION_ID and the removal of POSITION
@@ -253,8 +253,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         .add_attribute("migrate", "succesful")
         .add_attribute("main_position", position.position_id.to_string())
         .add_attribute("contract_name", CONTRACT_NAME)
-        .add_attribute("contract_version", CONTRACT_VERSION)
-    )
+        .add_attribute("contract_version", CONTRACT_VERSION))
 }
 
 #[cfg(test)]
@@ -287,15 +286,27 @@ mod tests {
         let env = mock_env();
 
         const POSITION: Item<Position> = Item::new("position");
-        let position = Position { position_id: 2, join_time: 3, claim_after: None };
+        let position = Position {
+            position_id: 2,
+            join_time: 3,
+            claim_after: None,
+        };
         POSITION.save(deps.as_mut().storage, &position).unwrap();
-        
+
         cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
-        migrate(deps.as_mut(), env, MigrateMsg {  }).unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {}).unwrap();
 
         assert!(!POSITION.exists(deps.as_ref().storage));
-        assert_eq!(MAIN_POSITION_ID.load(deps.as_ref().storage).unwrap(), position.position_id);
-        assert_eq!(POSITIONS.load(deps.as_ref().storage, position.position_id).unwrap(), position)
+        assert_eq!(
+            MAIN_POSITION_ID.load(deps.as_ref().storage).unwrap(),
+            position.position_id
+        );
+        assert_eq!(
+            POSITIONS
+                .load(deps.as_ref().storage, position.position_id)
+                .unwrap(),
+            position
+        )
     }
 
     #[test]
@@ -304,10 +315,19 @@ mod tests {
         let env = mock_env();
 
         const POSITION: Item<Position> = Item::new("position");
-        POSITION.save(deps.as_mut().storage, &Position { position_id: 2, join_time: 3, claim_after: None }).unwrap();
+        POSITION
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id: 2,
+                    join_time: 3,
+                    claim_after: None,
+                },
+            )
+            .unwrap();
 
         cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
-        migrate(deps.as_mut(), env, MigrateMsg {  }).unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {}).unwrap();
 
         assert_contract_version(deps.as_mut().storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
     }

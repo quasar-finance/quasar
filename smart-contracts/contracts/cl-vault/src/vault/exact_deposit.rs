@@ -13,6 +13,8 @@ use crate::{
 
 /// Try to deposit as much user funds as we can in the current ratio of the vault and
 /// refund the rest to the caller.
+///
+// TODO add cw-safety methods here to the math: https://github.com/EntropicLabs/cw-safety/
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
     env: Env,
@@ -51,7 +53,7 @@ pub(crate) fn execute_exact_deposit(
         total_vault_shares
             .checked_mul(user_value.into())?
             .checked_div(
-                total_assets_value
+                total_assets_value // when we query the balance, the user value is already included, so we need to remove those
                     .checked_sub(user_value)?
                     .checked_sub(refund_value)?
                     .into(),
