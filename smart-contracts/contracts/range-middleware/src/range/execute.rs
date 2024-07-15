@@ -11,6 +11,9 @@ use cosmwasm_std::{
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
+#[cfg(not(target_arch = "wasm32"))]
+use cw_orch::ExecuteFns;
+
 use crate::{
     range::helpers::is_range_executor_admin,
     state::{NewRange, RangeUpdates, UpdateActions, PENDING_RANGES},
@@ -20,7 +23,7 @@ use crate::{
 use super::helpers::is_range_submitter_admin;
 
 #[cw_serde]
-#[derive(cw_orch::ExecuteFns)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(ExecuteFns))]
 pub enum RangeExecuteMsg {
     /// Submit a range to the range middleware
     SubmitNewRange { new_ranges: RangeUpdates },

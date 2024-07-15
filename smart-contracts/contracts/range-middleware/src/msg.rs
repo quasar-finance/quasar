@@ -1,6 +1,9 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Empty;
 
+#[cfg(not(target_arch = "wasm32"))]
+use cw_orch::{ExecuteFns, QueryFns};
+
 use crate::{
     admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
     range::{execute::RangeExecuteMsg, query::RangeQueryMsg},
@@ -13,7 +16,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-#[derive(cw_orch::ExecuteFns)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(ExecuteFns))]
 pub enum ExecuteMsg {
     /// range operations
     RangeMsg(RangeExecuteMsg),
@@ -34,7 +37,8 @@ impl From<AdminExecuteMsg> for ExecuteMsg {
 }
 
 #[cw_serde]
-#[derive(cw_orch::QueryFns, QueryResponses)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(QueryFns))]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// range queries
     #[returns(Empty)]

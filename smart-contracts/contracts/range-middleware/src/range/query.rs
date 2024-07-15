@@ -3,8 +3,12 @@ use cosmwasm_std::{to_json_binary, Binary, Deps, Env, StdResult};
 
 use crate::state::{RangeUpdates, PENDING_RANGES};
 
+#[cfg(not(target_arch = "wasm32"))]
+use cw_orch::QueryFns;
+
 #[cw_serde]
-#[derive(cw_orch::QueryFns, QueryResponses)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(QueryFns))]
+#[derive(QueryResponses)]
 pub enum RangeQueryMsg {
     // Get the pending ranges
     #[returns(Vec<RangeUpdates>)]
@@ -41,7 +45,7 @@ pub fn get_queued_range_updates_for_contract(
     contract_address: String,
 ) -> StdResult<RangeUpdates> {
     let pending_range =
-        PENDING_RANGES.load(deps.storage, deps.api.addr_validate(&contract_address)?)?;
+        PENDING_RANGES.may_load(deps.storage, deps.api.addr_validate(&contract_address)?)?;
 
-    Ok(pending_range)
+    Ok(pending_range.unwrap_or(RangeUpdates { cl_vault_address: contract_address, updates: Default::default() }))
 }

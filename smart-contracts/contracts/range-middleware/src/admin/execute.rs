@@ -6,10 +6,14 @@ use crate::{
     ContractError,
 };
 
+
+#[cfg(not(target_arch = "wasm32"))]
+use cw_orch::ExecuteFns;
+
 use super::helpers::is_contract_admin;
 
 #[cw_serde]
-#[derive(cw_orch::ExecuteFns)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(ExecuteFns))]
 pub enum AdminExecuteMsg {
     /// Update the range submitter admin.
     UpdateRangeSubmitterAdmin { new_admin: String },
