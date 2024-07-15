@@ -124,13 +124,6 @@ func NewAppModule(
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 }
 
-/*
-// Route implements the AppModule interface
-func (AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, nil)
-}
-*/
-
 // NewHandler implements the AppModule interface
 func (AppModule) NewHandler() sdk.Handler {
 	return nil
@@ -140,13 +133,6 @@ func (AppModule) NewHandler() sdk.Handler {
 func (AppModule) QuerierRoute() string {
 	return types.QuerierRoute
 }
-
-/*
-// LegacyQuerierHandler implements the AppModule interface
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
-*/
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.

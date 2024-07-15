@@ -25,8 +25,6 @@ func init() {
 func BenchmarkSimulation(b *testing.B) {
 	simapp.FlagEnabledValue = true
 	simapp.FlagCommitValue = true
-	//sims.FlagEnabledValue = true
-	//sims.FlagCommitValue = true
 	config, db, dir, logger, _, err := simapp.SetupSimulation("goleveldb-app-sim", "Simulation")
 	require.NoError(b, err, "simulation setup failed")
 
@@ -48,7 +46,6 @@ func BenchmarkSimulation(b *testing.B) {
 		0,
 		encoding,
 		sims.EmptyAppOptions{},
-		// simapp.EmptyAppOptions{},
 		app.EmptyWasmOpts,
 	)
 

@@ -46,8 +46,6 @@ func NewCreateDenomCmd() *cobra.Command {
 				return err
 			}
 
-			//			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
-
 			fac, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -80,8 +78,6 @@ func NewMintCmd() *cobra.Command {
 				return err
 			}
 
-			//			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
-
 			fac, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -99,7 +95,6 @@ func NewMintCmd() *cobra.Command {
 				amount,
 			)
 
-			// return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, fac, msg)
 
 		},
@@ -121,7 +116,6 @@ func NewBurnCmd() *cobra.Command {
 				return err
 			}
 
-			//			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 			fac, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -139,7 +133,6 @@ func NewBurnCmd() *cobra.Command {
 				amount,
 			)
 
-			// return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, fac, msg)
 
 		},
@@ -161,7 +154,6 @@ func NewChangeAdminCmd() *cobra.Command {
 				return err
 			}
 
-			//			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 			fac, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
 				return err
@@ -175,7 +167,6 @@ func NewChangeAdminCmd() *cobra.Command {
 				args[1],
 			)
 
-			// return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, fac, msg)
 
 		},
@@ -196,8 +187,6 @@ func NewMintToCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			//			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			fac, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {
@@ -222,7 +211,6 @@ func NewMintToCmd() *cobra.Command {
 				toAddr.String(),
 			)
 
-			// return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, fac, msg)
 
 		},
@@ -243,8 +231,6 @@ func NewBurnFromCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			//		txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
 			fac, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {

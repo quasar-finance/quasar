@@ -27,7 +27,6 @@ func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		app.DefaultNodeHome,
 		5,
 		encCdc,
-		// simapp.EmptyAppOptions{},
 		sims.EmptyAppOptions{},
 		app.EmptyWasmOpts,
 	)

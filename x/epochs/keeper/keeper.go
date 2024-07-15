@@ -13,8 +13,7 @@ import (
 
 type (
 	Keeper struct {
-		cdc codec.Codec
-		// storeKey sdk.StoreKey
+		cdc      codec.Codec
 		storeKey storetypes.StoreKey
 		hooks    types.EpochHooks
 	}

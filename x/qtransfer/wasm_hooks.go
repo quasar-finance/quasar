@@ -26,14 +26,12 @@ type ContractAck struct {
 type WasmHooks struct {
 	keeper     keeper.Keeper     // ibc hook keeper
 	wasmKeeper wasmkeeper.Keeper // contract keeper
-	//	permissionedKeeper *wasmkeeper.PermissionedKeeper
 }
 
 func NewWasmHooks(k keeper.Keeper, wasmKeeper wasmkeeper.Keeper) WasmHooks {
 	return WasmHooks{
 		keeper:     k,
 		wasmKeeper: wasmKeeper,
-		// permissionedKeeper: wasmkeeper.NewDefaultPermissionKeeper(wasmKeeper),
 	}
 }
 
@@ -142,8 +140,7 @@ func MustExtractDenomFromPacketOnRecv(packet ibcexported.PacketI) string {
 	return denom
 }
 
-// TODO - SDK47
-
+// TODO - SDK47 (address this)
 func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
 	if err := execMsg.ValidateBasic(); err != nil {
 		return nil, fmt.Errorf(types.ErrBadExecutionMsg, err.Error())
@@ -152,18 +149,6 @@ func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteCon
 	return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
 }
 
-/*
-func (h WasmHooks) execWasmMsg(ctx sdk.Context, execMsg *wasmtypes.MsgExecuteContract) (*wasmtypes.MsgExecuteContractResponse, error) {
-
-			if err := execMsg.ValidateBasic(); err != nil {
-				return nil, errorsmod.Wrap(err, "invalid wasm contract execution message")
-			}
-			wasmMsgServer := wasmkeeper.NewMsgServerImpl(h.permissionedKeeper)
-			return wasmMsgServer.ExecuteContract(sdk.WrapSDKContext(ctx), execMsg)
-
-		return nil, nil
-	}
-*/
 func isIcs20Packet(packet channeltypes.Packet) (isIcs20 bool, ics20data transfertypes.FungibleTokenPacketData) {
 	var data transfertypes.FungibleTokenPacketData
 	if err := json.Unmarshal(packet.GetData(), &data); err != nil {

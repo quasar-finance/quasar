@@ -231,18 +231,6 @@ func (im IBCMiddleware) OnTimeoutPacket(
 	return err
 }
 
-// TODO SDK47
-/*
-// SendPacket implements the ICS4 Wrapper interface
-func (im IBCMiddleware) SendPacket(
-	ctx sdk.Context,
-	chanCap *capabilitytypes.Capability,
-	packet ibcexported.PacketI,
-) error {
-	return im.ICS4Middleware.SendPacket(ctx, chanCap, packet)
-}
-*/
-
 // SendPacket implements the ICS4 Wrapper interface
 func (im IBCMiddleware) SendPacket(
 	ctx sdk.Context,
@@ -253,24 +241,8 @@ func (im IBCMiddleware) SendPacket(
 	timeoutTimestamp uint64,
 	data []byte,
 ) (sequence uint64, err error) {
-	// TODO - SDK47 FIX
 	return im.ICS4Middleware.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
-
-	// return 0, nil
-	// return im.ICS4Middleware.SendPacket(ctx, chanCap, packet)
 }
-
-/*
-// SDK47 FIX - Trying to fix
-// SendPacket implements the ICS4 Wrapper interface
-func (im IBCMiddleware) SendPacket(
-	ctx sdk.Context,
-	chanCap *capabilitytypes.Capability,
-	packet ibcexported.PacketI,
-) error {
-	return im.ICS4Middleware.SendPacket(ctx, chanCap, packet)
-}
-*/
 
 // WriteAcknowledgement implements the ICS4 Wrapper interface
 func (im IBCMiddleware) WriteAcknowledgement(
