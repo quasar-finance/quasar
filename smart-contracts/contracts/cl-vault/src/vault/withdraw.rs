@@ -597,9 +597,13 @@ mod tests {
             )
             .unwrap();
 
+        let amount0 = Uint128::new(1000);
+        let amount1 = Uint128::new(1000);
+
+
         let msg = MsgWithdrawPositionResponse {
-            amount0: "1000".to_string(),
-            amount1: "1000".to_string(),
+            amount0: amount0.to_string(),
+            amount1: amount1.to_string(),
         }
         .try_into()
         .unwrap();
@@ -616,7 +620,7 @@ mod tests {
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: to_address.to_string(),
-                amount: sort_tokens(vec![coin(1123, "uosmo"), coin(1234, "uatom")])
+                amount: sort_tokens(vec![coin(amount0.u128(), "uosmo"), coin(amount1.u128(), "uatom")])
             })
         )
     }
