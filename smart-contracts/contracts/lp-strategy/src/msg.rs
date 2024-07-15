@@ -100,6 +100,7 @@ pub struct GetQueuesResponse {
     pub unbond_queue: Vec<Unbond>,
     pub failed_join_queue: Vec<Bond>,
     pub rejoin_queue: Vec<OngoingDeposit>,
+    pub pending_unbond_queue: Vec<Unbond>,
 }
 
 #[cw_serde]

@@ -1,14 +1,14 @@
 use cosmwasm_std::{
-    to_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, StdError, Storage,
-    SubMsg, Uint128,
+    to_json_binary, Decimal, Env, Fraction, IbcMsg, IbcTimeout, QuerierWrapper, Storage, SubMsg,
+    Uint128,
 };
+#[allow(deprecated)]
+use osmosis_std::types::osmosis::gamm::v1beta1::QuerySpotPriceRequest;
 use osmosis_std::types::{
-    cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1::Coin as OsmoCoin},
+    cosmos::bank::v1beta1::QueryBalanceRequest,
+    cosmos::base::v1beta1::Coin as OsmoCoin,
     osmosis::{
-        gamm::{
-            v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
-            v2::QuerySpotPriceRequest,
-        },
+        gamm::v1beta1::{QueryCalcExitPoolCoinsFromSharesRequest, QueryCalcJoinPoolSharesRequest},
         lockup::LockedRequest,
     },
 };
@@ -58,15 +58,17 @@ pub fn try_icq(
             }
         }
 
-        let failed_bonds_amount = FAILED_JOIN_QUEUE
-            .iter(storage)?
-            .try_fold(Uint128::zero(), |acc, val| -> Result<Uint128, StdError> {
+        let failed_join_queue_amount = FAILED_JOIN_QUEUE.iter(storage)?.try_fold(
+            Uint128::zero(),
+            |acc, val| -> Result<Uint128, ContractError> {
                 Ok(acc + val?.amount)
-            })?;
+                // We should never have LP shares here
+            },
+        )?;
 
         // the bonding amount that we want to calculate the slippage for is the amount of funds in new bonds and the amount of funds that have
         // previously failed to join the pool. These funds are already located on Osmosis and should not be part of the transfer to Osmosis.
-        let bonding_amount = pending_bonds_value + failed_bonds_amount;
+        let bonding_amount = pending_bonds_value + failed_join_queue_amount;
 
         // we dump pending unbonds into the active unbond queue and save the total amount of shares that will be unbonded
         let mut pending_unbonds_shares = Uint128::zero();
@@ -84,7 +86,7 @@ pub fn try_icq(
 
         let send_packet_msg = IbcMsg::SendPacket {
             channel_id: icq_channel,
-            data: to_binary(&packet)?,
+            data: to_json_binary(&packet)?,
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         };
 
@@ -171,6 +173,7 @@ pub fn prepare_full_query(
         share_in_amount: shares_out.to_string(),
     };
     // we query the spot price of our base_denom and quote_denom so we can convert the quote_denom from exitpool to the base_denom
+    #[allow(deprecated)]
     let spot_price = QuerySpotPriceRequest {
         pool_id: config.pool_id,
         base_asset_denom: config.base_denom,
@@ -232,7 +235,7 @@ pub fn prepare_full_query(
 pub fn calc_total_balance(
     storage: &mut dyn Storage,
     ica_balance: Uint128,
-    exit_pool: &Vec<OsmoCoin>,
+    exit_pool: &[OsmoCoin],
     spot_price: Decimal,
 ) -> Result<Uint128, ContractError> {
     let config = CONFIG.load(storage)?;
@@ -330,7 +333,7 @@ mod tests {
 
         let pkt = IbcMsg::SendPacket {
             channel_id: icq_channel.clone(),
-            data: to_binary(
+            data: to_json_binary(
                 &prepare_full_query(
                     deps.as_mut().storage,
                     env.clone(),

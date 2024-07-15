@@ -3,7 +3,9 @@ use cosmwasm_std::entry_point;
 use cw20::BalanceResponse;
 use std::collections::HashMap;
 
-use cosmwasm_std::{to_binary, Addr, Binary, Coin, Deps, Env, Order, StdError, StdResult, Uint128};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Coin, Deps, Env, Order, StdError, StdResult, Uint128,
+};
 use quasar_types::ibc::ChannelInfo;
 
 use crate::{
@@ -22,37 +24,37 @@ use crate::{
     state::{
         FundPath, OngoingDeposit, Unbond, BONDING_CLAIMS, BOND_QUEUE, CHANNELS, CLAIMABLE_FUNDS,
         CONFIG, FAILED_JOIN_QUEUE, IBC_LOCK, ICA_CHANNEL, LP_SHARES, OSMO_LOCK, PENDING_ACK,
-        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, REJOIN_QUEUE, REPLIES, SHARES,
-        SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE, TOTAL_VAULT_BALANCE,
-        TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
+        PENDING_BOND_QUEUE, PENDING_UNBONDING_CLAIMS, PENDING_UNBOND_QUEUE, REJOIN_QUEUE, REPLIES,
+        SHARES, SIMULATED_JOIN_AMOUNT_IN, SIMULATED_JOIN_RESULT, START_UNBOND_QUEUE,
+        TOTAL_VAULT_BALANCE, TRAPS, UNBONDING_CLAIMS, UNBOND_QUEUE,
     },
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Channels {} => to_binary(&handle_channels_query(deps)?),
-        QueryMsg::Config {} => to_binary(&handle_config_query(deps)?),
-        QueryMsg::IcaAddress {} => to_binary(&handle_ica_address_query(deps)?),
-        QueryMsg::Balance { address } => to_binary(&handle_balance_query(deps, &address)?),
-        QueryMsg::PrimitiveShares {} => to_binary(&handle_primitive_shares(deps)?),
-        QueryMsg::IcaBalance {} => to_binary(&handle_ica_balance(deps)?),
-        QueryMsg::IcaChannel {} => to_binary(&handle_ica_channel(deps)?),
-        QueryMsg::Lock {} => to_binary(&handle_lock(deps)?),
-        QueryMsg::LpShares {} => to_binary(&handle_lp_shares_query(deps)?),
-        QueryMsg::TrappedErrors {} => to_binary(&handle_trapped_errors_query(deps)?),
-        QueryMsg::ListUnbondingClaims {} => to_binary(&handle_list_unbonding_claims(deps)?),
+        QueryMsg::Channels {} => to_json_binary(&handle_channels_query(deps)?),
+        QueryMsg::Config {} => to_json_binary(&handle_config_query(deps)?),
+        QueryMsg::IcaAddress {} => to_json_binary(&handle_ica_address_query(deps)?),
+        QueryMsg::Balance { address } => to_json_binary(&handle_balance_query(deps, &address)?),
+        QueryMsg::PrimitiveShares {} => to_json_binary(&handle_primitive_shares(deps)?),
+        QueryMsg::IcaBalance {} => to_json_binary(&handle_ica_balance(deps)?),
+        QueryMsg::IcaChannel {} => to_json_binary(&handle_ica_channel(deps)?),
+        QueryMsg::Lock {} => to_json_binary(&handle_lock(deps)?),
+        QueryMsg::LpShares {} => to_json_binary(&handle_lp_shares_query(deps)?),
+        QueryMsg::TrappedErrors {} => to_json_binary(&handle_trapped_errors_query(deps)?),
+        QueryMsg::ListUnbondingClaims {} => to_json_binary(&handle_list_unbonding_claims(deps)?),
         QueryMsg::UnbondingClaim { addr, id } => {
-            to_binary(&handle_unbonding_claim_query(deps, addr, id)?)
+            to_json_binary(&handle_unbonding_claim_query(deps, addr, id)?)
         }
-        QueryMsg::ListBondingClaims {} => to_binary(&handle_list_bonding_claims(deps)?),
-        QueryMsg::ListPrimitiveShares {} => to_binary(&handle_list_primitive_shares(deps)?),
-        QueryMsg::ListPendingAcks {} => to_binary(&handle_list_pending_acks(deps)?),
-        QueryMsg::ListReplies {} => to_binary(&handle_list_replies(deps)?),
-        QueryMsg::ListClaimableFunds {} => to_binary(&handle_list_claimable_funds(deps)?),
-        QueryMsg::OsmoLock {} => to_binary(&handle_osmo_lock(deps)?),
-        QueryMsg::SimulatedJoin {} => to_binary(&handle_simulated_join(deps)?),
-        QueryMsg::GetQueues {} => to_binary(&handle_get_queues(deps)?),
+        QueryMsg::ListBondingClaims {} => to_json_binary(&handle_list_bonding_claims(deps)?),
+        QueryMsg::ListPrimitiveShares {} => to_json_binary(&handle_list_primitive_shares(deps)?),
+        QueryMsg::ListPendingAcks {} => to_json_binary(&handle_list_pending_acks(deps)?),
+        QueryMsg::ListReplies {} => to_json_binary(&handle_list_replies(deps)?),
+        QueryMsg::ListClaimableFunds {} => to_json_binary(&handle_list_claimable_funds(deps)?),
+        QueryMsg::OsmoLock {} => to_json_binary(&handle_osmo_lock(deps)?),
+        QueryMsg::SimulatedJoin {} => to_json_binary(&handle_simulated_join(deps)?),
+        QueryMsg::GetQueues {} => to_json_binary(&handle_get_queues(deps)?),
     }
 }
 
@@ -63,6 +65,7 @@ pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
     let uq: Result<Vec<Unbond>, StdError> = UNBOND_QUEUE.iter(deps.storage)?.collect();
     let fjq: Result<Vec<Bond>, StdError> = FAILED_JOIN_QUEUE.iter(deps.storage)?.collect();
     let rj: Result<Vec<OngoingDeposit>, StdError> = REJOIN_QUEUE.iter(deps.storage)?.collect();
+    let puq: Result<Vec<Unbond>, StdError> = PENDING_UNBOND_QUEUE.iter(deps.storage)?.collect();
     Ok(GetQueuesResponse {
         pending_bond_queue: pbq?,
         bond_queue: bq?,
@@ -70,6 +73,7 @@ pub fn handle_get_queues(deps: Deps) -> StdResult<GetQueuesResponse> {
         unbond_queue: uq?,
         failed_join_queue: fjq?,
         rejoin_queue: rj?,
+        pending_unbond_queue: puq?,
     })
 }
 
@@ -257,7 +261,7 @@ pub fn handle_list_claimable_funds(deps: Deps) -> StdResult<ListClaimableFundsRe
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        from_binary,
+        from_json,
         testing::{mock_dependencies, mock_env},
     };
 
@@ -288,6 +292,18 @@ mod tests {
     }
 
     #[test]
+    fn get_trapped_errors_when_empty() {
+        let deps = mock_dependencies();
+        let env = mock_env();
+
+        let q = QueryMsg::TrappedErrors {};
+
+        let res: TrappedErrorsResponse = from_json(&query(deps.as_ref(), env, q).unwrap()).unwrap();
+
+        assert!(res.errors.is_empty());
+    }
+
+    #[test]
     fn proper_get_claimable_funds() {
         let mut deps = mock_dependencies();
         let env = mock_env();
@@ -308,7 +324,7 @@ mod tests {
             .unwrap();
 
         let res = query(deps.as_ref(), env, q).unwrap();
-        let claimable_funds: ListClaimableFundsResponse = from_binary(&res).unwrap();
+        let claimable_funds: ListClaimableFundsResponse = from_json(&res).unwrap();
 
         println!("{claimable_funds:?}");
         assert_eq!(claimable_funds.claimable_funds.len(), 1);

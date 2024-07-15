@@ -73,14 +73,18 @@ pub fn batch_bond(
     let to_address = get_ica_address(storage, ICA_CHANNEL.load(storage)?)?;
 
     if let Some((amount, deposits)) = fold_bonds(storage, total_vault_value)? {
-        Ok(Some(do_transfer(
-            storage,
-            env,
-            amount,
-            transfer_chan,
-            to_address,
-            deposits,
-        )?))
+        if amount.is_zero() {
+            Ok(None)
+        } else {
+            Ok(Some(do_transfer(
+                storage,
+                env,
+                amount,
+                transfer_chan,
+                to_address,
+                deposits,
+            )?))
+        }
     } else {
         Ok(None)
     }
@@ -128,7 +132,7 @@ pub fn fold_bonds(
             FAILED_JOIN_QUEUE
                 .pop_front(storage)?
                 .ok_or(ContractError::QueueItemNotFound {
-                    queue: "bond".to_string(),
+                    queue: "failed_join".to_string(),
                 })?;
         let claim_amount = create_claim(
             storage,
@@ -137,9 +141,7 @@ pub fn fold_bonds(
             &item.bond_id,
             total_balance,
         )?;
-        total = total
-            .checked_add(item.amount)
-            .map_err(|err| ContractError::TracedOverflowError(err, "fold_bonds".to_string()))?;
+
         REJOIN_QUEUE.push_back(
             storage,
             &OngoingDeposit {
@@ -155,7 +157,7 @@ pub fn fold_bonds(
 }
 
 // create_claim
-fn create_claim(
+pub fn create_claim(
     storage: &mut dyn Storage,
     user_balance: Uint128,
     address: &Addr,
@@ -240,7 +242,7 @@ pub fn calculate_claim(
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, MockQuerier},
-        to_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
+        to_json_binary, CosmosMsg, Empty, IbcMsg, IbcTimeout,
     };
 
     use crate::{
@@ -333,7 +335,7 @@ mod tests {
 
         let icq_msg = CosmosMsg::Ibc(IbcMsg::SendPacket {
             channel_id: ICQ_CHANNEL.load(deps.as_mut().storage).unwrap(),
-            data: to_binary(&packet).unwrap(),
+            data: to_json_binary(&packet).unwrap(),
             timeout: IbcTimeout::with_timestamp(env.block.time.plus_seconds(7200)),
         });
 

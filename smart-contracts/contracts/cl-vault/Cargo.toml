@@ -1,0 +1,43 @@
+[package]
+authors = ["LaurensKubat <32776056+LaurensKubat@users.noreply.github.com>"]
+edition = "2021"
+name = "cl-vault"
+version = "0.3.0"
+
+exclude = [
+  "cl_vault.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "schema"
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+osmosis-std = { workspace = true }
+osmosis-std-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus ={ workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+prost = { workspace = true }
+cw-utils = { workspace = true }
+cw2 = { workspace = true }
+num_enum = { workspace = true }
+apollo-cw-asset = { workspace = true }
+dex-router-osmosis = {workspace = true}
+cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
+
+[dev-dependencies]
+osmosis-test-tube = { workspace = true }
+proptest = { workspace = true }

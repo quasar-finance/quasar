@@ -2,7 +2,6 @@ use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw_utils::nonpayable;
 
 use crate::{
-    admin::is_lock_admin,
     bond::Bond,
     error::ContractError,
     helpers::{IbcMsgKind, IcaMessages},
@@ -21,9 +20,7 @@ pub fn execute_retry(
     channel: String,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
-    // for now, only the lock admin can retry
-    is_lock_admin(deps.storage, &deps.querier, &env, &info.sender)?;
-
+    // this endpoint is permissionless in order to allow anyone trigger a retry
     let traps = TRAPS.load(deps.storage, (seq, channel.clone()))?;
     match traps.step {
         IbcMsgKind::Ica(ica_kind) => match ica_kind {
@@ -57,7 +54,7 @@ pub fn handle_retry_join_pool(
                     deps.storage,
                     &Bond {
                         amount,
-                        owner: ongoing_deposit.owner,
+                        owner: ongoing_deposit.owner.clone(),
                         bond_id: ongoing_deposit.bond_id.clone(),
                     },
                 )?;
@@ -114,31 +111,30 @@ mod tests {
     use cosmwasm_std::{Binary, Coin, CosmosMsg, IbcMsg};
     use osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceResponse;
     use osmosis_std::types::{
-        cosmos::base::v1beta1::Coin as OsmoCoin,
-        osmosis::{gamm::v2::QuerySpotPriceResponse, lockup::LockedResponse},
+        cosmos::base::v1beta1::Coin as OsmoCoin, osmosis::lockup::LockedResponse,
     };
 
     use cosmwasm_std::{
         attr,
         testing::{mock_dependencies, mock_env},
-        to_binary, Addr, Empty, StdError, Timestamp, Uint128,
+        to_json_binary, Addr, StdError, Timestamp, Uint128,
     };
     use osmosis_std::types::osmosis::gamm::v1beta1::{
         QueryCalcExitPoolCoinsFromSharesResponse, QueryCalcJoinPoolSharesResponse,
+        QuerySpotPriceResponse,
     };
     use prost::Message;
     use quasar_types::icq::{CosmosResponse, InterchainQueryPacketAck};
 
     use crate::ibc::handle_icq_ack;
-    use crate::state::PENDING_BOND_QUEUE;
+    use crate::state::{PENDING_BOND_QUEUE, REJOIN_QUEUE, SIMULATED_JOIN_AMOUNT_IN};
     use crate::test_helpers::{create_query_response, pending_bond_to_bond};
     use crate::{
         contract::execute_try_icq,
         error::Trap,
         ibc_lock::Lock,
         state::{
-            OngoingDeposit, RawAmount, Unbond, IBC_LOCK, LOCK_ADMIN, PENDING_UNBOND_QUEUE,
-            UNBONDING_CLAIMS,
+            OngoingDeposit, RawAmount, Unbond, IBC_LOCK, PENDING_UNBOND_QUEUE, UNBONDING_CLAIMS,
         },
         test_helpers::default_setup,
         unbond::ReturningUnbond,
@@ -181,10 +177,6 @@ mod tests {
                     last_succesful: true,
                 },
             )
-            .unwrap();
-
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
             .unwrap();
 
         UNBONDING_CLAIMS
@@ -233,7 +225,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -289,10 +281,6 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
-
         UNBONDING_CLAIMS
             .save(
                 deps.as_mut().storage,
@@ -311,7 +299,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -355,10 +343,6 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
-
         UNBONDING_CLAIMS
             .save(
                 deps.as_mut().storage,
@@ -377,7 +361,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -398,29 +382,6 @@ mod tests {
                 id: "1".to_string(),
             }
         );
-    }
-
-    #[test]
-    fn test_handle_retry_exit_pool_as_not_admin_fails() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
-
-        let res = execute_retry(
-            deps.as_mut(),
-            env,
-            MessageInfo {
-                sender: Addr::unchecked("not_admin"),
-                funds: vec![],
-            },
-            3539,
-            "channel-35".to_string(),
-        );
-
-        assert!(res.is_err());
     }
 
     #[test]
@@ -455,15 +416,11 @@ mod tests {
             )
             .unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
-
         let res = execute_retry(
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             0,
@@ -508,10 +465,6 @@ mod tests {
                     last_succesful: true,
                 },
             )
-            .unwrap();
-
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
             .unwrap();
 
         UNBONDING_CLAIMS
@@ -560,7 +513,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -601,7 +554,7 @@ mod tests {
             deps.as_mut(),
             env,
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -618,10 +571,6 @@ mod tests {
         default_setup(deps.as_mut().storage).unwrap();
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
-
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
 
         // mock the failed join pool trap with 3 bonds
         let failed = PendingBond {
@@ -653,7 +602,7 @@ mod tests {
                 (3539, "channel-35".to_string()),
                 &Trap {
                     error: "join pool failed on osmosis".to_string(),
-                    step: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(failed.clone())),
+                    step: IbcMsgKind::Ica(IcaMessages::JoinSwapExternAmountIn(failed)),
                     last_succesful: true,
                 },
             )
@@ -664,7 +613,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -802,33 +751,29 @@ mod tests {
             ),
         };
 
-        let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
+        let res = handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            to_json_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
 
-        // get the failed pending bonds total amount
-        let pending_total_amount = failed.bonds.iter().fold(Uint128::zero(), |acc, bond| {
-            let amount = match bond.raw_amount {
-                RawAmount::LocalDenom(amount) => amount,
-                RawAmount::LpShares(_) => panic!("unexpected lp shares"),
-            };
-            acc + amount
-        });
+        // we do NOT transfer any token here, failed bonds were already transferred to the contract before failing and stay there
+        // as we do not have any bond_queue items, we return None here
+        assert!(res.messages.is_empty());
 
-        // check that the res amount matches the amount in the failed join queue
-        match &res.messages[0].msg {
-            CosmosMsg::Ibc(IbcMsg::Transfer { amount, .. }) => {
-                assert_eq!(
-                    amount,
-                    &Coin {
-                        denom: "ibc/local_osmo".to_string(),
-                        amount: pending_total_amount,
-                    }
-                );
-            }
-            _ => panic!("unexpected message type"),
-        }
+        assert!(TRAPS.is_empty(deps.as_ref().storage));
 
-        // check that the failed join queue is emptied
-        assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
+        // FAILED_JOIN_QUEUE should be empty and all bonds moved to REJOIN_QUEUE
+        assert_eq!(FAILED_JOIN_QUEUE.len(&deps.storage).unwrap(), 0);
+        assert_eq!(REJOIN_QUEUE.len(&deps.storage).unwrap(), 3);
+
+        assert_eq!(
+            SIMULATED_JOIN_AMOUNT_IN
+                .load(deps.as_ref().storage)
+                .unwrap(),
+            Uint128::new(1000 + 999 + 1000)
+        );
     }
 
     #[test]
@@ -839,27 +784,23 @@ mod tests {
 
         IBC_LOCK.save(deps.as_mut().storage, &Lock::new()).unwrap();
 
-        LOCK_ADMIN
-            .save(deps.as_mut().storage, &Addr::unchecked("admin"), &Empty {})
-            .unwrap();
-
         // mock the failed join pool trap with 3 bonds
         let failed = PendingBond {
             bonds: vec![
                 OngoingDeposit {
-                    claim_amount: Uint128::new(100),
+                    claim_amount: Uint128::new(1000),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
                     owner: Addr::unchecked("address"),
                     bond_id: "1".to_string(),
                 },
                 OngoingDeposit {
-                    claim_amount: Uint128::new(99),
+                    claim_amount: Uint128::new(999),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(999)),
                     owner: Addr::unchecked("address"),
                     bond_id: "2".to_string(),
                 },
                 OngoingDeposit {
-                    claim_amount: Uint128::new(101),
+                    claim_amount: Uint128::new(1000),
                     raw_amount: RawAmount::LocalDenom(Uint128::new(1000)),
                     owner: Addr::unchecked("address"),
                     bond_id: "3".to_string(),
@@ -880,7 +821,7 @@ mod tests {
             .unwrap();
 
         // mock pending deposits and add them to the pending queue
-        let pedning_bonds = vec![
+        let pending_bonds = vec![
             Bond {
                 amount: Uint128::new(5_000),
                 owner: Addr::unchecked("address"),
@@ -893,7 +834,7 @@ mod tests {
             },
         ];
 
-        for bond in pedning_bonds.iter() {
+        for bond in pending_bonds.iter() {
             PENDING_BOND_QUEUE
                 .push_back(deps.as_mut().storage, bond)
                 .unwrap();
@@ -904,7 +845,7 @@ mod tests {
             deps.as_mut(),
             env.clone(),
             MessageInfo {
-                sender: Addr::unchecked("admin"),
+                sender: Addr::unchecked("not_admin"),
                 funds: vec![],
             },
             3539,
@@ -1025,30 +966,26 @@ mod tests {
             ),
         };
 
-        let res = handle_icq_ack(deps.as_mut().storage, env, to_binary(&ibc_ack).unwrap()).unwrap();
-
-        // get the failed pending bonds total amount
-        let failed_total_amount = failed.bonds.iter().fold(Uint128::zero(), |acc, bond| {
-            let amount = match bond.raw_amount {
-                RawAmount::LocalDenom(amount) => amount,
-                RawAmount::LpShares(_) => panic!("unexpected lp shares"),
-            };
-            acc + amount
-        });
+        let res = handle_icq_ack(
+            deps.as_mut().storage,
+            env,
+            to_json_binary(&ibc_ack).unwrap(),
+        )
+        .unwrap();
 
         // get the pending bonds total amount
-        let pending_total_amount = pedning_bonds
+        let pending_total_amount = pending_bonds
             .iter()
             .fold(Uint128::zero(), |acc, bond| acc + bond.amount);
 
-        // check that the res amount matches the amount in both queues
+        // check that the res amount matches the amount in the pending queue ONLY
         match &res.messages[0].msg {
             CosmosMsg::Ibc(IbcMsg::Transfer { amount, .. }) => {
                 assert_eq!(
                     amount,
                     &Coin {
                         denom: "ibc/local_osmo".to_string(),
-                        amount: failed_total_amount + pending_total_amount,
+                        amount: pending_total_amount,
                     }
                 );
             }
@@ -1058,5 +995,10 @@ mod tests {
         // check that the failed join & pending queues are emptied
         assert!(FAILED_JOIN_QUEUE.is_empty(&deps.storage).unwrap());
         assert!(PENDING_BOND_QUEUE.is_empty(&deps.storage).unwrap());
+
+        // failed bonds should be now in the REJOIN_QUEUE
+        let rejoin_queue: Result<Vec<OngoingDeposit>, StdError> =
+            REJOIN_QUEUE.iter(&deps.storage).unwrap().collect();
+        assert_eq!(failed.bonds, rejoin_queue.unwrap());
     }
 }

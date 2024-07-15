@@ -9,7 +9,7 @@ use crate::{
 // check if sender is the admin
 pub fn check_depositor(storage: &mut dyn Storage, sender: &Addr) -> Result<bool, ContractError> {
     let depositor = DEPOSITOR.load(storage)?;
-    Ok(&depositor == sender)
+    Ok(depositor == sender)
 }
 
 pub fn add_lock_admin(
@@ -56,7 +56,7 @@ mod tests {
     use super::*;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, MockQuerier},
-        to_binary, ContractInfoResponse, ContractResult, QuerierResult, WasmQuery,
+        to_json_binary, ContractInfoResponse, ContractResult, QuerierResult, WasmQuery,
     };
 
     #[test]
@@ -73,7 +73,7 @@ mod tests {
         q.update_wasm(move |q: &WasmQuery| -> QuerierResult {
             match q {
                 WasmQuery::ContractInfo { contract_addr: _ } => {
-                    QuerierResult::Ok(ContractResult::Ok(to_binary(&info).unwrap()))
+                    QuerierResult::Ok(ContractResult::Ok(to_json_binary(&info).unwrap()))
                 }
                 _ => unreachable!(),
             }

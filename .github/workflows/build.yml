@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - fix/*
   push:
     branches:
       - main
+      - fix/*
   workflow_dispatch:
 
 concurrency:
@@ -30,7 +32,6 @@ jobs:
         uses: technote-space/get-diff-action@v6.1.2
         with:
           PATTERNS: |
-            **/**.rs
             **/**.go
             go.mod
             go.sum
@@ -59,8 +60,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [ amd64, arm64 ]
-        targetos: [linux ]
+        arch: [ amd64 ]
+        targetos: [ linux ]
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -71,9 +75,13 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
+      - name: Install just via cargo
+        run: cargo install just
       - name: Build smart contracts
         if: env.GIT_DIFF
-        run: make compile-wasm-artifacts
+        run: |
+          cd smart-contracts
+          just workspace-optimize
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
@@ -81,3 +89,42 @@ jobs:
           path: |
             smart-contracts/artifacts/basic_vault.wasm
             smart-contracts/artifacts/lp_strategy.wasm
+            smart-contracts/artifacts/cl_vault.wasm
+            smart-contracts/artifacts/merkle_incentives.wasm
+            smart-contracts/artifacts/dex_router_osmosis.wasm
+            smart-contracts/artifacts/lst_adapter_osmosis.wasm
+  test-test-tube:
+    runs-on: ubuntu-latest
+    needs: build-rust
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Get git diff
+        uses: technote-space/get-diff-action@v6.1.2
+        with:
+          PATTERNS: |
+            **/**.rs
+            Makefile
+            .github/workflows/build.yml
+          
+      - name: Download contracts
+        if: env.GIT_DIFF
+        uses: actions/download-artifact@v3
+        with:
+          name:
+            smart-contracts
+
+      - name: Install Rust
+        if: env.GIT_DIFF
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Move smart contracts
+        if: env.GIT_DIFF
+        run: |
+          find . -name "*.wasm" -exec bash -c 'file="{}"; contract_name=$(basename "$file" .wasm); dir_name=$(echo "$contract_name" | sed "s/_/-/g"); mkdir -p "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release"; mv "$file" "smart-contracts/contracts/$dir_name/test-tube-build/wasm32-unknown-unknown/release/$contract_name.wasm"' \;
+
+      - name: Run test-tube tests
+        if: env.GIT_DIFF
+        run: cd smart-contracts && cargo test -- --include-ignored --test-threads=1
+        env:
+          PROPTEST_CASES: 10

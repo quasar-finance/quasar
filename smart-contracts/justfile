@@ -1,0 +1,37 @@
+build:
+	cargo build
+
+test:
+	cargo test
+
+lint:
+	cargo +nightly clippy --all-targets -- -D warnings
+
+gen: build gen-schema
+
+gen-schema:
+	./scripts/schema.sh
+
+test-tube:
+    cargo test --features "test-tube"
+
+test-tube-dev: workspace-optimize
+    cargo test --features "test-tube"
+
+workspace-optimize:
+    #!/bin/bash
+    if [[ $(uname -m) == 'arm64' ]]; then docker run --rm -v "$(pwd)":/code \
+            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            --platform linux/arm64 \
+            cosmwasm/workspace-optimizer-arm64:0.16.0; \
+    elif [[ $(uname -m) == 'aarch64' ]]; then docker run --rm -v "$(pwd)":/code \
+            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            --platform linux/arm64 \
+            cosmwasm/workspace-optimizer-arm64:0.16.0; \
+    elif [[ $(uname -m) == 'x86_64' ]]; then docker run --rm -v "$(pwd)":/code \
+            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            --platform linux/amd64 \
+            cosmwasm/workspace-optimizer:0.16.0; fi
