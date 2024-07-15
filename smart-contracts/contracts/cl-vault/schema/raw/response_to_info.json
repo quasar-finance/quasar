@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VaultInfoResponse",
+  "description": "Returned by QueryMsg::Info and contains information about this vault",
+  "type": "object",
+  "required": [
+    "tokens",
+    "vault_token"
+  ],
+  "properties": {
+    "tokens": {
+      "description": "The tokens used by the vault and accepted for deposits, withdrawals. the value is a denom if it is a native token and a contract address if it is a cw20 token. The value expression of internal accounting is left up to the vault.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "vault_token": {
+      "description": "Vault token. The denom if it is a native token and the contract address if it is a cw20 token.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

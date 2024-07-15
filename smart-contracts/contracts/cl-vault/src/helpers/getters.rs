@@ -1,4 +1,5 @@
 use crate::math::tick::tick_to_price;
+use crate::state::RANGE_ADMIN;
 use std::str::FromStr;
 
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
@@ -8,11 +9,16 @@ use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    Coin, Decimal, Decimal256, DepsMut, Env, Fraction, QuerierWrapper, Storage, Uint128, Uint256,
+    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
+    Uint128, Uint256,
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
 use super::coinlist::CoinList;
+
+pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
+    Ok(RANGE_ADMIN.load(deps.storage)?)
+}
 
 /// Calculate the total value of two assets in asset0.
 pub fn get_asset0_value(

@@ -44,3 +44,9 @@ In order to run test-tube the following dependencies are required:
 * `sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev curl clang libclang-dev`
 * go1.21 ([see here](https://go.dev/doc/install))
 * libwasmvm ([see here](https://github.com/CosmWasm/wasmvm) -- !Instructions don't cover installation, copy the files to your desired install location or add the subfolder `wasmvm/internal/api` to your library paths) 
+
+## Pre-commit hook
+Enable the pre-commit hook by copying the entrypoint to the hooks folder: `cp scripts/pre-commit .git/hooks`.
+
+It forwards to `scripts/git/pre-commit`, which contains the actual implementation.
+If you are concerned about automatically picking up changes in a bash script from the repository you may install the pre-commit hook via: `cp scripts/git/pre-commit .git/hooks`

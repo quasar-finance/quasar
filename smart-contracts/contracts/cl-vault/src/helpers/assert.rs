@@ -1,6 +1,9 @@
-use cosmwasm_std::{coin, Addr, Coin, Deps, MessageInfo};
+use cosmwasm_std::{coin, Addr, Coin, Deps, MessageInfo, Storage};
 
-use crate::{state::ADMIN_ADDRESS, ContractError};
+use crate::{
+    state::{ADMIN_ADDRESS, RANGE_ADMIN},
+    ContractError,
+};
 
 /// This function compares the address of the message sender (caller) with the current admin
 /// address stored in the state. This provides a convenient way to verify if the caller
@@ -11,6 +14,14 @@ pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
     } else {
         Ok(caller.clone())
     }
+}
+
+pub fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    let admin = RANGE_ADMIN.load(storage)?;
+    if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
 
 /// Returns the Coin of the needed denoms in the order given in denoms

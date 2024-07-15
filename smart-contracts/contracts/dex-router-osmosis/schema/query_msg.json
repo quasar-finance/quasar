@@ -31,7 +31,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Returns all the current path for a given (offer_asset, ask_asset) pair.",
+      "description": "Returns all the current path for a given (offer_denom, ask_denom) pair.",
       "type": "object",
       "required": [
         "paths_for_pair"
@@ -57,7 +57,7 @@
       "additionalProperties": false
     },
     {
-      "description": "finds the best path for a given (offer_asset, ask_asset) pair. if no path is found, returns None.",
+      "description": "finds the best path for a given (offer_denom, ask_denom) pair. if no path is found, returns None.",
       "type": "object",
       "required": [
         "best_path_for_pair"

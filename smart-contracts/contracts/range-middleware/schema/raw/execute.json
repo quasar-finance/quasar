@@ -1,0 +1,202 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "oneOf": [
+    {
+      "description": "range operations",
+      "type": "object",
+      "required": [
+        "range_msg"
+      ],
+      "properties": {
+        "range_msg": {
+          "$ref": "#/definitions/RangeExecuteMsg"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "admin operations",
+      "type": "object",
+      "required": [
+        "admin_msg"
+      ],
+      "properties": {
+        "admin_msg": {
+          "$ref": "#/definitions/AdminExecuteMsg"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "AdminExecuteMsg": {
+      "oneOf": [
+        {
+          "description": "Update the range submitter admin.",
+          "type": "object",
+          "required": [
+            "update_range_submitter_admin"
+          ],
+          "properties": {
+            "update_range_submitter_admin": {
+              "type": "object",
+              "required": [
+                "new_admin"
+              ],
+              "properties": {
+                "new_admin": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Update the range executor admin.",
+          "type": "object",
+          "required": [
+            "update_range_executor_admin"
+          ],
+          "properties": {
+            "update_range_executor_admin": {
+              "type": "object",
+              "required": [
+                "new_admin"
+              ],
+              "properties": {
+                "new_admin": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Decimal": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    },
+    "NewRange": {
+      "type": "object",
+      "required": [
+        "cl_vault_address",
+        "lower_price",
+        "upper_price"
+      ],
+      "properties": {
+        "cl_vault_address": {
+          "type": "string"
+        },
+        "lower_price": {
+          "$ref": "#/definitions/Decimal"
+        },
+        "upper_price": {
+          "$ref": "#/definitions/Decimal"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RangeExecuteMsg": {
+      "oneOf": [
+        {
+          "description": "Submit a range to the range middleware",
+          "type": "object",
+          "required": [
+            "submit_new_range"
+          ],
+          "properties": {
+            "submit_new_range": {
+              "type": "object",
+              "required": [
+                "new_range"
+              ],
+              "properties": {
+                "new_range": {
+                  "$ref": "#/definitions/NewRange"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Execute a new range",
+          "type": "object",
+          "required": [
+            "execute_new_range"
+          ],
+          "properties": {
+            "execute_new_range": {
+              "type": "object",
+              "required": [
+                "cl_vault_address",
+                "max_slippage",
+                "ratio_of_swappable_funds_to_use",
+                "twap_window_seconds"
+              ],
+              "properties": {
+                "cl_vault_address": {
+                  "type": "string"
+                },
+                "claim_after": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "forced_swap_route": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "$ref": "#/definitions/SwapAmountInRoute"
+                  }
+                },
+                "max_slippage": {
+                  "$ref": "#/definitions/Decimal"
+                },
+                "ratio_of_swappable_funds_to_use": {
+                  "$ref": "#/definitions/Decimal"
+                },
+                "twap_window_seconds": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SwapAmountInRoute": {
+      "type": "object",
+      "required": [
+        "pool_id",
+        "token_out_denom"
+      ],
+      "properties": {
+        "pool_id": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "token_out_denom": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

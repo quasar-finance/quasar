@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VaultStandardInfoResponse",
+  "description": "Struct returned from QueryMsg::VaultStandardInfo with information about the used version of the vault standard and any extensions used.\n\nThis struct should be stored as an Item under the `vault_standard_info` key, so that other contracts can do a RawQuery and read it directly from storage instead of needing to do a costly SmartQuery.",
+  "type": "object",
+  "required": [
+    "extensions",
+    "version"
+  ],
+  "properties": {
+    "extensions": {
+      "description": "A list of vault standard extensions used by the vault. E.g. [\"lockup\", \"keeper\"]",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "version": {
+      "description": "The version of the vault standard used. A number, e.g. 1, 2, etc.",
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false
+}

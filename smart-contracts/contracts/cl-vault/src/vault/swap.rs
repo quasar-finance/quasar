@@ -1,12 +1,11 @@
 use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
+use crate::helpers::assert::assert_range_admin;
 use crate::helpers::msgs::swap_msg;
 use crate::msg::SwapOperation;
 use crate::state::POOL_CONFIG;
 use crate::{state::VAULT_CONFIG, ContractError};
-
-use super::range::assert_range_admin;
 
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
