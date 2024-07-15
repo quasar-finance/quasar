@@ -1,9 +1,44 @@
-use cosmwasm_std::Attribute;
+use cosmwasm_std::{Attribute, Coin, Decimal, Fraction, Uint128};
 use osmosis_std::types::cosmos::base::v1beta1;
 use osmosis_std::types::{
     cosmos::bank::v1beta1::QueryBalanceRequest, cosmwasm::wasm::v1::MsgExecuteContractResponse,
+    osmosis::poolmanager::v1beta1::SpotPriceRequest,
 };
-use osmosis_test_tube::{Bank, ExecuteResponse, Module, OsmosisTestApp};
+use osmosis_test_tube::{Bank, ExecuteResponse, Module, OsmosisTestApp, PoolManager, Runner, Wasm};
+
+/// get the share price of a single share in asset0, thus share/token
+pub fn get_value_in_asset0<'a, R>(
+    app: &'a R,
+    pool_id: u64,
+    token0: Coin,
+    token1: Coin,
+) -> Result<Uint128, String>
+where
+    R: Runner<'a>,
+{
+    println!("token0: {:?}", token0);
+    println!("token1: {:?}", token1);
+
+    let pm = PoolManager::new(app);
+    let spot_price: Decimal = pm
+        .query_spot_price(&SpotPriceRequest {
+            pool_id,
+            base_asset_denom: token0.denom,
+            quote_asset_denom: token1.denom,
+        })
+        .map_err(|e| e.to_string())?
+        .spot_price
+        .parse()
+        .unwrap();
+
+    // calculate the total vault assets in asset0
+    // total = amount0 + amount1 / spotprice
+    let total = token0.amount
+        + token1
+            .amount
+            .multiply_ratio(spot_price.denominator(), spot_price.numerator());
+    Ok(total)
+}
 
 pub fn get_event_attributes_by_ty_and_key(
     response: &ExecuteResponse<MsgExecuteContractResponse>,

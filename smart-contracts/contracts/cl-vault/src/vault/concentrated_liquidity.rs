@@ -1,16 +1,20 @@
-use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{
+    Coin, Decimal256, DepsMut, Env, Order, QuerierWrapper, StdError, Storage, Timestamp, Uint128,
+};
+#[cfg(test)]
+use derive_builder::Builder;
+use osmosis_std::cosmwasm_to_proto_coins;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
-    Pool,
+    Pool, Position,
 };
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use prost::Message;
 
 use crate::helpers::generic::{round_up_to_nearest_multiple, sort_tokens};
-use crate::{
-    state::{POOL_CONFIG, POSITION},
-    ContractError,
-};
+use crate::state::POSITIONS;
+use crate::{state::POOL_CONFIG, ContractError};
 
 pub fn create_position(
     deps: DepsMut,
@@ -48,35 +52,165 @@ pub fn create_position(
 
 // TODO verify that liquidity amount should be Decimal256
 pub fn withdraw_from_position(
-    storage: &dyn Storage,
     env: &Env,
+    position_id: u64,
     liquidity_amount: Decimal256,
 ) -> Result<MsgWithdrawPosition, ContractError> {
     let sender = env.contract.address.to_string();
-    let position = POSITION.load(storage)?;
 
     let withdraw_position = MsgWithdrawPosition {
-        position_id: position.position_id,
+        position_id,
         sender,
         liquidity_amount: liquidity_amount.atomics().to_string(),
     };
     Ok(withdraw_position)
 }
 
-pub fn get_position(
+pub fn get_positions(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-) -> Result<FullPositionBreakdown, ContractError> {
-    let position = POSITION.load(storage)?;
+) -> Result<Vec<(crate::state::Position, FullPositionParsed)>, ContractError> {
+    let position_ids: Result<Vec<(u64, crate::state::Position)>, StdError> = POSITIONS
+        .range(storage, None, None, Order::Ascending)
+        .collect();
 
+    let _cl_querier = ConcentratedliquidityQuerier::new(querier);
+    let positions: Result<Vec<(crate::state::Position, FullPositionParsed)>, ContractError> =
+        position_ids?
+            .into_iter()
+            .map(|(id, position)| Ok((position, get_parsed_position(querier, id)?)))
+            .collect();
+
+    positions
+}
+
+pub fn get_position(
+    querier: &QuerierWrapper,
+    position_id: u64,
+) -> Result<FullPositionBreakdown, ContractError> {
     let cl_querier = ConcentratedliquidityQuerier::new(querier);
-    let position = cl_querier.position_by_id(position.position_id)?;
+    let position = cl_querier.position_by_id(position_id)?;
     position.position.ok_or(ContractError::PositionNotFound)
+}
+
+pub fn get_parsed_position(
+    querier: &QuerierWrapper,
+    position_id: u64,
+) -> Result<FullPositionParsed, ContractError> {
+    let cl_querier = ConcentratedliquidityQuerier::new(querier);
+    let position = cl_querier.position_by_id(position_id)?;
+    position
+        .position
+        .ok_or(ContractError::PositionNotFound)?
+        .try_into()
+}
+
+// TODO move these structs to a package and enable direct proto decoding
+// into these structs
+#[cfg_attr(test, derive(Builder))]
+#[cw_serde]
+pub struct FullPositionParsed {
+    pub position: PositionParsed,
+    pub asset0: Coin,
+    pub asset1: Coin,
+    pub claimable_spread_rewards: Vec<Coin>,
+    pub claimable_incentives: Vec<Coin>,
+    pub forfeited_incentives: Vec<Coin>,
+}
+
+impl TryFrom<FullPositionBreakdown> for FullPositionParsed {
+    type Error = ContractError;
+
+    fn try_from(value: FullPositionBreakdown) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position: value
+                .position
+                .ok_or(ContractError::PositionNotFound)?
+                .try_into()?,
+            asset0: value.asset0.unwrap().try_into()?,
+            asset1: value.asset1.unwrap().try_into()?,
+            claimable_spread_rewards: osmosis_std::try_proto_to_cosmwasm_coins(
+                value.claimable_spread_rewards,
+            )?,
+            claimable_incentives: osmosis_std::try_proto_to_cosmwasm_coins(
+                value.claimable_incentives,
+            )?,
+            forfeited_incentives: osmosis_std::try_proto_to_cosmwasm_coins(
+                value.forfeited_incentives,
+            )?,
+        })
+    }
+}
+
+impl From<FullPositionParsed> for FullPositionBreakdown {
+    fn from(val: FullPositionParsed) -> Self {
+        FullPositionBreakdown {
+            position: Some(val.position.into()),
+            asset0: Some(val.asset0.into()),
+            asset1: Some(val.asset1.into()),
+            claimable_spread_rewards: cosmwasm_to_proto_coins(val.claimable_spread_rewards),
+            claimable_incentives: cosmwasm_to_proto_coins(val.claimable_incentives),
+            forfeited_incentives: cosmwasm_to_proto_coins(val.forfeited_incentives),
+        }
+    }
+}
+
+// TODO move these structs to a package and enable direct proto decoding
+// into these structs
+#[cfg_attr(test, derive(Builder))]
+#[cw_serde]
+pub struct PositionParsed {
+    pub position_id: u64,
+    pub address: ::prost::alloc::string::String,
+    pub pool_id: u64,
+    pub lower_tick: i64,
+    pub upper_tick: i64,
+    pub join_time: Timestamp,
+    pub liquidity: Decimal256,
+}
+
+impl TryFrom<Position> for PositionParsed {
+    type Error = ContractError;
+
+    fn try_from(value: Position) -> Result<Self, Self::Error> {
+        Ok(Self {
+            position_id: value.position_id,
+            address: value.address,
+            pool_id: value.pool_id,
+            lower_tick: value.lower_tick,
+            upper_tick: value.upper_tick,
+            join_time: value
+                .join_time
+                // This conversion is sloppy and loses seconds information
+                .map(|t| Timestamp::from_seconds(t.seconds.try_into().unwrap()))
+                .unwrap_or_default(),
+            liquidity: value.liquidity.parse()?,
+        })
+    }
+}
+
+impl From<PositionParsed> for Position {
+    fn from(val: PositionParsed) -> Self {
+        Position {
+            position_id: val.position_id,
+            address: val.address,
+            pool_id: val.pool_id,
+            lower_tick: val.lower_tick,
+            upper_tick: val.upper_tick,
+            join_time: Some(osmosis_std::shim::Timestamp {
+                // save because it's seconds since unix epoch time
+                seconds: val.join_time.seconds().try_into().unwrap(),
+                nanos: 0,
+            }),
+            liquidity: val.liquidity.to_string(),
+        }
+    }
 }
 
 pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, ContractError> {
     let pm_querier = PoolmanagerQuerier::new(querier);
-    let pool = pm_querier.pool(pool_id)?;
+    let pool: osmosis_std::types::osmosis::poolmanager::v1beta1::PoolResponse =
+        pm_querier.pool(pool_id)?;
 
     match pool.pool {
         // Some(pool) => Some(Pool::decode(pool.value.as_slice())?),
@@ -88,28 +222,13 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
     }
 }
 
-pub fn _may_get_position(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-    _env: &Env,
-) -> Result<Option<FullPositionBreakdown>, ContractError> {
-    let position = POSITION.may_load(storage)?;
-    if let Some(position) = position {
-        let cl_querier = ConcentratedliquidityQuerier::new(querier);
-        let position = cl_querier.position_by_id(position.position_id)?;
-        Ok(Some(
-            position.position.ok_or(ContractError::PositionNotFound)?,
-        ))
-    } else {
-        Ok(None)
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::{
-        state::{PoolConfig, Position},
-        test_helpers::QuasarQuerier,
+        state::{PoolConfig, Position, MAIN_POSITION_ID, POSITIONS},
+        test_helpers::{FullPositionBuilder, QuasarQuerier},
     };
     use cosmwasm_std::{
         coin,
@@ -136,22 +255,19 @@ mod tests {
             )
             .unwrap();
         let qq = QuasarQuerier::new(
-            FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id: 1,
-                    address: "bob".to_string(),
-                    pool_id: 1,
-                    lower_tick: 1,
-                    upper_tick: 100,
-                    join_time: None,
-                    liquidity: "123.214".to_string(),
-                }),
-                asset0: Some(coin(1000, "uosmo").into()),
-                asset1: Some(coin(1000, "uatom").into()),
-                claimable_spread_rewards: vec![coin(1000, "uosmo").into()],
-                claimable_incentives: vec![coin(123, "uatom").into()],
-                forfeited_incentives: vec![],
-            },
+            vec![FullPositionBuilder::new(
+                1,
+                1,
+                1,
+                100,
+                None,
+                Decimal256::from_str("123.214").unwrap(),
+                coin(1000, "uosmo"),
+                coin(1000, "uatom"),
+            )
+            .with_spread_rewards(vec![coin(123, "uatom")])
+            .with_incentives(vec![coin(1000, "uosmo")])
+            .build()],
             100,
         );
 
@@ -200,9 +316,13 @@ mod tests {
         let liquidity_amount = Decimal256::from_ratio(100_u128, 1_u128);
 
         let position_id = 1;
-        POSITION
+        MAIN_POSITION_ID
+            .save(deps.as_mut().storage, &position_id)
+            .unwrap();
+        POSITIONS
             .save(
                 deps.as_mut().storage,
+                position_id,
                 &Position {
                     position_id,
                     join_time: 0,
@@ -211,7 +331,7 @@ mod tests {
             )
             .unwrap();
 
-        let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
+        let result = withdraw_from_position(&env, position_id, liquidity_amount).unwrap();
 
         assert_eq!(
             result,

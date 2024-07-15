@@ -1,31 +1,25 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
+use cw_storage_plus::Item;
 
 use crate::error::ContractError;
-use crate::helpers::generic::sort_tokens;
+
 use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_assets_from_shares, query_dex_router, query_info, query_main_position, query_metadata,
+    query_pool, query_positions, query_total_assets, query_total_vault_token_supply,
+    query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-#[allow(deprecated)]
-use crate::state::{
-    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
-    VAULT_CONFIG,
-};
-use crate::state::{Position, OLD_POSITION, POSITION};
+
+use crate::state::{Position, MAIN_POSITION_ID, POSITIONS};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
@@ -39,11 +33,13 @@ use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
 };
-use crate::vault::range::{
-    execute_update_range, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
-    handle_withdraw_position_reply,
+use crate::vault::range::create_position::handle_range_new_create_position;
+use crate::vault::range::modify_position_funds::handle_range_add_to_position_reply;
+use crate::vault::range::move_position::{
+    handle_initial_create_position_reply, handle_iteration_create_position_reply,
+    handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply,
 };
+use crate::vault::range::update_range::execute_update_range;
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 
@@ -108,29 +104,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::Autocompound {} => {
                     prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?)
                 }
-                crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
-                    lower_price,
-                    upper_price,
-                    max_slippage,
-                    ratio_of_swappable_funds_to_use,
-                    twap_window_seconds,
-                    forced_swap_route,
-                    claim_after,
-                }) => prepend_claim_msg(
-                    &env,
-                    execute_update_range(
-                        deps,
-                        &env,
-                        info,
-                        lower_price,
-                        upper_price,
-                        max_slippage,
-                        ratio_of_swappable_funds_to_use,
-                        twap_window_seconds,
-                        forced_swap_route,
-                        claim_after,
-                    )?,
-                ),
+                crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => {
+                    prepend_claim_msg(&env, execute_update_range(deps, &env, info, msg)?)
+                }
                 crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_operations } => {
                     execute_swap_non_vault_funds(deps, env, info, swap_operations)
                 }
@@ -158,7 +134,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             to_json_binary(&query_assets_from_shares(deps, env, shares)?)?,
         ),
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
-            Ok(to_json_binary(&query_total_assets(deps, env)?)?)
+            Ok(to_json_binary(&query_total_assets(deps, &env)?)?)
         }
         cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_json_binary(&query_total_vault_token_supply(deps)?)?)
@@ -184,7 +160,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
             },
             crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
                 crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Position {} => Ok(to_json_binary(&query_position(deps)?)?),
+                crate::msg::ClQueryMsg::Positions {} => {
+                    Ok(to_json_binary(&query_positions(deps)?)?)
+                }
                 crate::msg::ClQueryMsg::RangeAdmin {} => {
                     let range_admin = get_range_admin(deps)?;
                     Ok(to_json_binary(&RangeAdminResponse {
@@ -193,6 +171,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 }
                 crate::msg::ClQueryMsg::VerifyTickCache => {
                     Ok(to_json_binary(&query_verify_tick_cache(deps)?)?)
+                }
+                crate::msg::ClQueryMsg::MainPosition => {
+                    Ok(to_json_binary(&query_main_position(deps)?)?)
                 }
             },
         },
@@ -214,10 +195,13 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::RangeIterationCreatePosition => {
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
+        Replies::RangeNewCreatePosition => handle_range_new_create_position(deps, env, msg.result),
+        Replies::RangeAddToPosition => handle_range_add_to_position_reply(deps, env, msg.result),
         Replies::Swap => handle_swap_reply(deps, env, msg.result),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
-        Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),
+        Replies::WithdrawUserMain => handle_withdraw_user_reply(deps, msg.result),
+        Replies::WithdrawUserProRato => handle_withdraw_user_reply(deps, msg.result),
         Replies::WithdrawMerge => handle_merge_withdraw_position_reply(deps, env, msg.result),
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Autocompound => handle_autocompound_reply(deps, env, msg.result),
@@ -226,62 +210,44 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
     }
 }
 
+/// For migrating from single position to multirange, we need to take do the following:
+/// - Take the current position of the vault
+///   - Save that position as the main positon
+///   - Save that position as a position in the POSITIONS map
+/// - remove the position from the old key
+/// For review verification, the following items are changed:
+/// - POSITION (removed)
+/// - POSITIONS (newly added)
+/// - MAIN_POSITION_ID (newly added)
+/// - CURRENT_POSITION_ID (newly added)
+/// - CURRENT_CLAIM_AFTER (newly added)
+/// - MERGE_MAIN_POSITION (newly added)
+/// and claim_after_secs is added to
+/// - CurrentMergePosition
+/// - ModifyRangeState
+///
+/// Of these changed items CURRENT_POSITION_ID, CURRENT_CLAIM_AFTER, MERGE_MAIN_POSITION, CurrentMergePosition and ModifyRangeState
+/// are set before they are are read, so do not need to be set in the migrations (reviewers should verify this).
+/// This leaves us with the correct setting of POSITIONS, MAIN_POSITION_ID and the removal of POSITION
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-    let new_vault_config = VaultConfig {
-        performance_fee: old_vault_config.performance_fee,
-        treasury: old_vault_config.treasury,
-        swap_max_slippage: old_vault_config.swap_max_slippage,
-        dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-    };
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    OLD_VAULT_CONFIG.remove(deps.storage);
-    VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
+    // position was left unaltered so we don't need to change this
+    const POSITION: Item<Position> = Item::new("position");
 
-    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
+    let position = POSITION.load(deps.storage)?;
 
-    // Declare response object as mut
-    let mut response = Response::new().add_attribute("migrate", "successful");
+    MAIN_POSITION_ID.save(deps.storage, &position.position_id)?;
+    POSITIONS.save(deps.storage, position.position_id, &position)?;
 
-    // Conditionally add a bank send message if the strategist rewards state is not empty
-    #[allow(deprecated)]
-    let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    if !strategist_rewards.is_empty() {
-        let bank_send_msg = BankMsg::Send {
-            to_address: new_vault_config.treasury.to_string(),
-            amount: sort_tokens(strategist_rewards.coins()),
-        };
-        response = response.add_message(bank_send_msg);
-    }
-    // Remove the state
-    #[allow(deprecated)]
-    STRATEGIST_REWARDS.remove(deps.storage);
+    POSITION.remove(deps.storage);
 
-    //POSITION state migration
-    let old_position = OLD_POSITION.load(deps.storage)?;
-
-    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
-    let pos_response = cl_querier.position_by_id(old_position.position_id)?;
-
-    let new_position: Position = Position {
-        position_id: old_position.position_id,
-        join_time: pos_response
-            .position
-            .unwrap()
-            .position
-            .unwrap()
-            .join_time
-            .unwrap()
-            .seconds
-            .unsigned_abs(),
-        claim_after: None,
-    };
-
-    POSITION.save(deps.storage, &new_position)?;
-    OLD_POSITION.remove(deps.storage);
-
-    Ok(response)
+    Ok(Response::new()
+        .add_attribute("migrate", "succesful")
+        .add_attribute("main_position", position.position_id.to_string())
+        .add_attribute("contract_name", CONTRACT_NAME)
+        .add_attribute("contract_version", CONTRACT_VERSION))
 }
 
 #[cfg(test)]
@@ -289,7 +255,7 @@ mod tests {
     use super::*;
     use crate::{
         helpers::coinlist::CoinList,
-        state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
+        state::{OldPosition, OldVaultConfig, Position},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
     #[allow(deprecated)]
@@ -299,302 +265,62 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
     };
+    use cw2::assert_contract_version;
     use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
     use prost::Message;
     use std::str::FromStr;
 
-    pub fn mock_migrate(
-        deps: DepsMut,
-        _env: Env,
-        msg: MigrateMsg,
-    ) -> Result<Response, ContractError> {
-        let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-        let new_vault_config = VaultConfig {
-            performance_fee: old_vault_config.performance_fee,
-            treasury: old_vault_config.treasury,
-            swap_max_slippage: old_vault_config.swap_max_slippage,
-            dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-        };
+    use super::*;
 
-        OLD_VAULT_CONFIG.remove(deps.storage);
-        VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
+    #[test]
+    fn migrate_positions_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
 
-        MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
-
-        // Declare response object as mut
-        let mut response = Response::new().add_attribute("migrate", "successful");
-
-        // Conditionally add a bank send message if the strategist rewards state is not empty
-        #[allow(deprecated)]
-        let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-        if !strategist_rewards.is_empty() {
-            let bank_send_msg = BankMsg::Send {
-                to_address: new_vault_config.treasury.to_string(),
-                amount: sort_tokens(strategist_rewards.coins()),
-            };
-            response = response.add_message(bank_send_msg);
-        }
-        // Remove the state
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS.remove(deps.storage);
-        let old_position = OLD_POSITION.load(deps.storage)?;
-
-        let new_position: Position = Position {
-            position_id: old_position.position_id,
-            join_time: 0,
+        const POSITION: Item<Position> = Item::new("position");
+        let position = Position {
+            position_id: 2,
+            join_time: 3,
             claim_after: None,
         };
+        POSITION.save(deps.as_mut().storage, &position).unwrap();
 
-        POSITION.save(deps.storage, &new_position)?;
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {}).unwrap();
 
-        OLD_POSITION.remove(deps.storage);
-
-        Ok(response)
-    }
-
-    #[test]
-    fn test_migrate_position_state() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-
-        // Mock a previous state item
-        OLD_POSITION
-            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
-            .unwrap();
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::from_str("0.2").unwrap(),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                },
-            )
-            .unwrap();
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS
-            .save(&mut deps.storage, &CoinList::new())
-            .unwrap();
-
-        mock_migrate(
-            deps.as_mut(),
-            env,
-            MigrateMsg {
-                dex_router: new_dex_router,
-            },
-        )
-        .unwrap();
-
-        let position = POSITION.load(deps.as_mut().storage).unwrap();
-
-        assert_eq!(position.position_id, 1);
-        assert_eq!(position.join_time, 0);
-        assert!(position.claim_after.is_none());
-
-        let old_position = OLD_POSITION.may_load(deps.as_mut().storage).unwrap();
-        assert!(old_position.is_none());
-    }
-
-    #[test]
-    fn test_migrate_no_rewards() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-
-        // Declare new items for states
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-
-        // Mock a previous state item
-        OLD_POSITION
-            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
-            .unwrap();
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::from_str("0.2").unwrap(),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                },
-            )
-            .unwrap();
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS
-            .save(&mut deps.storage, &CoinList::new())
-            .unwrap();
-
-        mock_migrate(
-            deps.as_mut(),
-            env.clone(),
-            MigrateMsg {
-                dex_router: new_dex_router.clone(),
-            },
-        )
-        .unwrap();
-
-        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
-        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
-
-        // Assert new VAULT_CONFIG.dex_router field have correct value
-        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
-        assert_eq!(vault_config.dex_router, new_dex_router);
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Open);
-
-        // Assert STRATEGIST_REWARDS state have been correctly removed by unwrapping the error
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
-
-        // Execute one migration step and assert the correct behavior
-        execute_migration_step(deps.as_mut(), env, Uint128::one()).unwrap();
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Closed);
-    }
-
-    #[test]
-    fn test_migrate_with_rewards_execute_steps() {
-        let env = mock_env();
-        let mut deps = mock_dependencies();
-
-        // Declare new items for states
-        let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
-
-        // Mock a previous state item
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::from_str("0.2").unwrap(),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                },
-            )
-            .unwrap();
-
-        OLD_POSITION
-            .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
-            .unwrap();
-
-        // Mock USER_REWARDS in order to have something to iterate over
-        let rewards_coins = vec![
-            coin(1000u128, DENOM_BASE),
-            coin(1000u128, DENOM_QUOTE),
-            coin(1000u128, DENOM_REWARD),
-        ];
-        for i in 0..10 {
-            #[allow(deprecated)]
-            USER_REWARDS
-                .save(
-                    deps.as_mut().storage,
-                    Addr::unchecked(format!("user{}", i)),
-                    &CoinList::from_coins(rewards_coins.clone()),
-                )
-                .unwrap();
-        }
-        // Mock STRATEGIST_REWARDS in order to have something to distribute
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS
-            .save(
-                deps.as_mut().storage,
-                &CoinList::from_coins(rewards_coins.clone()),
-            )
-            .unwrap();
-
-        let migrate_resp = mock_migrate(
-            deps.as_mut(),
-            env.clone(),
-            MigrateMsg {
-                dex_router: new_dex_router.clone(),
-            },
-        )
-        .unwrap();
-
-        if let Some(SubMsg {
-            msg: CosmosMsg::Bank(BankMsg::Send { to_address, amount }),
-            ..
-        }) = migrate_resp.messages.get(0)
-        {
-            assert_eq!(to_address, "treasury");
-            assert_eq!(amount, &rewards_coins);
-        } else {
-            panic!("Expected BankMsg::Send message in the response");
-        }
-
-        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
-        #[allow(deprecated)]
-        STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
-
-        // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
-        OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
-
-        // Assert new VAULT_CONFIG.dex_router field have correct value
-        let vault_config = VAULT_CONFIG.load(deps.as_mut().storage).unwrap();
-        assert_eq!(vault_config.dex_router, new_dex_router);
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Open);
-
-        // Execute 9 migration steps paginating by 2 users_amount.
-        // leaving the last user to close the migration in the last step
-        for i in 0..9 {
-            let migration_step =
-                execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
-
-            assert_multi_send(
-                &migration_step.messages[0].msg,
-                &format!("user{}", i),
-                &rewards_coins,
-            );
-
-            // Assert new MIGRATION_STATUS state have correct value
-            let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-            assert_eq!(migration_status, MigrationStatus::Open);
-        }
-
-        // Execute the last migration step
-        let migration_step =
-            execute_migration_step(deps.as_mut(), env.clone(), Uint128::one()).unwrap();
-        assert_multi_send(
-            &migration_step.messages[0].msg,
-            &"user9".to_string(),
-            &rewards_coins,
+        assert!(!POSITION.exists(deps.as_ref().storage));
+        assert_eq!(
+            MAIN_POSITION_ID.load(deps.as_ref().storage).unwrap(),
+            position.position_id
         );
-
-        // Assert new MIGRATION_STATUS state have correct value
-        let migration_status = MIGRATION_STATUS.load(deps.as_mut().storage).unwrap();
-        assert_eq!(migration_status, MigrationStatus::Closed);
-
-        // Assert USER_REWARDS state have been correctly removed by unwrapping the error
-        for i in 0..10 {
-            #[allow(deprecated)]
-            USER_REWARDS
-                .load(deps.as_mut().storage, Addr::unchecked(format!("user{}", i)))
-                .unwrap_err();
-        }
+        assert_eq!(
+            POSITIONS
+                .load(deps.as_ref().storage, position.position_id)
+                .unwrap(),
+            position
+        )
     }
 
-    fn assert_multi_send(msg: &CosmosMsg, expected_user: &String, user_rewards_coins: &Vec<Coin>) {
-        if let CosmosMsg::Stargate { type_url, value } = msg {
-            // Decode and validate the MsgMultiSend message
-            // This has been decoded manually rather than encoding the expected message because its simpler to assert the values
-            assert_eq!(type_url, "/cosmos.bank.v1beta1.MsgMultiSend");
-            let msg: MsgMultiSend =
-                MsgMultiSend::decode(value.as_slice()).expect("Failed to decode MsgMultiSend");
-            for output in msg.outputs {
-                assert_eq!(&output.address, expected_user);
-                assert_eq!(
-                    output.coins,
-                    cosmwasm_to_proto_coins(user_rewards_coins.iter().cloned())
-                );
-            }
-        } else {
-            panic!("Expected Stargate message type, found another.");
-        }
+    #[test]
+    fn migrate_cw2_works() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        const POSITION: Item<Position> = Item::new("position");
+        POSITION
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id: 2,
+                    join_time: 3,
+                    claim_after: None,
+                },
+            )
+            .unwrap();
+
+        cw2::set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.0.0").unwrap();
+        migrate(deps.as_mut(), env, MigrateMsg {}).unwrap();
+
+        assert_contract_version(deps.as_mut().storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
     }
 }

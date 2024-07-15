@@ -20,4 +20,8 @@ pub enum ContractError {
     // start execution errors
     #[error("No range exists for contract {address}")]
     NoRangeExists { address: String },
+
+    // start execution errors
+    #[error("No range execution params given for contract {address}")]
+    NoRangeExecutionParams { address: String },
 }

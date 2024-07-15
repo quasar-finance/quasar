@@ -116,7 +116,7 @@ mod tests {
         for proof in &proof {
             if proof.len() == 32 {
                 let mut arr = [0u8; 32];
-                arr.copy_from_slice(&proof);
+                arr.copy_from_slice(proof);
                 proof_hashes.push(arr);
             } else {
                 eprintln!("Error: Hash is not 32 bytes.");
@@ -277,7 +277,7 @@ mod tests {
     #[test]
     fn test_verify_success() {
         verify_proof(
-            &MERKLE_ROOT_STRING.to_string(),
+            MERKLE_ROOT_STRING,
             get_proof_hashes(),
             &[0usize],
             10usize,
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn test_verify_bad_root() {
         let result = verify_proof(
-            &MERKLE_ROOT_INVALID_STRING.to_string(),
+            MERKLE_ROOT_INVALID_STRING,
             get_proof_hashes(),
             &[0usize],
             10usize,
@@ -302,7 +302,7 @@ mod tests {
     #[test]
     fn test_verify_bad_claim() {
         let result = verify_proof(
-            &MERKLE_ROOT_STRING.to_string(),
+            MERKLE_ROOT_STRING,
             get_proof_hashes(),
             &[0usize],
             10usize,

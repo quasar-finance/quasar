@@ -1,1 +1,1 @@
-mod osmosis;
+pub mod concentratedliquidity;

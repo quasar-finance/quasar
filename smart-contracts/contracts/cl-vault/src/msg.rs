@@ -1,18 +1,28 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Coin, Decimal, Decimal256, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     query::{
-        AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserSharesBalanceResponse, VerifyTickCacheResponse,
+        AssetsBalanceResponse, MainPositionResponse, PoolResponse, PositionsResponse,
+        RangeAdminResponse, UserSharesBalanceResponse, VerifyTickCacheResponse,
     },
     state::{Metadata, VaultConfig},
 };
 
+/// ExecuteMsg for an Autocompounding Vault.
+pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
+
+impl From<ExtensionExecuteMsg> for ExecuteMsg {
+    fn from(msg: ExtensionExecuteMsg) -> Self {
+        ExecuteMsg::VaultExtension(msg)
+    }
+}
+
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
@@ -20,7 +30,7 @@ pub enum ExtensionExecuteMsg {
     Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
-    ModifyRange(ModifyRangeMsg),
+    ModifyRange(ModifyRange),
     /// provides a fungify callback interface for the contract to use
     Merge(MergePositionMsg),
     /// provides an entry point for autocompounding idle funds to current position
@@ -36,10 +46,17 @@ pub enum ExtensionExecuteMsg {
 /// Extension messages for Authz. This interface basically reexports certain vault functionality
 /// but sets recipient forcibly to None
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum AuthzExtension {
     ExactDeposit {},
     AnyDeposit { max_slippage: Decimal },
     Redeem { amount: Uint128 },
+}
+
+impl From<AuthzExtension> for ExtensionExecuteMsg {
+    fn from(msg: AuthzExtension) -> Self {
+        ExtensionExecuteMsg::Authz(msg)
+    }
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
@@ -74,8 +91,72 @@ pub enum AdminExtensionExecuteMsg {
     BuildTickCache {},
 }
 
+impl From<AdminExtensionExecuteMsg> for ExtensionExecuteMsg {
+    fn from(msg: AdminExtensionExecuteMsg) -> Self {
+        ExtensionExecuteMsg::Admin(msg)
+    }
+}
+
+// struct used by swap.rs on swap non vault funds
 #[cw_serde]
-pub struct ModifyRangeMsg {
+pub struct SwapOperation {
+    pub token_in_denom: String,
+    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
+}
+
+/// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position
+/// increasing or decreasing the relative percentage a position has in the vault and creating and deleting a position.
+/// Decreasing the percentage of a position to 0 is not allowed. DeletePosition should be used there.
+#[cw_serde]
+pub enum ModifyRange {
+    /// Move the range of a current position
+    MovePosition(MovePosition),
+    IncreaseFunds(IncreaseFunds),
+    DecreaseFunds(DecreaseFunds),
+    /// Create a new position. This consumes all free balance up to max_percentage current free balance
+    CreatePosition(CreatePosition),
+    DeletePosition(DeletePosition),
+}
+
+#[cw_serde]
+pub struct IncreaseFunds {
+    pub position_id: u64,
+    pub token0: Coin,
+    pub token1: Coin,
+}
+
+#[cw_serde]
+pub struct DecreaseFunds {
+    pub position_id: u64,
+    pub liquidity: Decimal256,
+}
+
+#[cw_serde]
+pub struct CreatePosition {
+    /// The lower price of the new position
+    pub lower_price: Decimal,
+    /// The upper price of the new position
+    pub upper_price: Decimal,
+    /// TODO add max_token options
+    pub max_token0: Option<Uint128>,
+    pub max_token1: Option<Uint128>,
+    /// claim_after optional field, if we off chain computed that incentives have some forfeit duration. this will be persisted in POSITION state
+    pub claim_after: Option<u64>,
+}
+
+#[cw_serde]
+pub struct DeletePosition {
+    /// delete the position under position_id
+    pub position_id: u64,
+}
+
+#[cw_serde]
+pub struct MovePosition {
+    /// the id of the position to move
+    pub position_id: u64,
     /// The new lower bound of the range, this is converted to an 18 precision digit decimal
     pub lower_price: Decimal,
     /// The new upper bound of the range, this is converted to an 18 precision digit decimal
@@ -95,16 +176,16 @@ pub struct ModifyRangeMsg {
 #[cw_serde]
 pub struct MergePositionMsg {
     pub position_ids: Vec<u64>,
+    pub main_position: bool,
 }
 
-// struct used by swap.rs on swap non vault funds
-#[cw_serde]
-pub struct SwapOperation {
-    pub token_in_denom: String,
-    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
-    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
+/// QueryMsg for an Autocompounding Vault.
+pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
+
+impl From<ExtensionQueryMsg> for QueryMsg {
+    fn from(msg: ExtensionQueryMsg) -> Self {
+        QueryMsg::VaultExtension(msg)
+    }
 }
 
 /// Extension query messages for an apollo autocompounding vault
@@ -130,6 +211,12 @@ pub enum UserBalanceQueryMsg {
     UserAssetsBalance { user: String },
 }
 
+impl From<UserBalanceQueryMsg> for ExtensionQueryMsg {
+    fn from(msg: UserBalanceQueryMsg) -> Self {
+        ExtensionQueryMsg::Balances(msg)
+    }
+}
+
 /// Extension query messages for related concentrated liquidity
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -137,19 +224,21 @@ pub enum ClQueryMsg {
     /// Get the underlying pool of the vault
     #[returns(PoolResponse)]
     Pool {},
-    #[returns(PositionResponse)]
-    Position {},
+    #[returns(PositionsResponse)]
+    Positions {},
     #[returns(RangeAdminResponse)]
     RangeAdmin {},
     #[returns(VerifyTickCacheResponse)]
     VerifyTickCache,
+    #[returns(MainPositionResponse)]
+    MainPosition,
 }
 
-/// ExecuteMsg for an Autocompounding Vault.
-pub type ExecuteMsg = VaultStandardExecuteMsg<ExtensionExecuteMsg>;
-
-/// QueryMsg for an Autocompounding Vault.
-pub type QueryMsg = VaultStandardQueryMsg<ExtensionQueryMsg>;
+impl From<ClQueryMsg> for ExtensionQueryMsg {
+    fn from(msg: ClQueryMsg) -> Self {
+        ExtensionQueryMsg::ConcentratedLiquidity(msg)
+    }
+}
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -175,6 +264,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub dex_router: Addr,
-}
+pub struct MigrateMsg {}

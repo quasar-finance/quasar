@@ -3,7 +3,9 @@ pub mod initialize {
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
+    use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1;
+    use osmosis_std::types::osmosis::concentratedliquidity;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
         CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
     };
@@ -11,6 +13,8 @@ pub mod initialize {
         MsgSwapExactAmountIn, SpotPriceRequest, SwapAmountInRoute,
     };
     use osmosis_std::types::osmosis::tokenfactory::v1beta1::QueryDenomsFromCreatorRequest;
+    use osmosis_test_tube::Bank;
+    use osmosis_test_tube::Runner;
     use osmosis_test_tube::{
         cosmrs::proto::traits::Message,
         osmosis_std::types::osmosis::concentratedliquidity::{
@@ -22,9 +26,14 @@ pub mod initialize {
     use std::str::FromStr;
 
     use crate::helpers::generic::sort_tokens;
+    use crate::math::tick::tick_to_price;
+    use crate::msg::CreatePosition;
+    use crate::msg::ExtensionExecuteMsg;
+    use crate::msg::MovePosition;
     use crate::msg::{
-        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRangeMsg, QueryMsg,
+        ClQueryMsg, ExecuteMsg, ExtensionQueryMsg, InstantiateMsg, ModifyRange, QueryMsg,
     };
+    use crate::query::MainPositionResponse;
     use crate::query::PoolResponse;
     use crate::state::VaultConfig;
     use crate::test_tube::helpers::calculate_deposit_ratio;
@@ -204,28 +213,14 @@ pub mod initialize {
             .data
             .code_id;
 
-        // Setup a dummy CL pool to work with
-        let gov = GovWithAppAccess::new(&app);
-        gov.propose_and_execute(
-            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
-            CreateConcentratedLiquidityPoolsProposal {
-                title: "CL Pool".to_string(),
-                description: "So that we can trade it".to_string(),
-                pool_records: vec![PoolRecord {
-                    denom0: pool.denom0,
-                    denom1: pool.denom1,
-                    tick_spacing: pool.tick_spacing,
-                    spread_factor: pool.spread_factor,
-                }],
-            },
-            admin.address(),
+        let vault_pool = create_cl_pool(
+            &app,
+            pool.denom0,
+            pool.denom1,
+            pool.tick_spacing,
+            pool.spread_factor,
             &admin,
-        )
-        .unwrap();
-
-        // Get just created pool information by querying all the pools, and taking the first one
-        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
-        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        );
 
         // Sort tokens alphabetically by denom name or Osmosis will return an error
         tokens_provided.sort_by(|a, b| a.denom.cmp(&b.denom)); // can't use helpers.rs::sort_tokens() due to different Coin type
@@ -291,10 +286,77 @@ pub mod initialize {
                 Some(admin.address().as_str()),
                 Some("cl-vault"),
                 sort_tokens(vec![
-                    coin(INITIAL_POSITION_BURN, vault_pool.token0),
-                    coin(INITIAL_POSITION_BURN, vault_pool.token1),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0.clone()),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1.clone()),
                 ])
                 .as_ref(),
+                &admin,
+            )
+            .unwrap();
+
+        let lower_price = tick_to_price(lower_tick / 2).unwrap();
+        let upper_price = tick_to_price(upper_tick / 2).unwrap();
+
+        let bank = Bank::new(&app);
+        bank.send(
+            MsgSend {
+                from_address: admin.address(),
+                to_address: contract.data.address.clone(),
+                amount: osmosis_std::cosmwasm_to_proto_coins(sort_tokens(vec![
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0.clone()),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1.clone()),
+                ])),
+            },
+            &admin,
+        )
+        .unwrap();
+
+        let _res = wasm
+            .execute(
+                contract.data.address.as_str(),
+                &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(
+                    ModifyRange::CreatePosition(CreatePosition {
+                        lower_price: lower_price.try_into().unwrap(),
+                        upper_price: upper_price.try_into().unwrap(),
+                        claim_after: None,
+                        max_token0: None,
+                        max_token1: None,
+                    }),
+                )),
+                &[],
+                &admin,
+            )
+            .unwrap();
+
+        bank.send(
+            MsgSend {
+                from_address: admin.address(),
+                to_address: contract.data.address.clone(),
+                amount: osmosis_std::cosmwasm_to_proto_coins(sort_tokens(vec![
+                    coin(INITIAL_POSITION_BURN, vault_pool.token0.clone()),
+                    coin(INITIAL_POSITION_BURN, vault_pool.token1.clone()),
+                ])),
+            },
+            &admin,
+        )
+        .unwrap();
+
+        let lower_price = tick_to_price(lower_tick / 3).unwrap();
+        let upper_price = tick_to_price(upper_tick / 3).unwrap();
+
+        let _res = wasm
+            .execute(
+                contract.data.address.as_str(),
+                &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(
+                    ModifyRange::CreatePosition(CreatePosition {
+                        lower_price: lower_price.try_into().unwrap(),
+                        upper_price: upper_price.try_into().unwrap(),
+                        claim_after: None,
+                        max_token0: None,
+                        max_token1: None,
+                    }),
+                )),
+                &[],
                 &admin,
             )
             .unwrap();
@@ -307,6 +369,41 @@ pub mod initialize {
             deposit_ratio,
             deposit_ratio_approx,
         )
+    }
+
+    /// Create a CL pool without any liquidity
+    pub fn create_cl_pool<'a>(
+        app: &'a OsmosisTestApp,
+        denom0: String,
+        denom1: String,
+        tick_spacing: u64,
+        spread_factor: String,
+        admin: &SigningAccount,
+    ) -> concentratedliquidity::v1beta1::Pool {
+        // Setup a dummy CL pool to work with
+        let gov = GovWithAppAccess::new(app);
+        gov.propose_and_execute(
+            CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
+            CreateConcentratedLiquidityPoolsProposal {
+                title: "CL Pool".to_string(),
+                description: "So that we can trade it".to_string(),
+                pool_records: vec![PoolRecord {
+                    denom0: denom0,
+                    denom1: denom1,
+                    tick_spacing: tick_spacing,
+                    spread_factor: spread_factor,
+                }],
+            },
+            admin.address(),
+            admin,
+        )
+        .unwrap();
+
+        let cl = ConcentratedLiquidity::new(app);
+        // Get just created pool information by querying all the pools, and taking the first one
+        let pools = cl.query_pools(&PoolsRequest { pagination: None }).unwrap();
+        let vault_pool: Pool = Pool::decode(pools.pools[0].value.as_slice()).unwrap();
+        vault_pool
     }
 
     fn init_test_contract_with_dex_router_and_swap_pools(
@@ -625,11 +722,21 @@ pub mod initialize {
         // Increment the app time for twaps to function
         app.increase_time(1000000);
 
+        let main_position: MainPositionResponse = wasm
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::MainPosition {},
+                )),
+            )
+            .unwrap();
+
         // Update range of vault as Admin
         wasm.execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
-                ModifyRangeMsg {
+                ModifyRange::MovePosition(MovePosition {
+                    position_id: main_position.position_id,
                     lower_price: Decimal::from_str("0.993").unwrap(),
                     upper_price: Decimal::from_str("1.002").unwrap(),
                     max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
@@ -637,7 +744,7 @@ pub mod initialize {
                     twap_window_seconds: 45,
                     forced_swap_route: None,
                     claim_after: None,
-                },
+                }),
             )),
             &[],
             &admin,

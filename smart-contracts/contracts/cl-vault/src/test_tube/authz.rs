@@ -24,7 +24,7 @@ mod tests {
     #[test]
     #[ignore]
     fn exact_deposit_withdraw_equal() {
-        let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
+        let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
             fixture_default(PERFORMANCE_FEE_DEFAULT);
         let wasm = Wasm::new(&app);
 
@@ -90,6 +90,14 @@ mod tests {
             )
             .unwrap();
         assert!(!shares.balance.is_zero());
+
+        wasm.execute(
+            contract_address.as_str(),
+            &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Autocompound {}),
+            &[],
+            &admin,
+        )
+        .unwrap();
 
         let to_withdraw = shares.balance.u128() / 2;
 

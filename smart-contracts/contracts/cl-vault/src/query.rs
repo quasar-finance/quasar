@@ -1,16 +1,19 @@
 use crate::helpers::coinlist::CoinList;
-use crate::helpers::getters::get_unused_balances;
+
 use crate::math::tick::verify_tick_exp_cache;
-use crate::state::DEX_ROUTER;
 use crate::state::{
-    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM,
+    PoolConfig, ADMIN_ADDRESS, MAIN_POSITION_ID, METADATA, POOL_CONFIG, SHARES, VAULT_DENOM,
 };
-use crate::vault::concentrated_liquidity::get_position;
+use crate::state::{Position, DEX_ROUTER, POSITIONS};
+use crate::vault::concentrated_liquidity::get_positions;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Order, StdError, Uint128};
 use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    ConcentratedliquidityQuerier, FullPositionBreakdown,
+};
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -34,8 +37,24 @@ pub struct PoolResponse {
 }
 
 #[cw_serde]
-pub struct PositionResponse {
-    pub position_ids: Vec<u64>,
+pub struct PositionsResponse {
+    pub positions: Vec<Position>,
+}
+
+#[cw_serde]
+pub struct FullPositionsResponse {
+    pub positions: Vec<FullPosition>,
+}
+
+#[cw_serde]
+pub struct FullPosition {
+    pub position: Position,
+    pub full_breakdown: FullPositionBreakdown,
+}
+
+#[cw_serde]
+pub struct MainPositionResponse {
+    pub position_id: u64,
 }
 
 #[cw_serde]
@@ -127,10 +146,39 @@ pub fn query_pool(deps: Deps) -> Result<PoolResponse, ContractError> {
     Ok(PoolResponse { pool_config })
 }
 
-pub fn query_position(deps: Deps) -> Result<PositionResponse, ContractError> {
-    let position_id = POSITION.load(deps.storage)?.position_id;
-    Ok(PositionResponse {
-        position_ids: vec![position_id],
+pub fn query_positions(deps: Deps) -> Result<PositionsResponse, ContractError> {
+    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    Ok(PositionsResponse {
+        positions: positions?.into_iter().map(|(_, p)| p).collect(),
+    })
+}
+
+pub fn query_full_positions(deps: Deps) -> Result<FullPositionsResponse, ContractError> {
+    let ps: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    let positions = ps?;
+    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+
+    let full_positions: Result<Vec<FullPosition>, ContractError> = positions
+        .into_iter()
+        .map(|(id, position)| {
+            let fp = cl_querier.position_by_id(id)?;
+
+            let full_position = fp.position.unwrap();
+
+            Ok(FullPosition {
+                position,
+                full_breakdown: full_position,
+            })
+        })
+        .collect();
+
+    Ok(FullPositionsResponse {
+        positions: full_positions?,
     })
 }
 
@@ -140,7 +188,7 @@ pub fn query_assets_from_shares(
     shares: Uint128,
 ) -> Result<AssetsBalanceResponse, ContractError> {
     let vault_supply = query_total_vault_token_supply(deps)?.total;
-    let vault_assets = query_total_assets(deps, env)?;
+    let vault_assets = query_total_assets(deps, &env)?;
 
     let vault_balance = CoinList::from_coins(vec![vault_assets.token0, vault_assets.token1]);
 
@@ -173,40 +221,31 @@ pub fn query_user_balance(
     Ok(UserSharesBalanceResponse { balance })
 }
 
-/// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users
-pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, ContractError> {
-    let position = get_position(deps.storage, &deps.querier)?;
+/// query_total_assets returns all assets currently in positions and all
+pub fn query_total_assets(deps: Deps, env: &Env) -> Result<TotalAssetsResponse, ContractError> {
+    let positions = get_positions(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let unused_balance = get_unused_balances(&deps.querier, &env)?;
 
-    // add token0 unused balance to what's in the position
-    let mut token0 = position
-        .asset0
-        .map(|c| c.try_into())
-        .transpose()?
-        .unwrap_or(coin(0, pool.token0));
+    // TODO would be nice to remove the unwraps here, although the unwraps are not awful since something is clearly
+    // terribly wrong if Osmosis returns non uints in the amounts field
+    let (amount0, amount1) = positions
+        .iter()
+        .fold((Uint128::zero(), Uint128::zero()), |(acc0, acc1), fp| {
+            (acc0 + fp.1.asset0.amount, acc1 + fp.1.asset1.amount)
+        });
 
-    token0 = Coin {
-        denom: token0.denom.clone(),
-        amount: token0
-            .amount
-            .checked_add(unused_balance.find_coin(token0.denom).amount)?,
-    };
+    // TODO wrap this
+    let free0 = deps
+        .querier
+        .query_balance(env.contract.address.as_str(), pool.token0)?;
+    let free1 = deps
+        .querier
+        .query_balance(env.contract.address.as_str(), pool.token1)?;
 
-    let mut token1 = position
-        .asset1
-        .map(|c| c.try_into())
-        .transpose()?
-        .unwrap_or(coin(0, pool.token1));
-
-    token1 = Coin {
-        denom: token1.denom.clone(),
-        amount: token1
-            .amount
-            .checked_add(unused_balance.find_coin(token1.denom).amount)?,
-    };
-
-    Ok(TotalAssetsResponse { token0, token1 })
+    Ok(TotalAssetsResponse {
+        token0: coin((amount0 + free0.amount).u128(), free0.denom),
+        token1: coin((amount1 + free1.amount).u128(), free1.denom),
+    })
 }
 
 pub fn query_total_vault_token_supply(
@@ -222,4 +261,9 @@ pub fn query_total_vault_token_supply(
         .parse::<u128>()?
         .into();
     Ok(TotalVaultTokenSupplyResponse { total })
+}
+
+pub fn query_main_position(deps: Deps) -> Result<MainPositionResponse, ContractError> {
+    let position_id = MAIN_POSITION_ID.load(deps.storage)?;
+    Ok(MainPositionResponse { position_id })
 }

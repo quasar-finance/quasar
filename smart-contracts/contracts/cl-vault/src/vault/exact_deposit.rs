@@ -14,6 +14,8 @@ use crate::{
 
 /// Try to deposit as much user funds as we can in the current ratio of the vault and
 /// refund the rest to the caller.
+///
+// TODO add cw-safety methods here to the math: https://github.com/EntropicLabs/cw-safety/
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
     env: Env,
@@ -37,7 +39,7 @@ pub(crate) fn execute_exact_deposit(
     let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
 
     // calculate the amount of shares we can mint for this
-    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets = query_total_assets(deps.as_ref(), &env)?;
     let total_assets_value = get_asset0_value(
         deps.storage,
         &deps.querier,
@@ -52,7 +54,7 @@ pub(crate) fn execute_exact_deposit(
         total_vault_shares
             .checked_mul(user_value.into())?
             .checked_div(
-                total_assets_value
+                total_assets_value // when we query the balance, the user value is already included, so we need to remove those
                     .checked_sub(user_value)?
                     .checked_sub(refund_value)?
                     .into(),
@@ -122,8 +124,12 @@ mod tests {
 
     use crate::{
         helpers::{getters::get_depositable_tokens, msgs::refund_bank_msg},
-        state::{Position, POSITION},
+        state::Position,
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
+    };
+    use crate::{
+        state::{MAIN_POSITION_ID, POSITIONS},
+        test_helpers::FullPositionBuilder,
     };
 
     use super::*;
@@ -139,7 +145,7 @@ mod tests {
             amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
         };
 
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mut deps = mock_deps_with_position(token0.clone(), token1.clone());
         let mutdeps = deps.as_mut();
 
         let result = get_depositable_tokens(mutdeps, token0, token1).unwrap();
@@ -168,11 +174,11 @@ mod tests {
 
         // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
         let mut deps = mock_deps_with_position(
-            Some(Coin {
+            Coin {
                 denom: "token0".to_string(),
                 amount: Uint128::zero(),
-            }),
-            Some(token1.clone()),
+            },
+            token1.clone(),
         );
 
         let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
@@ -198,11 +204,11 @@ mod tests {
 
         // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
         let mut deps = mock_deps_with_position(
-            Some(token0.clone()),
-            Some(Coin {
+            token0.clone(),
+            Coin {
                 denom: "token1".to_string(),
                 amount: Uint128::zero(),
-            }),
+            },
         );
 
         let result = get_depositable_tokens(deps.as_mut(), token0, token1).unwrap();
@@ -227,7 +233,7 @@ mod tests {
         };
 
         // we use a ratio of 1/2
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mut deps = mock_deps_with_position(token0.clone(), token1.clone());
 
         let result =
             get_depositable_tokens(deps.as_mut(), coin(2000, "token0"), coin(5000, "token1"))
@@ -253,7 +259,7 @@ mod tests {
         };
 
         // we use a ratio of 1/2
-        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mut deps = mock_deps_with_position(token0.clone(), token1.clone());
         let mutdeps = deps.as_mut();
 
         let result =
@@ -278,30 +284,22 @@ mod tests {
         VAULT_DENOM
             .save(deps.as_mut().storage, &"money".to_string())
             .unwrap();
-        POSITION
+
+        let position_id = 1;
+        MAIN_POSITION_ID
+            .save(deps.as_mut().storage, &position_id)
+            .unwrap();
+        POSITIONS
             .save(
                 deps.as_mut().storage,
+                position_id,
                 &Position {
-                    position_id: 1,
+                    position_id,
                     join_time: 0,
                     claim_after: None,
                 },
             )
             .unwrap();
-
-        // STRATEGIST_REWARDS
-        //     .save(deps.as_mut().storage, &CoinList::new())
-        //     .unwrap();
-        // POOL_CONFIG
-        //     .save(
-        //         deps.as_mut().storage,
-        //         &PoolConfig {
-        //             pool_id: 1,
-        //             token0: "token0".to_string(),
-        //             token1: "token1".to_string(),
-        //         },
-        //     )
-        //     .unwrap();
 
         execute_exact_deposit(
             deps.as_mut(),
@@ -398,8 +396,8 @@ mod tests {
     }
 
     fn mock_deps_with_position(
-        token0: Option<Coin>,
-        token1: Option<Coin>,
+        token0: Coin,
+        token1: Coin,
     ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
         let position_id = 2;
 
@@ -407,38 +405,29 @@ mod tests {
             storage: MockStorage::default(),
             api: MockApi::default(),
             querier: QuasarQuerier::new(
-                FullPositionBreakdown {
-                    position: Some(OsmoPosition {
-                        position_id,
-                        address: MOCK_CONTRACT_ADDR.to_string(),
-                        pool_id: 1,
-                        lower_tick: 100,
-                        upper_tick: 1000,
-                        join_time: None,
-                        liquidity: "1000000.2".to_string(),
-                    }),
-                    asset0: token0.map(|c| c.into()),
-                    asset1: token1.map(|c| c.into()),
-                    claimable_spread_rewards: vec![
-                        OsmoCoin {
-                            denom: "token0".to_string(),
-                            amount: "100".to_string(),
-                        },
-                        OsmoCoin {
-                            denom: "token1".to_string(),
-                            amount: "100".to_string(),
-                        },
-                    ],
-                    claimable_incentives: vec![],
-                    forfeited_incentives: vec![],
-                },
+                vec![FullPositionBuilder::new(
+                    2,
+                    1,
+                    100,
+                    1000,
+                    None,
+                    Decimal256::from_str("1000000.2").unwrap(),
+                    token0,
+                    token1,
+                )
+                .build()],
                 500,
             ),
             custom_query_type: PhantomData,
         };
-        POSITION
+
+        MAIN_POSITION_ID
+            .save(deps.as_mut().storage, &position_id)
+            .unwrap();
+        POSITIONS
             .save(
                 deps.as_mut().storage,
+                position_id,
                 &Position {
                     position_id,
                     join_time: 0,

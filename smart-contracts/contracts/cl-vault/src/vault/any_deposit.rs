@@ -13,9 +13,8 @@ use crate::helpers::getters::{
 use crate::helpers::msgs::swap_msg;
 use crate::query::query_total_vault_token_supply;
 use crate::reply::Replies;
-use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
+use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT, MAIN_POSITION_ID};
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::range::SwapDirection;
 use crate::vault::swap::SwapParams;
 use crate::{
     query::query_total_assets,
@@ -24,6 +23,7 @@ use crate::{
     ContractError,
 };
 
+use super::range::move_position::SwapDirection;
 use super::swap::SwapCalculationResult;
 
 pub fn execute_any_deposit(
@@ -38,7 +38,8 @@ pub fn execute_any_deposit(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-    let position = get_position(deps.storage, &deps.querier)?
+    let main_position = MAIN_POSITION_ID.load(deps.storage)?;
+    let position = get_position(&deps.querier, main_position)?
         .position
         .ok_or(ContractError::MissingPosition {})?;
 
@@ -221,7 +222,7 @@ fn mint_msg_user_shares(
     recipient: &Addr,
 ) -> Result<(MsgMint, Uint128), ContractError> {
     // calculate the amount of shares we can mint for this
-    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets = query_total_assets(deps.as_ref(), env)?;
     let total_assets_value = get_asset0_value(
         deps.storage,
         &deps.querier,

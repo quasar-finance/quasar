@@ -173,8 +173,8 @@ mod tests {
             amount: Uint128::from(100u128),
         }]);
 
-        assert_eq!(false, coin_vec2.le(&coin_vec));
-        assert_eq!(false, coin_vec2.ge(&coin_vec));
+        assert!(!coin_vec2.le(&coin_vec));
+        assert!(!coin_vec2.ge(&coin_vec));
 
         let coin_vec = CoinVec(vec![Coin {
             denom: "uusd".to_string(),
@@ -211,8 +211,8 @@ mod tests {
         }]);
 
         // coin vec should not be gt or lt coin vec 2 as this case should not pass through
-        assert_eq!(false, coin_vec.lt(&coin_vec2));
-        assert_eq!(false, coin_vec.gt(&coin_vec2));
+        assert!(!coin_vec.lt(&coin_vec2));
+        assert!(!coin_vec.gt(&coin_vec2));
     }
 
     #[test]

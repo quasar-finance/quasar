@@ -6,8 +6,8 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 
 use crate::helpers::coinlist::CoinList;
 use crate::helpers::generic::sort_tokens;
-use crate::helpers::msgs::{collect_incentives_msg, collect_spread_rewards_msg};
-use crate::state::{MigrationStatus, MIGRATION_STATUS, POSITION};
+use crate::helpers::msgs::{get_collect_incentives_msg, get_collect_spread_rewards_msgs};
+use crate::state::{MigrationStatus, MIGRATION_STATUS};
 use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
@@ -17,20 +17,26 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
     if matches!(migration_status, MigrationStatus::Open) {
         return Err(ContractError::MigrationStatusOpen {});
     }
-    let msg = collect_spread_rewards_msg(deps.as_ref(), env)?;
+
+    let spread_rewards: Vec<_> = get_collect_spread_rewards_msgs(deps.as_ref(), &env)?
+        .into_iter()
+        .map(|m| SubMsg::reply_on_success(m, Replies::CollectSpreadRewards.into()))
+        .collect();
+    let incentives: Vec<_> = get_collect_incentives_msg(deps.as_ref(), &env)?
+        .into_iter()
+        .map(|m| SubMsg::reply_on_success(m, Replies::CollectIncentives.into()))
+        .collect();
 
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "collect_rewards")
-        .add_submessage(SubMsg::reply_on_success(
-            msg,
-            Replies::CollectSpreadRewards as u64,
-        )))
+        .add_submessages(spread_rewards)
+        .add_submessages(incentives))
 }
 
 pub fn handle_collect_spread_rewards_reply(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data
@@ -69,20 +75,6 @@ pub fn handle_collect_spread_rewards_reply(
         response = response
             .add_message(bank_send_msg.clone())
             .add_attribute("strategist_fee", format!("{:?}", strategist_fee.coins()));
-    }
-
-    // Collect the incentives rewards optional workflow
-    let position_state = POSITION.load(deps.storage)?;
-    let claim_timestamp = position_state.join_time + position_state.claim_after.unwrap_or_default();
-
-    // If claim_after period expired
-    if env.block.time.seconds() > claim_timestamp {
-        let msg = collect_incentives_msg(deps.as_ref(), env)?;
-        // Here, directly update the response without cloning it unnecessarily
-        response = response.add_submessage(SubMsg::reply_on_success(
-            msg,
-            Replies::CollectIncentives as u64,
-        ));
     }
 
     Ok(response)

@@ -1,6 +1,6 @@
 use crate::{
     helpers::coinlist::CoinList,
-    vault::{merge::CurrentMergeWithdraw, range::SwapDirection},
+    vault::{merge::CurrentMergeWithdraw, range::move_position::SwapDirection},
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
@@ -86,18 +86,24 @@ pub struct Position {
     pub claim_after: Option<u64>, // this should be off chain computed and set in order to avoid forfeiting incentives
 }
 
-pub const OLD_POSITION: Item<OldPosition> = Item::new("position");
-pub const POSITION: Item<Position> = Item::new("position_v2");
-
+// positions in the contract, the key should be the same as the position's id in Osmosis
+pub const POSITIONS: Map<u64, Position> = Map::new("positions");
+pub const MAIN_POSITION_ID: Item<u64> = Item::new("main_position_id");
+pub const CURRENT_POSITION_ID: Item<u64> = Item::new("current_position_id");
+pub const CURRENT_CLAIM_AFTER_SECS: Item<Option<u64>> = Item::new("current_claim_after_secs");
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
-/// The merge of positions currently being executed
+/// boolean signifying whether the current executing merge is for the main position
+pub const MERGE_MAIN_POSITION: Item<bool> = Item::new("merge_main_position");
+
+/// The queue of positions currently being merged
 pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
 
 #[cw_serde]
 pub struct CurrentMergePosition {
     pub lower_tick: i64,
     pub upper_tick: i64,
+    pub claim_after_secs: Option<u64>,
 }
 
 pub const CURRENT_MERGE_POSITION: Item<CurrentMergePosition> = Item::new("current_merge_position");
@@ -150,6 +156,8 @@ pub struct ModifyRangeState {
     pub twap_window_seconds: u64,
     // the recommended path to take for the swap
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
+    // only claim the created position after claim_after amount of seconds
+    pub claim_after_secs: u64,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
