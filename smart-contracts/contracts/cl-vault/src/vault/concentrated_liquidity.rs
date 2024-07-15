@@ -77,7 +77,7 @@ pub fn get_positions(
         .range(storage, None, None, Order::Ascending)
         .collect();
 
-    let cl_querier = ConcentratedliquidityQuerier::new(querier);
+    let _cl_querier = ConcentratedliquidityQuerier::new(querier);
     let positions: Result<Vec<(crate::state::Position, FullPositionParsed)>, ContractError> =
         position_ids?
             .into_iter()
@@ -145,15 +145,15 @@ impl TryFrom<FullPositionBreakdown> for FullPositionParsed {
     }
 }
 
-impl Into<FullPositionBreakdown> for FullPositionParsed {
-    fn into(self) -> FullPositionBreakdown {
+impl From<FullPositionParsed> for FullPositionBreakdown {
+    fn from(val: FullPositionParsed) -> Self {
         FullPositionBreakdown {
-            position: Some(self.position.into()),
-            asset0: Some(self.asset0.into()),
-            asset1: Some(self.asset1.into()),
-            claimable_spread_rewards: cosmwasm_to_proto_coins(self.claimable_spread_rewards),
-            claimable_incentives: cosmwasm_to_proto_coins(self.claimable_incentives),
-            forfeited_incentives: cosmwasm_to_proto_coins(self.forfeited_incentives),
+            position: Some(val.position.into()),
+            asset0: Some(val.asset0.into()),
+            asset1: Some(val.asset1.into()),
+            claimable_spread_rewards: cosmwasm_to_proto_coins(val.claimable_spread_rewards),
+            claimable_incentives: cosmwasm_to_proto_coins(val.claimable_incentives),
+            forfeited_incentives: cosmwasm_to_proto_coins(val.forfeited_incentives),
         }
     }
 }
@@ -186,26 +186,26 @@ impl TryFrom<Position> for PositionParsed {
                 .join_time
                 // This conversion is sloppy and loses seconds information
                 .map(|t| Timestamp::from_seconds(t.seconds.try_into().unwrap()))
-                .unwrap_or(Timestamp::default()),
+                .unwrap_or_default(),
             liquidity: value.liquidity.parse()?,
         })
     }
 }
 
-impl Into<Position> for PositionParsed {
-    fn into(self) -> Position {
+impl From<PositionParsed> for Position {
+    fn from(val: PositionParsed) -> Self {
         Position {
-            position_id: self.position_id,
-            address: self.address,
-            pool_id: self.pool_id,
-            lower_tick: self.lower_tick,
-            upper_tick: self.upper_tick,
+            position_id: val.position_id,
+            address: val.address,
+            pool_id: val.pool_id,
+            lower_tick: val.lower_tick,
+            upper_tick: val.upper_tick,
             join_time: Some(osmosis_std::shim::Timestamp {
                 // save because it's seconds since unix epoch time
-                seconds: self.join_time.seconds().try_into().unwrap(),
+                seconds: val.join_time.seconds().try_into().unwrap(),
                 nanos: 0,
             }),
-            liquidity: self.liquidity.to_string(),
+            liquidity: val.liquidity.to_string(),
         }
     }
 }

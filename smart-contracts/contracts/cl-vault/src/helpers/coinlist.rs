@@ -1,11 +1,9 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Deps, Env, Fraction,
-    Order, Response, StdError, SubMsg, Uint128,
+    coin, Addr, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction, Uint128,
 };
 use osmosis_std::types::{
     cosmos::base::v1beta1::Coin as OsmoCoin,
-    osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
 };
 
 use crate::ContractError;

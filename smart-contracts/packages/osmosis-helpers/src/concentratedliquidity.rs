@@ -9,8 +9,8 @@ use osmosis_test_tube::{
 };
 
 /// Create a CL pool without any liquidity
-pub fn create_cl_pool<'a>(
-    app: &'a OsmosisTestApp,
+pub fn create_cl_pool(
+    app: &OsmosisTestApp,
     denom0: String,
     denom1: String,
     tick_spacing: u64,
@@ -25,9 +25,9 @@ pub fn create_cl_pool<'a>(
             title: "CL Pool".to_string(),
             description: "So that we can trade it".to_string(),
             pool_records: vec![PoolRecord {
-                denom0: denom0,
-                denom1: denom1,
-                tick_spacing: tick_spacing,
+                denom0,
+                denom1,
+                tick_spacing,
                 spread_factor: spread_factor.atomics().to_string(),
             }],
         },

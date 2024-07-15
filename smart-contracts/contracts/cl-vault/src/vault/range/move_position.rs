@@ -10,7 +10,7 @@ use crate::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    attr, to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Response, Storage, SubMsg, SubMsgResult, Uint128
+    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Response, Storage, SubMsg, SubMsgResult, Uint128
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
@@ -231,8 +231,8 @@ pub fn handle_initial_create_position_reply(
 
     // target range for our imminent swap
     // taking from response message is important because they may differ from the ones in our request
-    let target_lower_tick = create_position_message.lower_tick;
-    let target_upper_tick = create_position_message.upper_tick;
+    let _target_lower_tick = create_position_message.lower_tick;
+    let _target_upper_tick = create_position_message.upper_tick;
 
     // get refunded amounts
     // TODO added saturating sub as work around for https://github.com/osmosis-labs/osmosis/issues/6843
@@ -403,7 +403,7 @@ fn calculate_swap_amount(
     };
 
     // TODO: check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, env, twap_window_seconds)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
         match swap_direction {
             SwapDirection::ZeroToOne => (
@@ -437,7 +437,7 @@ fn calculate_swap_amount(
 
     let swap_msg = swap_msg(
         &deps,
-        &env,
+        env,
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
@@ -614,11 +614,11 @@ pub fn handle_iteration_create_position_reply(
 
 // store new position id and exit
 pub fn handle_merge_reply(
-    deps: DepsMut,
-    env: Env,
+    _deps: DepsMut,
+    _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    let merge_response: MergeResponse = data.try_into()?;
+    let _merge_response: MergeResponse = data.try_into()?;
 
     // // Load the current Position to extract join_time and claim_after which is unchangeable in this context
     // let position = POSITION.load(deps.storage)?;

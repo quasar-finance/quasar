@@ -37,7 +37,7 @@ pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, Cont
 
 pub fn handle_collect_spread_rewards_reply(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let data: Result<MsgCollectSpreadRewardsResponse, ContractError> = data

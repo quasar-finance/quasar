@@ -5,7 +5,7 @@ use cosmwasm_std::{
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::{
-    helpers::{coinlist::CoinList, getters::{get_one_or_two, get_unused_balances}}, msg::{ExecuteMsg, MergePositionMsg}, reply::Replies, state::{CURRENT_POSITION_ID, MAIN_POSITION_ID, POOL_CONFIG, POSITIONS}, vault::concentrated_liquidity::{
+    helpers::{coinlist::CoinList, getters::{get_one_or_two, get_unused_balances}}, msg::{ExecuteMsg, MergePositionMsg}, reply::Replies, state::{CURRENT_POSITION_ID, MAIN_POSITION_ID, POOL_CONFIG}, vault::concentrated_liquidity::{
         create_position, get_parsed_position, get_position, withdraw_from_position,
     }, ContractError
 };

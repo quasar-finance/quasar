@@ -165,7 +165,7 @@ fn withdraw_from_main(
     env: &Env,
     shares_to_withdraw: Uint128,
 ) -> Result<MsgWithdrawPosition, ContractError> {
-    let assets = query_total_assets(deps.as_ref(), &env)?;
+    let assets = query_total_assets(deps.as_ref(), env)?;
     let total_value = get_asset0_value(
         deps.storage,
         &deps.querier,
@@ -192,11 +192,11 @@ fn withdraw_from_main(
     let withdraw_liquidity = (user_value * main_position.position.liquidity)
         / Decimal256::from_ratio(main_postion_value, 1_u128);
 
-    Ok(withdraw_from_position(
-        &env,
+    withdraw_from_position(
+        env,
         main_position_id,
         withdraw_liquidity,
-    )?)
+    )
 }
 
 /// Withdraw user funds pro rato from the different positions and any free balance according to the percentage of

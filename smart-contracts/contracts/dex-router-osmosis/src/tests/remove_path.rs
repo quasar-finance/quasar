@@ -264,7 +264,7 @@ fn test_set_and_remove_path() {
     );
     let _ = wasm
         .execute(
-            &contract_address.to_string(),
+            contract_address.as_ref(),
             &ExecuteMsg::RemovePath {
                 path: vec![pools.first().unwrap().pool],
                 bidirectional: true,

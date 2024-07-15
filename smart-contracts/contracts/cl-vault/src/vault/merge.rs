@@ -1,8 +1,8 @@
-use std::str::FromStr;
+
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_json, to_json_binary, CosmosMsg, Decimal256, DepsMut, Env, MessageInfo, Response,
+    coin, from_json, to_json_binary, CosmosMsg, DepsMut, Env, MessageInfo, Response,
     StdError, SubMsg, SubMsgResult, Uint128,
 };
 use cw_utils::parse_execute_response_data;
@@ -48,7 +48,7 @@ pub fn execute_merge_position(
         .position_ids
         .into_iter()
         .map(|position_id| {
-            let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
+            let _cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
             let full_position = get_parsed_position(&deps.querier, position_id)?;
             let p = full_position.position;
 

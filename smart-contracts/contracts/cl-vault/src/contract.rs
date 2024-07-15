@@ -1,13 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Item;
 
 use crate::error::ContractError;
-use crate::helpers::generic::sort_tokens;
+
 use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
@@ -20,11 +20,7 @@ use crate::query::{
     query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-#[allow(deprecated)]
-use crate::state::{
-    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
-    VAULT_CONFIG,
-};
+
 use crate::state::{Position, MAIN_POSITION_ID, POSITIONS};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
@@ -233,7 +229,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 /// are set before they are are read, so do not need to be set in the migrations (reviewers should verify this).
 /// This leaves us with the correct setting of POSITIONS, MAIN_POSITION_ID and the removal of POSITION
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // position was left unaltered so we don't need to change this

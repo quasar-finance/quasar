@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use cl_vault::{
-    msg::{CreatePosition, ExtensionExecuteMsgFns},
+    msg::{CreatePosition},
     state::VaultConfig,
 };
 use cw_vault_multi_standard::msg::VaultStandardExecuteMsgFns;
@@ -13,7 +13,6 @@ use cw_orch::prelude::*;
 use cw_orch_osmosis_test_tube::{osmosis_test_tube::Account, OsmosisTestTube};
 use interface::range_middleware::RangeMiddlewareContract;
 use range_middleware::{
-    msg::{ExecuteMsgFns, QueryMsgFns},
     range::{execute::RangeExecuteMsgFns, query::RangeQueryMsgFns},
     state::{RangeUpdates, UpdateActions},
 };
@@ -118,7 +117,7 @@ fn submit_range_works() {
         .into(),
     };
 
-    let res = range_middleware.submit_new_range(update.clone()).unwrap();
+    let _res = range_middleware.submit_new_range(update.clone()).unwrap();
 
     assert_eq!(
         update,

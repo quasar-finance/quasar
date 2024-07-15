@@ -7,7 +7,7 @@ use super::{
     create_position::create_new_position,
     delete_position::delete_position,
     modify_position_funds::{decrease_position_funds, increase_position_funds},
-    move_position::{self, execute_move_position},
+    move_position::{execute_move_position},
 };
 
 fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
