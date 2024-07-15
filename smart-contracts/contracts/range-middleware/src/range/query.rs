@@ -47,5 +47,8 @@ pub fn get_queued_range_updates_for_contract(
     let pending_range =
         PENDING_RANGES.may_load(deps.storage, deps.api.addr_validate(&contract_address)?)?;
 
-    Ok(pending_range.unwrap_or(RangeUpdates { cl_vault_address: contract_address, updates: Default::default() }))
+    Ok(pending_range.unwrap_or(RangeUpdates {
+        cl_vault_address: contract_address,
+        updates: Default::default(),
+    }))
 }

@@ -232,15 +232,18 @@ pub fn do_move_position(
     let msg = WasmMsg::Execute {
         contract_addr: vault_address.to_string(),
         msg: to_json_binary(&VaultExecuteMsg::VaultExtension(
-            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::MovePosition(MovePosition {
-                lower_price: new_range.lower_price,
-                upper_price: new_range.upper_price,
-                max_slippage: params.max_slippage,
-                ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
-                twap_window_seconds: params.twap_window_seconds,
-                forced_swap_route: params.forced_swap_route,
-                claim_after: params.claim_after,
-                position_id: new_range.position_id, })) ,
+            cl_vault::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::MovePosition(
+                MovePosition {
+                    lower_price: new_range.lower_price,
+                    upper_price: new_range.upper_price,
+                    max_slippage: params.max_slippage,
+                    ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
+                    twap_window_seconds: params.twap_window_seconds,
+                    forced_swap_route: params.forced_swap_route,
+                    claim_after: params.claim_after,
+                    position_id: new_range.position_id,
+                },
+            )),
         ))?,
 
         funds: vec![],

@@ -44,21 +44,9 @@ mod tests {
             format!("{}9000000000000ugauge", accounts[0].address()).to_string(),
             format!("{}90000000000000ugauge", accounts[0].address()).to_string(),
             format!("{}900000000000000ugauge", accounts[0].address()).to_string(),
-            format!(
-                "{}9000000000900000ugauge",
-                accounts[0].address()
-            )
-            .to_string(),
-            format!(
-                "{}90000000009000000ugauge",
-                accounts[0].address()
-            )
-            .to_string(),
-            format!(
-                "{}900000000090000000ugauge",
-                accounts[0].address()
-            )
-            .to_string(),
+            format!("{}9000000000900000ugauge", accounts[0].address()).to_string(),
+            format!("{}90000000009000000ugauge", accounts[0].address()).to_string(),
+            format!("{}900000000090000000ugauge", accounts[0].address()).to_string(),
         ];
 
         // , accounts[0].address().to_string()which seems to generate this root: 0hGvbH+l9pdPgOmJY6wZuwjsrvtPsuslgTURavrUP6I=
@@ -202,7 +190,8 @@ mod tests {
                 address_balance.balance.unwrap().amount,
                 claim_account
                     .coins
-                    .coins().first()
+                    .coins()
+                    .first()
                     .unwrap()
                     .amount
                     .to_string()

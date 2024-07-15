@@ -1,19 +1,13 @@
 use std::str::FromStr;
 
-use cl_vault::{
-    msg::{CreatePosition},
-    state::VaultConfig,
-};
+use cl_vault::{msg::CreatePosition, state::VaultConfig};
 use cw_vault_multi_standard::msg::VaultStandardExecuteMsgFns;
 use interface::cl_vault::ClVaultContract;
 use osmosis_helpers::concentratedliquidity::create_cl_pool;
 
 use cosmwasm_std::{coin, Decimal};
 use cw_orch::prelude::*;
-use cw_orch_osmosis_test_tube::{
-    osmosis_test_tube::{Account},
-    OsmosisTestTube,
-};
+use cw_orch_osmosis_test_tube::{osmosis_test_tube::Account, OsmosisTestTube};
 use interface::range_middleware::RangeMiddlewareContract;
 use range_middleware::{
     range::{execute::RangeExecuteMsgFns, query::RangeQueryMsgFns},

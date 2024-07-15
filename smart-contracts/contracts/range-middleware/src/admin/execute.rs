@@ -6,7 +6,6 @@ use crate::{
     ContractError,
 };
 
-
 #[cfg(not(target_arch = "wasm32"))]
 use cw_orch::ExecuteFns;
 
