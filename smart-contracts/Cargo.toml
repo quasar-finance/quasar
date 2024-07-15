@@ -15,6 +15,9 @@ members = [
   "contracts/merkle-incentives",
   "contracts/range-middleware",
   "contracts/cw-vault-multi-standard",
+  "contracts/dex-router-osmosis",
+  "contracts/lst-dex-adapter-osmosis",
+  "contracts/lst-adapter-osmosis",
   "packages/interface"
 
 ]
