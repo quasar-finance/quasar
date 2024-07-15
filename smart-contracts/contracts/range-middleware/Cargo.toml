@@ -28,7 +28,7 @@ cw-orch = { workspace = true }
 cw-orch-osmosis-test-tube = { workspace = true }
 
 cl-vault = {path = "../cl-vault", features = ["library"]}
-osmosis-std = "0.25.0"
+osmosis-std = { workspace = true}
 
 [dev-dependencies]
 cw-orch-osmosis-test-tube = { workspace = true }

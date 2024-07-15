@@ -9,7 +9,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Decimal, DepsMut, Env, MessageInfo, Response, WasmMsg,
 };
-use cw_dex_router::operations::SwapOperationsListUnchecked;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
     range::helpers::is_range_executor_admin,
@@ -235,8 +235,7 @@ pub fn do_move_position(
                 max_slippage: params.max_slippage,
                 ratio_of_swappable_funds_to_use: params.ratio_of_swappable_funds_to_use,
                 twap_window_seconds: params.twap_window_seconds,
-                force_swap_route: params.force_swap_route,
-                recommended_swap_route: Some(params.recommended_swap_route),
+                forced_swap_route: params.forced_swap_route,
                 claim_after: params.claim_after,
                 position_id: new_range.position_id, })) ,
         ))?,
@@ -266,7 +265,6 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         Addr, Decimal, MessageInfo,
     };
-    use cw_dex_router::operations::SwapOperationsListBase;
     use std::collections::VecDeque;
 
     use crate::state::{
@@ -321,8 +319,7 @@ mod tests {
             max_slippage: Decimal::percent(99),
             ratio_of_swappable_funds_to_use: Decimal::percent(10),
             twap_window_seconds: 24,
-            recommended_swap_route: SwapOperationsListBase::<String>::new(vec![]),
-            force_swap_route: false,
+            forced_swap_route: None,
             claim_after: None,
         };
 
@@ -390,8 +387,7 @@ mod tests {
             max_slippage: Decimal::percent(99),
             ratio_of_swappable_funds_to_use: Decimal::one(),
             twap_window_seconds: 24,
-            recommended_swap_route: SwapOperationsListBase::<String>::new(vec![]),
-            force_swap_route: false,
+            forced_swap_route: None,
             claim_after: None,
         };
 
