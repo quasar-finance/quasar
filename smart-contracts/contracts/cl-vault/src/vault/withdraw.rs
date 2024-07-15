@@ -10,10 +10,19 @@ use osmosis_std::types::{
     },
 };
 
-use crate::{
-    helpers::{coinlist::CoinList, generic::sort_tokens, getters::{get_asset0_value, get_unused_balances}}, query::query_total_assets, reply::Replies, state::{CURRENT_WITHDRAWER, MAIN_POSITION_ID, POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::withdraw_from_position, ContractError
-};
 use crate::query::query_total_vault_token_supply;
+use crate::{
+    helpers::{
+        coinlist::CoinList,
+        generic::sort_tokens,
+        getters::{get_asset0_value, get_unused_balances},
+    },
+    query::query_total_assets,
+    reply::Replies,
+    state::{CURRENT_WITHDRAWER, MAIN_POSITION_ID, POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::concentrated_liquidity::withdraw_from_position,
+    ContractError,
+};
 
 use super::concentrated_liquidity::{get_parsed_position, get_positions};
 
@@ -192,11 +201,7 @@ fn withdraw_from_main(
     let withdraw_liquidity = (user_value * main_position.position.liquidity)
         / Decimal256::from_ratio(main_postion_value, 1_u128);
 
-    withdraw_from_position(
-        env,
-        main_position_id,
-        withdraw_liquidity,
-    )
+    withdraw_from_position(env, main_position_id, withdraw_liquidity)
 }
 
 /// Withdraw user funds pro rato from the different positions and any free balance according to the percentage of
@@ -600,7 +605,6 @@ mod tests {
         let amount0 = Uint128::new(1000);
         let amount1 = Uint128::new(1000);
 
-
         let msg = MsgWithdrawPositionResponse {
             amount0: amount0.to_string(),
             amount1: amount1.to_string(),
@@ -620,7 +624,10 @@ mod tests {
             response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: to_address.to_string(),
-                amount: sort_tokens(vec![coin(amount0.u128(), "uosmo"), coin(amount1.u128(), "uatom")])
+                amount: sort_tokens(vec![
+                    coin(amount0.u128(), "uosmo"),
+                    coin(amount1.u128(), "uatom")
+                ])
             })
         )
     }

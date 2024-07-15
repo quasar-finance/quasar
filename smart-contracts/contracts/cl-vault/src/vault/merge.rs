@@ -1,9 +1,7 @@
-
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, from_json, to_json_binary, CosmosMsg, DepsMut, Env, MessageInfo, Response,
-    StdError, SubMsg, SubMsgResult, Uint128,
+    coin, from_json, to_json_binary, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError,
+    SubMsg, SubMsgResult, Uint128,
 };
 use cw_utils::parse_execute_response_data;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{

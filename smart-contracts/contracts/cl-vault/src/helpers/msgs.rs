@@ -1,7 +1,6 @@
-
-
 use cosmwasm_std::{
-    attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Order, StdError, Uint128, WasmMsg
+    attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Order,
+    StdError, Uint128, WasmMsg,
 };
 use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::{

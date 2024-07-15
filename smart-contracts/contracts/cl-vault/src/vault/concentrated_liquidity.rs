@@ -14,10 +14,7 @@ use prost::Message;
 
 use crate::helpers::generic::{round_up_to_nearest_multiple, sort_tokens};
 use crate::state::POSITIONS;
-use crate::{
-    state::POOL_CONFIG,
-    ContractError,
-};
+use crate::{state::POOL_CONFIG, ContractError};
 
 pub fn create_position(
     deps: DepsMut,

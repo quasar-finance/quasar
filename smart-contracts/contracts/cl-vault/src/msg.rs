@@ -3,7 +3,6 @@ use cosmwasm_std::{Coin, Decimal, Decimal256, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-
 use crate::{
     query::{
         AssetsBalanceResponse, MainPositionResponse, PoolResponse, PositionsResponse,
@@ -97,7 +96,6 @@ impl From<AdminExtensionExecuteMsg> for ExtensionExecuteMsg {
         ExtensionExecuteMsg::Admin(msg)
     }
 }
-
 
 // struct used by swap.rs on swap non vault funds
 #[cw_serde]

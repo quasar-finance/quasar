@@ -1,7 +1,7 @@
 use cosmwasm_std::{BankMsg, DepsMut, Env, Response, StdError, SubMsg, SubMsgResult};
 use osmosis_std::try_proto_to_cosmwasm_coins;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{MsgCollectIncentivesResponse,
-    MsgCollectSpreadRewardsResponse,
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
+    MsgCollectIncentivesResponse, MsgCollectSpreadRewardsResponse,
 };
 
 use crate::helpers::coinlist::CoinList;
@@ -9,7 +9,6 @@ use crate::helpers::generic::sort_tokens;
 use crate::helpers::msgs::{get_collect_incentives_msg, get_collect_spread_rewards_msgs};
 use crate::state::{MigrationStatus, MIGRATION_STATUS};
 use crate::{reply::Replies, state::VAULT_CONFIG, ContractError};
-
 
 /// claim_rewards claims rewards from Osmosis and update the rewards map to reflect each users rewards
 pub fn execute_collect_rewards(deps: DepsMut, env: Env) -> Result<Response, ContractError> {

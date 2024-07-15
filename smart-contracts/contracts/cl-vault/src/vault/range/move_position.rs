@@ -1,22 +1,37 @@
 use crate::{
-    helpers::{generic::extract_attribute_value_by_ty_and_key, getters::{get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances}, msgs::swap_msg}, math::tick::price_to_tick, msg::{ExecuteMsg, MergePositionMsg}, reply::Replies, state::{
+    helpers::{
+        generic::extract_attribute_value_by_ty_and_key,
+        getters::{
+            get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances,
+        },
+        msgs::swap_msg,
+    },
+    math::tick::price_to_tick,
+    msg::{ExecuteMsg, MergePositionMsg},
+    reply::Replies,
+    state::{
         ModifyRangeState, Position, SwapDepositMergeState, CURRENT_BALANCE, CURRENT_SWAP,
         MAIN_POSITION_ID, MODIFY_RANGE_STATE, POOL_CONFIG, POSITIONS, RANGE_ADMIN,
         SWAP_DEPOSIT_MERGE_STATE,
-    }, vault::{
+    },
+    vault::{
         concentrated_liquidity::{create_position, get_position},
         merge::MergeResponse,
-    }, ContractError
+    },
+    ContractError,
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, Response, Storage, SubMsg, SubMsgResult, Uint128
+    to_json_binary, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    Response, Storage, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{
         MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
     },
-    gamm::v1beta1::MsgSwapExactAmountInResponse, poolmanager::v1beta1::SwapAmountInRoute,
+    gamm::v1beta1::MsgSwapExactAmountInResponse,
+    poolmanager::v1beta1::SwapAmountInRoute,
 };
 use std::str::FromStr;
 
@@ -33,6 +48,7 @@ pub fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<()
     Ok(())
 }
 
+#[allow(unused)]
 pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
@@ -128,7 +144,8 @@ pub fn execute_move_range_ticks(
         .add_attribute("method", "execute")
         .add_attribute("action", "update_range_ticks")
         .add_attribute("position_id", position.position_id.to_string())
-        .add_attribute("liquidity_amount", position.liquidity))}
+        .add_attribute("liquidity_amount", position.liquidity))
+}
 
 // do create new position
 pub fn handle_withdraw_position_reply(
@@ -273,12 +290,20 @@ pub fn do_swap_deposit_merge(
 
     let (balance0, balance1) = (
         refunded_amounts.0.checked_multiply_ratio(
-            modify_range_state.ratio_of_swappable_funds_to_use.numerator(),
-            modify_range_state.ratio_of_swappable_funds_to_use.denominator(),
+            modify_range_state
+                .ratio_of_swappable_funds_to_use
+                .numerator(),
+            modify_range_state
+                .ratio_of_swappable_funds_to_use
+                .denominator(),
         )?,
         refunded_amounts.1.checked_multiply_ratio(
-            modify_range_state.ratio_of_swappable_funds_to_use.numerator(),
-            modify_range_state.ratio_of_swappable_funds_to_use.denominator(),
+            modify_range_state
+                .ratio_of_swappable_funds_to_use
+                .numerator(),
+            modify_range_state
+                .ratio_of_swappable_funds_to_use
+                .denominator(),
         )?,
     );
 
@@ -575,13 +600,12 @@ pub fn handle_iteration_create_position_reply(
         .target_range_position_ids
         .push(create_position_message.position_id);
 
-
     // check if we are merging the main position
     let main = MAIN_POSITION_ID.load(deps.storage)?;
     let main_position = swap_deposit_merge_state
-            .target_range_position_ids
-            .iter()
-            .any(|p| p == &main);
+        .target_range_position_ids
+        .iter()
+        .any(|p| p == &main);
 
     // call merge
     let merge_msg =

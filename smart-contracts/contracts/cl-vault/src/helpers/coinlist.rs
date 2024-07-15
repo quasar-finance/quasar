@@ -1,10 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{
-    coin, Addr, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction, Uint128,
-};
-use osmosis_std::types::{
-    cosmos::base::v1beta1::Coin as OsmoCoin,
-};
+use cosmwasm_std::{coin, Addr, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction, Uint128};
+use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
 use crate::ContractError;
 

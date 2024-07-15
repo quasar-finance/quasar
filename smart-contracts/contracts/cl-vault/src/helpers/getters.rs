@@ -6,11 +6,12 @@ use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
-use crate::state::{MAIN_POSITION_ID};
-use crate::vault::concentrated_liquidity::{get_position};
+use crate::state::MAIN_POSITION_ID;
+use crate::vault::concentrated_liquidity::get_position;
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128, Uint256
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo,
+    QuerierWrapper, Storage, Uint128, Uint256,
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
@@ -20,6 +21,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
 }
 /// Returns the Coin of the needed denoms in the order given in denoms
+#[allow(unused)]
 pub(crate) fn must_pay_one_or_two(
     info: &MessageInfo,
     denoms: (String, String),
@@ -31,6 +33,7 @@ pub(crate) fn must_pay_one_or_two(
     get_one_or_two(&info.funds, denoms)
 }
 
+#[allow(unused)]
 pub(crate) fn get_one_or_two_coins(
     tokens: &[Coin],
     denoms: (String, String),

@@ -123,13 +123,13 @@ mod tests {
     };
 
     use crate::{
-        state::{MAIN_POSITION_ID, POSITIONS},
-        test_helpers::FullPositionBuilder,
-    };
-    use crate::{
         helpers::{getters::get_depositable_tokens, msgs::refund_bank_msg},
         state::Position,
         test_helpers::{mock_deps_with_querier, QuasarQuerier},
+    };
+    use crate::{
+        state::{MAIN_POSITION_ID, POSITIONS},
+        test_helpers::FullPositionBuilder,
     };
 
     use super::*;

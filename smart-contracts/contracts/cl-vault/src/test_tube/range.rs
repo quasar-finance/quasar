@@ -17,10 +17,13 @@ mod test {
     use prost::Message;
 
     use crate::{
-        msg::{ExecuteMsg, ModifyRange, MovePosition, QueryMsg}, query::{MainPositionResponse, PositionsResponse}, state::MAIN_POSITION_ID, test_tube::initialize::initialize::{
+        msg::{ExecuteMsg, ModifyRange, MovePosition, QueryMsg},
+        query::{MainPositionResponse, PositionsResponse},
+        state::MAIN_POSITION_ID,
+        test_tube::initialize::initialize::{
             fixture_default, fixture_dex_router, init_test_contract, ADMIN_BALANCE_AMOUNT,
             DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
-        }
+        },
     };
 
     #[test]
@@ -110,7 +113,7 @@ mod test {
                         forced_swap_route: None,
                         claim_after: None,
                         position_id: todo!(),
-                    },)
+                    }),
                 )),
                 &[],
                 &admin,
@@ -172,7 +175,7 @@ mod test {
                         forced_swap_route: Some(vec![path1]),
                         claim_after: None,
                         position_id: before_position.position_id,
-                    })
+                    }),
                 )),
                 &[],
                 &admin,
@@ -197,27 +200,29 @@ mod test {
         let wasm = Wasm::new(&app);
 
         let main_position: MainPositionResponse = wasm
-        .query(
-            contract_address.as_str(),
-            &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
-                crate::msg::ClQueryMsg::MainPosition {},
-            )),
-        )
-        .unwrap();
+            .query(
+                contract_address.as_str(),
+                &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
+                    crate::msg::ClQueryMsg::MainPosition {},
+                )),
+            )
+            .unwrap();
 
         let _result = wasm
             .execute(
                 contract_address.as_str(),
-                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRange::MovePosition(MovePosition {
-                            position_id: main_position.position_id,
-                            lower_price: Decimal::from_str("20.71").unwrap(),
-                            upper_price: Decimal::from_str("45").unwrap(),
-                            max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                            ratio_of_swappable_funds_to_use: Decimal::one(),
-                            twap_window_seconds: 45,
-                            forced_swap_route: None,
-                            claim_after: None,
-                        }))),
+                &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
+                    ModifyRange::MovePosition(MovePosition {
+                        position_id: main_position.position_id,
+                        lower_price: Decimal::from_str("20.71").unwrap(),
+                        upper_price: Decimal::from_str("45").unwrap(),
+                        max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                        ratio_of_swappable_funds_to_use: Decimal::one(),
+                        twap_window_seconds: 45,
+                        forced_swap_route: None,
+                        claim_after: None,
+                    }),
+                )),
                 // &ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::ModifyRange(
                 //     ModifyRange::MovePosition(MovePosition {
                 //         position_id: main_position.position_id,
@@ -235,7 +240,7 @@ mod test {
             )
             .unwrap();
 
-            let main_position: MainPositionResponse = wasm
+        let main_position: MainPositionResponse = wasm
             .query(
                 contract_address.as_str(),
                 &QueryMsg::VaultExtension(crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(
@@ -257,7 +262,7 @@ mod test {
                         forced_swap_route: None,
                         claim_after: None,
                         position_id: main_position.position_id,
-                    })
+                    }),
                 )),
                 &[],
                 &admin,

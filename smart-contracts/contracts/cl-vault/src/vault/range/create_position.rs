@@ -2,7 +2,15 @@ use cosmwasm_std::{coin, Decimal, DepsMut, Env, Response, SubMsg, SubMsgResult, 
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
 use crate::{
-    helpers::{coinlist::CoinList, getters::{get_one_or_two, get_unused_balances}}, math::tick::price_to_tick, reply::Replies, state::{Position, CURRENT_CLAIM_AFTER_SECS, POOL_CONFIG, POSITIONS}, vault::concentrated_liquidity::create_position, ContractError
+    helpers::{
+        coinlist::CoinList,
+        getters::{get_one_or_two, get_unused_balances},
+    },
+    math::tick::price_to_tick,
+    reply::Replies,
+    state::{Position, CURRENT_CLAIM_AFTER_SECS, POOL_CONFIG, POSITIONS},
+    vault::concentrated_liquidity::create_position,
+    ContractError,
 };
 
 /// Create a new position using the free balance in the contract. The entire fee balance will be used

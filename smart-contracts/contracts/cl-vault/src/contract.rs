@@ -1,8 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
 use cw_storage_plus::Item;
 
@@ -37,7 +35,10 @@ use crate::vault::merge::{
 };
 use crate::vault::range::create_position::handle_range_new_create_position;
 use crate::vault::range::modify_position_funds::handle_range_add_to_position_reply;
-use crate::vault::range::move_position::{handle_initial_create_position_reply, handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply};
+use crate::vault::range::move_position::{
+    handle_initial_create_position_reply, handle_iteration_create_position_reply,
+    handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply,
+};
 use crate::vault::range::update_range::execute_update_range;
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
@@ -106,9 +107,9 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::ModifyRange(msg) => {
                     prepend_claim_msg(&env, execute_update_range(deps, &env, info, msg)?)
                 }
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                    swap_operations,
-                } => execute_swap_non_vault_funds(deps, env, info, swap_operations),
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_operations } => {
+                    execute_swap_non_vault_funds(deps, env, info, swap_operations)
+                }
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -254,7 +255,7 @@ mod tests {
     use super::*;
     use crate::{
         helpers::coinlist::CoinList,
-        state::{OldPosition, OldVaultConfig, Position,},
+        state::{OldPosition, OldVaultConfig, Position},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
     #[allow(deprecated)]
@@ -264,8 +265,8 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         Addr, Coin, CosmosMsg, Decimal, SubMsg, Uint128,
     };
-    use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
     use cw2::assert_contract_version;
+    use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
     use prost::Message;
     use std::str::FromStr;
 
