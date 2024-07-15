@@ -73,7 +73,6 @@ message QueryPoolRequest {
   uint64 pool_id = 1 [ (gogoproto.moretags) = "yaml:\"pool_id\"" ];
 }
 message QueryPoolResponse {
-  // google.protobuf.Any pool = 1 [ (cosmos_proto.accepts_interface) = "PoolI" ];
   google.protobuf.Any pool = 1 [ (cosmos_proto.accepts_interface) = "osmosis.gamm.v1beta1.Pool" ];
 }
 
@@ -83,9 +82,6 @@ message QueryPoolsRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 message QueryPoolsResponse {
- // repeated google.protobuf.Any pools = 1
- //     [ (cosmos_proto.accepts_interface) = "PoolI" ];
-
   repeated google.protobuf.Any pools = 1
        [ (cosmos_proto.accepts_interface) = "osmosis.gamm.v1beta1.Pool"  ];
   // pagination defines the pagination in the response.

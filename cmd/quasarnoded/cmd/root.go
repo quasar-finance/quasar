@@ -91,7 +91,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 // return tmcfg.DefaultConfig if no custom configuration is required for the application.
 func initTendermintConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
-	// TODO - SDK47 - Can get some ref for the default values from quicksilver
+	// TODO - SDK50 - Can get some ref for the default values from quicksilver
 	// https://github.com/quicksilver-zone/quicksilver/blob/update/sdk47/cmd/quicksilverd/root.go#L137
 	return cfg
 }

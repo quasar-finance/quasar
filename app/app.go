@@ -62,18 +62,6 @@ const (
 )
 
 var (
-	// WasmProposalsEnabled enables all x/wasm proposals when it's value is "true"
-	// and EnableSpecificWasmProposals is empty. Otherwise, all x/wasm proposals
-	// are disabled.
-	WasmProposalsEnabled = "true"
-
-	// EnableSpecificWasmProposals , if set, must be comma-separated list of values
-	// that are all a subset of "EnableAllProposals", which takes precedence over
-	// WasmProposalsEnabled.
-	//
-	// See: https://github.com/CosmWasm/wasmd/blob/02a54d33ff2c064f3539ae12d75d027d9c665f05/x/wasm/internal/types/proposal.go#L28-L34
-	EnableSpecificWasmProposals = ""
-
 	// EmptyWasmOpts defines a type alias for a list of wasm options.
 	EmptyWasmOpts []wasmkeeper.Option
 
@@ -100,9 +88,7 @@ func overrideWasmVariables() {
 }
 
 var (
-	// todo - sdk47 check both are needed or not
 	_ servertypes.Application = (*QuasarApp)(nil)
-	//_ simapp.QuasarApp              = (*QuasarApp)(nil)
 )
 
 func init() {
@@ -248,7 +234,7 @@ func New(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
-	/* TODO - SDK47 keeing in pending for now. Add this once local testing is wrapped.
+	/* TODO - SDK50 keeping in pending for now.
 	// app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	app.sm = module.NewSimulationManager(
@@ -272,7 +258,6 @@ func New(
 		// qoracleModule,
 		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
 		// intergammModule,
-		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
 	*/
@@ -434,8 +419,6 @@ func (app *QuasarApp) RegisterNodeService(clientCtx client.Context) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
 }
 
-// TODO AG: move the below function to a test package
-
 // LegacyAmino returns SimApp's amino codec.
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
@@ -489,7 +472,6 @@ func (app *QuasarApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
-// RegisterTendermintService TODO - SDK47
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *QuasarApp) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(

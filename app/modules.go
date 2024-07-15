@@ -160,7 +160,6 @@ func appModules(
 		qtransfer.NewAppModule(app.QTransferKeeper),
 		tfmodule.NewAppModule(app.TfKeeper, app.AccountKeeper, app.BankKeeper),
 		qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper),
-		// this line is used by starport scaffolding # stargate/app/appModule
 	}
 }
 

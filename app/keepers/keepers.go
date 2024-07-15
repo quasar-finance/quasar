@@ -340,10 +340,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	)
 	appKeepers.ICAHostKeeper = &icaHostKeeper
 
-	//icaModule :=
-	//
-	//icaHostIBCModule := icahost.NewIBCModule(appKeepers.ICAHostKeeper)
-
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec, appKeepers.keys[evidencetypes.StoreKey], appKeepers.StakingKeeper, appKeepers.SlashingKeeper,
 	)
@@ -378,9 +374,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	)
 
 	appKeepers.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, appKeepers.keys[epochsmoduletypes.StoreKey])
-	//epochsModule :=
-
-	//qoracleModule :=
 
 	appKeepers.QTransferKeeper = qtransferkeeper.NewKeeper(
 		appCodec,
@@ -388,7 +381,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.GetSubspace(qtransfertypes.ModuleName),
 		appKeepers.AccountKeeper,
 	)
-	//qtranserModule :=
 
 	appKeepers.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
 		appCodec,
@@ -411,11 +403,9 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.ScopedQOsmosisKeeper,
 		appKeepers.QOracleKeeper,
 	)
-	//qosmoIBCModule := qosmo.NewIBCModule(app.QOsmosisKeeper)
 
 	appKeepers.QOracleKeeper.RegisterPoolOracle(appKeepers.QOsmosisKeeper)
 	appKeepers.QOracleKeeper.Seal()
-	//qoracleModule := qoraclemodule.NewAppModule(appCodec, appKeepers.QOracleKeeper, appKeepers.QOsmosisKeeper)
 
 	appKeepers.QTransferKeeper = qtransferkeeper.NewKeeper(
 		appCodec,
@@ -423,7 +413,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.GetSubspace(qtransfertypes.ModuleName),
 		appKeepers.AccountKeeper,
 	)
-	//qtranserModule := qtransfer.NewAppModule(appKeepers.QTransferKeeper)
 
 	appKeepers.QVestingKeeper = *qvestingmodulekeeper.NewKeeper(
 		appCodec,
@@ -433,8 +422,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 	)
-
-	//qvestingModule :=
 
 	// Authz
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
@@ -458,10 +445,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.BankKeeper,
 		appKeepers.DistrKeeper,
 	)
-	//tfModule := tfmodule.NewAppModule(appKeepers.TfKeeper,
-	//	appKeepers.AccountKeeper,
-	//	appKeepers.BankKeeper,
-	//)
 
 	callback := owasm.NewCallbackPlugin(appKeepers.WasmKeeper, appKeepers.QTransferKeeper.GetQTransferAcc())
 
@@ -478,7 +461,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	wasmKeeper := wasmkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[wasmtypes.StoreKey],
-		// app.GetSubspace(wasm.ModuleName),
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.StakingKeeper,
@@ -517,9 +499,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 
 	appKeepers.IBCKeeper.SetRouter(ibcRouter)
-
-	// todo : check if all keeper initialised (one check finished)
-
 }
 
 // initParamsKeeper init params keeper and its subspaces
@@ -577,7 +556,7 @@ func KVStoreKeys() []string {
 		wasmtypes.StoreKey,
 		qtransfertypes.StoreKey,
 		tftypes.StoreKey,
-		qvestingmoduletypes.StoreKey, // TODO delete this if unused
+		qvestingmoduletypes.StoreKey,
 		authzkeeper.StoreKey,
 		consensusparamtypes.StoreKey,
 		crisistypes.StoreKey,
