@@ -38,8 +38,7 @@ pub fn execute_update_range(
             msg.max_slippage,
             msg.ratio_of_swappable_funds_to_use,
             msg.twap_window_seconds,
-            msg.recommended_swap_route,
-            msg.force_swap_route,
+            msg.forced_swap_route,
             msg.claim_after,
         ),
         ModifyRange::IncreaseFunds(msg) => {

@@ -1,6 +1,7 @@
+use std::error::Error;
+
 use cosmwasm_std::{
-    attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Uint128,
-    WasmMsg,
+    attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Order, StdError, Uint128, WasmMsg
 };
 use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::{
@@ -12,7 +13,7 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    state::{DEX_ROUTER, POSITION},
+    state::{Position, DEX_ROUTER, POSITIONS},
     vault::swap::SwapParams,
     ContractError,
 };
@@ -135,22 +136,48 @@ fn cw_dex_execute_swap_operations_msg(
 }
 
 /// Collect Incentives
+pub fn get_collect_incentives_msg(
+    deps: Deps,
+    env: &Env,
+) -> Result<Vec<MsgCollectIncentives>, ContractError> {
+    let positions: Result<Vec<(u64, Position)>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
 
-pub fn collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
-    let position = POSITION.load(deps.storage)?;
-    Ok(MsgCollectIncentives {
-        position_ids: vec![position.position_id],
-        sender: env.contract.address.into(),
-    })
+    let msgs: Vec<MsgCollectIncentives> = positions?
+        .iter()
+        .filter_map(|p| {
+            // TODO test this if statement correctly filters, also if there is no claim after set
+            if p.1.claim_after.unwrap_or(0) + env.block.time.seconds() > env.block.time.seconds() {
+                None
+            } else {
+                Some(MsgCollectIncentives {
+                    position_ids: vec![p.0],
+                    sender: env.contract.address.clone().into(),
+                })
+            }
+        })
+        .collect();
+
+    Ok(msgs)
 }
 
-pub fn collect_spread_rewards_msg(
+/// Get collect_spread_reward messages for all open positions
+/// This dispatches one collect message per positon in order to
+/// ensure that each positions collected rewards are tracked seperately in different events
+pub fn get_collect_spread_rewards_msgs(
     deps: Deps,
-    env: Env,
-) -> Result<MsgCollectSpreadRewards, ContractError> {
-    let position = POSITION.load(deps.storage)?;
-    Ok(MsgCollectSpreadRewards {
-        position_ids: vec![position.position_id],
-        sender: env.contract.address.into(),
-    })
+    env: &Env,
+) -> Result<Vec<MsgCollectSpreadRewards>, ContractError> {
+    let msgs: Result<Vec<MsgCollectSpreadRewards>, StdError> = POSITIONS
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|p| {
+            Ok(MsgCollectSpreadRewards {
+                position_ids: vec![p?.0],
+                sender: env.contract.address.as_str().to_string(),
+            })
+        })
+        .collect();
+
+    Ok(msgs?)
 }

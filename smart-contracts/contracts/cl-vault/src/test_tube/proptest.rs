@@ -14,6 +14,7 @@ mod tests {
     };
     use proptest::prelude::*;
 
+    use crate::helpers::generic::sort_tokens;
     use crate::msg::MovePosition;
     use crate::query::{AssetsBalanceResponse, MainPositionResponse};
     use crate::test_tube::helpers::get_event_attributes_by_ty_and_key;

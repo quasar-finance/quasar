@@ -20,10 +20,6 @@ use crate::query::{
     query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::rewards::{
-    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
-    prepend_claim_msg,
-};
 #[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
@@ -43,11 +39,10 @@ use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
 };
-use crate::vault::range::{
-    execute_update_range, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
-    handle_withdraw_position_reply,
-};
+use crate::vault::range::create_position::handle_range_new_create_position;
+use crate::vault::range::modify_position_funds::handle_range_add_to_position_reply;
+use crate::vault::range::move_position::{handle_initial_create_position_reply, handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply, handle_withdraw_position_reply};
+use crate::vault::range::update_range::execute_update_range;
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 
@@ -116,9 +111,8 @@ pub fn execute(
                     prepend_claim_msg(&env, execute_update_range(deps, &env, info, msg)?)
                 }
                 crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
-                    force_swap_route,
-                    swap_routes,
-                } => execute_swap_non_vault_funds(deps, env, info, force_swap_route, swap_routes),
+                    swap_operations,
+                } => execute_swap_non_vault_funds(deps, env, info, swap_operations),
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -264,7 +258,7 @@ mod tests {
     use super::*;
     use crate::{
         helpers::coinlist::CoinList,
-        state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
+        state::{OldPosition, OldVaultConfig, Position,},
         test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
     #[allow(deprecated)]
@@ -278,19 +272,6 @@ mod tests {
     use cw2::assert_contract_version;
     use prost::Message;
     use std::str::FromStr;
-
-    pub fn mock_migrate(
-        deps: DepsMut,
-        _env: Env,
-        msg: MigrateMsg,
-    ) -> Result<Response, ContractError> {
-        let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-        let new_vault_config = VaultConfig {
-            performance_fee: old_vault_config.performance_fee,
-            treasury: old_vault_config.treasury,
-            swap_max_slippage: old_vault_config.swap_max_slippage,
-            dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-        };
 
     use super::*;
 
@@ -345,5 +326,4 @@ mod tests {
 
         assert_contract_version(deps.as_mut().storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
     }
-}
 }

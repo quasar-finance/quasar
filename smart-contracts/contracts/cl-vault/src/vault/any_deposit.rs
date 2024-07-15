@@ -15,8 +15,7 @@ use crate::query::query_total_vault_token_supply;
 use crate::reply::Replies;
 use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT, MAIN_POSITION_ID};
 use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::range::move_position::SwapDirection;
-use crate::vault::swap::{swap_msg, SwapParams};
+use crate::vault::swap::SwapParams;
 use crate::{
     query::query_total_assets,
     state::{POOL_CONFIG, SHARES, VAULT_DENOM},
@@ -24,6 +23,7 @@ use crate::{
     ContractError,
 };
 
+use super::range::move_position::SwapDirection;
 use super::swap::SwapCalculationResult;
 
 pub fn execute_any_deposit(

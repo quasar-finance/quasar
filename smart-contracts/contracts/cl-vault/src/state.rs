@@ -1,6 +1,6 @@
 use crate::{
     helpers::coinlist::CoinList,
-    vault::{merge::CurrentMergeWithdraw, range::SwapDirection},
+    vault::{merge::CurrentMergeWithdraw, range::move_position::SwapDirection},
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
@@ -135,7 +135,7 @@ pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 /// Swap helper states
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
-pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
+pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> = 
     Item::new("current_swap_any_deposit");
 
 /// DEX_ROUTER: The address of the dex router contract
@@ -156,6 +156,8 @@ pub struct ModifyRangeState {
     pub twap_window_seconds: u64,
     // the recommended path to take for the swap
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
+    // only claim the created position after claim_after amount of seconds
+    pub claim_after_secs: u64,
 }
 
 pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");

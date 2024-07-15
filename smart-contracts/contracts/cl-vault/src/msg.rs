@@ -1,8 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
-use cw_dex_router::operations::SwapOperationsListUnchecked;
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
+use cw_orch::prelude::*;
 
 use crate::{
     query::{
@@ -96,6 +96,17 @@ impl From<AdminExtensionExecuteMsg> for ExtensionExecuteMsg {
     fn from(msg: AdminExtensionExecuteMsg) -> Self {
         ExtensionExecuteMsg::Admin(msg)
     }
+}
+
+
+// struct used by swap.rs on swap non vault funds
+#[cw_serde]
+pub struct SwapOperation {
+    pub token_in_denom: String,
+    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// ModifyRange represents the 3 options we have to change the ranges of the vault, namely moving a current position

@@ -6,13 +6,11 @@ use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
-use crate::rewards::CoinList;
 use crate::state::{ADMIN_ADDRESS, MAIN_POSITION_ID};
 use crate::vault::concentrated_liquidity::{get_cl_pool_info, get_position};
 use crate::{state::POOL_CONFIG, ContractError};
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
-    Uint128, Uint256,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, MessageInfo, QuerierWrapper, Storage, Uint128, Uint256
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 

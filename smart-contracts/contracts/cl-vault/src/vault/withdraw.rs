@@ -11,14 +11,9 @@ use osmosis_std::types::{
 };
 
 use crate::{
-    helpers::{get_asset0_value, get_unused_balances, sort_tokens},
-    query::query_total_assets,
-    reply::Replies,
-    state::{CURRENT_WITHDRAWER, MAIN_POSITION_ID, POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::withdraw_from_position,
-    ContractError,
+    helpers::{coinlist::CoinList, generic::sort_tokens, getters::{get_asset0_value, get_unused_balances}}, query::query_total_assets, reply::Replies, state::{CURRENT_WITHDRAWER, MAIN_POSITION_ID, POOL_CONFIG, SHARES, VAULT_DENOM}, vault::concentrated_liquidity::withdraw_from_position, ContractError
 };
-use crate::{query::query_total_vault_token_supply, rewards::CoinList};
+use crate::query::query_total_vault_token_supply;
 
 use super::concentrated_liquidity::{get_parsed_position, get_positions};
 
@@ -278,7 +273,6 @@ mod tests {
 
     #[allow(deprecated)]
     use crate::{
-        rewards::CoinList,
         state::{PoolConfig, STRATEGIST_REWARDS},
         test_helpers::mock_deps_with_querier_with_balance,
     };

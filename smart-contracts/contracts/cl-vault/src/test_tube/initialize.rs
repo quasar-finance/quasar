@@ -3,6 +3,7 @@ pub mod initialize {
     use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
     use cw_vault_multi_standard::VaultInfoResponse;
     use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
+    use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
     use osmosis_std::types::cosmos::base::v1beta1;
     use osmosis_std::types::osmosis::concentratedliquidity;
     use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
@@ -24,8 +25,7 @@ pub mod initialize {
     };
     use std::str::FromStr;
 
-    use crate::helpers::sort_tokens;
-    use crate::math::tick::price_to_tick;
+    use crate::helpers::generic::sort_tokens;
     use crate::math::tick::tick_to_price;
     use crate::msg::CreatePosition;
     use crate::msg::ExtensionExecuteMsg;
