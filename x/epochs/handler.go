@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )

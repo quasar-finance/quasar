@@ -1,7 +1,6 @@
 package types
 
 import (
-	//	sdkerrors "cosmossdk.io/errors"
 	errorsmod "cosmossdk.io/errors"
 )
 

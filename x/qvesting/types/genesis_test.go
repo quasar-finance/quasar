@@ -3,8 +3,9 @@ package types_test
 import (
 	"testing"
 
-	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 )
 
 func TestGenesisState_Validate(t *testing.T) {

@@ -57,6 +57,7 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
+
 	appparams "github.com/quasarlabs/quasarnode/app/params"
 	owasm "github.com/quasarlabs/quasarnode/wasmbinding"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"

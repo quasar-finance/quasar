@@ -3,14 +3,16 @@ package keeper
 import (
 	"context"
 	errorsmod "cosmossdk.io/errors"
+	"strconv"
+
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
-	"strconv"
 )
 
 type msgServer struct {

@@ -15,13 +15,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
 	"github.com/quasarlabs/quasarnode/x/qoracle/client/cli"
 	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/spf13/cobra"
 )
 
 var (

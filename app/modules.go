@@ -52,18 +52,18 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
-	appparams "github.com/quasarlabs/quasarnode/app/params"
-	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
-	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 
+	appparams "github.com/quasarlabs/quasarnode/app/params"
 	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
+	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
 	qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
+	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/quasarlabs/quasarnode/x/qtransfer"
+	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
 	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
+	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
 	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
+	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 // moduleAccountPermissions defines module account permissions

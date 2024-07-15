@@ -2,11 +2,12 @@ package testutils
 
 import (
 	"encoding/json"
-	// "github.com/cosmos/cosmos-sdk/simapp"
+
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
-	sims "github.com/cosmos/cosmos-sdk/testutil/sims"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+
 	"github.com/quasarlabs/quasarnode/app"
 )
 

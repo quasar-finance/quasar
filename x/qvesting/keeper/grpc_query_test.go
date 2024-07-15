@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
 	testkeeper "github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestParamsQuery(t *testing.T) {

@@ -2,9 +2,11 @@ package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // NOTE -

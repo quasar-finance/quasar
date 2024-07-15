@@ -2,20 +2,21 @@ package types
 
 import (
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
-	types "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		Params:              types.DefaultParams(),
+		Params:              qoracletypes.DefaultParams(),
 		OsmosisGenesisState: DefaultOsmosisGenesis(),
 	}
 }
 
 // NewGenesisState creates and returns a new GenesisState instance from the provided controller and host genesis state types
-func NewGenesisState(params types.Params, osmosisGenesisState OsmosisGenesisState) *GenesisState {
+func NewGenesisState(params qoracletypes.Params, osmosisGenesisState OsmosisGenesisState) *GenesisState {
 	return &GenesisState{
 		Params:              params,
 		OsmosisGenesisState: osmosisGenesisState,

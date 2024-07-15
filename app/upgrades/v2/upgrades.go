@@ -5,22 +5,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
-	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
-	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
-
-	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
-	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-
-	//"github.com/osmosis-labs/osmosis/v20/app/keepers"
-	//"github.com/osmosis-labs/osmosis/v20/app/upgrades"
-	"github.com/quasarlabs/quasarnode/app/keepers"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
-
-	// SDK v47 modules
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
@@ -32,6 +16,17 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
+	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
+	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
+	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
+	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+
+	"github.com/quasarlabs/quasarnode/app/keepers"
+	"github.com/quasarlabs/quasarnode/app/upgrades"
 )
 
 func CreateUpgradeHandler(

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
 )
 

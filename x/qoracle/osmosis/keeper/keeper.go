@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,9 +12,9 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
 	"github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qoracletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/cometbft/cometbft/libs/log"
 )
 
 type Keeper struct {

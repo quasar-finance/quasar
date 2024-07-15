@@ -2,6 +2,7 @@ package qoracle
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
 	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"

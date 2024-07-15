@@ -11,10 +11,11 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/quasarlabs/quasarnode/x/qtransfer"
 	qtransfertestutils "github.com/quasarlabs/quasarnode/x/qtransfer/testutils"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	"github.com/stretchr/testify/suite"
 )
 
 type HooksTestSuite struct {

@@ -1,10 +1,10 @@
 package types
 
 import (
-	time "time"
+	"gopkg.in/yaml.v2"
+	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"gopkg.in/yaml.v2"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)

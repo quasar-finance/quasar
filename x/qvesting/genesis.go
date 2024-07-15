@@ -2,6 +2,7 @@ package qvesting
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 )

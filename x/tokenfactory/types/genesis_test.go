@@ -1,11 +1,11 @@
 package types_test
 
 import (
-	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 

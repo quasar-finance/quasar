@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	tmtypes "github.com/cometbft/cometbft/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cometbft/cometbft/libs/log"
+	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -34,10 +34,11 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/quasarlabs/quasarnode/app"
-	appparams "github.com/quasarlabs/quasarnode/app/params"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
+
+	"github.com/quasarlabs/quasarnode/app"
+	appparams "github.com/quasarlabs/quasarnode/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
