@@ -587,7 +587,7 @@ pub fn handle_iteration_create_position_reply(
     let merge_msg =
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
-            main_position: todo!(),
+            main_position,
         }));
     // merge our position with the main position
     let merge_submsg = SubMsg::reply_on_success(
