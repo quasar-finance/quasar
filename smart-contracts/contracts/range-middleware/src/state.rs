@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal};
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::Map;
 use mars_owner::Owner;
 
 #[cw_serde]
@@ -11,8 +11,6 @@ pub struct NewRange {
 }
 
 pub const PENDING_RANGES: Map<Addr, NewRange> = Map::new("pending_ranges");
-pub const RANGE_SUBMITTER_ADMIN: Item<Addr> = Item::new("range_submitter_admin");
-pub const RANGE_EXECUTOR_ADMIN: Item<Addr> = Item::new("range_executor_admin");
 
 pub const OWNER: Owner = Owner::new("owner");
 pub const RANGE_SUBMITTER_OWNER: Owner = Owner::new("range_submitter_owner");

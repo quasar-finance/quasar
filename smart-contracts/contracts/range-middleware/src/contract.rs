@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
+use cw_storage_plus::Item;
 use mars_owner::OwnerInit::SetInitialOwner;
 
 use crate::admin::execute::execute_admin_msg;
@@ -11,7 +12,7 @@ use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::range::execute::execute_range_msg;
 use crate::range::query::query_range;
 use crate::state::{
-    OWNER, RANGE_EXECUTOR_ADMIN, RANGE_EXECUTOR_OWNER, RANGE_SUBMITTER_ADMIN, RANGE_SUBMITTER_OWNER,
+    OWNER, RANGE_EXECUTOR_OWNER, RANGE_SUBMITTER_OWNER,
 };
 
 // version info for migration info
@@ -80,9 +81,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
-    _msg: MigrateMsg,
+    msg: MigrateMsg,
 ) -> Result<Response, ContractError> {
+    pub const RANGE_SUBMITTER_ADMIN: Item<Addr> = Item::new("range_submitter_admin");
+    pub const RANGE_EXECUTOR_ADMIN: Item<Addr> = Item::new("range_executor_admin");
+    
     let submitter_admin = RANGE_SUBMITTER_ADMIN.load(deps.storage)?;
     let executor_admin = RANGE_EXECUTOR_ADMIN.load(deps.storage)?;
 
@@ -90,7 +93,7 @@ pub fn migrate(
         deps.storage,
         deps.api,
         SetInitialOwner {
-            owner: info.sender.to_string(),
+            owner: msg.new_owner,
         },
     )?;
 
@@ -122,16 +125,20 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         Addr, Api,
     };
-    use cw2::{get_contract_version, ContractVersion};
 
     use super::*;
 
     #[test]
     fn migrate_works() {
+        //legacy state items
+        pub const RANGE_SUBMITTER_ADMIN: Item<Addr> = Item::new("range_submitter_admin");
+        pub const RANGE_EXECUTOR_ADMIN: Item<Addr> = Item::new("range_executor_admin");
+
         let mut deps = mock_dependencies();
         let env = mock_env();
         let owner_addr = deps.api.addr_make("owner");
 
+        // set initial state
         let submitter_addr = deps.api.addr_make("submitter");
         RANGE_SUBMITTER_ADMIN
             .save(deps.as_mut().storage, &submitter_addr)
@@ -144,17 +151,17 @@ mod tests {
         let migrate_response = migrate(
             deps.as_mut(),
             env.clone(),
-            MessageInfo {
-                sender: owner_addr.clone(),
-                funds: vec![],
+            MigrateMsg {
+                new_owner: owner_addr.to_string(),
             },
-            MigrateMsg {},
         )
         .unwrap();
 
+        // assert migration execution
         assert_eq!(migrate_response.attributes[0].key, "migrate");
         assert_eq!(migrate_response.attributes[0].value, "successful");
 
+        // assert new owners
         let owner = OWNER.query(deps.as_ref().storage).unwrap();
         assert_eq!(owner.owner.unwrap(), owner_addr.to_string());
 

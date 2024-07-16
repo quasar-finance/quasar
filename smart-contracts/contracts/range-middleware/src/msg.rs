@@ -34,4 +34,6 @@ pub enum QueryMsg {
     AdminQuery(AdminQueryMsg),
 }
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub new_owner: String,
+}
