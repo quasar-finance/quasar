@@ -11,9 +11,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::range::execute::execute_range_msg;
 use crate::range::query::query_range;
-use crate::state::{
-    OWNER, RANGE_EXECUTOR_OWNER, RANGE_SUBMITTER_OWNER,
-};
+use crate::state::{OWNER, RANGE_EXECUTOR_OWNER, RANGE_SUBMITTER_OWNER};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:range-middleware";
@@ -78,14 +76,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(
-    deps: DepsMut,
-    _env: Env,
-    msg: MigrateMsg,
-) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     pub const RANGE_SUBMITTER_ADMIN: Item<Addr> = Item::new("range_submitter_admin");
     pub const RANGE_EXECUTOR_ADMIN: Item<Addr> = Item::new("range_executor_admin");
-    
+
     let submitter_admin = RANGE_SUBMITTER_ADMIN.load(deps.storage)?;
     let executor_admin = RANGE_EXECUTOR_ADMIN.load(deps.storage)?;
 
