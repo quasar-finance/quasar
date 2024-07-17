@@ -25,6 +25,7 @@ name = "schema"
 [features]
 default = []
 library = []
+test-tube = ["osmosis-test-tube"]
 
 [dependencies]
 cosmwasm-std = { workspace = true }
@@ -36,6 +37,4 @@ mars-owner = { workspace = true }
 osmosis-std = { workspace = true }
 quasar-types = { workspace = true }
 prost = { workspace = true }
-
-[dev-dependencies]
-osmosis-test-tube = { workspace = true }
+osmosis-test-tube = { workspace = true, optional = true }
