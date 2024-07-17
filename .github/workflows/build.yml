@@ -76,6 +76,7 @@ jobs:
             Makefile
             .github/workflows/build.yml
       - name: Install just via cargo
+        if: env.GIT_DIFF
         run: cargo install just
       - name: Build smart contracts
         if: env.GIT_DIFF
