@@ -61,6 +61,7 @@ jobs:
         with:
           path: |
             ~/.cargo
+            **/target
           key: ${{ runner.os }}-cargo-$${{ hashFiles('Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo
       - name: Install just via cargo
