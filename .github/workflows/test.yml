@@ -55,6 +55,14 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        if: env.GIT_DIFF
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+          key: ${{ runner.os }}-cargo-$${{ hashFiles('Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargo
       - name: Install just via cargo
         if: env.GIT_DIFF
         run: cargo install just

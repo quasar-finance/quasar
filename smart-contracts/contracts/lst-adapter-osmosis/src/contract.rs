@@ -8,8 +8,10 @@ use crate::state::{
 };
 use crate::{LstAdapterError, LST_ADAPTER_OSMOSIS_ID, LST_ADAPTER_OSMOSIS_VERSION};
 #[cfg(not(target_arch = "wasm32"))]
+use abstract_app::abstract_interface;
+#[cfg(not(target_arch = "wasm32"))]
 use abstract_app::abstract_interface::AbstractInterfaceError;
-use abstract_app::{abstract_interface, AppContract};
+use abstract_app::AppContract;
 use abstract_sdk::{AbstractResponse, IbcInterface, TransferInterface};
 #[cfg(not(target_arch = "wasm32"))]
 use abstract_std::manager::ModuleInstallConfig;
