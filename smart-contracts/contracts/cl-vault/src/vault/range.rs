@@ -197,7 +197,8 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             modify_range_state.twap_window_seconds,
         )
     } else {
-        // we can naively re-deposit up to however much keeps the proportion of tokens the same. Then swap & re-deposit the proper ratio with the remaining tokens
+        // we can naively re-deposit up to however much keeps the proportion of tokens the same.
+        // Then swap & re-deposit the proper ratio with the remaining tokens
         let create_position_msg = create_position(
             deps,
             &env,
@@ -270,7 +271,7 @@ pub fn do_swap_deposit_merge(
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
-    refunded_amounts: (Uint128, Uint128),
+    tokens_provided: (Uint128, Uint128),
     position_id: Option<u64>,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
@@ -280,11 +281,11 @@ pub fn do_swap_deposit_merge(
     }
 
     let (balance0, balance1) = (
-        refunded_amounts.0.checked_multiply_ratio(
+        tokens_provided.0.checked_multiply_ratio(
             ratio_of_swappable_funds_to_use.numerator(),
             ratio_of_swappable_funds_to_use.denominator(),
         )?,
-        refunded_amounts.1.checked_multiply_ratio(
+        tokens_provided.1.checked_multiply_ratio(
             ratio_of_swappable_funds_to_use.numerator(),
             ratio_of_swappable_funds_to_use.denominator(),
         )?,
