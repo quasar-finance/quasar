@@ -55,8 +55,25 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            smart-contracts/target
+            ~/.cargo/registry
+            ~/.cargo/bin
+            ~/.cargo/git
       - name: Install just via cargo
         run: cargo install just
       - name: Run unit-tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test --lib
+      - name: Cache dependencies
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            smart-contracts/target
+            ~/.cargo/registry
+            ~/.cargo/bin
+            ~/.cargo/git
+          key: cargo-cache-build
