@@ -27,9 +27,7 @@ use cosmwasm_std::{
     SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
-    concentratedliquidity::v1beta1::{
-        MsgCreatePositionResponse, MsgWithdrawPosition, MsgWithdrawPositionResponse,
-    },
+    concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
     gamm::v1beta1::MsgSwapExactAmountInResponse,
     poolmanager::v1beta1::SwapAmountInRoute,
 };
@@ -147,31 +145,16 @@ pub fn execute_update_range_ticks(
 }
 
 // do create new position
-pub fn handle_withdraw_position_reply(
-    deps: DepsMut,
-    env: Env,
-    data: SubMsgResult,
-) -> Result<Response, ContractError> {
-    let msg: MsgWithdrawPositionResponse = data.try_into()?;
-
+pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    let mut amount0: Uint128 = msg.amount0.parse()?;
-    let mut amount1: Uint128 = msg.amount1.parse()?;
-
+    // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
+    // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
     let unused_balances = get_unused_balances(&deps.querier, &env)?;
-    let unused_balance0 = unused_balances
-        .find_coin(pool_config.token0.clone())
-        .amount
-        .saturating_sub(amount0);
-    let unused_balance1 = unused_balances
-        .find_coin(pool_config.token1.clone())
-        .amount
-        .saturating_sub(amount1);
-
-    amount0 = amount0.checked_add(unused_balance0)?;
-    amount1 = amount1.checked_add(unused_balance1)?;
+    // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
+    let amount0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
+    let amount1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
 
     CURRENT_BALANCE.save(deps.storage, &(amount0, amount1))?;
 
@@ -671,9 +654,8 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
-        Addr, Decimal, SubMsgResponse, SubMsgResult,
+        Addr, Decimal,
     };
-    use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgWithdrawPositionResponse;
 
     use crate::{
         helpers::getters::get_range_admin,
@@ -824,20 +806,7 @@ mod tests {
             )
             .unwrap();
 
-        // now test two-sided withdraw
-        let data = SubMsgResult::Ok(SubMsgResponse {
-            events: vec![],
-            data: Some(
-                MsgWithdrawPositionResponse {
-                    amount0: "10000".to_string(),
-                    amount1: "10000".to_string(),
-                }
-                .try_into()
-                .unwrap(),
-            ),
-        });
-
-        let res = super::handle_withdraw_position_reply(deps.as_mut(), env, data).unwrap();
+        let res = super::handle_withdraw_position_reply(deps.as_mut(), env).unwrap();
 
         // verify that we did create_position first
         assert_eq!(res.messages.len(), 1);

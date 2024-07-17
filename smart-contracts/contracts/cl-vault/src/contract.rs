@@ -207,7 +207,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         }
         Replies::CollectIncentives => handle_collect_incentives_reply(deps, env, msg.result),
         Replies::CollectSpreadRewards => handle_collect_spread_rewards_reply(deps, env, msg.result),
-        Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env, msg.result),
+        Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env),
         Replies::RangeInitialCreatePosition => {
             handle_initial_create_position_reply(deps, env, msg.result)
         }
