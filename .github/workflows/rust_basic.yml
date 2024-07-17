@@ -1,0 +1,45 @@
+name: Unit Test (rust)
+
+on:
+  workflow_call:
+    inputs:
+      contract:
+        required: true
+        type: string
+
+defaults:
+  run:
+    working-directory: smart-contracts/contracts
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Get git diff
+        uses: technote-space/get-diff-action@v6.1.2
+        with:
+          PATTERNS: |
+            **/**.rs
+            **/Cargo.toml
+      - name: Install Rust
+        if: env.GIT_DIFF
+        uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        if: env.GIT_DIFF
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/target
+          key: ${{ runner.os }}-${{ inputs.contract }}-$${{ hashFiles('Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-${{ inputs.contract }}
+      - name: Rust lint
+        if: env.GIT_DIFF
+        run: cd ${{ inputs.contract }} && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
+      - name: Rust format check
+        if: env.GIT_DIFF
+        run: cd ${{ inputs.contract }} && cargo fmt --all -- --check
+      - name: Run unit-tests
+        if: env.GIT_DIFF
+        run: cd ${{ inputs.contract }} && cargo unit-test

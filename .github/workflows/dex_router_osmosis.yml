@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  dex-router-unit-test:
-    uses: ./.github/workflows/unittest_rust.yml
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
     with:
       contract: 'dex-router-osmosis'
