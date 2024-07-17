@@ -12,7 +12,7 @@ defaults:
     working-directory: smart-contracts/contracts
 
 jobs:
-  test:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -26,14 +26,6 @@ jobs:
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
-      - name: Restore dependencies
-        if: env.GIT_DIFF
-        uses: actions/cache@v4
-        with:
-          path: |
-            **/target
-          key: ${{ runner.os }}-${{ inputs.contract }}-$${{ hashFiles('Cargo.toml') }}
-          restore-keys: ${{ runner.os }}-${{ inputs.contract }}
       - name: Rust lint
         if: env.GIT_DIFF
         run: cd ${{ inputs.contract }} && RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
