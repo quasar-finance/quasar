@@ -61,8 +61,8 @@ jobs:
         with:
           path: |
             **/target
-          key: ${{ runner.os }}-cargo-$${{ hashFiles('Cargo.toml') }}
-          restore-keys: ${{ runner.os }}-cargo
+          key: ${{ runner.os }}-cargoy-$${{ hashFiles('Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargoy
       - name: Run unit-tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test --lib

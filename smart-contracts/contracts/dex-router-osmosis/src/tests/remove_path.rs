@@ -222,4 +222,3 @@ fn test_remove_one_of_two_paths() {
         Some(vec![path2])
     );
 }
-

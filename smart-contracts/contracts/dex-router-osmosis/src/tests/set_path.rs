@@ -43,4 +43,3 @@ fn test_if_path_is_empty_then_set_path_fails() {
     let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
     assert_eq!(err, ContractError::EmptyPath {});
 }
-

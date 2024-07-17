@@ -2786,7 +2786,6 @@ dependencies = [
  "cw2 1.1.2",
  "mars-owner",
  "osmosis-std",
- "osmosis-test-tube",
  "prost 0.12.6",
  "quasar-types",
  "thiserror",

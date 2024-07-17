@@ -1,8 +1,8 @@
 use crate::contract::{execute, instantiate};
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
-use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::coin;
+use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use quasar_types::error::FundsError;
 
 #[test]
@@ -42,4 +42,3 @@ fn test_swap_with_too_many_funds_throws() {
     let err = execute(deps.as_mut(), env, info, msg).unwrap_err();
     assert_eq!(err, ContractError::Funds(FundsError::InvalidAssets(1)))
 }
-

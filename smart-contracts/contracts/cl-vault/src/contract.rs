@@ -287,11 +287,11 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::state::USER_REWARDS;
     use crate::{
         helpers::coinlist::CoinList,
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
     };
-    use crate::state::USER_REWARDS;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
@@ -300,17 +300,13 @@ mod tests {
     use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
     use prost::Message;
     use std::str::FromStr;
-    
+
     pub const MAX_SLIPPAGE_HIGH: u64 = 9000; // this should be inline with the pool spread_factor
     const DENOM_BASE: &str = "uatom";
     const DENOM_QUOTE: &str = "ubtc";
     const DENOM_REWARD: &str = "ustrd";
 
-    fn mock_migrate(
-        deps: DepsMut,
-        _env: Env,
-        msg: MigrateMsg,
-    ) -> Result<Response, ContractError> {
+    fn mock_migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
         let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
         let new_vault_config = VaultConfig {
             performance_fee: old_vault_config.performance_fee,
