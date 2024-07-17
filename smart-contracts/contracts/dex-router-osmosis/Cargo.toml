@@ -15,6 +15,7 @@ exclude = [
   "dex_router_osmosis.wasm",
   "hash.txt",
 ]
+##
 
 [lib]
 crate-type = ["cdylib", "rlib"]

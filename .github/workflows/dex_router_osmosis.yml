@@ -1,0 +1,18 @@
+name: Test dex router (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/dex-router-osmosis/**'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  dex-router-unit-test:
+    uses: ./.github/workflows/unittest_rust.yml
+    with:
+      contract: 'dex-router-osmosis'
