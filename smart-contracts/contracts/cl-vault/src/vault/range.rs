@@ -38,6 +38,12 @@ use super::{
     swap::{SwapCalculationResult, SwapParams},
 };
 
+struct AmountsAndTokensProvidedResponse {
+    amount0: Uint128,
+    amount1: Uint128,
+    tokens_provided: Vec<Coin>,
+}
+
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range
 /// * so how much of each asset given liq would we have at current price
@@ -144,12 +150,6 @@ pub fn execute_update_range_ticks(
         .add_attribute("liquidity_amount", position.liquidity))
 }
 
-struct AmountsAndTokensProvidedResponse {
-    pub amount0: Uint128,
-    pub amount1: Uint128,
-    pub tokens_provided: Vec<Coin>,
-}
-
 fn get_amounts_and_tokens_provided(
     deps: &DepsMut,
     env: &Env,
@@ -157,7 +157,7 @@ fn get_amounts_and_tokens_provided(
 ) -> Result<AmountsAndTokensProvidedResponse, ContractError> {
     // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
     // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
-    let unused_balances = get_unused_balances(&deps.querier, &env)?;
+    let unused_balances = get_unused_balances(&deps.querier, env)?;
     // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
     let amount0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
     let amount1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
