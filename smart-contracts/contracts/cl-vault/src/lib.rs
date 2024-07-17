@@ -12,9 +12,6 @@ mod vault;
 pub use crate::error::ContractError;
 
 #[cfg(test)]
-mod test_tube;
-
-#[cfg(test)]
 mod test_helpers;
 
 #[macro_export]

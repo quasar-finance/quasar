@@ -290,10 +290,8 @@ mod tests {
     use crate::{
         helpers::coinlist::CoinList,
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
-        test_tube::initialize::initialize::{DENOM_BASE, DENOM_QUOTE, DENOM_REWARD},
     };
-    #[allow(deprecated)]
-    use crate::{state::USER_REWARDS, test_tube::initialize::initialize::MAX_SLIPPAGE_HIGH};
+    use crate::state::USER_REWARDS;
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env},
@@ -302,8 +300,13 @@ mod tests {
     use osmosis_std::{cosmwasm_to_proto_coins, types::cosmos::bank::v1beta1::MsgMultiSend};
     use prost::Message;
     use std::str::FromStr;
+    
+    pub const MAX_SLIPPAGE_HIGH: u64 = 9000; // this should be inline with the pool spread_factor
+    const DENOM_BASE: &str = "uatom";
+    const DENOM_QUOTE: &str = "ubtc";
+    const DENOM_REWARD: &str = "ustrd";
 
-    pub fn mock_migrate(
+    fn mock_migrate(
         deps: DepsMut,
         _env: Env,
         msg: MigrateMsg,
