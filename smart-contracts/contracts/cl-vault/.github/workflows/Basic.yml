@@ -36,6 +36,15 @@ jobs:
           args: --locked
         env:
           RUSTFLAGS: "-C link-arg=-s"
+      - name: Cache dependencies
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            target
+            ~/.cargo/registry
+            ~/.cargo/bin
+            ~/.cargo/git
+          key: cargo-cache-build-cl-vault
 
   lints:
     name: Lints
