@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Empty;
+use mars_owner::OwnerUpdate;
 
 use crate::{
     admin::{execute::AdminExecuteMsg, query::AdminQueryMsg},
@@ -8,8 +9,8 @@ use crate::{
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub range_submitter_admin: String,
-    pub range_executor_admin: String,
+    pub range_submitter_owner: String,
+    pub range_executor_owner: String,
 }
 
 #[cw_serde]
@@ -18,6 +19,8 @@ pub enum ExecuteMsg {
     RangeMsg(RangeExecuteMsg),
     /// admin operations
     AdminMsg(AdminExecuteMsg),
+    /// contract owner updtae
+    UpdateOwner(OwnerUpdate),
 }
 
 #[cw_serde]
@@ -31,4 +34,6 @@ pub enum QueryMsg {
     AdminQuery(AdminQueryMsg),
 }
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    pub new_owner: String,
+}
