@@ -60,13 +60,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo
             **/target
           key: ${{ runner.os }}-cargo-$${{ hashFiles('Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo
-      - name: Install just via cargo
-        if: env.GIT_DIFF
-        run: cargo install just
       - name: Run unit-tests
         if: env.GIT_DIFF
         run: cd smart-contracts && cargo test --lib
