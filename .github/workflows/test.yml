@@ -56,6 +56,7 @@ jobs:
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
       - name: Install just via cargo
+        if: env.GIT_DIFF
         run: cargo install just
       - name: Run unit-tests
         if: env.GIT_DIFF
