@@ -26,8 +26,5 @@ schemars = { workspace = true }
 serde = { workspace = true }
 serde-json-wasm = { workspace = true }
 thiserror = { workspace = true }
-
 rs_merkle = { version = "1.4.2", default-features = false }
-
-[dev-dependencies]
-osmosis-test-tube = { workspace = true }
+osmosis-test-tube = { workspace = true, optional = true }
