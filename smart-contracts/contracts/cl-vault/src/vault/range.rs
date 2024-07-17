@@ -3,8 +3,9 @@ use crate::{
         assert::assert_range_admin,
         generic::extract_attribute_value_by_ty_and_key,
         getters::{
-            get_amounts_and_tokens_provided, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
+            get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided, get_twap_price,
+            get_unused_pair_balances,
         },
         msgs::swap_msg,
     },
@@ -148,10 +149,11 @@ pub fn execute_update_range_ticks(
 pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    let balances = get_amounts_and_tokens_provided(&deps, &env, &pool_config)?;
-
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+
+    let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
+    let tokens_provided =
+        get_tokens_provided(unused_pair_balances.0, unused_pair_balances.1, &pool_config)?;
 
     // if only one token is being deposited, and we are moving into a position where any amount of the other token is needed,
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
@@ -162,15 +164,17 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     // if (lower < current < upper) && amount0 == 0  || amount1 == 0
     // also onesided but wrong token
     // bad complexity demon, grug no like
-    if (balances.amount0.is_zero() && pool_details.current_tick < modify_range_state.upper_tick)
-        || (balances.amount1.is_zero() && pool_details.current_tick > modify_range_state.lower_tick)
+    if (unused_pair_balances.0.is_zero()
+        && pool_details.current_tick < modify_range_state.upper_tick)
+        || (unused_pair_balances.1.is_zero()
+            && pool_details.current_tick > modify_range_state.lower_tick)
     {
         do_swap_deposit_merge(
             deps,
             env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            (balances.amount0, balances.amount1),
+            (unused_pair_balances.0, unused_pair_balances.1),
             None, // we just withdrew our only position
             modify_range_state.ratio_of_swappable_funds_to_use,
             modify_range_state.twap_window_seconds,
@@ -183,7 +187,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            balances.tokens_provided,
+            tokens_provided,
             Uint128::zero(),
             Uint128::zero(),
         )?;
@@ -195,15 +199,15 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             ))
             .add_attribute("method", "reply")
             .add_attribute("action", "handle_withdraw_position")
-            .add_attribute("lower_tick", format!("{:?}", modify_range_state.lower_tick))
-            .add_attribute("upper_tick", format!("{:?}", modify_range_state.upper_tick))
+            .add_attribute("lower_tick", modify_range_state.lower_tick.to_string())
+            .add_attribute("upper_tick", modify_range_state.upper_tick.to_string())
             .add_attribute(
                 "token0",
-                format!("{}{}", balances.amount0, pool_config.token0),
+                format!("{}{}", unused_pair_balances.0, pool_config.token0),
             )
             .add_attribute(
                 "token1",
-                format!("{}{}", balances.amount1, pool_config.token1),
+                format!("{}{}", unused_pair_balances.1, pool_config.token1),
             ))
     }
 }
@@ -223,14 +227,14 @@ pub fn handle_initial_create_position_reply(
     let target_lower_tick = create_position_message.lower_tick;
     let target_upper_tick = create_position_message.upper_tick;
 
-    let balances = get_amounts_and_tokens_provided(&deps, &env, &pool_config)?;
+    let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
 
     do_swap_deposit_merge(
         deps,
         env,
         target_lower_tick,
         target_upper_tick,
-        (balances.amount0, balances.amount1),
+        (unused_pair_balances.0, unused_pair_balances.1),
         Some(create_position_message.position_id),
         modify_range_state.ratio_of_swappable_funds_to_use,
         modify_range_state.twap_window_seconds,
@@ -311,10 +315,7 @@ pub fn do_swap_deposit_merge(
                         calculated.token_in_amount, calculated.token_in_denom
                     ),
                 ),
-                attr(
-                    "token_out_min",
-                    format!("{}", calculated.token_out_min_amount),
-                ),
+                attr("token_out_min", calculated.token_out_min_amount.to_string()),
             ]))
     } else {
         // If no swap message, add a new position attribute
