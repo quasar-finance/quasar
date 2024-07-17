@@ -37,6 +37,7 @@ jobs:
             go.sum
             Makefile
             .github/workflows/build.yml
+            Cargo.toml
       - name: Setup Golang
         uses: actions/setup-go@v4
         with:
@@ -75,13 +76,31 @@ jobs:
             **/**.rs
             Makefile
             .github/workflows/build.yml
+      - name: Restore dependencies
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            smart-contracts/target
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-cache-build
       - name: Install just via cargo
+#        if: env.GIT_DIFF
         run: cargo install just
       - name: Build smart contracts
-        if: env.GIT_DIFF
+#        if: env.GIT_DIFF
         run: |
           cd smart-contracts
           just workspace-optimize
+      - name: Cache dependencies
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            smart-contracts/target
+            ~/.cargo/registry
+            ~/.cargo/bin
+            ~/.cargo/git
+          key: cargo-cache-build
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
