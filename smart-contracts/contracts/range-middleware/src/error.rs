@@ -1,5 +1,4 @@
 use cosmwasm_std::StdError;
-use mars_owner::OwnerError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -21,7 +20,4 @@ pub enum ContractError {
     // start execution errors
     #[error("No range exists for contract {address}")]
     NoRangeExists { address: String },
-
-    #[error("{0}")]
-    Owner(#[from] OwnerError),
 }

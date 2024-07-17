@@ -7,9 +7,12 @@ use cosmwasm_std::{to_json_binary, Decimal, DepsMut, Env, MessageInfo, Response,
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    state::{NewRange, PENDING_RANGES, RANGE_EXECUTOR_OWNER, RANGE_SUBMITTER_OWNER},
+    range::helpers::is_range_executor_admin,
+    state::{NewRange, PENDING_RANGES},
     ContractError,
 };
+
+use super::helpers::is_range_submitter_admin;
 
 #[cw_serde]
 pub enum RangeExecuteMsg {
@@ -74,7 +77,7 @@ pub fn submit_new_range(
     info: MessageInfo,
     new_range: NewRange,
 ) -> Result<Response, ContractError> {
-    RANGE_SUBMITTER_OWNER.assert_owner(deps.storage, &info.sender)?;
+    is_range_submitter_admin(deps.storage, &info.sender)?;
 
     // get validated address
     let vault_address = deps.api.addr_validate(&new_range.cl_vault_address)?;
@@ -118,7 +121,7 @@ pub fn execute_new_range(
     info: MessageInfo,
     params: RangeExecutionParams,
 ) -> Result<Response, ContractError> {
-    RANGE_EXECUTOR_OWNER.assert_owner(deps.storage, &info.sender)?;
+    is_range_executor_admin(deps.storage, &info.sender)?;
 
     let vault_address = deps.api.addr_validate(&params.cl_vault_address)?;
 

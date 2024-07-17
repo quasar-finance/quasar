@@ -4587,7 +4587,6 @@ dependencies = [
  "cw-storage-plus 1.2.0",
  "cw2 1.1.2",
  "dex-router-osmosis",
- "mars-owner",
  "osmosis-std",
  "schemars",
  "serde",
