@@ -64,7 +64,7 @@ pub fn calculate_deposit_ratio(
         }
     }
 
-    // Calculate refunds TODO check if this is correct
+    // Calculate refunds
     let token0_refund = provided_amount0.saturating_sub(amount0_deposit);
     let token1_refund = provided_amount1.saturating_sub(amount1_deposit);
 

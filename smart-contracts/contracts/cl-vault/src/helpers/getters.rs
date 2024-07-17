@@ -1,5 +1,5 @@
 use crate::math::tick::tick_to_price;
-use crate::state::RANGE_ADMIN;
+use crate::state::{PoolConfig, RANGE_ADMIN};
 use std::str::FromStr;
 
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
@@ -15,6 +15,12 @@ use cosmwasm_std::{
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
 use super::coinlist::CoinList;
+
+pub struct GetAmountsAndTokensProvidedResponse {
+    pub amount0: Uint128,
+    pub amount1: Uint128,
+    pub tokens_provided: Vec<Coin>,
+}
 
 pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
@@ -215,6 +221,39 @@ pub fn get_unused_balances(querier: &QuerierWrapper, env: &Env) -> Result<CoinLi
     Ok(CoinList::from_coins(
         querier.query_all_balances(env.contract.address.to_string())?,
     ))
+}
+
+pub fn get_amounts_and_tokens_provided(
+    deps: &DepsMut,
+    env: &Env,
+    pool_config: &PoolConfig,
+) -> Result<GetAmountsAndTokensProvidedResponse, ContractError> {
+    // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
+    // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
+    let unused_balances = get_unused_balances(&deps.querier, env)?;
+    // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
+    let amount0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
+    let amount1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
+
+    let mut tokens_provided = vec![];
+    if !amount0.is_zero() {
+        tokens_provided.push(Coin {
+            denom: pool_config.token0.clone(),
+            amount: amount0,
+        })
+    }
+    if !amount1.is_zero() {
+        tokens_provided.push(Coin {
+            denom: pool_config.token1.clone(),
+            amount: amount1,
+        })
+    }
+
+    Ok(GetAmountsAndTokensProvidedResponse {
+        amount0,
+        amount1,
+        tokens_provided,
+    })
 }
 
 // /// get_spot_price

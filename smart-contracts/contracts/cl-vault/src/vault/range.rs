@@ -3,8 +3,8 @@ use crate::{
         assert::assert_range_admin,
         generic::extract_attribute_value_by_ty_and_key,
         getters::{
-            get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_balances,
+            get_amounts_and_tokens_provided, get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
         },
         msgs::swap_msg,
     },
@@ -12,8 +12,8 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, PoolConfig, Position, SwapDepositMergeState, CURRENT_SWAP,
-        MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
+        POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
         concentrated_liquidity::{create_position, get_position},
@@ -37,12 +37,6 @@ use super::{
     concentrated_liquidity::get_cl_pool_info,
     swap::{SwapCalculationResult, SwapParams},
 };
-
-struct AmountsAndTokensProvidedResponse {
-    amount0: Uint128,
-    amount1: Uint128,
-    tokens_provided: Vec<Coin>,
-}
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range
@@ -150,38 +144,6 @@ pub fn execute_update_range_ticks(
         .add_attribute("liquidity_amount", position.liquidity))
 }
 
-fn get_amounts_and_tokens_provided(
-    deps: &DepsMut,
-    env: &Env,
-    pool_config: &PoolConfig,
-) -> Result<AmountsAndTokensProvidedResponse, ContractError> {
-    // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
-    // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
-    let unused_balances = get_unused_balances(&deps.querier, env)?;
-    // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
-    let amount0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
-    let amount1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
-
-    let mut tokens_provided = vec![];
-    if !amount0.is_zero() {
-        tokens_provided.push(Coin {
-            denom: pool_config.token0.clone(),
-            amount: amount0,
-        })
-    }
-    if !amount1.is_zero() {
-        tokens_provided.push(Coin {
-            denom: pool_config.token1.clone(),
-            amount: amount1,
-        })
-    }
-
-    Ok(AmountsAndTokensProvidedResponse {
-        amount0,
-        amount1,
-        tokens_provided,
-    })
-}
 // do create new position
 pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
