@@ -1,7 +1,7 @@
 package v0
 
 import (
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	store "cosmossdk.io/store/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
 	qvestingtypes "github.com/quasarlabs/quasarnode/x/qvesting/types"

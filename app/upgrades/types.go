@@ -2,10 +2,10 @@ package upgrades
 
 import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	store "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 )
 

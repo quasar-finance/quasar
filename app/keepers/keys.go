@@ -1,9 +1,9 @@
 package keepers
 
 import (
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"

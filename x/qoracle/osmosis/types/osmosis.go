@@ -3,7 +3,7 @@ package types
 import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v7/types"
+	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v8/types"
 
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	gammtypes "github.com/quasarlabs/quasarnode/osmosis/gamm/types"
