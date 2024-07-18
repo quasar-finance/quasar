@@ -7,9 +7,14 @@ on:
     paths:
       - 'smart-contracts/contracts/merkle-incentives/Cargo.toml'
       - 'smart-contracts/contracts/merkle-incentives/**.rs'
+      - '.github/workflows/**.yml'
   push:
     branches:
       - main
+    paths:
+      - 'smart-contracts/contracts/merkle-incentives/Cargo.toml'
+      - 'smart-contracts/contracts/merkle-incentives/**.rs'
+      - '.github/workflows/**.yml'
   workflow_dispatch:
 
 jobs:

@@ -7,9 +7,14 @@ on:
     paths:
       - 'smart-contracts/contracts/token-burner/Cargo.toml'
       - 'smart-contracts/contracts/token-burner/**.rs'
+      - '.github/workflows/**.yml'
   push:
     branches:
       - main
+    paths:
+      - 'smart-contracts/contracts/token-burner/Cargo.toml'
+      - 'smart-contracts/contracts/token-burner/**.rs'
+      - '.github/workflows/**.yml'
   workflow_dispatch:
 
 jobs:

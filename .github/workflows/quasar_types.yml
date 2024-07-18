@@ -6,9 +6,13 @@ on:
       - main
     paths:
       - 'smart-contracts/packages/quasar-types/**'
+      - '.github/workflows/**.yml'
   push:
     branches:
       - main
+    paths:
+      - 'smart-contracts/packages/quasar-types/**'
+      - '.github/workflows/**.yml'
   workflow_dispatch:
 
 jobs:
