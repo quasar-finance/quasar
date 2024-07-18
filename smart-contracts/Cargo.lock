@@ -1726,6 +1726,7 @@ name = "cl-vault"
 version = "0.3.0"
 dependencies = [
  "apollo-cw-asset",
+ "const_format",
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-storage-plus 1.2.0",

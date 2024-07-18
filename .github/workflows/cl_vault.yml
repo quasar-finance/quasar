@@ -7,6 +7,8 @@ on:
     paths:
       - 'smart-contracts/contracts/cl-vault/Cargo.toml'
       - 'smart-contracts/contracts/cl-vault/**.rs'
+      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
   push:
     branches:
       - main
@@ -18,6 +20,29 @@ jobs:
     with:
       contract: 'cl-vault'
   test-tube:
-    uses: ./.github/workflows/rust_test_tube.yml
-    with:
-      contract: 'cl-vault'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo
+            ~/go
+            **/target
+          key: ${{ runner.os }}-cargo-$${{ hashFiles('smart-contracts/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo
+      - name: Build test-tube tests
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/dex-router-osmosis
+      - name: Build test-tube tests
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/cl-vault
+      - name: Run test-tube tests
+        run: cargo test-tube
+        env:
+          PROPTEST_CASES: 10
+        working-directory: smart-contracts/contracts/cl-vault
