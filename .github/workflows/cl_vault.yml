@@ -16,3 +16,7 @@ jobs:
     uses: ./.github/workflows/rust_basic.yml
     with:
       contract: 'cl-vault'
+  test-tube:
+    uses: ./.github/workflows/rust_test_tube.yml
+    with:
+      contract: 'cl-vault'

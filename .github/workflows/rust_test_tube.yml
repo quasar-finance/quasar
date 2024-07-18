@@ -1,4 +1,4 @@
-name: Unit Test (rust)
+name: Test Tube
 
 on:
   workflow_call:
@@ -8,7 +8,7 @@ on:
         type: string
 
 jobs:
-  checks:
+  test-tube:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
@@ -32,15 +32,13 @@ jobs:
             **/target
           key: ${{ runner.os }}-cargo-$${{ hashFiles('smart-contracts/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo
-      - name: Rust lint
+      - name: Build test-tube tests
         if: env.GIT_DIFF
-        run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
+        run: cargo test-tube-build
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
-      - name: Rust format check
+      - name: Run test-tube tests
         if: env.GIT_DIFF
-        run: cargo fmt --all -- --check
-        working-directory: smart-contracts/contracts/${{ inputs.contract }}
-      - name: Run unit-tests
-        if: env.GIT_DIFF
-        run: cargo unit-test
+        run: cargo test-tube
+        env:
+          PROPTEST_CASES: 10
         working-directory: smart-contracts/contracts/${{ inputs.contract }}

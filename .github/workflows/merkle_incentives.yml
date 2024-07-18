@@ -1,11 +1,11 @@
-name: Test dex router (osmosis)
+name: Test merkle incentives
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/dex-router-osmosis/**'
+      - 'smart-contracts/contracts/merkle-incentives/**'
   push:
     branches:
       - main
@@ -15,8 +15,8 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      contract: 'dex-router-osmosis'
+      contract: 'merkle-incentives'
   test-tube:
     uses: ./.github/workflows/rust_test_tube.yml
     with:
-      contract: 'dex-router-osmosis'
+      contract: 'merkle-incentives'

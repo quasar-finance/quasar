@@ -34,4 +34,11 @@ workspace-optimize:
             --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
             --platform linux/amd64 \
-            cosmwasm/workspace-optimizer:0.16.0; fi
+            cosmwasm/optimizer:0.16.0; fi
+
+optimize-single-contract:
+    #!/bin/bash
+    docker run --rm -v "$(pwd)":/code \
+      --mount type=volume,source="$(basename "$(pwd)")_${CONTRACT}_cache",target=/target \
+      --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+      cosmwasm/optimizer:0.16.0 ./contracts/${CONTRACT}
