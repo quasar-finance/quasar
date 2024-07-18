@@ -13,17 +13,9 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Get git diff
-        uses: technote-space/get-diff-action@v6.1.2
-        with:
-          PATTERNS: |
-            **/**.rs
-            **/Cargo.lock
       - name: Install Rust
-        if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
       - name: Restore dependencies
-        if: env.GIT_DIFF
         uses: actions/cache@v4
         with:
           path: |
@@ -32,13 +24,9 @@ jobs:
             **/target
           key: ${{ runner.os }}-cargo-$${{ hashFiles('smart-contracts/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo
-      - name: Build test-tube tests
-        if: env.GIT_DIFF
+      - name: Build ${{ inputs.contract }}
         run: cargo test-tube-build
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
       - name: Run test-tube tests
-        if: env.GIT_DIFF
         run: cargo test-tube
-        env:
-          PROPTEST_CASES: 10
         working-directory: smart-contracts/contracts/${{ inputs.contract }}

@@ -17,8 +17,8 @@ jobs:
         uses: technote-space/get-diff-action@v6.1.2
         with:
           PATTERNS: |
-            **/**.rs
-            **/Cargo.lock
+            ${{inputs.contract}}/**.rs
+            ${{inputs.contract}}/Cargo.toml
       - name: Install Rust
         if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable

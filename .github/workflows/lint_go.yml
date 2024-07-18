@@ -1,12 +1,18 @@
-name: Lint Quasar code
+name: Lint (Go)
 
 on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'smart-contracts/**'
+      - '**.md'
   push:
     branches:
       - main
+    paths-ignore:
+      - 'smart-contracts/**'
+      - '**.md'
   workflow_dispatch:
 
 concurrency: 
