@@ -3,25 +3,23 @@ package testutil
 import (
 	"testing"
 
+	"cosmossdk.io/store"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"cosmossdk.io/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingKeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -30,9 +28,10 @@ import (
 	"github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/testutil/mock"
 	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
-	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
+
+	// qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
+	// qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
+	// qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	qvestingkeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
@@ -132,12 +131,12 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	stakingKeeper := factory.StakingKeeper(accountKeeper, bankKeeper)
 	distrKeeper := factory.DistributionKeeper(accountKeeper, bankKeeper, stakingKeeper, "feeCollectorName")
-	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
+	//qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 
-	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	qosmosisKeeper := factory.QosmosisKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qosmoScopedKeeper, qoracleKeeper)
-	qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
-	qoracleKeeper.Seal()
+	//qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	// qosmosisKeeper := factory.QosmosisKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), ibcClientKeeperMock, ics4WrapperMock, ibcChannelKeeperMock, ibcPortKeeperMock, qosmoScopedKeeper, qoracleKeeper)
+	//qoracleKeeper.RegisterPoolOracle(qosmosisKeeper)
+	// qoracleKeeper.Seal()
 	qtransferkeeper := factory.QTransferKeeper(paramsKeeper, accountKeeper)
 	qvestingKeeper := factory.QVestingKeeper(paramsKeeper, accountKeeper, bankKeeper)
 	tfKeeper := factory.TfKeeper(paramsKeeper, accountKeeper, bankKeeper, distrKeeper)
@@ -148,7 +147,7 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 
 	require.NoError(t, factory.StateStore.LoadLatestVersion())
 
-	factory.SetQoracleDefaultParams(qoracleKeeper)
+	// factory.SetQoracleDefaultParams(qoracleKeeper)
 	factory.SetQosmosisDefaultParams(qosmosisKeeper)
 	testAccts := CreateRandomAccounts(3)
 
@@ -170,11 +169,11 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 			AccountKeeper:    accountKeeper,
 			BankKeeper:       bankKeeper,
 			CapabilityKeeper: capabilityKeeper,
-			QoracleKeeper:    qoracleKeeper,
-			QosmosisKeeper:   qosmosisKeeper,
-			QTransfer:        qtransferkeeper,
-			QVestingKeeper:   qvestingKeeper,
-			TfKeeper:         tfKeeper,
+			//QoracleKeeper:    qoracleKeeper,
+			//QosmosisKeeper:   qosmosisKeeper,
+			QTransfer:      qtransferkeeper,
+			QVestingKeeper: qvestingKeeper,
+			TfKeeper:       tfKeeper,
 		},
 		TestAccs: testAccts,
 	}
@@ -201,9 +200,9 @@ type testKeepers struct {
 	StakingKeeper     stakingKeeper.Keeper
 	DistributedKeeper distrkeeper.Keeper
 	CapabilityKeeper  capabilitykeeper.Keeper
-	QoracleKeeper     qoraclekeeper.Keeper
-	QosmosisKeeper    qosmokeeper.Keeper
-	QTransfer         qtransferkeeper.Keeper
-	QVestingKeeper    qvestingkeeper.Keeper
-	TfKeeper          tfkeeper.Keeper
+	// QoracleKeeper     qoraclekeeper.Keeper
+	// QosmosisKeeper    qosmokeeper.Keeper
+	QTransfer      qtransferkeeper.Keeper
+	QVestingKeeper qvestingkeeper.Keeper
+	TfKeeper       tfkeeper.Keeper
 }

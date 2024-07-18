@@ -3,15 +3,16 @@ package keeper
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"cosmossdk.io/math"
 	"cosmossdk.io/store/mem"
 	"cosmossdk.io/store/prefix"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
 )
@@ -110,7 +111,7 @@ func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVesting
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	resAmount := sdk.NewInt(0)
+	resAmount := math.NewInt(0)
 
 	// iterate vesting accounts passing a callback function to invoke
 	err := k.iterateVestingAccounts(sdkCtx, func(addr sdk.AccAddress) error {
@@ -122,7 +123,7 @@ func (k Keeper) VestingLockedSupply(ctx context.Context, req *types.QueryVesting
 		// iterate spendable balances looking for requested denom to subtract from total accBalance.Amount
 		for _, coin := range spendableCoins {
 			// if denom exists and amount is greater than 0 subtract it
-			if coin.Denom == req.Denom && coin.Amount.GT(sdk.NewInt(0)) {
+			if coin.Denom == req.Denom && coin.Amount.GT(math.NewInt(0)) {
 				accBalance.Amount = accBalance.Amount.Sub(coin.Amount)
 			}
 		}

@@ -1,9 +1,11 @@
 package v0
 
 import (
+	"context"
+
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
 	qvestingkeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
@@ -18,7 +20,7 @@ func CreateUpgradeHandler(
 	bpm upgrades.BaseAppParamManager,
 	keepers *keepers.AppKeepers,
 ) upgradetypes.UpgradeHandler {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		setQVestingParams(ctx, &keepers.QVestingKeeper)
 		setTfParams(ctx, &keepers.TfKeeper)
 
@@ -26,12 +28,14 @@ func CreateUpgradeHandler(
 	}
 }
 
-func setQVestingParams(ctx sdk.Context, qvestingKeeper *qvestingkeeper.Keeper) {
+func setQVestingParams(ctx context.Context, qvestingKeeper *qvestingkeeper.Keeper) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	qvestingParams := qvestingtypes.DefaultParams()
-	qvestingKeeper.SetParams(ctx, qvestingParams)
+	qvestingKeeper.SetParams(sdkCtx, qvestingParams)
 }
 
-func setTfParams(ctx sdk.Context, tfKeeper *tfkeeper.Keeper) {
+func setTfParams(ctx context.Context, tfKeeper *tfkeeper.Keeper) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	tfParams := tftypes.DefaultParams()
-	tfKeeper.SetParams(ctx, tfParams)
+	tfKeeper.SetParams(sdkCtx, tfParams)
 }

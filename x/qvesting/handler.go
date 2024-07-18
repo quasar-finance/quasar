@@ -1,16 +1,7 @@
 package qvesting
 
-import (
-	errorsmod "cosmossdk.io/errors"
-	"fmt"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/quasarlabs/quasarnode/x/qvesting/keeper"
-	"github.com/quasarlabs/quasarnode/x/qvesting/types"
-)
-
+/*
+TODO - SDK 50, I think NewHandler is not required.
 // NewHandler ...
 func NewHandler(k keeper.Keeper) sdk.Handler {
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -28,3 +19,4 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		}
 	}
 }
+*/

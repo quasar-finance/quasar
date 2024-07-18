@@ -1,19 +1,22 @@
 package qtransfer
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
 	"errors"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
+	// wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-
 	"github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 )
@@ -77,7 +80,7 @@ func (h WasmHooks) OnRecvPacketOverride(im IBCMiddleware, ctx sdk.Context, packe
 		return ack
 	}
 
-	amount, ok := sdk.NewIntFromString(data.GetAmount())
+	amount, ok := math.NewIntFromString(data.GetAmount())
 	if !ok {
 		// This should never happen, as it should've been caught in the underlying call to OnRecvPacket,
 		// but returning here for completeness

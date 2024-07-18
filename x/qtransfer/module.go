@@ -94,6 +94,12 @@ func NewAppModule(k keeper.Keeper) AppModule {
 	}
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
+
 // Name returns the qtransfer module's name.
 func (AppModule) Name() string {
 	return types.ModuleName
@@ -143,14 +149,9 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	return cdc.MustMarshalJSON(gs)
 }
 
-// BeginBlock returns the begin blocker for the qtransfer module.
-func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-}
+func (am AppModule) BeginBlock(context context.Context) error {
 
-// EndBlock returns the end blocker for the qtransfer module. It returns no validator
-// updates.
-func (AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
+	return nil
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.

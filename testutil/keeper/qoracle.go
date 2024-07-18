@@ -1,5 +1,5 @@
 package keeper
-
+/*
 import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -73,3 +73,4 @@ func (kf KeeperFactory) QoracleKeeper(paramsKeeper paramskeeper.Keeper, authorit
 func (kf KeeperFactory) SetQoracleDefaultParams(k keeper.Keeper) {
 	k.SetParams(kf.Ctx, types.DefaultParams())
 }
+*/

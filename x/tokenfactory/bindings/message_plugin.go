@@ -1,16 +1,17 @@
 package bindings
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
 
+	errorsmod "cosmossdk.io/errors"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
 	bindingstypes "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
 	tokenfactorykeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tokenfactorytypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
@@ -39,16 +40,19 @@ var _ wasmkeeper.Messenger = (*CustomMessenger)(nil)
 // through the CustomMessages struct which is made to implement the  wasmkeeper.Messenger. This struct has token factory keeper so has all the capabilities of
 // the token factory. It also has wasm keeper so after doing its job on token factory, it can call back the wasm keeper function for providing the token factory
 // function responses.
-func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) DispatchMsg(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	contractIBCPortID string,
+	msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
 	if msg.Custom != nil {
 		// only handle the happy path where this is really creating / minting / swapping ...
 		// leave everything else for the wrapped version
 		var contractMsg bindingstypes.TokenFactoryMsg
 		if err := json.Unmarshal(msg.Custom, &contractMsg); err != nil {
-			return nil, nil, errorsmod.Wrap(err, "token factory msg")
+			return nil, nil, nil, errorsmod.Wrap(err, "token factory msg")
 		}
 		if contractMsg.Token == nil {
-			return nil, nil, errorsmod.Wrap(sdkerrors.ErrUnknownRequest, "nil token field")
+			return nil, nil, nil, errorsmod.Wrap(sdkerrors.ErrUnknownRequest, "nil token field")
 		}
 		tokenMsg := contractMsg.Token
 
@@ -73,17 +77,23 @@ func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddre
 }
 
 // createDenom creates a new token denom
-func (m *CustomMessenger) createDenom(ctx sdk.Context, contractAddr sdk.AccAddress, createDenom *bindingstypes.CreateDenom) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) createDenom(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	createDenom *bindingstypes.CreateDenom) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
 	bz, err := PerformCreateDenom(m.tokenFactory, m.bank, ctx, contractAddr, createDenom)
 	if err != nil {
-		return nil, nil, errorsmod.Wrap(err, "perform create denom")
+		return nil, nil, nil, errorsmod.Wrap(err, "perform create denom")
 	}
 	// TODO: double check how this is all encoded to the contract
-	return nil, [][]byte{bz}, nil
+	return nil, [][]byte{bz}, nil, nil
 }
 
 // PerformCreateDenom is used with createDenom to create a token denom; validates the msgCreateDenom.
-func PerformCreateDenom(f *tokenfactorykeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, createDenom *bindingstypes.CreateDenom) ([]byte, error) {
+func PerformCreateDenom(f *tokenfactorykeeper.Keeper,
+	b *bankkeeper.BaseKeeper,
+	ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	createDenom *bindingstypes.CreateDenom) ([]byte, error) {
 	if createDenom == nil {
 		return nil, wasmvmtypes.InvalidRequest{Err: "create denom null create denom"}
 	}
@@ -117,16 +127,21 @@ func PerformCreateDenom(f *tokenfactorykeeper.Keeper, b *bankkeeper.BaseKeeper, 
 }
 
 // mintTokens mints tokens of a specified denom to an address.
-func (m *CustomMessenger) mintTokens(ctx sdk.Context, contractAddr sdk.AccAddress, mint *bindingstypes.MintTokens) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) mintTokens(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	mint *bindingstypes.MintTokens) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
 	err := PerformMint(m.tokenFactory, m.bank, ctx, contractAddr, mint)
 	if err != nil {
-		return nil, nil, errorsmod.Wrap(err, "perform mint")
+		return nil, nil, nil, errorsmod.Wrap(err, "perform mint")
 	}
-	return nil, nil, nil
+	return nil, nil, nil, nil
 }
 
 // PerformMint used with mintTokens to validate the mint message and mint through token factory.
-func PerformMint(f *tokenfactorykeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, mint *bindingstypes.MintTokens) error {
+func PerformMint(f *tokenfactorykeeper.Keeper,
+	b *bankkeeper.BaseKeeper,
+	ctx sdk.Context,
+	contractAddr sdk.AccAddress, mint *bindingstypes.MintTokens) error {
 	if mint == nil {
 		return wasmvmtypes.InvalidRequest{Err: "mint token null mint"}
 	}
@@ -161,12 +176,14 @@ func PerformMint(f *tokenfactorykeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk
 }
 
 // changeAdmin changes the admin.
-func (m *CustomMessenger) changeAdmin(ctx sdk.Context, contractAddr sdk.AccAddress, changeAdmin *bindingstypes.ChangeAdmin) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) changeAdmin(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	changeAdmin *bindingstypes.ChangeAdmin) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
 	err := ChangeAdmin(m.tokenFactory, ctx, contractAddr, changeAdmin)
 	if err != nil {
-		return nil, nil, errorsmod.Wrap(err, "failed to change admin")
+		return nil, nil, nil, errorsmod.Wrap(err, "failed to change admin")
 	}
-	return nil, nil, nil
+	return nil, nil, nil, nil
 }
 
 // ChangeAdmin is used with changeAdmin to validate changeAdmin messages and to dispatch.
@@ -193,12 +210,14 @@ func ChangeAdmin(f *tokenfactorykeeper.Keeper, ctx sdk.Context, contractAddr sdk
 }
 
 // burnTokens burns tokens.
-func (m *CustomMessenger) burnTokens(ctx sdk.Context, contractAddr sdk.AccAddress, burn *bindingstypes.BurnTokens) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) burnTokens(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	burn *bindingstypes.BurnTokens) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
 	err := PerformBurn(m.tokenFactory, ctx, contractAddr, burn)
 	if err != nil {
-		return nil, nil, errorsmod.Wrap(err, "perform burn")
+		return nil, nil, nil, errorsmod.Wrap(err, "perform burn")
 	}
-	return nil, nil, nil
+	return nil, nil, nil, nil
 }
 
 // PerformBurn performs token burning after validating tokenBurn message.
@@ -229,17 +248,21 @@ func PerformBurn(f *tokenfactorykeeper.Keeper, ctx sdk.Context, contractAddr sdk
 }
 
 // createDenom creates a new token denom
-func (m *CustomMessenger) setMetadata(ctx sdk.Context, contractAddr sdk.AccAddress, setMetadata *bindingstypes.SetMetadata) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) setMetadata(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	setMetadata *bindingstypes.SetMetadata) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
 	err := PerformSetMetadata(m.tokenFactory, m.bank, ctx, contractAddr, setMetadata.Denom, setMetadata.Metadata)
 	if err != nil {
-		return nil, nil, errorsmod.Wrap(err, "perform create denom")
+		return nil, nil, nil, errorsmod.Wrap(err, "perform create denom")
 	}
-	return nil, nil, nil
+	return nil, nil, nil, nil
 }
 
 // PerformSetMetadata is used with setMetadata to add new metadata
 // It also is called inside CreateDenom if optional metadata field is set
-func PerformSetMetadata(f *tokenfactorykeeper.Keeper, b *bankkeeper.BaseKeeper, ctx sdk.Context, contractAddr sdk.AccAddress, denom string, metadata bindingstypes.Metadata) error {
+func PerformSetMetadata(f *tokenfactorykeeper.Keeper,
+	b *bankkeeper.BaseKeeper,
+	ctx sdk.Context, contractAddr sdk.AccAddress, denom string, metadata bindingstypes.Metadata) error {
 	// ensure contract address is admin of denom
 	auth, err := f.GetAuthorityMetadata(ctx, denom)
 	if err != nil {

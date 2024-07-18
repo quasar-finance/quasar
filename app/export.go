@@ -2,14 +2,9 @@ package app
 
 import (
 	"encoding/json"
-	"log"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
@@ -19,17 +14,19 @@ func (app *QuasarApp) ExportAppStateAndValidators(
 ) (servertypes.ExportedApp, error) {
 
 	// as if they could withdraw from the start of the next block
-	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
+	ctx := app.NewContext(true)
 
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
 	height := app.LastBlockHeight() + 1
 	if forZeroHeight {
 		height = 0
-		app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
+		panic("forZeroHeight is set to true, but app.prepForZeroHeightGenesis is commented out")
+
+		// app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
 	}
 
-	genState := app.mm.ExportGenesis(ctx, app.appCodec)
+	genState, _ := app.mm.ExportGenesis(ctx, app.appCodec)
 	appState, err := json.MarshalIndent(genState, "", "  ")
 	if err != nil {
 		return servertypes.ExportedApp{}, err
@@ -47,6 +44,8 @@ func (app *QuasarApp) ExportAppStateAndValidators(
 	}, nil
 }
 
+// TODO SDK 50 - NOT SURE IF WE WANT TO FIX THIS,
+/*
 // prepare for fresh start at zero height
 // NOTE zero height genesis is a temporary feature which will be deprecated
 //
@@ -69,10 +68,10 @@ func (app *QuasarApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 		allowedAddrsMap[addr] = true
 	}
 
-	/* Just to be safe, assert the invariants on current state. */
+	// Just to be safe, assert the invariants on current state.
 	app.CrisisKeeper.AssertInvariants(ctx)
 
-	/* Handle fee distribution state. */
+	// Handle fee distribution state.
 
 	// withdraw all validator commission
 	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
@@ -132,7 +131,7 @@ func (app *QuasarApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 	// reset context height
 	ctx = ctx.WithBlockHeight(height)
 
-	/* Handle staking state. */
+	// Handle staking state.
 
 	// iterate through redelegations, reset creation height
 	app.StakingKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
@@ -181,7 +180,7 @@ func (app *QuasarApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 		panic(err)
 	}
 
-	/* Handle slashing state. */
+
 
 	// reset start height on signing infos
 	app.SlashingKeeper.IterateValidatorSigningInfos(
@@ -193,3 +192,4 @@ func (app *QuasarApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 		},
 	)
 }
+*/

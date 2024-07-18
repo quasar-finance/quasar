@@ -1,14 +1,15 @@
 package wasmbinding
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
 
+	errorsmod "cosmossdk.io/errors"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
 	"github.com/quasarlabs/quasarnode/wasmbinding/bindings"
 )
 
@@ -30,16 +31,20 @@ type CustomMessenger struct {
 
 var _ wasmkeeper.Messenger = (*CustomMessenger)(nil)
 
-func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, error) {
+func (m *CustomMessenger) DispatchMsg(ctx sdk.Context,
+	contractAddr sdk.AccAddress,
+	contractIBCPortID string,
+	msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
+
 	if msg.Custom != nil {
 		// only handle the happy path where this is really creating / minting / swapping ...
 		// leave everything else for the wrapped version
 		var contractMsg bindings.QuasarMsg
 		if err := json.Unmarshal(msg.Custom, &contractMsg); err != nil {
-			return nil, nil, errorsmod.Wrap(err, "osmosis msg")
+			return nil, nil, nil, errorsmod.Wrap(err, "osmosis msg")
 		}
 		if contractMsg.TestScenario != nil {
-			return nil, nil, nil
+			return nil, nil, nil, nil
 			// return m.testScenario(ctx, contractAddr, contractMsg.TestScenario)
 		}
 
@@ -72,7 +77,9 @@ func (m *CustomMessenger) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddre
 
 		*/
 	}
-	return m.wrapped.DispatchMsg(ctx, contractAddr, contractIBCPortID, msg)
+	events, data, messages, err := m.wrapped.DispatchMsg(ctx, contractAddr, contractIBCPortID, msg)
+	return events, data, messages, err
+	// return m.wrapped.DispatchMsg(ctx, contractAddr, contractIBCPortID, msg)
 }
 
 /*

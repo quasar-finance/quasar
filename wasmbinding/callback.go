@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"cosmossdk.io/log"
 	wasmk "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	"github.com/cometbft/cometbft/libs/log"
+
+	// "github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

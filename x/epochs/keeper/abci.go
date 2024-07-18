@@ -1,6 +1,5 @@
-package epochs
+package keeper
 
-/*
 import (
 	"fmt"
 	"time"
@@ -64,4 +63,3 @@ func (k Keeper) BeginBlocker(ctx sdk.Context) {
 		return false
 	})
 }
-*/

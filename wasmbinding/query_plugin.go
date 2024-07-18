@@ -1,8 +1,10 @@
 package wasmbinding
 
+/*
 import (
-	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
+
+	errorsmod "cosmossdk.io/errors"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,22 +40,10 @@ func CustomQuerier(qk qoraclekeeper.Keeper) func(ctx sdk.Context, request json.R
 				return nil, errorsmod.Wrap(err, "failed to marshal quasar pool")
 			}
 			return bz, nil
-		/*
-			case contractQuery.TokenPrice != nil:
-				price, err := qk.GetDenomPrice(ctx, contractQuery.TokenPrice.Denom)
-				if err != nil {
-					return nil, errorsmod.Wrap(err, "failed to get token price")
-				}
 
-				bz, err := price.MarshalJSON()
-				if err != nil {
-					return nil, errorsmod.Wrap(err, "failed to marshal quasar token price")
-				}
-				return bz, nil
-
-		*/
 		default:
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown custom query variant"}
 		}
 	}
 }
+*/

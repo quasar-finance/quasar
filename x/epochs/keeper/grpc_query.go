@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"errors"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -16,10 +17,10 @@ var _ types.QueryServer = Querier{}
 // Querier defines a wrapper around the x/epochs keeper providing gRPC method
 // handlers.
 type Querier struct {
-	*Keeper
+	Keeper
 }
 
-func NewQuerier(k *Keeper) Querier {
+func NewQuerier(k Keeper) Querier {
 	return Querier{Keeper: k}
 }
 

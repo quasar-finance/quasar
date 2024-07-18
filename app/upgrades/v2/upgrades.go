@@ -1,34 +1,33 @@
 package v2
 
 import (
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
-	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v8/types"
-	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
-	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
-	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"context"
 
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/upgrades"
 )
 
+// qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
+
+// TODO -SDK 50 - This files does not need to be present any more. However we will loose some old Handlers,
+// RECHECK, what to do as some of the modules like qoracle is gone.
+
+// TODO - SDK 50 - This is a dummy Handler for now.
+func CreateUpgradeHandler(
+	mm *module.Manager,
+	configurator module.Configurator,
+	bpm upgrades.BaseAppParamManager,
+	keepers *keepers.AppKeepers,
+) upgradetypes.UpgradeHandler {
+	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+
+		return mm.RunMigrations(ctx, configurator, fromVM)
+	}
+}
+
+/*
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
@@ -79,8 +78,8 @@ func CreateUpgradeHandler(
 				keyTable = wasmtypes.ParamKeyTable() //nolint:staticcheck
 
 			// quasar
-			case qoraclemoduletypes.ModuleName:
-				keyTable = qoraclemoduletypes.ParamKeyTable()
+			//case qoraclemoduletypes.ModuleName:
+			// 	keyTable = qoraclemoduletypes.ParamKeyTable()
 			case qosmotypes.SubModuleName:
 				keyTable = qosmotypes.ParamKeyTable()
 			case qtransfertypes.ModuleName:
@@ -110,3 +109,4 @@ func CreateUpgradeHandler(
 		return migrations, nil
 	}
 }
+*/

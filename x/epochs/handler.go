@@ -1,5 +1,6 @@
 package epochs
 
+/*
 import (
 	errorsmod "cosmossdk.io/errors"
 	"fmt"
@@ -21,3 +22,4 @@ func NewHandler(k *keeper.Keeper) sdk.Handler {
 		}
 	}
 }
+*/

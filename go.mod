@@ -7,8 +7,8 @@ require (
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/math v1.3.0
 	github.com/CosmWasm/wasmd v0.51.0
-	// github.com/CosmWasm/wasmvm v1.5.2
-	github.com/CosmWasm/wasmvm/v2 v2.0.1 // indirect
+	github.com/CosmWasm/wasmvm v1.5.2
+	// github.com/CosmWasm/wasmvm/v2 v2.0.1 // indirect
 	github.com/cometbft/cometbft v0.38.9
 	github.com/cometbft/cometbft-db v0.11.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -21,7 +21,7 @@ require (
 	// github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.1.1-ibc-go-v7.3-wasmvm-v1.5
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.2.1-0.20240523101951-4b45d1822fb6
 	github.com/cosmos/ibc-go/v8 v8.3.0
-	github.com/gogo/protobuf v1.3.3
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/golangci/golangci-lint v1.59.1
@@ -44,9 +44,9 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect
-	cosmossdk.io/core v0.11.0 // indirect
+	cosmossdk.io/core v0.11.0
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
-	cosmossdk.io/log v1.3.1 // indirect
+	cosmossdk.io/log v1.3.1
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/4meepo/tagalign v1.3.4 // indirect
 	// github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
@@ -338,14 +338,16 @@ require (
 	cosmossdk.io/x/evidence v0.1.0
 	cosmossdk.io/x/feegrant v0.1.0
 	cosmossdk.io/x/upgrade v0.1.4
-	github.com/CosmWasm/wasmvm v1.5.2
 )
+
+require github.com/CosmWasm/wasmvm/v2 v2.0.1
 
 require (
 	cosmossdk.io/client/v2 v2.0.0-beta.1 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/x/circuit v0.1.0 // indirect
 	cosmossdk.io/x/tx v0.13.3 // indirect
+	// github.com/CosmWasm/wasmvm/v2 v2.0.1 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/bits-and-blooms/bitset v1.8.0 // indirect
 	github.com/cosmos/cosmos-db v1.0.2 // indirect
@@ -373,11 +375,14 @@ require (
 replace (
 	// Use cosmos keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	// github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+// github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.1.1-0.20231213092650-57fcdb9a9a9d
 
-	// stick with compatible version or x/exp in v0.47.x line
-	// x/exp had a breaking change in further commits
-	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
+// stick with compatible version or x/exp in v0.47.x line
+// x/exp had a breaking change in further commits
+// golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 )
+
+exclude github.com/gogo/protobuf v1.3.3
