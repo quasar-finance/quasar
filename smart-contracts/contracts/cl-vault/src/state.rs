@@ -7,6 +7,23 @@ use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
+#[deprecated]
+pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
+
+#[deprecated]
+pub const OLD_POSITION: Item<OldPosition> = Item::new("position");
+
+/// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
+#[deprecated]
+pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
+
+/// Shared collection+distribution states
+#[deprecated]
+pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
+
+#[deprecated]
+pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
+
 /// metadata useful for display purposes
 #[cw_serde]
 pub struct Metadata {
@@ -45,7 +62,6 @@ pub struct OldVaultConfig {
     pub swap_max_slippage: Decimal,
 }
 
-pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config_v2");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
@@ -86,7 +102,6 @@ pub struct Position {
     pub claim_after: Option<u64>, // this should be off chain computed and set in order to avoid forfeiting incentives
 }
 
-pub const OLD_POSITION: Item<OldPosition> = Item::new("position");
 pub const POSITION: Item<Position> = Item::new("position_v2");
 
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
@@ -117,14 +132,6 @@ pub enum RewardsStatus {
     Collecting,
     Distributing,
 }
-
-/// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-#[deprecated]
-pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
-
-/// Shared collection+distribution states
-#[deprecated]
-pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
 /// Swap helper states
 pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
