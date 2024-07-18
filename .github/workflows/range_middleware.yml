@@ -15,4 +15,4 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      contract: 'range-middleware'
+      target: 'contract/range-middleware'

@@ -15,4 +15,4 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      contract: 'lst-dex-adapter-osmosis'
+      target: 'contract/lst-dex-adapter-osmosis'
