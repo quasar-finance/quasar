@@ -1,11 +1,11 @@
-name: Test token burner
+name: Test quasar-types
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/token-burner/**'
+      - 'smart-contracts/packages/quasar-types/**'
   push:
     branches:
       - main
@@ -15,4 +15,4 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'contract/token-burner'
+      target: 'packages/quasar-types'

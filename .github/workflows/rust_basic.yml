@@ -3,7 +3,7 @@ name: Unit Test (rust)
 on:
   workflow_call:
     inputs:
-      contract:
+      target:
         required: true
         type: string
 
@@ -35,12 +35,12 @@ jobs:
       - name: Rust lint
         if: env.GIT_DIFF
         run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
-        working-directory: smart-contracts/contracts/${{ inputs.contract }}
+        working-directory: smart-contracts/${{ inputs.target }}
       - name: Rust format check
         if: env.GIT_DIFF
         run: cargo fmt --all -- --check
-        working-directory: smart-contracts/contracts/${{ inputs.contract }}
+        working-directory: smart-contracts/${{ inputs.target }}
       - name: Run unit-tests
         if: env.GIT_DIFF
         run: cargo unit-test
-        working-directory: smart-contracts/contracts/${{ inputs.contract }}
+        working-directory: smart-contracts/${{ inputs.target }}

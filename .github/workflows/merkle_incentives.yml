@@ -15,7 +15,7 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      contract: 'merkle-incentives'
+      target: 'contract/merkle-incentives'
   test-tube:
     uses: ./.github/workflows/rust_test_tube.yml
     with:
