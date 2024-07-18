@@ -7,9 +7,14 @@ on:
     paths:
       - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
       - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/**.yml'
   push:
     branches:
       - main
+    paths:
+      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/**.yml'
   workflow_dispatch:
 
 jobs:

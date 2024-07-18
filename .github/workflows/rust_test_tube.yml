@@ -16,13 +16,13 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Restore dependencies
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cargo
             ~/go
             **/target
-          key: ${{ runner.os }}-cargo-$${{ hashFiles('smart-contracts/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-$GITHUB_SHA
           restore-keys: ${{ runner.os }}-cargo
       - name: Build ${{ inputs.contract }}
         run: cargo test-tube-build
