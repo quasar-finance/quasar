@@ -1,0 +1,18 @@
+name: Test token burner
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/token-burner/**'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      contract: 'token-burner'

@@ -1,0 +1,18 @@
+name: Test lst adapter (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/lst-adapter-osmosis/**'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      contract: 'lst-adapter-osmosis'
