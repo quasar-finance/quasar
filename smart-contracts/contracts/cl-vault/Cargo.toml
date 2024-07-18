@@ -37,6 +37,7 @@ num_enum = { workspace = true }
 apollo-cw-asset = { workspace = true }
 dex-router-osmosis = {workspace = true}
 cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
+
 [dev-dependencies]
 osmosis-test-tube = { workspace = true }
 proptest = { workspace = true }
