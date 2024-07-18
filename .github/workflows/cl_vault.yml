@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/cl-vault/**'
+      - 'smart-contracts/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/contracts/cl-vault/**.rs'
   push:
     branches:
       - main

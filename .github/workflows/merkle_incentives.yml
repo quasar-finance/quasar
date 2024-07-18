@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/merkle-incentives/**'
+      - 'smart-contracts/contracts/merkle-incentives/Cargo.toml'
+      - 'smart-contracts/contracts/merkle-incentives/**.rs'
   push:
     branches:
       - main

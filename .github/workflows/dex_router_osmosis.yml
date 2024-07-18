@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/dex-router-osmosis/**'
+      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
   push:
     branches:
       - main

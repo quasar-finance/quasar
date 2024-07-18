@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/token-burner/**'
+      - 'smart-contracts/contracts/token-burner/Cargo.toml'
+      - 'smart-contracts/contracts/token-burner/**.rs'
   push:
     branches:
       - main
