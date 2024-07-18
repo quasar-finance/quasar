@@ -2780,6 +2780,7 @@ dependencies = [
 name = "dex-router-osmosis"
 version = "0.0.1"
 dependencies = [
+ "const_format",
  "cosmwasm-schema 1.5.4",
  "cosmwasm-std",
  "cw-storage-plus 1.2.0",

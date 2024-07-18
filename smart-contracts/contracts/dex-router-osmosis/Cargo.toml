@@ -36,6 +36,7 @@ mars-owner = { workspace = true }
 osmosis-std = { workspace = true }
 quasar-types = { workspace = true }
 prost = { workspace = true }
+const_format = { workspace = true }
 
 [dev-dependencies]
 osmosis-test-tube = { workspace = true }
