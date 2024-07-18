@@ -7,12 +7,14 @@ on:
       - fix/*
     paths-ignore:
       - 'smart-contracts/**'
+      - '**.md'
   push:
     branches:
       - main
       - fix/*
     paths-ignore:
       - 'smart-contracts/**'
+      - '**.md'
   workflow_dispatch:
 
 concurrency:

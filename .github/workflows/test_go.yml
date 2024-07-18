@@ -6,11 +6,13 @@ on:
       - main
     paths-ignore:
       - 'smart-contracts/**'
+      - '**.md'
   push:
     branches:
       - main
     paths-ignore:
       - 'smart-contracts/**'
+      - '**.md'
   workflow_dispatch:
 
 concurrency: 

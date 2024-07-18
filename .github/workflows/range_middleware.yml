@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/range-middleware/**'
+      - 'smart-contracts/contracts/range-middleware/Cargo.toml'
+      - 'smart-contracts/contracts/range-middleware/**.rs'
   push:
     branches:
       - main
