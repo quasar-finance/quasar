@@ -88,7 +88,6 @@ pub fn execute_update_dex_router(
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
     assert_admin(deps.as_ref(), &info.sender)?;
 
-    let previous_router = RANGE_ADMIN.load(deps.storage)?;
     match address.clone() {
         Some(address) => {
             let new_router = deps.api.addr_validate(&address)?;
@@ -102,8 +101,7 @@ pub fn execute_update_dex_router(
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "update_dex_router")
-        .add_attribute("previous_router", previous_router)
-        .add_attribute("new_router", address.unwrap_or("none".to_owned())))
+        .add_attribute("new_router", address.unwrap_or_default().to_string()))
 }
 
 /// Updates the configuration of the contract.
