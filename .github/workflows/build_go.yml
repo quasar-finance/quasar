@@ -1,4 +1,4 @@
-name: Build Quasar (Go)
+name: Build (Go)
 
 on:
   pull_request:
