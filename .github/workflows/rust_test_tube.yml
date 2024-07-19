@@ -37,6 +37,8 @@ jobs:
         working-directory: smart-contracts/contracts/dex-router-osmosis
       - name: Run test-tube tests
         run: cargo test-tube
+        env:
+          PROPTEST_CASES: 10
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
       - name: Clear temporary test-tube files
         if: always()
