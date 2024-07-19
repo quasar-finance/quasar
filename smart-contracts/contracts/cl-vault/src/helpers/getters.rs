@@ -144,11 +144,6 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     current_tick: i64,
     upper_tick: i64,
 ) -> Result<Uint128, ContractError> {
-    // TODO error here if this condition holds
-    // if current_tick < lower_tick {
-    //     return ;
-    // }
-
     let lower_price = tick_to_price(lower_tick)?;
     let current_price = tick_to_price(current_tick)?;
     let upper_price = tick_to_price(upper_tick)?;
@@ -156,11 +151,6 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let cur_price_sqrt = current_price.sqrt();
     let lower_price_sqrt = lower_price.sqrt();
     let upper_price_sqrt = upper_price.sqrt();
-
-    // let pool_metadata_constant: Decimal256 = cur_price_sqrt
-    //     .checked_mul(lower_price_sqrt)?
-    //     .checked_mul(cur_price_sqrt.checked_sub(lower_price_sqrt)?)?
-    //     .checked_div(upper_price_sqrt.checked_sub(cur_price_sqrt)?)?;
 
     let pool_metadata_constant: Decimal256 = (upper_price_sqrt
         .checked_mul(cur_price_sqrt)?
