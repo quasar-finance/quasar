@@ -24,6 +24,9 @@ pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 #[deprecated]
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
 
+#[deprecated]
+pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
+
 /// metadata useful for display purposes
 #[cw_serde]
 pub struct Metadata {
@@ -134,7 +137,6 @@ pub enum RewardsStatus {
 }
 
 /// Swap helper states
-pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
     Item::new("current_swap_any_deposit");
 

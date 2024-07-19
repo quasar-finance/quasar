@@ -23,6 +23,8 @@ use crate::reply::Replies;
 #[allow(deprecated)]
 use crate::state::CURRENT_BALANCE;
 #[allow(deprecated)]
+use crate::state::CURRENT_SWAP;
+#[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
@@ -289,6 +291,8 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     OLD_POSITION.remove(deps.storage);
     #[allow(deprecated)]
     CURRENT_BALANCE.remove(deps.storage);
+    #[allow(deprecated)]
+    CURRENT_SWAP.remove(deps.storage);
 
     Ok(response)
 }
@@ -364,6 +368,8 @@ mod tests {
         OLD_POSITION.remove(deps.storage);
         #[allow(deprecated)]
         CURRENT_BALANCE.remove(deps.storage);
+        #[allow(deprecated)]
+        CURRENT_SWAP.remove(deps.storage);
 
         Ok(response)
     }
@@ -418,6 +424,10 @@ mod tests {
         #[allow(deprecated)]
         let current_balance = CURRENT_BALANCE.may_load(deps.as_mut().storage).unwrap();
         assert!(current_balance.is_none());
+
+        #[allow(deprecated)]
+        let current_swap = CURRENT_SWAP.may_load(deps.as_mut().storage).unwrap();
+        assert!(current_swap.is_none());
     }
 
     #[test]

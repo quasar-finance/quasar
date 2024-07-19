@@ -12,8 +12,8 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, PoolConfig, Position, SwapDepositMergeState, CURRENT_SWAP,
-        MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, PoolConfig, Position, SwapDepositMergeState, MODIFY_RANGE_STATE,
+        POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
         concentrated_liquidity::{create_position, get_position},
@@ -393,25 +393,20 @@ fn calculate_swap_amount(
 
     // TODO: check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
-    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
-        match swap_direction {
-            SwapDirection::ZeroToOne => (
-                &pool_config.token0,
-                &pool_config.token1,
-                token_in_amount
-                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-                balance0.checked_sub(token_in_amount)?,
-            ),
-            SwapDirection::OneToZero => (
-                &pool_config.token1,
-                &pool_config.token0,
-                token_in_amount
-                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-                balance1.checked_sub(token_in_amount)?,
-            ),
-        };
-
-    CURRENT_SWAP.save(deps.storage, &(swap_direction, left_over_amount))?;
+    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
+        SwapDirection::ZeroToOne => (
+            &pool_config.token0,
+            &pool_config.token1,
+            token_in_amount
+                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+        ),
+        SwapDirection::OneToZero => (
+            &pool_config.token1,
+            &pool_config.token0,
+            token_in_amount
+                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+        ),
+    };
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let token_out_min_amount = token_out_ideal_amount?
