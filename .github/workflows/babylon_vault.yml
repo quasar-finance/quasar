@@ -1,0 +1,26 @@
+name: Babylon Vault
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/babylon-vault/Cargo.toml'
+      - 'smart-contracts/contracts/babylon-vault/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/babylon_vault.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/babylon-vault/Cargo.toml'
+      - 'smart-contracts/contracts/babylon-vault/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/babylon_vault.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: 'contracts/babylon-vault'
