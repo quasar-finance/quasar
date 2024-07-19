@@ -1399,6 +1399,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "babylon-vault"
+version = "0.0.1"
+dependencies = [
+ "cosmwasm-schema 1.5.4",
+ "cosmwasm-std",
+ "cw-storage-plus 1.2.0",
+ "cw2 1.1.2",
+ "thiserror",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
