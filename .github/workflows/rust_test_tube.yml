@@ -31,7 +31,6 @@ jobs:
       - name: Build ${{ inputs.contract }}
         run: cargo test-tube-build
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
-      // OPTIONAL DEPENDENCIES
       - name: Build dex-router-osmosis
         if: ${{inputs.dex_router_osmosis}}
         run: cargo test-tube-build
