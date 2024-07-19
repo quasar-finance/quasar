@@ -54,6 +54,7 @@ update_schemas osmosis token-burner
 update_schemas osmosis cl-vault
 update_schemas osmosis merkle-incentives
 update_schemas osmosis range-middleware
+update_schemas quasar babylon-vault
 fix_formatting osmosis/contracts/lst-dex-adapter-osmosis
 fix_formatting osmosis/contracts/dex-router-osmosis
 fix_formatting osmosis/contracts/token-burner
@@ -62,3 +63,4 @@ fix_formatting osmosis/contracts/merkle-incentives
 fix_formatting osmosis/contracts/range-middleware
 fix_formatting osmosis/packages/quasar-types
 fix_formatting quasar/proto-build
+fix_formatting quasar/contracts/babylon-vault
