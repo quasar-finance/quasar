@@ -14,9 +14,8 @@ pub enum ExecuteMsg {
     Withdraw {},
     Claim {},
     // owner methods
-    RegisterLst {
-        denom: String,
-    },
+    RegisterLst { denom: String, interface: String },
+    UnregisterLst { denom: String },
     UpdateOwner(OwnerUpdate),
 }
 
@@ -24,6 +23,12 @@ pub enum ExecuteMsg {
 pub struct Claim {
     pub amount: Uint128,
     pub expiration: Timestamp,
+}
+
+#[cw_serde]
+pub struct LstInfo {
+    pub denom: String,
+    pub interface: String,
 }
 
 #[cw_serde]
@@ -37,4 +42,6 @@ pub enum QueryMsg {
     BalanceInUnderlying {},
     #[returns(OwnerResponse)]
     Owner {},
+    #[returns(Vec<LstInfo>)]
+    Lsts {},
 }
