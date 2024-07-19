@@ -27,29 +27,7 @@ jobs:
     with:
       target: 'contracts/cl-vault'
   test-tube:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Restore dependencies
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.cargo
-            ~/go
-            **/target
-          key: ${{ runner.os }}-cargo-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo
-      - name: Build dex-router-osmosis
-        run: cargo test-tube-build
-        working-directory: smart-contracts/contracts/dex-router-osmosis
-      - name: Build cl-vault
-        run: cargo test-tube-build
-        working-directory: smart-contracts/contracts/cl-vault
-      - name: Run test-tube tests
-        run: cargo test-tube
-        env:
-          PROPTEST_CASES: 10
-        working-directory: smart-contracts/contracts/cl-vault
+    uses: ./.github/workflows/rust_test_tube.yml
+    with:
+      contract: 'cl-vault'
+      dex_router_osmosis: true
