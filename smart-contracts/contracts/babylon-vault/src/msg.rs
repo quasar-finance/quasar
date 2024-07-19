@@ -5,13 +5,17 @@ use cosmwasm_std::{Timestamp, Uint128};
 pub struct InstantiateMsg {}
 
 #[cw_serde]
+#[derive(cw_orch::ExecuteFns)]
 pub enum ExecuteMsg {
     // permission-less methods
+    #[cw_orch(payable)]
     Deposit {},
     Withdraw {},
     Claim {},
     // owner methods
-    RegisterLst { denom: String },
+    RegisterLst {
+        denom: String,
+    },
 }
 
 #[cw_serde]
@@ -21,7 +25,7 @@ pub struct Claim {
 }
 
 #[cw_serde]
-#[derive(QueryResponses)]
+#[derive(cw_orch::QueryFns, QueryResponses)]
 pub enum QueryMsg {
     #[returns(Vec<Claim>)]
     Pending { address: String },

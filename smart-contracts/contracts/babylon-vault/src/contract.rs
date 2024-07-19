@@ -30,11 +30,3 @@ pub fn execute(_deps: DepsMut, _env: Env, _info: MessageInfo, _msg: ExecuteMsg) 
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> VaultResult<Binary> {
     Ok(Binary::default())
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn dummy_test() {
-        assert!(true);
-    }
-}
