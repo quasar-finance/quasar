@@ -1,5 +1,24 @@
 # Quasar
 
+#### Chain:
+![](https://github.com/quasar-finance/quasar/actions/workflows/build_go.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/lint_go.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/test_go.yml/badge.svg)
+
+#### Contracts (rust)
+![](https://github.com/quasar-finance/quasar/actions/workflows/cl_vault.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/dex_router_osmosis.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/lst_adapter_osmosis.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/lst_dex_adapter_osmosis.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/merkle_incentives.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/range_middleware.yml/badge.svg)
+![](https://github.com/quasar-finance/quasar/actions/workflows/token_burner.yml/badge.svg)
+
+#### Packages (rust)
+![](https://github.com/quasar-finance/quasar/actions/workflows/quasar_types.yml/badge.svg)
+
+## Overview
+
 This is the official Quasar Labs repository.
 Quasar is a decentralized app-chain built for interchain asset management.
 

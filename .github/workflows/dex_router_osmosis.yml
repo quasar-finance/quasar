@@ -1,4 +1,4 @@
-name: Test dex router (osmosis)
+name: Dex Router (osmosis)
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: Test cl vault
+name: CL Vault
 
 on:
   pull_request:

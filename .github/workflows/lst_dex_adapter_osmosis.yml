@@ -1,4 +1,4 @@
-name: Test lst dex adapter (osmosis)
+name: LST Dex Adapter (osmosis)
 
 on:
   pull_request:

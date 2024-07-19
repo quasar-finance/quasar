@@ -1,4 +1,4 @@
-name: Test merkle incentives
+name: Merkle Incentives
 
 on:
   pull_request:
