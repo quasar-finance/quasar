@@ -11,19 +11,21 @@ on:
 
 jobs:
   store-build-cache:
-    - name: Check out repository code
-      uses: actions/checkout@v3
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-    - name: Rust check
-      run: cargo check
-      working-directory: smart-contracts
-    - name: Store dependencies
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          ~/.cargo
-          ~/go
-          **/target
-        key: ${{ runner.os }}-cargo-$GITHUB_SHA
-        restore-keys: ${{ runner.os }}-cargo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust check
+        run: cargo check
+        working-directory: smart-contracts
+      - name: Store dependencies
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo
+            ~/go
+            **/target
+          key: ${{ runner.os }}-cargo-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo
