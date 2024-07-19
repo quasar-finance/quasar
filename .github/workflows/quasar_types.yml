@@ -1,4 +1,4 @@
-name: Test quasar-types
+name: Quasar Types
 
 on:
   pull_request:

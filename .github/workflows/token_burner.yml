@@ -1,4 +1,4 @@
-name: Test token burner
+name: Token Burner
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: Test range middleware
+name: Range Middleware
 
 on:
   pull_request:
