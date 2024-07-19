@@ -13,8 +13,8 @@ use crate::{
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, CURRENT_SWAP, MODIFY_RANGE_STATE,
-        POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, PoolConfig, Position, SwapDepositMergeState, CURRENT_SWAP,
+        MODIFY_RANGE_STATE, POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
         concentrated_liquidity::{create_position, get_position},
@@ -284,9 +284,13 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
     let swap_calc_result = calculate_swap_amount(
         deps,
         env,
+        &pool_config,
+        pool_details.current_tick,
         position_id,
         balance0,
         balance1,
@@ -327,6 +331,8 @@ pub fn do_swap_deposit_merge(
 fn calculate_swap_amount(
     deps: DepsMut,
     env: Env,
+    pool_config: &PoolConfig,
+    current_tick: i64,
     position_id: Option<u64>,
     balance0: Uint128,
     balance1: Uint128,
@@ -334,21 +340,18 @@ fn calculate_swap_amount(
     target_upper_tick: i64,
     twap_window_seconds: u64,
 ) -> Result<Option<SwapCalculationResult>, ContractError> {
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (token_in_amount, swap_direction) = if !balance0.is_zero() {
         (
             // range is above current tick
-            if pool_details.current_tick > target_upper_tick {
+            if current_tick > target_upper_tick {
                 balance0
             } else {
                 get_single_sided_deposit_0_to_1_swap_amount(
                     balance0,
                     target_lower_tick,
-                    pool_details.current_tick,
+                    current_tick,
                     target_upper_tick,
                 )?
             },
@@ -357,13 +360,13 @@ fn calculate_swap_amount(
     } else if !balance1.is_zero() {
         (
             // current tick is above range
-            if pool_details.current_tick < target_lower_tick {
+            if current_tick < target_lower_tick {
                 balance1
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
                     balance1,
                     target_lower_tick,
-                    pool_details.current_tick,
+                    current_tick,
                     target_upper_tick,
                 )?
             },
@@ -418,8 +421,8 @@ fn calculate_swap_amount(
 
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0,
-            quote_token: pool_config.token1,
+            base_token: pool_config.token0.clone(),
+            quote_token: pool_config.token1.clone(),
         });
     }
 
@@ -495,33 +498,22 @@ fn handle_swap_success_reply(
     let (swap_direction, left_over_amount) = CURRENT_SWAP.load(deps.storage)?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let _modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     // get post swap balances to create positions with
     let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
         SwapDirection::ZeroToOne => (left_over_amount, Uint128::new(tokens_out.parse()?)),
         SwapDirection::OneToZero => (Uint128::new(tokens_out.parse()?), left_over_amount),
     };
+
     // Create the position after swapped the leftovers based on swap direction
-    let mut coins_to_send = vec![];
-    if !balance0.is_zero() {
-        coins_to_send.push(Coin {
-            denom: pool_config.token0.clone(),
-            amount: balance0,
-        });
-    }
-    if !balance1.is_zero() {
-        coins_to_send.push(Coin {
-            denom: pool_config.token1.clone(),
-            amount: balance1,
-        });
-    }
+    let tokens_provided = get_tokens_provided(balance0, balance1, &pool_config)?;
+
     let create_position_msg = create_position(
         deps,
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,
-        coins_to_send,
+        tokens_provided,
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -568,7 +560,25 @@ pub fn handle_iteration_create_position_reply(
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
         }));
+
     // merge our position with the main position
+    // Error processing transaction 1: Error: Query failed with (6): rpc error: code = Unknown desc = failed to execute message;
+    // message index: 0: dispatch: submessages: (range middleware)
+    // >>> spendable balance 207904365ibc/4ABBEF4C8926DDDB320AE5188CFD63267ABBCEFC0583E4AE05D6E5AA2401DDAB is smaller than 207996214ibc/4ABBEF4C8926DDDB320AE5188CFD63267ABBCEFC0583E4AE05D6E5AA2401DDAB: insufficient funds [cosmos/cosmos-sdk@v0.47.8/x/bank/keeper/send.go:338] With gas wanted: '300000000' and gas used: '2292182' : unknown request
+
+    // FIRST OPTION
+    // dispatch: submessages: (execute_update_range)
+    // reply: dispatch: submessages: (handle_withdraw_position_reply)
+    // reply: dispatch: submessages: (handle_swap_reply)
+    // reply: dispatch: submessages: (handle_iteration_create_position_reply)
+
+    // SECOND OPTION
+    // message index: 0: dispatch: submessages: (range middleware)
+    // dispatch: submessages: (execute_update_range)
+    // reply: dispatch: submessages: (handle_withdraw_position_reply)
+    // reply: dispatch: submessages: (handle_initial_create_position_reply)
+    // reply: dispatch: submessages: (handle_swap_reply)
+
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
             contract_addr: env.contract.address.to_string(),
