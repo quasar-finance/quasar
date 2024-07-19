@@ -39,3 +39,7 @@ jobs:
       - name: Run test-tube tests
         run: cargo test-tube
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
+      - name: Clear temporary test-tube files
+        if: always()
+        run: rm -rf .osmosis-test-tube-temp-*
+        working-directory: /tmp
