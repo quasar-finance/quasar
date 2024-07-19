@@ -14,11 +14,12 @@ then
 fi
 
 update_schemas_and_formatting() {
-  local contract=$1
-  if [[ $CHANGES == *contracts/${contract}* ]]
+  local workspace=$1
+  local contract=$2
+  if [[ $CHANGES == *${workspace}/contracts/${contract}* ]]
   then
     echo "Changes in ${contract} contract"
-    cd ${REPO_ROOT}/smart-contracts/contracts/${contract}
+    cd ${REPO_ROOT}/smart-contracts/${workspace}/contracts/${contract}
 
     # generate schemas
     cargo schema
@@ -38,9 +39,10 @@ update_schemas_and_formatting() {
   fi
 }
 
-update_schemas_and_formatting lst-dex-adapter-osmosis
-update_schemas_and_formatting dex-router-osmosis
-update_schemas_and_formatting token-burner
-update_schemas_and_formatting cl-vault
-update_schemas_and_formatting merkle-incentives
-update_schemas_and_formatting range-middleware
+update_schemas_and_formatting osmosis lst-dex-adapter-osmosis
+update_schemas_and_formatting osmosis dex-router-osmosis
+update_schemas_and_formatting osmosis token-burner
+update_schemas_and_formatting osmosis cl-vault
+update_schemas_and_formatting osmosis merkle-incentives
+update_schemas_and_formatting osmosis range-middleware
+update_schemas_and_formatting quasar babylon-vault
