@@ -1,7 +1,6 @@
 use crate::{
     helpers::{
         assert::assert_range_admin,
-        generic::extract_attribute_value_by_ty_and_key,
         getters::{
             get_single_sided_deposit_0_to_1_swap_amount,
             get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided, get_twap_price,
@@ -24,12 +23,11 @@ use crate::{
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
+    attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
     SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
-    gamm::v1beta1::MsgSwapExactAmountInResponse,
     poolmanager::v1beta1::SwapAmountInRoute,
 };
 use std::str::FromStr;
@@ -455,86 +453,53 @@ pub fn handle_swap_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     match data.clone() {
-        SubMsgResult::Ok(msg) => {
-            let resp: Result<MsgSwapExactAmountInResponse, _> = data.try_into();
-            let tokens_out: Result<String, ContractError> = match resp {
-                Ok(msg) => Ok(msg.token_out_amount),
-                Err(_) => {
-                    let tokens_out_opt = extract_attribute_value_by_ty_and_key(
-                        &msg.events,
-                        "token_swapped",
-                        "tokens_out",
-                    );
-
-                    match tokens_out_opt {
-                        Some(tokens_out) => {
-                            let token_out_coin = Coin::from_str(&tokens_out);
-                            Ok(token_out_coin?.amount.to_string())
-                        }
-                        None => {
-                            return Err(ContractError::SwapFailed {
-                                message: "No tokens_out attribute found in swap response"
-                                    .to_string(),
-                            })
-                        }
-                    }
-                }
+        SubMsgResult::Ok(_) => {
+            let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
+                Some(swap_deposit_merge) => swap_deposit_merge,
+                None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
             };
-            handle_swap_success_reply(deps, env, tokens_out?)
+
+            let pool_config = POOL_CONFIG.load(deps.storage)?;
+            let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
+            let tokens_provided =
+                get_tokens_provided(unused_pair_balances.0, unused_pair_balances.1, &pool_config)?;
+
+            let create_position_msg = create_position(
+                deps,
+                &env,
+                swap_deposit_merge_state.target_lower_tick,
+                swap_deposit_merge_state.target_upper_tick,
+                tokens_provided,
+                Uint128::zero(),
+                Uint128::zero(),
+            )?;
+
+            Ok(Response::new()
+                .add_submessage(SubMsg::reply_on_success(
+                    create_position_msg,
+                    Replies::RangeIterationCreatePosition.into(),
+                ))
+                .add_attribute("method", "reply")
+                .add_attribute("action", "handle_swap_success")
+                .add_attribute(
+                    "lower_tick",
+                    swap_deposit_merge_state.target_lower_tick.to_string(),
+                )
+                .add_attribute(
+                    "upper_tick",
+                    swap_deposit_merge_state.target_upper_tick.to_string(),
+                )
+                .add_attribute(
+                    "token0",
+                    format!("{:?}{:?}", unused_pair_balances.0, pool_config.token0),
+                )
+                .add_attribute(
+                    "token1",
+                    format!("{:?}{:?}", unused_pair_balances.1, pool_config.token1),
+                ))
         }
         SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
     }
-}
-
-fn handle_swap_success_reply(
-    deps: DepsMut,
-    env: Env,
-    tokens_out: String,
-) -> Result<Response, ContractError> {
-    let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
-        Some(swap_deposit_merge) => swap_deposit_merge,
-        None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
-    };
-    let (swap_direction, left_over_amount) = CURRENT_SWAP.load(deps.storage)?;
-
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    // get post swap balances to create positions with
-    let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
-        SwapDirection::ZeroToOne => (left_over_amount, Uint128::new(tokens_out.parse()?)),
-        SwapDirection::OneToZero => (Uint128::new(tokens_out.parse()?), left_over_amount),
-    };
-
-    // Create the position after swapped the leftovers based on swap direction
-    let tokens_provided = get_tokens_provided(balance0, balance1, &pool_config)?;
-
-    let create_position_msg = create_position(
-        deps,
-        &env,
-        swap_deposit_merge_state.target_lower_tick,
-        swap_deposit_merge_state.target_upper_tick,
-        tokens_provided,
-        Uint128::zero(),
-        Uint128::zero(),
-    )?;
-
-    Ok(Response::new()
-        .add_submessage(SubMsg::reply_on_success(
-            create_position_msg,
-            Replies::RangeIterationCreatePosition.into(),
-        ))
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_swap_success")
-        .add_attribute(
-            "lower_tick",
-            format!("{:?}", swap_deposit_merge_state.target_lower_tick),
-        )
-        .add_attribute(
-            "upper_tick",
-            format!("{:?}", swap_deposit_merge_state.target_upper_tick),
-        )
-        .add_attribute("token0", format!("{:?}{:?}", balance0, pool_config.token0))
-        .add_attribute("token1", format!("{:?}{:?}", balance1, pool_config.token1)))
 }
 
 // do merge position & exit
@@ -560,24 +525,6 @@ pub fn handle_iteration_create_position_reply(
         ExecuteMsg::VaultExtension(crate::msg::ExtensionExecuteMsg::Merge(MergePositionMsg {
             position_ids: swap_deposit_merge_state.target_range_position_ids.clone(),
         }));
-
-    // merge our position with the main position
-    // Error processing transaction 1: Error: Query failed with (6): rpc error: code = Unknown desc = failed to execute message;
-    // message index: 0: dispatch: submessages: (range middleware)
-    // >>> spendable balance 207904365ibc/4ABBEF4C8926DDDB320AE5188CFD63267ABBCEFC0583E4AE05D6E5AA2401DDAB is smaller than 207996214ibc/4ABBEF4C8926DDDB320AE5188CFD63267ABBCEFC0583E4AE05D6E5AA2401DDAB: insufficient funds [cosmos/cosmos-sdk@v0.47.8/x/bank/keeper/send.go:338] With gas wanted: '300000000' and gas used: '2292182' : unknown request
-
-    // FIRST OPTION
-    // dispatch: submessages: (execute_update_range)
-    // reply: dispatch: submessages: (handle_withdraw_position_reply)
-    // reply: dispatch: submessages: (handle_swap_reply)
-    // reply: dispatch: submessages: (handle_iteration_create_position_reply)
-
-    // SECOND OPTION
-    // message index: 0: dispatch: submessages: (range middleware)
-    // dispatch: submessages: (execute_update_range)
-    // reply: dispatch: submessages: (handle_withdraw_position_reply)
-    // reply: dispatch: submessages: (handle_initial_create_position_reply)
-    // reply: dispatch: submessages: (handle_swap_reply)
 
     let merge_submsg = SubMsg::reply_on_success(
         cosmwasm_std::WasmMsg::Execute {
