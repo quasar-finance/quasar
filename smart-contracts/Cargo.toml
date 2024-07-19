@@ -17,6 +17,7 @@ members = [
   "contracts/dex-router-osmosis",
   "contracts/lst-dex-adapter-osmosis",
   "contracts/lst-adapter-osmosis",
+  "contracts/babylon-vault",
 ]
 
 [workspace.dependencies]

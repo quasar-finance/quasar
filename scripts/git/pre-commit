@@ -44,3 +44,4 @@ update_schemas_and_formatting token-burner
 update_schemas_and_formatting cl-vault
 update_schemas_and_formatting merkle-incentives
 update_schemas_and_formatting range-middleware
+update_schemas_and_formatting babylon-vault
