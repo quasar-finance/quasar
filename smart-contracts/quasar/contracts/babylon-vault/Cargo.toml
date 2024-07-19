@@ -1,0 +1,31 @@
+[package]
+authors = ["Quasar"]
+edition = "2021"
+name = "babylon-vault"
+version = "0.0.1"
+readme = ""
+repository = "https://github.com/quasar-finance/quasar"
+homepage = "https://quasar.fi"
+documentation = ""
+license = "MPL-2.0"
+description = "A vault for babylon lsts"
+keywords = ["cosmwasm", "lst", "btc"]
+
+exclude = [
+  "babylon_vault.wasm",
+  "hash.txt",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+library = []
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+thiserror = { workspace = true }
+cw2 = { workspace = true }
