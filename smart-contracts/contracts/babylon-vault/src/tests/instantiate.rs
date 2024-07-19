@@ -1,5 +1,5 @@
 use crate::msg::InstantiateMsg;
-use crate::tests::setup::create_test_vault;
+use crate::tests::setup::{create_test_vault, OWNER};
 use cosmwasm_std::Event;
 use cw_orch::contract::interface_traits::CwOrchInstantiate;
 
@@ -8,7 +8,13 @@ fn test_instantiate() {
     let env = create_test_vault();
     let vault = env.vault;
 
-    let result = vault.instantiate(&InstantiateMsg {}, None, None);
+    let result = vault.instantiate(
+        &InstantiateMsg {
+            owner: OWNER.to_string(),
+        },
+        None,
+        None,
+    );
     assert!(result.is_ok());
     let response = result.unwrap();
     assert_eq!(response.events.len(), 1);

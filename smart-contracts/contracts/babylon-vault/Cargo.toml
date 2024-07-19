@@ -30,3 +30,4 @@ cw-storage-plus = { workspace = true }
 thiserror = { workspace = true }
 cw2 = { workspace = true }
 cw-orch = { workspace = true }
+mars-owner = { workspace = true }

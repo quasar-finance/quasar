@@ -9,6 +9,7 @@ use cw_orch::prelude::*;
 use cw_orch::{contract::interface_traits::CwOrchUpload, mock::MockBase};
 
 pub const SENDER: &str = "sender";
+pub const OWNER: &str = "owner";
 
 #[interface(InstantiateMsg, ExecuteMsg, QueryMsg, Empty)]
 pub struct Vault;
