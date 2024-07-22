@@ -41,7 +41,7 @@ jobs:
         run: cargo test-tube
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
       - name: Run prop-test
-        if: github.ref == 'refs/heads/feat-cii15 && inputs.prop_test'
+        if: github.ref == 'refs/heads/feat-cii15' && inputs.prop_test
         run: cargo prop-test
         env:
           PROPTEST_CASES: 10
