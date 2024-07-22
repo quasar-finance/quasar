@@ -4,9 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/cosmos/ibc-go/v7/testing/simapp"
 	"github.com/stretchr/testify/require"
 
 	"github.com/quasarlabs/quasarnode/app"
@@ -24,7 +25,6 @@ func init() {
 func BenchmarkSimulation(b *testing.B) {
 	simapp.FlagEnabledValue = true
 	simapp.FlagCommitValue = true
-
 	config, db, dir, logger, _, err := simapp.SetupSimulation("goleveldb-app-sim", "Simulation")
 	require.NoError(b, err, "simulation setup failed")
 
@@ -45,8 +45,7 @@ func BenchmarkSimulation(b *testing.B) {
 		app.DefaultNodeHome,
 		0,
 		encoding,
-		simapp.EmptyAppOptions{},
-		app.GetWasmEnabledProposals(),
+		sims.EmptyAppOptions{},
 		app.EmptyWasmOpts,
 	)
 

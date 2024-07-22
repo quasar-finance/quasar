@@ -1,0 +1,12 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qtransfer;
+
+import "gogoproto/gogo.proto";
+import "quasarlabs/quasarnode/qtransfer/params.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qtransfer/types";
+
+// GenesisState defines the qtransfer module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+}

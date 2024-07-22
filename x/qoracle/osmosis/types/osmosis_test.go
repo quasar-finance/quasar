@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 	"github.com/stretchr/testify/assert"
+
+	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
 )
 
 func TestUniquePoolIdsFromIncentivizedPools(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )

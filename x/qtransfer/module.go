@@ -4,19 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
 	"github.com/quasarlabs/quasarnode/x/qtransfer/client/cli"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 var (
@@ -101,20 +102,24 @@ func (AppModule) Name() string {
 // RegisterInvariants registers the qtransfer module invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
+/*
 // Route returns the message routing key for the qtransfer module.
 func (AppModule) Route() sdk.Route { return sdk.Route{} }
+*/
 
 // QuerierRoute returns the module's querier route name.
 func (AppModule) QuerierRoute() string {
 	return types.QuerierRoute
 }
 
+/*
 // LegacyQuerierHandler returns the x/qtransfer module's sdk.Querier.
 func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(sdk.Context, []string, abci.RequestQuery) ([]byte, error) {
 		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", types.ModuleName)
 	}
 }
+*/
 
 // RegisterServices registers a gRPC query service to respond to the
 // module-specific gRPC queries.

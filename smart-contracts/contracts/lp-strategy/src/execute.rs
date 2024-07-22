@@ -30,7 +30,10 @@ pub fn execute_retry(
             IcaMessages::JoinSwapExternAmountIn(pending) => {
                 handle_retry_join_pool(deps, env, pending, seq, channel)
             }
-            _ => todo!(),
+            IcaMessages::BeginUnlocking(pending, to_unbond) => {
+                handle_retry_begin_unlocking(deps, env, pending, to_unbond)
+            }
+            _ => todo!()
         },
         _ => todo!(),
     }

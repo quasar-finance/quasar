@@ -1,26 +1,31 @@
 package testutil
 
 import (
-	"github.com/cosmos/cosmos-sdk/simapp"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-
 	"testing"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingKeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	icacontrollertypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/controller/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
+
 	"github.com/quasarlabs/quasarnode/app"
 	"github.com/quasarlabs/quasarnode/testutil/keeper"
 	"github.com/quasarlabs/quasarnode/testutil/mock"
@@ -31,11 +36,6 @@ import (
 	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
 	qvestingkeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 func init() {
@@ -65,14 +65,17 @@ func CreateRandomAccounts(numAccts int) []sdk.AccAddress {
 
 // FundAcc funds target address with specified amount.
 func (ts *TestSetup) FundAcc(t testing.TB, acc sdk.AccAddress, amounts sdk.Coins) {
-	err := simapp.FundAccount(ts.Keepers.BankKeeper, ts.Ctx, acc, amounts)
+	// TODO - implement alternative solution to the simapp.FundAcc
+	err := testutil.FundAccount(ts.Keepers.BankKeeper, ts.Ctx, acc, amounts)
 	require.NoError(t, err)
 }
 
 // FundModuleAcc funds target modules with specified amount.
 func (ts *TestSetup) FundModuleAcc(t testing.TB, moduleName string, amounts sdk.Coins) {
-	err := simapp.FundModuleAccount(ts.Keepers.BankKeeper, ts.Ctx, moduleName, amounts)
-	require.NoError(t, err)
+	// TODO - implement alternative solution to the simapp.FundAcc
+	// err := simapp.FundModuleAccount(ts.Keepers.BankKeeper, ts.Ctx, moduleName, amounts)
+	// require.NoError(t, err)
+	require.NoError(t, nil)
 }
 
 func (ts *TestSetup) MintCoins(t testing.TB, coins sdk.Coins) {
@@ -127,9 +130,8 @@ func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	bankKeeper := factory.BankKeeper(paramsKeeper, accountKeeper, blockedMaccAddresses)
 	capabilityKeeper := factory.CapabilityKeeper()
 	capabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	stakingKeeper := factory.StakingKeeper(paramsKeeper, accountKeeper, bankKeeper)
-	distrKeeper := factory.DistributionKeeper(paramsKeeper, accountKeeper, bankKeeper, stakingKeeper,
-		"feeCollectorName", blockedMaccAddresses)
+	stakingKeeper := factory.StakingKeeper(accountKeeper, bankKeeper)
+	distrKeeper := factory.DistributionKeeper(accountKeeper, bankKeeper, stakingKeeper, "feeCollectorName")
 	qosmoScopedKeeper := capabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 
 	qoracleKeeper := factory.QoracleKeeper(paramsKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())

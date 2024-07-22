@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	cmd "github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
+	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 

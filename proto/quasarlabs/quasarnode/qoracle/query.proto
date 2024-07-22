@@ -1,0 +1,60 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qoracle;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "quasarlabs/quasarnode/qoracle/params.proto";
+import "quasarlabs/quasarnode/qoracle/pool.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qoracle/types";
+
+// Query defines the gRPC querier service.
+service Query {
+	// Params queries the parameters of the module.
+	rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/params";
+	}
+
+	/*
+	// DenomMappings queries list of denom-> symbol mappings which maps the denoms to their corresponding symbol fetched from price oracles.
+	rpc DenomMappings(QueryDenomMappingsRequest) returns (QueryDenomMappingsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_mappings";
+	}
+
+	// DenomPrices queries list of denom prices.
+	rpc DenomPrices(QueryDenomPricesRequest) returns (QueryDenomPricesResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/denom_prices";
+	}
+  */
+	// Pools queries the pools collected from pool oracles.
+	rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
+		option (google.api.http).get = "/quasarlabs/quasarnode/qoracle/pools";
+	}
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryPoolsRequest is request type for the Query/Pools RPC method.
+message QueryPoolsRequest {
+	// denom filters the pools by their denom. If empty, pools with any denom returned.
+	string denom = 1;
+	// pagination defines an optional pagination for the request.
+	cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryPoolsResponse is response type for the Query/Pools RPC method.
+message QueryPoolsResponse {
+	repeated Pool pools = 1 [(gogoproto.nullable) = false];
+	// pagination defines the pagination in the response.
+	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

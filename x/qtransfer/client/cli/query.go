@@ -6,8 +6,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 	"github.com/spf13/cobra"
+
+	"github.com/quasarlabs/quasarnode/x/qtransfer/types"
 )
 
 // GetCmdParams returns the command handler for qtransfer parameter querying.

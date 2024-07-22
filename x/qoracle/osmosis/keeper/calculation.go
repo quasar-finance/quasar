@@ -1,11 +1,13 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	epochtypes "github.com/quasarlabs/quasarnode/osmosis/epochs/types"
 	balancerpool "github.com/quasarlabs/quasarnode/osmosis/gamm/pool-models/balancer"
 	poolincentivestypes "github.com/quasarlabs/quasarnode/osmosis/pool-incentives/types"
@@ -30,11 +32,11 @@ func (k Keeper) newAPYCalculator(ctx sdk.Context) (apyCalculator, error) {
 	poolIncentivesProportion := mintParams.DistributionProportions.PoolIncentives
 	mintTokenPrice, err := k.qoracleKeeper.GetDenomPrice(ctx, mintParams.MintDenom)
 	if err != nil {
-		return apyCalculator{}, sdkerrors.Wrap(err, "could not fetch the price of mint denom")
+		return apyCalculator{}, errorsmod.Wrap(err, "could not fetch the price of mint denom")
 	}
 	mintEpoch, found := k.findOsmosisEpochByIdentifier(ctx, mintParams.EpochIdentifier)
 	if !found {
-		return apyCalculator{}, sdkerrors.Wrap(types.ErrEpochNotFound, fmt.Sprintf("could not find osmosis mint, epoch identifier: %s", mintParams.EpochIdentifier))
+		return apyCalculator{}, errorsmod.Wrap(types.ErrEpochNotFound, fmt.Sprintf("could not find osmosis mint, epoch identifier: %s", mintParams.EpochIdentifier))
 	}
 
 	// Number of mint epochs occurrence in a year
@@ -59,7 +61,7 @@ func (apyc apyCalculator) Calculate(ctx sdk.Context, pool balancerpool.Pool, poo
 		if incentive.PoolId == pool.Id {
 			gaugeWeight, found := findGaugeWeight(ctx, incentive.GaugeId, apyc.distrInfo)
 			if !found {
-				return sdk.ZeroDec(), sdkerrors.Wrap(types.ErrGaugeWeightNotFound, fmt.Sprintf("gauge id: %d", incentive.GaugeId))
+				return sdk.ZeroDec(), errorsmod.Wrap(types.ErrGaugeWeightNotFound, fmt.Sprintf("gauge id: %d", incentive.GaugeId))
 			}
 			poolTotalWeight = poolTotalWeight.Add(gaugeWeight)
 		}
@@ -98,7 +100,7 @@ func (k Keeper) findOsmosisEpochByIdentifier(ctx sdk.Context, identifier string)
 }
 
 // findGaugeWeight iterates over distrInfo.Records and returns the weight of record is it finds and record with given gaugeId.
-func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdk.Int, bool) {
+func findGaugeWeight(ctx sdk.Context, gaugeId uint64, distrInfo poolincentivestypes.DistrInfo) (sdkmath.Int, bool) {
 	for _, record := range distrInfo.Records {
 		if record.GaugeId == gaugeId {
 			return record.Weight, true

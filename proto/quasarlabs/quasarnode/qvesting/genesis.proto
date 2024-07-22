@@ -1,0 +1,12 @@
+syntax = "proto3";
+package quasarlabs.quasarnode.qvesting;
+
+import "gogoproto/gogo.proto";
+import "quasarlabs/quasarnode/qvesting/params.proto";
+
+option go_package = "github.com/quasarlabs/quasarnode/x/qvesting/types";
+
+// GenesisState defines the qvesting module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+}

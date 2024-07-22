@@ -3,8 +3,9 @@ package cli
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 	"github.com/spf13/cobra"
+
+	"github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 const (

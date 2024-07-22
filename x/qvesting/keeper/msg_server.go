@@ -2,14 +2,17 @@ package keeper
 
 import (
 	"context"
+	errorsmod "cosmossdk.io/errors"
+	"strconv"
+
 	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
 	"github.com/quasarlabs/quasarnode/x/qvesting/types"
-	"strconv"
 )
 
 type msgServer struct {
@@ -32,7 +35,7 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 	// Validate msg.StartTime against the current block time to be higher
 	blockTime := ctx.BlockTime().Unix()
 	if msg.StartTime <= blockTime {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "start or end time must be higher than the current block time")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "start or end time must be higher than the current block time")
 	}
 
 	if err := bk.IsSendEnabledCoins(ctx, msg.Amount...); err != nil {
@@ -49,16 +52,16 @@ func (k msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 	}
 
 	if bk.BlockedAddr(to) {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.ToAddress)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.ToAddress)
 	}
 
 	if acc := ak.GetAccount(ctx, to); acc != nil {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "account %s already exists", msg.ToAddress)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "account %s already exists", msg.ToAddress)
 	}
 
 	baseAccount := ak.NewAccountWithAddress(ctx, to)
 	if _, ok := baseAccount.(*authtypes.BaseAccount); !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid account type; expected: BaseAccount, got: %T", baseAccount)
+		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "invalid account type; expected: BaseAccount, got: %T", baseAccount)
 	}
 
 	baseVestingAccount := vestingtypes.NewBaseVestingAccount(baseAccount.(*authtypes.BaseAccount), msg.Amount.Sort(), msg.EndTime)

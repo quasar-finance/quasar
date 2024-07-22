@@ -146,10 +146,6 @@ message MsgJoinSwapExternAmountIn {
     (gogoproto.moretags) = "yaml:\"share_out_min_amount\"",
     (gogoproto.nullable) = false
   ];
-  // repeated cosmos.base.v1beta1.Coin tokensIn = 5 [
-  //   (gogoproto.moretags) = "yaml:\"tokens_in\"",
-  //   (gogoproto.nullable) = false
-  // ];
 }
 
 message MsgJoinSwapExternAmountInResponse {

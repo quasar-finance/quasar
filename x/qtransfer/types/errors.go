@@ -1,10 +1,10 @@
 package types
 
 import (
-	//	sdkerrors "cosmossdk.io/errors"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 )
 
 var (
-	ErrInvalidMetadataFormat = sdkerrors.New(ModuleName, 2, "invalid metadata format")
+	ErrInvalidMetadataFormat = errorsmod.New(ModuleName, 2, "invalid metadata format")
+	ErrBadExecutionMsg       = "cannot execute contract: %v"
 )

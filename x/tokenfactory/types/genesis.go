@@ -1,11 +1,10 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-)
+	errorsmod "cosmossdk.io/errors"
 
-// this line is used by starport scaffolding # genesis/types/import
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
 
 // DefaultIndex is the default capability global index
 const DefaultIndex uint64 = 1
@@ -30,7 +29,7 @@ func (gs GenesisState) Validate() error {
 
 	for _, denom := range gs.GetFactoryDenoms() {
 		if seenDenoms[denom.GetDenom()] {
-			return sdkerrors.Wrapf(ErrInvalidGenesis, "duplicate denom: %s", denom.GetDenom())
+			return errorsmod.Wrapf(ErrInvalidGenesis, "duplicate denom: %s", denom.GetDenom())
 		}
 		seenDenoms[denom.GetDenom()] = true
 
@@ -42,7 +41,7 @@ func (gs GenesisState) Validate() error {
 		if denom.AuthorityMetadata.Admin != "" {
 			_, err = sdk.AccAddressFromBech32(denom.AuthorityMetadata.Admin)
 			if err != nil {
-				return sdkerrors.Wrapf(ErrInvalidAuthorityMetadata, "Invalid admin address (%s)", err)
+				return errorsmod.Wrapf(ErrInvalidAuthorityMetadata, "Invalid admin address (%s)", err)
 			}
 		}
 	}

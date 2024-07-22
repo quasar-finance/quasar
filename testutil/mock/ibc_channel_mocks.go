@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 
 	types "github.com/cosmos/cosmos-sdk/types"
-	types0 "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	exported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	types0 "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	exported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
 )
 

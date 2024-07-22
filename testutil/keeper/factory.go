@@ -1,12 +1,13 @@
 package keeper
 
 import (
+	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
 	"github.com/quasarlabs/quasarnode/app"
 	"github.com/quasarlabs/quasarnode/app/params"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 // Structure holding storage context for initializing test keepers

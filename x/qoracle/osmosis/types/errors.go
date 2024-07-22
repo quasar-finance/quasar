@@ -1,16 +1,15 @@
 package types
 
 import (
-	//	"cosmossdk.io/errors"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 )
 
 // IBC transfer sentinel errors
 var (
-	ErrDisabled            = sdkerrors.Register(SubModuleName, 2, "osmosis oracle module is disabled")
-	ErrInvalidChannelFlow  = sdkerrors.Register(SubModuleName, 3, "invalid message sent to channel end")
-	ErrFailedICQResponse   = sdkerrors.Register(SubModuleName, 4, "failed ICQ response")
-	ErrEpochNotFound       = sdkerrors.Register(SubModuleName, 5, "epoch not found")
-	ErrGaugeWeightNotFound = sdkerrors.Register(SubModuleName, 6, "gauge weight not found")
-	ErrOsmosisICQTimedOut  = sdkerrors.Register(SubModuleName, 7, "osmosis icq request timeout")
+	ErrDisabled            = errorsmod.Register(SubModuleName, 2, "osmosis oracle module is disabled")
+	ErrInvalidChannelFlow  = errorsmod.Register(SubModuleName, 3, "invalid message sent to channel end")
+	ErrFailedICQResponse   = errorsmod.Register(SubModuleName, 4, "failed ICQ response")
+	ErrEpochNotFound       = errorsmod.Register(SubModuleName, 5, "epoch not found")
+	ErrGaugeWeightNotFound = errorsmod.Register(SubModuleName, 6, "gauge weight not found")
+	ErrOsmosisICQTimedOut  = errorsmod.Register(SubModuleName, 7, "osmosis icq request timeout")
 )

@@ -1,13 +1,11 @@
 package qtransfer
 
 import (
-	// external libraries
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-
-	// ibc-go
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	ibcexported "github.com/cosmos/ibc-go/v4/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 var _ porttypes.ICS4Wrapper = &ICS4Middleware{}
@@ -26,6 +24,51 @@ func NewICS4Middleware(channel porttypes.ICS4Wrapper, hooks Hooks) ICS4Middlewar
 	}
 }
 
+// For SDK47, ibc-go v7
+func (i ICS4Middleware) SendPacket(
+	ctx sdk.Context,
+	chanCap *capabilitytypes.Capability,
+	sourcePort string, sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (sequence uint64, err error) {
+	if hook, ok := i.Hooks.(SendPacketOverrideHooks); ok {
+		return hook.SendPacketOverride(i, ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	}
+
+	if hook, ok := i.Hooks.(SendPacketBeforeHooks); ok {
+		hook.SendPacketBeforeHook(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	}
+
+	seq, err := i.channel.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+
+	if hook, ok := i.Hooks.(SendPacketAfterHooks); ok {
+		hook.SendPacketAfterHook(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data, err)
+	}
+
+	return seq, err
+}
+
+/*
+// TODO - SDK47
+// SendPacket implements the ICS4 Wrapper interface
+func (i ICS4Middleware) SendPacket(
+	ctx sdk.Context,
+	chanCap *capabilitytypes.Capability,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (sequence uint64, err error) {
+	// TODO - SDK47 FIX
+	return 0, nil
+	// return im.ICS4Middleware.SendPacket(ctx, chanCap, packet)
+}
+*/
+
+/*
 func (i ICS4Middleware) SendPacket(ctx sdk.Context, channelCap *capabilitytypes.Capability, packet ibcexported.PacketI) error {
 	if hook, ok := i.Hooks.(SendPacketOverrideHooks); ok {
 		return hook.SendPacketOverride(i, ctx, channelCap, packet)
@@ -43,6 +86,7 @@ func (i ICS4Middleware) SendPacket(ctx sdk.Context, channelCap *capabilitytypes.
 
 	return err
 }
+*/
 
 func (i ICS4Middleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
 	if hook, ok := i.Hooks.(WriteAcknowledgementOverrideHooks); ok {

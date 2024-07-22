@@ -3,13 +3,14 @@ package types
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+
 	epochtypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	"gopkg.in/yaml.v2"
 )
 
 const (

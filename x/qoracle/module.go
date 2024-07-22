@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -14,14 +15,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
 	"github.com/quasarlabs/quasarnode/x/qoracle/client/cli"
 	genesistypes "github.com/quasarlabs/quasarnode/x/qoracle/genesis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
 	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 var (
@@ -123,11 +124,6 @@ func NewAppModule(
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 }
 
-// Route implements the AppModule interface
-func (AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, nil)
-}
-
 // NewHandler implements the AppModule interface
 func (AppModule) NewHandler() sdk.Handler {
 	return nil
@@ -136,11 +132,6 @@ func (AppModule) NewHandler() sdk.Handler {
 // QuerierRoute implements the AppModule interface
 func (AppModule) QuerierRoute() string {
 	return types.QuerierRoute
-}
-
-// LegacyQuerierHandler implements the AppModule interface
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return nil
 }
 
 // RegisterServices registers a GRPC query service to respond to the

@@ -5,8 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 	"github.com/spf13/cobra"
+
+	"github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
 )
 
 func GetCmdParams() *cobra.Command {

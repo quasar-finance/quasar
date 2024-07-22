@@ -1,6 +1,7 @@
 package bindings
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
 	"fmt"
 
@@ -16,10 +17,10 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 		var contractQuery bindingstypes.TokenFactoryQuery
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
-			return nil, sdkerrors.Wrap(err, "quasar query")
+			return nil, errorsmod.Wrap(err, "quasar query")
 		}
 		if contractQuery.Token == nil {
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "nil token field")
+			return nil, errorsmod.Wrap(sdkerrors.ErrUnknownRequest, "nil token field")
 		}
 		tokenQuery := contractQuery.Token
 
@@ -30,7 +31,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 
 			fullDenom, err := GetFullDenom(creator, subdenom)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "osmo full denom query")
+				return nil, errorsmod.Wrap(err, "osmo full denom query")
 			}
 
 			res := bindingstypes.FullDenomResponse{
@@ -39,7 +40,7 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 
 			bz, err := json.Marshal(res)
 			if err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to marshal FullDenomResponse")
+				return nil, errorsmod.Wrap(err, "failed to marshal FullDenomResponse")
 			}
 
 			return bz, nil

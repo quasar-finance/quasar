@@ -2,10 +2,11 @@ package types
 
 import (
 	"fmt"
-	appparams "github.com/quasarlabs/quasarnode/app/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	appparams "github.com/quasarlabs/quasarnode/app/params"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)

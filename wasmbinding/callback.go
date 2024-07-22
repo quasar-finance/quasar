@@ -4,15 +4,13 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/tendermint/tendermint/libs/log"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmk "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
-func NewCallbackPlugin(k *wasm.Keeper, callBackAddress sdk.AccAddress) *CallbackPlugin {
+// NewCallbackPlugin if we want to use this plugin to also call the execute entrypoint, we also need to give the ContractOpsKeeper(https://github.com/CosmWasm/wasmd/blob/main/x/wasm/types/exported_keepers.go)
+func NewCallbackPlugin(k *wasmk.Keeper, callBackAddress sdk.AccAddress) *CallbackPlugin {
 	return &CallbackPlugin{
 		sentMessages:    map[key]sdk.AccAddress{},
 		contractKeeper:  wasmk.NewDefaultPermissionKeeper(k),
@@ -118,7 +116,7 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 	resp := new(bytes.Buffer)
 	err := m.Marshal(resp, response)
 	if err != nil {
-		return sdkerrors.Wrap(err, "ibc ack callback marshalling")
+		return errorsmod.Wrap(err, "ibc ack callback marshalling")
 	}
 
 	data, err := json.Marshal(ContractAck{
@@ -135,13 +133,13 @@ func (c *CallbackPlugin) doHandle(ctx sdk.Context, seq uint64, channel string, p
 	})
 
 	if err != nil {
-		return sdkerrors.Wrap(err, "ibc ack callback")
+		return errorsmod.Wrap(err, "ibc ack callback")
 	}
 	c.Logger(ctx).Info(fmt.Sprintf("Preparing callback message: %v", string(data)))
 
 	_, err = c.contractKeeper.Execute(ctx, addr, c.callBackAddress, data, nil)
 	if err != nil {
-		return sdkerrors.Wrap(err, "ack callback execute")
+		return errorsmod.Wrap(err, "ack callback execute")
 	}
 
 	return nil

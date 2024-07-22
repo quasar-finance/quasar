@@ -176,10 +176,19 @@ go.sum: go.mod
 ###############################################################################
 
 proto-all: proto-format proto-gen
-
+BUF_VERSION=1.26.1
+BUILDER_VERSION=0.13.5
 proto-gen:
 	@echo "Generating Protobuf files"
 	@sh ./scripts/protocgen.sh
+
+proto-gen-1:
+	@echo "🤖 Generating code from protobuf..."
+	@echo "PWD is $(PWD)"
+
+	@docker run --rm --volume "$(PWD)":/workspace --workdir /workspace \
+		ghcr.io/cosmos/proto-builder:$(BUILDER_VERSION) sh ./scripts/protocgen.sh
+	@echo "✅ Completed code generation!"
 
 proto-doc:
 	@echo "Generating Protoc docs"
