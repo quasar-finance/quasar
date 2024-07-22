@@ -1,0 +1,75 @@
+name: Test Tube
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
+      - 'smart-contracts/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/contracts/cl-vault/**.rs'
+      - 'smart-contracts/contracts/merkle-incentives/Cargo.toml'
+      - 'smart-contracts/contracts/merkle-incentives/**.rs'
+      - '.github/workflows/dex_router_osmosis.yml'
+      - '.github/workflows/cl_vault.yml'
+      - '.github/workflows/merkle_incentives.yml'
+      - '.github/workflows/test_tube.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
+      - 'smart-contracts/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/contracts/cl-vault/**.rs'
+      - 'smart-contracts/contracts/merkle-incentives/Cargo.toml'
+      - 'smart-contracts/contracts/merkle-incentives/**.rs'
+      - '.github/workflows/dex_router_osmosis.yml'
+      - '.github/workflows/cl_vault.yml'
+      - '.github/workflows/merkle_incentives.yml'
+      - '.github/workflows/test_tube.yml'
+  workflow_dispatch:
+
+jobs:
+  test-tube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo
+            ~/go
+            **/target
+          key: ${{ runner.os }}-cargo-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo
+      - name: Build merkle-incentives
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/merkle-incentives
+      - name: Test merkle-incentives
+        run: cargo test-tube
+        working-directory: smart-contracts/contracts/merkle-incentives
+      - name: Build dex-router-osmosis
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/dex-router-osmosis
+      - name: Test dex-router-osmosis
+        run: cargo test-tube
+        working-directory: smart-contracts/contracts/dex-router-osmosis
+      - name: Build cl-vault
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/cl-vault
+      - name: Test cl-vault
+        run: cargo test-tube
+        working-directory: smart-contracts/contracts/cl-vault
+      - name: Run prop-test
+        if: github.ref == 'refs/heads/main'
+        run: cargo prop-test
+        env:
+          PROPTEST_CASES: 10
+        working-directory: smart-contracts/contracts/cl-vault
+

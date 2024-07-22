@@ -28,9 +28,3 @@ jobs:
     uses: ./.github/workflows/rust_basic.yml
     with:
       target: 'contracts/cl-vault'
-  test-tube:
-    uses: ./.github/workflows/rust_test_tube.yml
-    with:
-      contract: 'cl-vault'
-      dex_router_osmosis: true
-      prop_test: ${{ github.ref == 'refs/heads/main' }}
