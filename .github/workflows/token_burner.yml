@@ -7,18 +7,20 @@ on:
     paths:
       - 'smart-contracts/contracts/token-burner/Cargo.toml'
       - 'smart-contracts/contracts/token-burner/**.rs'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/token_burner.yml'
   push:
     branches:
       - main
     paths:
       - 'smart-contracts/contracts/token-burner/Cargo.toml'
       - 'smart-contracts/contracts/token-burner/**.rs'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/token_burner.yml'
   workflow_dispatch:
 
 jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'contract/token-burner'
+      target: 'contracts/token-burner'
