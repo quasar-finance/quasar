@@ -7,6 +7,7 @@ use cosmwasm_std::{
     to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgCreateDenom;
 
 const CONTRACT_NAME: &str = "quasar:babylon-vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -16,7 +17,7 @@ pub type VaultResult<T = Response> = Result<T, VaultError>;
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> VaultResult {
@@ -26,7 +27,11 @@ pub fn instantiate(
         mars_owner::OwnerInit::SetInitialOwner { owner: msg.owner },
     )?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    Ok(Response::default())
+    let msg = MsgCreateDenom {
+        sender: env.contract.address.to_string(),
+        subdenom: msg.subdenom,
+    };
+    Ok(Response::default().add_message(msg))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

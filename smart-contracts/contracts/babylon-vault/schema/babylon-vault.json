@@ -7,10 +7,14 @@
     "title": "InstantiateMsg",
     "type": "object",
     "required": [
-      "owner"
+      "owner",
+      "subdenom"
     ],
     "properties": {
       "owner": {
+        "type": "string"
+      },
+      "subdenom": {
         "type": "string"
       }
     },
