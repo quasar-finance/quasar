@@ -3,13 +3,12 @@ use cosmwasm_std::{Addr, Decimal, Uint128};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-use crate::{
-    query::{
-        AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
-        UserSharesBalanceResponse, VerifyTickCacheResponse,
-    },
-    state::{Metadata, VaultConfig},
+#[cfg(not(target_arch = "wasm32"))]
+use crate::query::{
+    AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
+    UserSharesBalanceResponse, VerifyTickCacheResponse,
 };
+use crate::state::{Metadata, VaultConfig};
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
