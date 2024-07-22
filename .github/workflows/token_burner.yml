@@ -1,0 +1,26 @@
+name: Token Burner
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/token-burner/Cargo.toml'
+      - 'smart-contracts/contracts/token-burner/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/token_burner.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/token-burner/Cargo.toml'
+      - 'smart-contracts/contracts/token-burner/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/token_burner.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: 'contracts/token-burner'

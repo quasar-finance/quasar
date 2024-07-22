@@ -1,0 +1,35 @@
+name: Unit Test (rust)
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo
+            ~/go
+            **/target
+          key: ${{ runner.os }}-cargo-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo
+      - name: Rust lint
+        run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
+        working-directory: smart-contracts/${{ inputs.target }}
+      - name: Rust format check
+        run: cargo fmt --all -- --check
+        working-directory: smart-contracts/${{ inputs.target }}
+      - name: Run unit-tests
+        run: cargo unit-test
+        working-directory: smart-contracts/${{ inputs.target }}

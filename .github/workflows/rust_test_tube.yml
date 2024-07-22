@@ -1,0 +1,46 @@
+name: Test Tube
+
+on:
+  workflow_call:
+    inputs:
+      contract:
+        required: true
+        type: string
+      dex_router_osmosis:
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test-tube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo
+            ~/go
+            **/target
+          key: ${{ runner.os }}-cargo-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo
+      - name: Build ${{ inputs.contract }}
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/${{ inputs.contract }}
+      - name: Build dex-router-osmosis
+        if: ${{inputs.dex_router_osmosis}}
+        run: cargo test-tube-build
+        working-directory: smart-contracts/contracts/dex-router-osmosis
+      - name: Run test-tube tests
+        run: cargo test-tube
+        env:
+          PROPTEST_CASES: 10
+        working-directory: smart-contracts/contracts/${{ inputs.contract }}
+      - name: Clear temporary test-tube files
+        if: always()
+        run: rm -rf .osmosis-test-tube-temp-*
+        working-directory: /tmp

@@ -19,9 +19,10 @@ cw20 = { workspace = true }
 cosmos-sdk-proto = { workspace = true }
 serde-json-wasm = { workspace = true }
 serde_json = { workspace = true }
-
 derive_more = {version = "0.99.17", default-features = false, features = [
   "display",
 ]}
 rust_decimal = "1.24.0"
+
+[dev-dependencies]
 serde_test = "1.0"
