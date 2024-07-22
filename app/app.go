@@ -14,9 +14,11 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	dbm "github.com/cometbft/cometbft-db"
+
+	// dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
+	dbm "github.com/cosmos/cosmos-db"
 
 	// "github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
@@ -206,6 +208,9 @@ func New(
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 	app.mm = module.NewManager(appModules(app, encodingConfig, skipGenesisInvariants)...)
 
+	app.mm.SetOrderPreBlockers(
+		upgradetypes.ModuleName,
+	)
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
@@ -290,6 +295,7 @@ func New(
 	}
 
 	app.SetAnteHandler(anteHandler)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
@@ -326,7 +332,7 @@ func New(
 			tmos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
 		}
 
-		if err := ibcwasmkeeper.InitializePinnedCodes(ctx, appCodec); err != nil {
+		if err := ibcwasmkeeper.InitializePinnedCodes(ctx); err != nil {
 			tmos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
 		}
 	}
@@ -373,6 +379,16 @@ func (app *QuasarApp) Name() string { return app.BaseApp.Name() }
 // GetBaseApp returns the base app of the application
 func (app *QuasarApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
 
+func (app *QuasarApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	rsp, err := app.mm.PreBlock(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// _, err = app.oraclePreBlockHandler.PreBlocker()(ctx, req)
+	return rsp, err
+}
+
 // BeginBlocker application updates every begin block
 func (app *QuasarApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	return app.mm.BeginBlock(ctx)
@@ -384,7 +400,7 @@ func (app *QuasarApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 }
 
 // InitChainer application update at chain initialization
-func (app *QuasarApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (app *QuasarApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -420,8 +436,8 @@ func (app *QuasarApp) BlockedModuleAccountAddrs() map[string]bool {
 }
 
 // RegisterNodeService registers the node gRPC Query service.
-func (app *QuasarApp) RegisterNodeService(clientCtx client.Context) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter())
+func (app *QuasarApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 
 // LegacyAmino returns SimApp's amino codec.
