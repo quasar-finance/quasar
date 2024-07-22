@@ -1,4 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
+#[cfg(not(target_arch = "wasm32"))]
 use cosmwasm_std::Empty;
 
 use crate::{

@@ -87,7 +87,7 @@ pub fn calculate_deposit_ratio(
     };
 
     // TODO: Compute this based on tokens_provided size
-    let ratio_approx = "0.00005".to_string();
+    let ratio_approx: String = "0.00005".to_string();
 
     (ratio, ratio_approx)
 }

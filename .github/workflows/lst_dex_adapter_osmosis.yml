@@ -1,0 +1,24 @@
+name: LST Dex Adapter (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/lst-dex-adapter-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/lst-dex-adapter-osmosis/**.rs'
+      - '.github/workflows/**.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/contracts/lst-dex-adapter-osmosis/Cargo.toml'
+      - 'smart-contracts/contracts/lst-dex-adapter-osmosis/**.rs'
+      - '.github/workflows/**.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: 'contract/lst-dex-adapter-osmosis'

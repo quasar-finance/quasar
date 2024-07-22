@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Attribute, Coin, Decimal, Uint128};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
@@ -9,6 +7,7 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
 };
 use osmosis_std::types::osmosis::gamm::v1beta1::MsgJoinPool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::{SpotPriceRequest, SwapAmountInRoute};
+use std::str::FromStr;
 
 use osmosis_test_tube::osmosis_std::types::osmosis::gamm::poolmodels::balancer::v1beta1::MsgCreateBalancerPool;
 use osmosis_test_tube::osmosis_std::types::osmosis::gamm::v1beta1::PoolAsset;
@@ -22,14 +21,14 @@ use osmosis_test_tube::{
 };
 use osmosis_test_tube::{ExecuteResponse, Gamm};
 
-use crate::msg::{BestPathForPairResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use dex_router_osmosis::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 pub(crate) const ADMIN_BALANCE_AMOUNT: u128 = 3402823669209384634633746074317682114u128;
-pub(crate) const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
+const TOKENS_PROVIDED_AMOUNT: &str = "1000000000000";
 pub(crate) const FEE_DENOM: &str = "uosmo";
 pub(crate) const DENOM_BASE: &str = "udydx";
 pub(crate) const DENOM_QUOTE: &str = "uryeth";
-pub(crate) const INTERMEDIATE_QUOTE: &str = "uwosmo";
+pub const INTERMEDIATE_QUOTE: &str = "uwosmo";
 pub(crate) const TESTUBE_BINARY: &str =
     "./test-tube-build/wasm32-unknown-unknown/release/dex_router_osmosis.wasm";
 
@@ -349,57 +348,4 @@ pub fn perform_swap(
         &[Coin::new(10000u128, offer_denom)],
         admin,
     )
-}
-
-#[test]
-#[ignore]
-fn default_init_works() {
-    let app = OsmosisTestApp::new();
-
-    // Create new account with initial funds
-    let admin = app
-        .init_account(&[
-            Coin::new(ADMIN_BALANCE_AMOUNT, FEE_DENOM),
-            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-        ])
-        .unwrap();
-    let wasm = Wasm::new(&app);
-
-    let mut pools: Vec<PoolWithDenoms> = vec![];
-    pools = single_gamm_pool_fixture(
-        &app,
-        &admin,
-        vec![DENOM_BASE.to_string(), DENOM_QUOTE.to_string()],
-        pools,
-    );
-
-    let contract_address = init_test_contract(&app, &admin, TESTUBE_BINARY);
-
-    setup_paths(
-        &wasm,
-        &contract_address,
-        vec![pools[0].pool],
-        pools[0].denom0.clone(),
-        pools[0].denom1.clone(),
-        &admin,
-    );
-
-    let resp: BestPathForPairResponse = wasm
-        .query(
-            &contract_address.to_string(),
-            &QueryMsg::BestPathForPair {
-                offer: Coin::new(
-                    Uint128::from(100000000u128).into(),
-                    pools.first().unwrap().denom0.clone(),
-                ),
-                ask_denom: pools.first().unwrap().denom1.clone(),
-            },
-        )
-        .unwrap();
-
-    let mut iter = resp.path.into_iter();
-    // under the default setup, we expect the best path to route over pool 1
-    assert_eq!(iter.next().unwrap().pool_id, 1);
-    assert!(iter.next().is_none());
 }

@@ -21,10 +21,15 @@ use crate::query::{
 };
 use crate::reply::Replies;
 #[allow(deprecated)]
+use crate::state::CURRENT_BALANCE;
+#[allow(deprecated)]
+use crate::state::CURRENT_SWAP;
+#[allow(deprecated)]
 use crate::state::{
     MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
     VAULT_CONFIG,
 };
+#[allow(deprecated)]
 use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
 use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
@@ -207,7 +212,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         }
         Replies::CollectIncentives => handle_collect_incentives_reply(deps, env, msg.result),
         Replies::CollectSpreadRewards => handle_collect_spread_rewards_reply(deps, env, msg.result),
-        Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env, msg.result),
+        Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env),
         Replies::RangeInitialCreatePosition => {
             handle_initial_create_position_reply(deps, env, msg.result)
         }
@@ -228,6 +233,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    #[allow(deprecated)]
     let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
     let new_vault_config = VaultConfig {
         performance_fee: old_vault_config.performance_fee,
@@ -236,6 +242,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
         dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
     };
 
+    #[allow(deprecated)]
     OLD_VAULT_CONFIG.remove(deps.storage);
     VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
 
@@ -259,6 +266,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     STRATEGIST_REWARDS.remove(deps.storage);
 
     //POSITION state migration
+    #[allow(deprecated)]
     let old_position = OLD_POSITION.load(deps.storage)?;
 
     let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
@@ -279,7 +287,12 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     };
 
     POSITION.save(deps.storage, &new_position)?;
+    #[allow(deprecated)]
     OLD_POSITION.remove(deps.storage);
+    #[allow(deprecated)]
+    CURRENT_BALANCE.remove(deps.storage);
+    #[allow(deprecated)]
+    CURRENT_SWAP.remove(deps.storage);
 
     Ok(response)
 }
@@ -287,6 +300,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[allow(deprecated)]
     use crate::{
         helpers::coinlist::CoinList,
         state::{OldPosition, OldVaultConfig, Position, OLD_POSITION, POSITION},
@@ -308,6 +322,7 @@ mod tests {
         _env: Env,
         msg: MigrateMsg,
     ) -> Result<Response, ContractError> {
+        #[allow(deprecated)]
         let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
         let new_vault_config = VaultConfig {
             performance_fee: old_vault_config.performance_fee,
@@ -316,6 +331,7 @@ mod tests {
             dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
         };
 
+        #[allow(deprecated)]
         OLD_VAULT_CONFIG.remove(deps.storage);
         VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
 
@@ -337,6 +353,7 @@ mod tests {
         // Remove the state
         #[allow(deprecated)]
         STRATEGIST_REWARDS.remove(deps.storage);
+        #[allow(deprecated)]
         let old_position = OLD_POSITION.load(deps.storage)?;
 
         let new_position: Position = Position {
@@ -347,7 +364,12 @@ mod tests {
 
         POSITION.save(deps.storage, &new_position)?;
 
+        #[allow(deprecated)]
         OLD_POSITION.remove(deps.storage);
+        #[allow(deprecated)]
+        CURRENT_BALANCE.remove(deps.storage);
+        #[allow(deprecated)]
+        CURRENT_SWAP.remove(deps.storage);
 
         Ok(response)
     }
@@ -360,9 +382,11 @@ mod tests {
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
 
         // Mock a previous state item
+        #[allow(deprecated)]
         OLD_POSITION
             .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
             .unwrap();
+        #[allow(deprecated)]
         OLD_VAULT_CONFIG
             .save(
                 deps.as_mut().storage,
@@ -393,8 +417,17 @@ mod tests {
         assert_eq!(position.join_time, 0);
         assert!(position.claim_after.is_none());
 
+        #[allow(deprecated)]
         let old_position = OLD_POSITION.may_load(deps.as_mut().storage).unwrap();
         assert!(old_position.is_none());
+
+        #[allow(deprecated)]
+        let current_balance = CURRENT_BALANCE.may_load(deps.as_mut().storage).unwrap();
+        assert!(current_balance.is_none());
+
+        #[allow(deprecated)]
+        let current_swap = CURRENT_SWAP.may_load(deps.as_mut().storage).unwrap();
+        assert!(current_swap.is_none());
     }
 
     #[test]
@@ -406,9 +439,11 @@ mod tests {
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
 
         // Mock a previous state item
+        #[allow(deprecated)]
         OLD_POSITION
             .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
             .unwrap();
+        #[allow(deprecated)]
         OLD_VAULT_CONFIG
             .save(
                 deps.as_mut().storage,
@@ -434,6 +469,7 @@ mod tests {
         .unwrap();
 
         // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
+        #[allow(deprecated)]
         OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
 
         // Assert new VAULT_CONFIG.dex_router field have correct value
@@ -465,6 +501,7 @@ mod tests {
         let new_dex_router = Addr::unchecked("dex_router"); // new field nested in existing VaultConfig state
 
         // Mock a previous state item
+        #[allow(deprecated)]
         OLD_VAULT_CONFIG
             .save(
                 deps.as_mut().storage,
@@ -476,6 +513,7 @@ mod tests {
             )
             .unwrap();
 
+        #[allow(deprecated)]
         OLD_POSITION
             .save(deps.as_mut().storage, &OldPosition { position_id: 1 })
             .unwrap();
@@ -530,6 +568,7 @@ mod tests {
         STRATEGIST_REWARDS.load(deps.as_mut().storage).unwrap_err();
 
         // Assert OLD_VAULT_CONFIG have been correctly removed by unwrapping the error
+        #[allow(deprecated)]
         OLD_VAULT_CONFIG.load(deps.as_mut().storage).unwrap_err();
 
         // Assert new VAULT_CONFIG.dex_router field have correct value
