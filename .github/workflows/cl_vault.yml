@@ -33,4 +33,4 @@ jobs:
     with:
       contract: 'cl-vault'
       dex_router_osmosis: true
-      prop_test: ${{ github.ref == 'refs/pull/673/merge' }}
+      prop_test: ${{ github.ref == 'refs/heads/main' }}

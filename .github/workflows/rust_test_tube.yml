@@ -17,8 +17,6 @@ jobs:
   test-tube:
     runs-on: ubuntu-latest
     steps:
-      - name: test
-        run: echo $GITHUB_HEAD_REF
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Install Rust
