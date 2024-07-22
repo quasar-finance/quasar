@@ -2,6 +2,10 @@
 
 include scripts/makefiles/build.mk
 include scripts/makefiles/docker.mk
+include scripts/makefiles/lint.mk
+include scripts/makefiles/proto.mk
+include scripts/makefiles/test.mk
+include tests/e2e/Makefile
 
 .DEFAULT_GOAL := help
 help:
@@ -117,30 +121,47 @@ ifeq (,$(findstring nostrip,$(QUASAR_BUILD_OPTIONS)))
 endif
 
 ###############################################################################
-###                         Proto & Mock Generation                         ###
+###                            Build & Install                              ###
 ###############################################################################
 
-proto-all: proto-format proto-gen
-BUF_VERSION=1.26.1
-BUILDER_VERSION=0.13.5
-proto-gen:
-	@echo "Generating Protobuf files"
-	@sh ./scripts/protocgen.sh
+update-deps:
+	@go mod tidy;
 
-proto-gen-1:
-	@echo "🤖 Generating code from protobuf..."
-	@echo "PWD is $(PWD)"
+build: build-check-version go.sum
+	# back up before build
+	@cp go.mod go.mod.backup
+	@cp go.sum go.sum.backup
+	@go mod tidy
 
-	@docker run --rm --volume "$(PWD)":/workspace --workdir /workspace \
-		ghcr.io/cosmos/proto-builder:$(BUILDER_VERSION) sh ./scripts/protocgen.sh
-	@echo "✅ Completed code generation!"
+	mkdir -p $(BUILDDIR)/
+	GOWORK=off go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/ $(GO_MODULE)/cmd/quasarnoded
 
-proto-doc:
-	@echo "Generating Protoc docs"
-	@sh ./scripts/generate-docs.sh
+	# clean up before install
+	@mv go.mod.backup go.mod
+	@mv go.sum.backup go.sum
+	@rm -f go.mod.bak
+	@go mod tidy
 
-.PHONY: proto-gen proto-doc
+install: build-check-version go.sum
+	# back up before build
+	@cp go.mod go.mod.backup
+	@cp go.sum go.sum.backup
+	@go mod tidy
 
+	GOWORK=off go install -mod=readonly $(BUILD_FLAGS) $(GO_MODULE)/cmd/quasarnoded
+
+	# clean up before install
+	@mv go.mod.backup go.mod
+	@mv go.sum.backup go.sum
+	@rm -f go.mod.bak
+	@go mod tidy
+
+###############################################################################
+###                                Go Mock                                  ###
+###############################################################################
+
+# todo : need ideas on external libraries
+# example : mockgen -source=/path/to/go/pkg/mod/github.com/cosmos/ibc-go/v7@v7.4.0/modules/core/05-port/types/module.go -destination=/path/to/quasar/mock/ics4_wrapper_mocks.go -package=mock -mock_names=MockICS4Wrapper
 mocks: $(MOCKSDIR)/
 	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
 #	mockgen -package=mock -destination=$(MOCKSDIR)/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
@@ -153,48 +174,6 @@ mocks: $(MOCKSDIR)/
 $(MOCKSDIR)/:
 	mkdir -p $(MOCKSDIR)/
 
-###############################################################################
-###                           Tests & Simulation                            ###
-###############################################################################
-
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... ./x/tokenfactory/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
-PACKAGES_E2E=$(shell go list ./... | grep '/tests/e2e')
-PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
-TEST_PACKAGES=./...
-
-include tests/e2e/Makefile
-
-test: test-unit test-build
-
-test-all: check test-race test-cover
-
-test-unit:
-	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock norace' $(PACKAGES_UNIT)
-
-test-race:
-	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' $(PACKAGES_UNIT)
-
-test-cover:
-	@VERSION=$(VERSION) go test -mod=readonly -timeout 30m -coverprofile=coverage.txt -tags='norace' -covermode=atomic $(PACKAGES_UNIT)
-
-test-sim-suite:
-	@VERSION=$(VERSION) go test -mod=readonly $(PACKAGES_SIM)
-
-test-sim-app:
-	@VERSION=$(VERSION) go test -mod=readonly -run ^TestFullAppSimulation -v $(PACKAGES_SIM)
-
-test-sim-determinism:
-	@VERSION=$(VERSION) go test -mod=readonly -run ^TestAppStateDeterminism -v $(PACKAGES_SIM)
-
-test-sim-bench:
-	@VERSION=$(VERSION) go test -benchmem -run ^BenchmarkFullAppSimulation -bench ^BenchmarkFullAppSimulation -cpuprofile cpu.out $(PACKAGES_SIM)
-
-benchmark:
-	@go test -mod=readonly -bench=. $(PACKAGES_UNIT)
-
-lint:
-	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint run --timeout=10m
 
 .PHONY: all build-linux install format lint build \
 	test test-all test-build test-cover test-unit test-race benchmark

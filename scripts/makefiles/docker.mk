@@ -29,7 +29,6 @@ docker-help:
 	@echo "  test-e2e             Running e2e tests"
 	@echo "  e2e-build            Build e2e docker images of the chain needed for interchaintest"
 
-
 docker: docker-help
 
 docker-build:

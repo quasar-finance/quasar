@@ -51,21 +51,6 @@ build-dev-build:
 	mkdir -p $(BUILDDIR)/
 	GOWORK=off go build $(GC_FLAGS) -mod=readonly -ldflags '$(DEBUG_LDFLAGS)' -gcflags "all=-N -l" -trimpath -o $(BUILDDIR) ./...;
 
-all: install lint test
-
-BUILD_TARGETS := build install
-#BUILD_TARGETS_DEBUG := build install
-build: BUILD_ARGS=-o $(BUILDDIR)/
-
-$(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	GOWORK=off go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
-
-$(BUILD_TARGETS_DEBUG): go.sum $(BUILDDIR)/
-	GOWORK=off go $@ -mod=readonly $(BUILD_FLAGS_DEBUG) -gcflags='all=-N -l' $(BUILD_ARGS) ./cmd/quasarnoded
-
-$(BUILDDIR)/:
-	mkdir -p $(BUILDDIR)/
-
 ###############################################################################
 ###                          Build reproducible                             ###
 ###############################################################################
