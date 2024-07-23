@@ -13,9 +13,8 @@ docker-help:
 	@echo "  make docker-[command]"
 	@echo ""
 	@echo "Available Commands:"
-	@echo "  build                Build Docker image"
+	@echo "  build                Build Docker image (distroless)"
 	@echo "  build-alpine         Build alpine Docker image"
-	@echo "  build-distroless     Build distroless Docker image"
 	@echo "  build-nonroot        Build nonroot Docker image"
 	@echo "  compose-up           Launching local env, building images if not available"
 	@echo "  compose-up-recreate  Recreate local env (will destroy application state)"
@@ -40,8 +39,6 @@ docker-build:
 		--build-arg GIT_VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(COMMIT) \
 		-f Dockerfile .
-
-docker-build-distroless: docker-build
 
 docker-build-alpine:
 	@DOCKER_BUILDKIT=1 docker build \
