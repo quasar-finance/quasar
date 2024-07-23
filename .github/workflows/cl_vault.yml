@@ -9,7 +9,8 @@ on:
       - 'smart-contracts/contracts/cl-vault/**.rs'
       - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
       - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/cl_vault.yml'
+      - '.github/workflows/rust_basic.yml'
   push:
     branches:
       - main
@@ -18,7 +19,8 @@ on:
       - 'smart-contracts/contracts/cl-vault/**.rs'
       - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
       - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/cl_vault.yml'
+      - '.github/workflows/rust_basic.yml'
   workflow_dispatch:
 
 jobs:
@@ -31,3 +33,4 @@ jobs:
     with:
       contract: 'cl-vault'
       dex_router_osmosis: true
+      prop_test: ${{ github.ref == 'refs/heads/main' }}

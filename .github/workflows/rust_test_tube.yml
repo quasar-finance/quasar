@@ -8,7 +8,9 @@ on:
         type: string
       dex_router_osmosis:
         required: false
-        default: false
+        type: boolean
+      prop_test:
+        required: false
         type: boolean
 
 jobs:
@@ -37,6 +39,10 @@ jobs:
         working-directory: smart-contracts/contracts/dex-router-osmosis
       - name: Run test-tube tests
         run: cargo test-tube
+        working-directory: smart-contracts/contracts/${{ inputs.contract }}
+      - name: Run prop-test
+        if: inputs.prop_test
+        run: cargo prop-test
         env:
           PROPTEST_CASES: 10
         working-directory: smart-contracts/contracts/${{ inputs.contract }}
