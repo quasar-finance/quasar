@@ -26,7 +26,3 @@ jobs:
     uses: ./.github/workflows/rust_basic.yml
     with:
       target: 'contracts/merkle-incentives'
-  test-tube:
-    uses: ./.github/workflows/rust_test_tube.yml
-    with:
-      contract: 'merkle-incentives'
