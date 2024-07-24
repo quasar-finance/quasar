@@ -5,6 +5,7 @@ use mars_owner::{OwnerResponse, OwnerUpdate};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub owner: String,
+    pub subdenom: String,
 }
 
 #[cw_serde]
