@@ -9,4 +9,7 @@ pub enum VaultError {
 
     #[error("{0}")]
     Owner(#[from] OwnerError),
+
+    #[error("{denom} not found")]
+    LstNotFound { denom: String },
 }
