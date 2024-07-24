@@ -50,6 +50,31 @@
         "register_lst": {
           "type": "object",
           "required": [
+            "denom",
+            "interface"
+          ],
+          "properties": {
+            "denom": {
+              "type": "string"
+            },
+            "interface": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "unregister_lst"
+      ],
+      "properties": {
+        "unregister_lst": {
+          "type": "object",
+          "required": [
             "denom"
           ],
           "properties": {
