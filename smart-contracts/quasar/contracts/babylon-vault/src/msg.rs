@@ -1,8 +1,11 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Timestamp, Uint128};
+use mars_owner::{OwnerResponse, OwnerUpdate};
 
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub owner: String,
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -12,6 +15,7 @@ pub enum ExecuteMsg {
     Claim {},
     // owner methods
     RegisterLst { denom: String },
+    UpdateOwner(OwnerUpdate),
 }
 
 #[cw_serde]
@@ -29,4 +33,6 @@ pub enum QueryMsg {
     Claimable { address: String },
     #[returns(Uint128)]
     BalanceInUnderlying {},
+    #[returns(OwnerResponse)]
+    Owner {},
 }
