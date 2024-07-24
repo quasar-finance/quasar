@@ -42,3 +42,8 @@ echo "PWD is - $PWD"
 # Copy the generated Go files to the desired location
 cp -r github.com/quasarlabs/quasarnode/* .
 cp -r github.com github.com.bkp
+
+# Generate rust files
+cd ${project_dir}/smart-contracts/quasar
+cargo run --bin proto-build
+cd -
