@@ -21,9 +21,9 @@ jobs:
           path: |
             ~/.cargo
             ~/go
-            **/target
-          key: ${{ runner.os }}-cargo-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo
+            smart-contracts/osmosis/**/target
+          key: ${{ runner.os }}-cargo-osmosis-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo-osmosis
       - name: Rust lint
         run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
         working-directory: smart-contracts/${{ inputs.target }}

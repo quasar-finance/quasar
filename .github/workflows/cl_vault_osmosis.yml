@@ -1,26 +1,30 @@
-name: Dex Router (osmosis)
+name: CL Vault (osmosis)
 
 on:
   pull_request:
     branches:
       - main
     paths:
+      - 'smart-contracts/osmosis/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/cl-vault/**.rs'
       - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
       - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/cl_vault_osmosis.yml'
       - '.github/workflows/rust_basic.yml'
-      - '.github/workflows/dex_router_osmosis.yml'
   push:
     branches:
       - main
     paths:
+      - 'smart-contracts/osmosis/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/cl-vault/**.rs'
       - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
       - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/cl_vault_osmosis.yml'
       - '.github/workflows/rust_basic.yml'
-      - '.github/workflows/dex_router_osmosis.yml'
   workflow_dispatch:
 
 jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'osmosis/contracts/dex-router-osmosis'
+      target: 'osmosis/contracts/cl-vault'
