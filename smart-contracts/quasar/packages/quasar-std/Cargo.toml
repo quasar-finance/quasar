@@ -1,0 +1,9 @@
+[package]
+edition = "2021"
+name = "quasar-std"
+version = "0.1.0"
+
+[dependencies]
+prost = { workspace = true }
+prost-types = { workspace = true }
+cosmos-sdk-proto = { workspace = true }
