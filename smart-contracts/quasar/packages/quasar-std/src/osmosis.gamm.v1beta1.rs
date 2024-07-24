@@ -1,4 +1,3 @@
-// @generated
 /// Parameters for changing the weights in a balancer pool smoothly from
 /// a start weight and end weight over a period of time.
 /// Currently, the only smooth change supported is linear changing between
@@ -10,7 +9,8 @@
 ///      w(t) = initial_pool_weights + (t - start_time) *
 ///        (target_pool_weights - initial_pool_weights) / (duration)
 ///    t > start_time + duration: w(t) = target_pool_weights
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct SmoothWeightChangeParams {
     /// The start time for beginning the weight change.
     /// If a parameter change / pool instantiation leaves this blank,
@@ -46,7 +46,8 @@ pub struct SmoothWeightChangeParams {
 /// governance in the future. This params are not managed by the chain
 /// governance. Instead they will be managed by the token holders of the pool.
 /// The pool's token holders are specified in future_pool_governor.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct PoolParams {
     #[prost(string, tag = "1")]
     pub swap_fee: ::prost::alloc::string::String,
@@ -59,7 +60,8 @@ pub struct PoolParams {
 /// token in the pool, and its balancer weight.
 /// This is an awkward packaging of data,
 /// and should be revisited in a future state migration.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct PoolAsset {
     /// Coins we are talking about,
     /// the denomination must be unique amongst all PoolAssets for this pool.
@@ -69,7 +71,8 @@ pub struct PoolAsset {
     #[prost(string, tag = "2")]
     pub weight: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct Pool {
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
@@ -101,7 +104,8 @@ pub struct Pool {
 }
 /// ===================== MsgJoinPool
 /// This is really MsgJoinPoolNoSwap
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgJoinPool {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -112,7 +116,8 @@ pub struct MsgJoinPool {
     #[prost(message, repeated, tag = "4")]
     pub token_in_maxs: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgJoinPoolResponse {
     #[prost(string, tag = "1")]
     pub share_out_amount: ::prost::alloc::string::String,
@@ -120,7 +125,8 @@ pub struct MsgJoinPoolResponse {
     pub token_in: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
 /// ===================== MsgExitPool
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgExitPool {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -131,20 +137,23 @@ pub struct MsgExitPool {
     #[prost(message, repeated, tag = "4")]
     pub token_out_mins: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgExitPoolResponse {
     #[prost(message, repeated, tag = "1")]
     pub token_out: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
 /// ===================== MsgSwapExactAmountIn
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct SwapAmountInRoute {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
     #[prost(string, tag = "2")]
     pub token_out_denom: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgSwapExactAmountIn {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -155,20 +164,23 @@ pub struct MsgSwapExactAmountIn {
     #[prost(string, tag = "4")]
     pub token_out_min_amount: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgSwapExactAmountInResponse {
     #[prost(string, tag = "1")]
     pub token_out_amount: ::prost::alloc::string::String,
 }
 /// ===================== MsgSwapExactAmountOut
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct SwapAmountOutRoute {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
     #[prost(string, tag = "2")]
     pub token_in_denom: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgSwapExactAmountOut {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -179,14 +191,16 @@ pub struct MsgSwapExactAmountOut {
     #[prost(message, optional, tag = "4")]
     pub token_out: ::core::option::Option<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgSwapExactAmountOutResponse {
     #[prost(string, tag = "1")]
     pub token_in_amount: ::prost::alloc::string::String,
 }
 /// ===================== MsgJoinSwapExternAmountIn
 /// TODO: Rename to MsgJoinSwapExactAmountIn
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgJoinSwapExternAmountIn {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -197,13 +211,15 @@ pub struct MsgJoinSwapExternAmountIn {
     #[prost(string, tag = "4")]
     pub share_out_min_amount: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgJoinSwapExternAmountInResponse {
     #[prost(string, tag = "1")]
     pub share_out_amount: ::prost::alloc::string::String,
 }
 /// ===================== MsgJoinSwapShareAmountOut
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgJoinSwapShareAmountOut {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -216,13 +232,15 @@ pub struct MsgJoinSwapShareAmountOut {
     #[prost(string, tag = "5")]
     pub token_in_max_amount: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgJoinSwapShareAmountOutResponse {
     #[prost(string, tag = "1")]
     pub token_in_amount: ::prost::alloc::string::String,
 }
 /// ===================== MsgExitSwapShareAmountIn
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgExitSwapShareAmountIn {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -235,13 +253,15 @@ pub struct MsgExitSwapShareAmountIn {
     #[prost(string, tag = "5")]
     pub token_out_min_amount: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgExitSwapShareAmountInResponse {
     #[prost(string, tag = "1")]
     pub token_out_amount: ::prost::alloc::string::String,
 }
 /// ===================== MsgExitSwapExternAmountOut
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgExitSwapExternAmountOut {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -252,31 +272,36 @@ pub struct MsgExitSwapExternAmountOut {
     #[prost(string, tag = "4")]
     pub share_in_max_amount: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct MsgExitSwapExternAmountOutResponse {
     #[prost(string, tag = "1")]
     pub share_in_amount: ::prost::alloc::string::String,
 }
 /// =============================== Pool
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryPoolRequest {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryPoolResponse {
     #[prost(message, optional, tag = "1")]
     pub pool: ::core::option::Option<::prost_types::Any>,
 }
 /// =============================== Pools
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryPoolsRequest {
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag = "2")]
     pub pagination:
         ::core::option::Option<cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryPoolsResponse {
     #[prost(message, repeated, tag = "1")]
     pub pools: ::prost::alloc::vec::Vec<::prost_types::Any>,
@@ -286,49 +311,58 @@ pub struct QueryPoolsResponse {
         ::core::option::Option<cosmos_sdk_proto::cosmos::base::query::v1beta1::PageResponse>,
 }
 /// =============================== NumPools
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryNumPoolsRequest {}
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryNumPoolsResponse {
     #[prost(uint64, tag = "1")]
     pub num_pools: u64,
 }
 /// =============================== PoolParams
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryPoolParamsRequest {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryPoolParamsResponse {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<::prost_types::Any>,
 }
 /// =============================== PoolLiquidity
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryTotalPoolLiquidityRequest {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryTotalPoolLiquidityResponse {
     #[prost(message, repeated, tag = "1")]
     pub liquidity: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
 /// =============================== TotalShares
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryTotalSharesRequest {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryTotalSharesResponse {
     #[prost(message, optional, tag = "1")]
     pub total_shares: ::core::option::Option<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
 /// QuerySpotPriceRequest defines the gRPC request structure for a SpotPrice
 /// query.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QuerySpotPriceRequest {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
@@ -339,14 +373,16 @@ pub struct QuerySpotPriceRequest {
 }
 /// QuerySpotPriceResponse defines the gRPC response structure for a SpotPrice
 /// query.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QuerySpotPriceResponse {
     /// String of the Dec. Ex) 10.203uatom
     #[prost(string, tag = "1")]
     pub spot_price: ::prost::alloc::string::String,
 }
 /// =============================== EstimateSwapExactAmountIn
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QuerySwapExactAmountInRequest {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -357,13 +393,15 @@ pub struct QuerySwapExactAmountInRequest {
     #[prost(message, repeated, tag = "4")]
     pub routes: ::prost::alloc::vec::Vec<SwapAmountInRoute>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QuerySwapExactAmountInResponse {
     #[prost(string, tag = "1")]
     pub token_out_amount: ::prost::alloc::string::String,
 }
 /// =============================== EstimateSwapExactAmountOut
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QuerySwapExactAmountOutRequest {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -374,16 +412,18 @@ pub struct QuerySwapExactAmountOutRequest {
     #[prost(string, tag = "4")]
     pub token_out: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QuerySwapExactAmountOutResponse {
     #[prost(string, tag = "1")]
     pub token_in_amount: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryTotalLiquidityRequest {}
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.v1beta1.")]
 pub struct QueryTotalLiquidityResponse {
     #[prost(message, repeated, tag = "1")]
     pub liquidity: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-// @@protoc_insertion_point(module)

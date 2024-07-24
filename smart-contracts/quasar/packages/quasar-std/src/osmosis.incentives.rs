@@ -1,8 +1,8 @@
-// @generated
 /// Gauge is an object that stores and distributes yields to recipients who
 /// satisfy certain conditions. Currently gauges support conditions around the
 /// duration for which a given denom is locked.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.incentives.")]
 pub struct Gauge {
     /// id is the unique ID of a Gauge
     #[prost(uint64, tag = "1")]
@@ -37,10 +37,10 @@ pub struct Gauge {
     #[prost(message, repeated, tag = "8")]
     pub distributed_coins: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.incentives.")]
 pub struct LockableDurationsInfo {
     /// List of incentivised durations that gauges will pay out to
     #[prost(message, repeated, tag = "1")]
     pub lockable_durations: ::prost::alloc::vec::Vec<::prost_types::Duration>,
 }
-// @@protoc_insertion_point(module)

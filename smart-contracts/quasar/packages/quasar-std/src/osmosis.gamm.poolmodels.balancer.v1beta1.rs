@@ -1,6 +1,6 @@
-// @generated
 /// ===================== MsgCreatePool
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.poolmodels.balancer.v1beta1.")]
 pub struct MsgCreateBalancerPool {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -12,9 +12,9 @@ pub struct MsgCreateBalancerPool {
     pub future_pool_governor: ::prost::alloc::string::String,
 }
 /// Returns the poolID
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.gamm.poolmodels.balancer.v1beta1.")]
 pub struct MsgCreateBalancerPoolResponse {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
 }
-// @@protoc_insertion_point(module)

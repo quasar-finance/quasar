@@ -1,10 +1,10 @@
-// @generated
 /// PeriodLock is a single lock unit by period defined by the x/lockup module.
 /// It's a record of a locked coin at a specific time. It stores owner, duration,
 /// unlock time and the number of coins locked. A state of a period lock is
 /// created upon lock creation, and deleted once the lock has been matured after
 /// the `duration` has passed since unbonding started.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct PeriodLock {
     /// ID is the unique id of the lock.
     /// The ID of the lock is decided upon lock creation, incrementing by 1 for
@@ -31,7 +31,8 @@ pub struct PeriodLock {
 /// QueryCondition is a struct used for querying locks upon different conditions.
 /// Duration field and timestamp fields could be optional, depending on the
 /// LockQueryType.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct QueryCondition {
     /// LockQueryType is a type of lock query, ByLockDuration | ByLockTime
     #[prost(enumeration = "LockQueryType", tag = "1")]
@@ -54,7 +55,8 @@ pub struct QueryCondition {
 /// original denom and synthetic suffix. At the time of synthetic lockup creation
 /// and deletion, accumulation store is also being updated and on querier side,
 /// they can query as freely as native lockup.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct SyntheticLock {
     /// Underlying Lock ID is the underlying native lock's id for this synthetic
     /// lockup. A synthetic lock MUST have an underlying lock.
@@ -93,7 +95,8 @@ impl LockQueryType {
         }
     }
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgLockTokens {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
@@ -102,22 +105,26 @@ pub struct MsgLockTokens {
     #[prost(message, repeated, tag = "3")]
     pub coins: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgLockTokensResponse {
     #[prost(uint64, tag = "1")]
     pub id: u64,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgBeginUnlockingAll {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgBeginUnlockingAllResponse {
     #[prost(message, repeated, tag = "1")]
     pub unlocks: ::prost::alloc::vec::Vec<PeriodLock>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgBeginUnlocking {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
@@ -127,14 +134,16 @@ pub struct MsgBeginUnlocking {
     #[prost(message, repeated, tag = "3")]
     pub coins: ::prost::alloc::vec::Vec<cosmos_sdk_proto::cosmos::base::v1beta1::Coin>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgBeginUnlockingResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
 }
 /// MsgExtendLockup extends the existing lockup's duration.
 /// The new duration is longer than the original.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgExtendLockup {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
@@ -145,9 +154,9 @@ pub struct MsgExtendLockup {
     #[prost(message, optional, tag = "3")]
     pub duration: ::core::option::Option<::prost_types::Duration>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/osmosis.lockup.")]
 pub struct MsgExtendLockupResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
 }
-// @@protoc_insertion_point(module)
