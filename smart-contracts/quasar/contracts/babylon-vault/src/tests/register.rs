@@ -61,7 +61,7 @@ fn register_and_unregister_lst() {
     assert!(execute(deps.as_mut(), env.clone(), info.clone(), msg).is_ok());
 
     let lsts: Vec<LstInfo> =
-        from_json(&query(deps.as_ref(), env.clone(), QueryMsg::Lsts {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), env.clone(), QueryMsg::Lsts {}).unwrap()).unwrap();
     assert_eq!(lsts.len(), 1);
     assert_eq!(
         lsts[0],
@@ -74,7 +74,7 @@ fn register_and_unregister_lst() {
     let msg = ExecuteMsg::UnregisterLst { denom };
     assert!(execute(deps.as_mut(), env.clone(), info.clone(), msg).is_ok());
     let lsts: Vec<LstInfo> =
-        from_json(&query(deps.as_ref(), env.clone(), QueryMsg::Lsts {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), env.clone(), QueryMsg::Lsts {}).unwrap()).unwrap();
     assert_eq!(lsts.len(), 0);
 }
 
@@ -93,7 +93,7 @@ fn unregister_fails_if_denom_is_not_registered() {
     assert!(execute(deps.as_mut(), env.clone(), info.clone(), msg).is_ok());
 
     let lsts: Vec<LstInfo> =
-        from_json(&query(deps.as_ref(), env.clone(), QueryMsg::Lsts {}).unwrap()).unwrap();
+        from_json(query(deps.as_ref(), env.clone(), QueryMsg::Lsts {}).unwrap()).unwrap();
     assert_eq!(lsts.len(), 1);
     assert_eq!(lsts[0], LstInfo { denom, interface });
 
@@ -106,6 +106,6 @@ fn unregister_fails_if_denom_is_not_registered() {
 
     assert_eq!(
         result.unwrap_err(),
-        VaultError::LstNotFound { denom: other_denom }
+        VaultError::DenomNotFound { denom: other_denom }
     );
 }

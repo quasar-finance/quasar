@@ -44,3 +44,8 @@ pub enum QueryMsg {
     #[returns(String)]
     Denom {},
 }
+
+#[cw_serde]
+pub enum OracleQueryMsg {
+    Price { denom: String },
+}
