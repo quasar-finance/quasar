@@ -5,7 +5,7 @@
 
 
 # Configure variables
-BINARY=quasarnoded
+BINARY=quasard
 HOME_QSR=$HOME/.quasarnode
 CHAIN_ID=quasar
 ALICE="edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit"

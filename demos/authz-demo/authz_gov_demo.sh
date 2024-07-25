@@ -1,6 +1,6 @@
 #!/bin/sh 
 set -o xtrace
-BINARY=quasarnoded
+BINARY=quasard
 HOME_QSR=$HOME/.quasarnode
 CHAIN_ID=quasar
 NODE="--node tcp://localhost:26659"

@@ -13,13 +13,13 @@ This package provides first class support for:
 - Commands
 
 ```sh
-  quasarnoded tx wasm -h
+  quasard tx wasm -h
 ```
 
 - Query
 
 ```sh
-  quasarnoded query wasm -h
+  quasard query wasm -h
 ```
 
 ## Tests

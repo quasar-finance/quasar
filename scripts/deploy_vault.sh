@@ -27,7 +27,7 @@ VAULT_INIT='{"decimals":6,"symbol":"ORN","min_withdrawal":"1","name":"ORION","pr
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
-RES=$(quasarnoded tx wasm store artifacts/basic_vault.wasm --from test-laurens --keyring-backend os -y --output json -b block $TXFLAG)
+RES=$(quasard tx wasm store artifacts/basic_vault.wasm --from test-laurens --keyring-backend os -y --output json -b block $TXFLAG)
 
 VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value')
 
@@ -35,7 +35,7 @@ echo "Got CODE_ID = $VAULT_CODE_ID"
 
 echo "Deploying contract (vault)"
 # swallow output
-OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from test-laurens --keyring-backend os --label "vault-contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
-VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
+OUT=$(quasard tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from test-laurens --keyring-backend os --label "vault-contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
+VAULT_ADDR=$(quasard query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
 
 echo "Got address of deployed contract = $VAULT_ADDR (vault)"

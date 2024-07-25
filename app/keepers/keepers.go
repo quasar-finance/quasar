@@ -57,21 +57,9 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v7/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
-
 	appparams "github.com/quasarlabs/quasarnode/app/params"
-	owasm "github.com/quasarlabs/quasarnode/wasmbinding"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	qoraclemodulekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
-	qosmo "github.com/quasarlabs/quasarnode/x/qoracle/osmosis"
-	qosmokeeper "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/keeper"
-	qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
-	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/quasarlabs/quasarnode/x/qtransfer"
-	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
-	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
 	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tfmodulekeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
@@ -80,6 +68,14 @@ import (
 
 const (
 	AccountAddressPrefix = "quasar"
+)
+
+// deprecated module storeKeys needed for deletion in upgrade handler
+const (
+	QTransferStoreKey  = "qtransfer"
+	QVestingStoreKey   = "qvesting"
+	QOracleStoreKey    = "qoracle"
+	QOracleMemStoreKey = "memory:qoracle"
 )
 
 type AppKeepers struct {
@@ -114,11 +110,7 @@ type AppKeepers struct {
 	IBCWasmClientKeeper *ibcwasmkeeper.Keeper
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	WasmKeeper          *wasmkeeper.Keeper
-	QTransferKeeper     qtransferkeeper.Keeper
 	EpochsKeeper        *epochsmodulekeeper.Keeper
-	QOsmosisKeeper      qosmokeeper.Keeper
-	QOracleKeeper       qoraclemodulekeeper.Keeper
-	QVestingKeeper      qvestingmodulekeeper.Keeper
 	TfKeeper            tfmodulekeeper.Keeper
 	AuthzKeeper         authzkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
@@ -127,9 +119,6 @@ type AppKeepers struct {
 	// IBC modules
 	// transfer module
 	RawIcs20TransferAppModule transfer.AppModule
-	TransferStack             *qtransfer.IBCMiddleware
-	Ics20WasmHooks            *qtransfer.WasmHooks
-	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
 	// keys to access the substores
 	keys    map[string]*storetypes.KVStoreKey
@@ -164,7 +153,6 @@ func (appKeepers *AppKeepers) InitSpecialKeepers(
 	appKeepers.ScopedIBCKeeper = appKeepers.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	appKeepers.ScopedTransferKeeper = appKeepers.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	appKeepers.ScopedWasmKeeper = appKeepers.CapabilityKeeper.ScopeToModule(wasmtypes.ModuleName)
-	appKeepers.ScopedQOsmosisKeeper = appKeepers.CapabilityKeeper.ScopeToModule(qosmotypes.SubModuleName)
 	appKeepers.ScopedICAControllerKeeper = appKeepers.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	appKeepers.ScopedICAHostKeeper = appKeepers.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	appKeepers.ScopedICQKeeper = appKeepers.CapabilityKeeper.ScopeToModule(icqtypes.ModuleName)
@@ -314,10 +302,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	appKeepers.RawIcs20TransferAppModule = transfer.NewAppModule(appKeepers.TransferKeeper)
 
-	// Hooks Middleware
-	hooksTransferModule := qtransfer.NewIBCMiddleware(transfer.NewIBCModule(appKeepers.TransferKeeper), &appKeepers.HooksICS4Wrapper)
-	appKeepers.TransferStack = &hooksTransferModule
-
 	appKeepers.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, appKeepers.keys[icacontrollertypes.StoreKey],
 		appKeepers.GetSubspace(icacontrollertypes.SubModuleName),
@@ -375,54 +359,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	appKeepers.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, appKeepers.keys[epochsmoduletypes.StoreKey])
 
-	appKeepers.QTransferKeeper = qtransferkeeper.NewKeeper(
-		appCodec,
-		appKeepers.keys[qtransfertypes.ModuleName],
-		appKeepers.GetSubspace(qtransfertypes.ModuleName),
-		appKeepers.AccountKeeper,
-	)
-
-	appKeepers.QOracleKeeper = qoraclemodulekeeper.NewKeeper(
-		appCodec,
-		appKeepers.keys[qoraclemoduletypes.StoreKey],
-		appKeepers.memKeys[qoraclemoduletypes.MemStoreKey],
-		appKeepers.tkeys[qoraclemoduletypes.TStoreKey],
-		appKeepers.GetSubspace(qoraclemoduletypes.ModuleName),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
-	appKeepers.QOsmosisKeeper = qosmokeeper.NewKeeper(
-		appCodec,
-		appKeepers.keys[qosmotypes.StoreKey],
-		appKeepers.GetSubspace(qosmotypes.SubModuleName),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		appKeepers.IBCKeeper.ClientKeeper,
-		appKeepers.IBCKeeper.ChannelKeeper,
-		appKeepers.IBCKeeper.ChannelKeeper,
-		&appKeepers.IBCKeeper.PortKeeper,
-		appKeepers.ScopedQOsmosisKeeper,
-		appKeepers.QOracleKeeper,
-	)
-
-	appKeepers.QOracleKeeper.RegisterPoolOracle(appKeepers.QOsmosisKeeper)
-	appKeepers.QOracleKeeper.Seal()
-
-	appKeepers.QTransferKeeper = qtransferkeeper.NewKeeper(
-		appCodec,
-		appKeepers.keys[qtransfertypes.ModuleName],
-		appKeepers.GetSubspace(qtransfertypes.ModuleName),
-		appKeepers.AccountKeeper,
-	)
-
-	appKeepers.QVestingKeeper = *qvestingmodulekeeper.NewKeeper(
-		appCodec,
-		appKeepers.keys[qvestingmoduletypes.StoreKey],
-		appKeepers.keys[qvestingmoduletypes.MemStoreKey],
-		appKeepers.GetSubspace(qvestingmoduletypes.ModuleName),
-		appKeepers.AccountKeeper,
-		appKeepers.BankKeeper,
-	)
-
 	// Authz
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
 		appKeepers.keys[authzkeeper.StoreKey],
@@ -434,7 +370,8 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	// Set epoch hooks
 	appKeepers.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			appKeepers.QOsmosisKeeper.EpochHooks(),
+			epochsmoduletypes.NewMultiEpochHooks(),
+			// hooks needs to set here if any of our module has hooks
 		),
 	)
 
@@ -446,12 +383,9 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.DistrKeeper,
 	)
 
-	callback := owasm.NewCallbackPlugin(appKeepers.WasmKeeper, appKeepers.QTransferKeeper.GetQTransferAcc())
-
 	// AUDIT CHECK IS THIS TYPE ASSERTION FOR TYPE CASTING INTERFACE TO STRUCT SAFE?
 	tmpBankBaseKeeper := appKeepers.BankKeeper.(bankkeeper.BaseKeeper)
 
-	wasmOpts = append(owasm.RegisterCustomPlugins(appKeepers.QOracleKeeper, &tmpBankBaseKeeper, callback), wasmOpts...)
 	wasmOpts = append(tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &appKeepers.TfKeeper), wasmOpts...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
@@ -482,20 +416,11 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	ibcRouter := ibcporttypes.NewRouter()
 
-	wasmHooks := qtransfer.NewWasmHooks(appKeepers.QTransferKeeper, *appKeepers.WasmKeeper)
-	appKeepers.Ics20WasmHooks = &wasmHooks
-	appKeepers.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
-		appKeepers.IBCKeeper.ChannelKeeper,
-		appKeepers.Ics20WasmHooks,
-	)
-
 	// Register host and authentication routes
 	// TODO_IMPORTANT - addition of qtransfer module
 	ibcRouter.
 		AddRoute(wasmtypes.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper, appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
-		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(*appKeepers.ICAHostKeeper)).
-		AddRoute(ibctransfertypes.ModuleName, appKeepers.TransferStack).
-		AddRoute(qosmotypes.SubModuleName, qosmo.NewIBCModule(appKeepers.QOsmosisKeeper))
+		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(*appKeepers.ICAHostKeeper))
 	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 
 	appKeepers.IBCKeeper.SetRouter(ibcRouter)
@@ -516,15 +441,14 @@ func (appKeepers *AppKeepers) initParamsKeeper(appCodec codec.BinaryCodec, legac
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
-	paramsKeeper.Subspace(qoraclemoduletypes.ModuleName)
-	paramsKeeper.Subspace(qosmotypes.SubModuleName)
+	paramsKeeper.Subspace(QOracleStoreKey)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName).WithKeyTable(icacontrollertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icqtypes.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
-	paramsKeeper.Subspace(qtransfertypes.ModuleName)
+	paramsKeeper.Subspace(QTransferStoreKey)
 	paramsKeeper.Subspace(tftypes.ModuleName)
-	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
+	paramsKeeper.Subspace(QVestingStoreKey)
 	paramsKeeper.Subspace(authztypes.ModuleName)
 
 	return paramsKeeper
@@ -547,16 +471,15 @@ func KVStoreKeys() []string {
 		ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey,
 		epochsmoduletypes.StoreKey,
-		qoraclemoduletypes.StoreKey,
-		qosmotypes.StoreKey,
+		QOracleStoreKey,
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		icqtypes.StoreKey,
 		ibcwasmtypes.StoreKey,
 		wasmtypes.StoreKey,
-		qtransfertypes.StoreKey,
+		QTransferStoreKey,
 		tftypes.StoreKey,
-		qvestingmoduletypes.StoreKey,
+		QVestingStoreKey,
 		authzkeeper.StoreKey,
 		consensusparamtypes.StoreKey,
 		crisistypes.StoreKey,

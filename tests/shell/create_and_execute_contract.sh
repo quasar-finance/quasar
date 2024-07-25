@@ -5,14 +5,14 @@ set -e
 on_error() {
     echo "Some error occurred"
 
-    quasarnoded q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
+    quasard q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
 
     # afplay /System/Library/Sounds/Sosumi.aiff
 }
 
 trap 'on_error' ERR
 
-BINARY="docker exec localenv-quasar-1 quasarnoded"
+BINARY="docker exec localenv-quasar-1 quasard"
 
 CHAIN_ID="quasar"
 TESTNET_NAME="quasar"

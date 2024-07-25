@@ -71,7 +71,7 @@ build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 # process linker flags
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=quasar \
-		  -X github.com/cosmos/cosmos-sdk/version.AppName=quasarnoded \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=quasard \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
@@ -116,10 +116,10 @@ BUILD_TARGETS := build install
 build: BUILD_ARGS=-o $(BUILDDIR)/
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasarnoded
+	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/quasard
 
 $(BUILD_TARGETS_DEBUG): go.sum $(BUILDDIR)/
-	go $@ -mod=readonly $(BUILD_FLAGS_DEBUG) -gcflags='all=-N -l' $(BUILD_ARGS) ./cmd/quasarnoded
+	go $@ -mod=readonly $(BUILD_FLAGS_DEBUG) -gcflags='all=-N -l' $(BUILD_ARGS) ./cmd/quasard
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
@@ -144,7 +144,7 @@ build-reproducible-amd64: $(BUILDDIR)/
 		-f Dockerfile .
 	$(DOCKER) rm -f quasarbinary || true
 	$(DOCKER) create -ti --name quasarbinary quasar-amd64
-	$(DOCKER) cp quasarbinary:/bin/quasarnoded $(BUILDDIR)/quasarnoded-linux-amd64
+	$(DOCKER) cp quasarbinary:/bin/quasard $(BUILDDIR)/quasard-linux-amd64
 	$(DOCKER) rm -f quasarbinary
 
 build-reproducible-arm64: $(BUILDDIR)/
@@ -161,7 +161,7 @@ build-reproducible-arm64: $(BUILDDIR)/
 		-f Dockerfile .
 	$(DOCKER) rm -f quasarbinary || true
 	$(DOCKER) create -ti --name quasarbinary quasar-arm64
-	$(DOCKER) cp quasarbinary:/bin/quasarnoded $(BUILDDIR)/quasarnoded-linux-arm64
+	$(DOCKER) cp quasarbinary:/bin/quasard $(BUILDDIR)/quasard-linux-arm64
 	$(DOCKER) rm -f quasarbinary
 
 build-linux: go.sum
@@ -172,42 +172,105 @@ go.sum: go.mod
 	@go mod verify
 
 ###############################################################################
-###                         Proto & Mock Generation                         ###
+###                                  Proto                                  ###
 ###############################################################################
 
+proto-help:
+	@echo "proto subcommands"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make proto-[command]"
+	@echo ""
+	@echo "Available Commands:"
+	@echo "  all        Run proto-format and proto-gen"
+	@echo "  format     Format Protobuf files"
+	@echo "  gen        Generate Protobuf files"
+	@echo "  image-build  Build the protobuf Docker image"
+	@echo "  image-push  Push the protobuf Docker image"
+
+proto: proto-help
 proto-all: proto-format proto-gen
-BUF_VERSION=1.26.1
-BUILDER_VERSION=0.13.5
+
+PROTO_BUILDER_IMAGE=ghcr.io/cosmos/proto-builder:0.14.0
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE)
+proto-all: proto-format proto-gen
+
 proto-gen:
 	@echo "Generating Protobuf files"
-	@sh ./scripts/protocgen.sh
+	@$(DOCKER) run --rm -u 0 -v $(CURDIR):/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE) sh ./scripts/protocgen.sh
 
-proto-gen-1:
-	@echo "🤖 Generating code from protobuf..."
-	@echo "PWD is $(PWD)"
+proto-format:
+	@echo "Formatting Protobuf files"
+	@$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/docker-build-proto \
+		find ./proto -name "*.proto" -exec clang-format -i {} \;
 
-	@docker run --rm --volume "$(PWD)":/workspace --workdir /workspace \
-		ghcr.io/cosmos/proto-builder:$(BUILDER_VERSION) sh ./scripts/protocgen.sh
-	@echo "✅ Completed code generation!"
 
-proto-doc:
-	@echo "Generating Protoc docs"
-	@sh ./scripts/generate-docs.sh
+SWAGGER_DIR=./swagger-proto
+THIRD_PARTY_DIR=$(SWAGGER_DIR)/third_party
 
-.PHONY: proto-gen proto-doc
+proto-download-deps:
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos_tmp" && \
+	cd "$(THIRD_PARTY_DIR)/cosmos_tmp" && \
+	git init && \
+	git remote add origin "https://github.com/cosmos/cosmos-sdk.git" && \
+	git config core.sparseCheckout true && \
+	printf "proto\nthird_party\n" > .git/info/sparse-checkout && \
+	git pull origin main && \
+	rm -f ./proto/buf.* && \
+	mv ./proto/* ..
+	rm -rf "$(THIRD_PARTY_DIR)/cosmos_tmp"
 
-mocks: $(MOCKSDIR)/ 
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_channel_mocks.go $(GOMOD)/x/qoracle/types ChannelKeeper
-#	mockgen -package=mock -destination=$(MOCKSDIR)/ica_mocks.go $(GOMOD)/x/intergamm/types ICAControllerKeeper
-#	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_mocks.go $(GOMOD)/x/intergamm/types IBCTransferKeeper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ics4_wrapper_mocks.go $(GOMOD)/x/qoracle/types ICS4Wrapper
-	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_port_mocks.go $(GOMOD)/x/qoracle/types PortKeeper
-#	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_connection_mocks.go $(GOMOD)/x/intergamm/types ConnectionKeeper
-#	mockgen -package=mock -destination=$(MOCKSDIR)/ibc_client_mocks.go $(GOMOD)/x/intergamm/types ClientKeeper
+	mkdir -p "$(THIRD_PARTY_DIR)/ibc_tmp" && \
+	cd "$(THIRD_PARTY_DIR)/ibc_tmp" && \
+	git init && \
+	git remote add origin "https://github.com/cosmos/ibc-go.git" && \
+	git config core.sparseCheckout true && \
+	printf "proto\n" > .git/info/sparse-checkout && \
+	git pull origin main && \
+	rm -f ./proto/buf.* && \
+	mv ./proto/* ..
+	rm -rf "$(THIRD_PARTY_DIR)/ibc_tmp"
 
-$(MOCKSDIR)/:
-	mkdir -p $(MOCKSDIR)/
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos_proto_tmp" && \
+	cd "$(THIRD_PARTY_DIR)/cosmos_proto_tmp" && \
+	git init && \
+	git remote add origin "https://github.com/cosmos/cosmos-proto.git" && \
+	git config core.sparseCheckout true && \
+	printf "proto\n" > .git/info/sparse-checkout && \
+	git pull origin main && \
+	rm -f ./proto/buf.* && \
+	mv ./proto/* ..
+	rm -rf "$(THIRD_PARTY_DIR)/cosmos_proto_tmp"
 
+	mkdir -p "$(THIRD_PARTY_DIR)/gogoproto" && \
+	curl -SSL https://raw.githubusercontent.com/cosmos/gogoproto/main/gogoproto/gogo.proto > "$(THIRD_PARTY_DIR)/gogoproto/gogo.proto"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/google/api" && \
+	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto > "$(THIRD_PARTY_DIR)/google/api/annotations.proto"
+	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto > "$(THIRD_PARTY_DIR)/google/api/http.proto"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos/ics23/v1" && \
+	curl -sSL https://raw.githubusercontent.com/cosmos/ics23/master/proto/cosmos/ics23/v1/proofs.proto > "$(THIRD_PARTY_DIR)/cosmos/ics23/v1/proofs.proto"
+
+
+docs:
+	@echo
+	@echo "=========== Generate Message ============"
+	@echo
+	@make proto-download-deps
+	./scripts/generate-docs.sh
+
+	statik -src=client/docs/static -dest=client/docs -f -m
+	@if [ -n "$(git status --porcelain)" ]; then \
+        echo "\033[91mSwagger docs are out of sync!!!\033[0m";\
+        exit 1;\
+    else \
+        echo "\033[92mSwagger docs are in sync\033[0m";\
+    fi
+	@echo
+	@echo "=========== Generate Complete ============"
+	@echo
+.PHONY: docs
 ###############################################################################
 ###                           Tests & Simulation                            ###
 ###############################################################################

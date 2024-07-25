@@ -3,10 +3,9 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/cmd/quasarnoded/cmd"
+	"github.com/quasarlabs/quasarnode/cmd/quasard/cmd"
 	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeconstructDenom(t *testing.T) {

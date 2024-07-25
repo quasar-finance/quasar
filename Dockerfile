@@ -35,9 +35,9 @@ RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm |
 # Copy the remaining files
 COPY . .
 
-# Build quasarnoded binary
+# Build quasard binary
 # force it to use static lib (from above) not standard libgo_cosmwasm.so file
-# then log output of file /quasar/build/quasarnoded
+# then log output of file /quasar/build/quasard
 # then ensure static linking
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
@@ -46,14 +46,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
             -tags "netgo,ledger,muslc" \
             -ldflags \
                 "-X github.com/cosmos/cosmos-sdk/version.Name="quasar" \
-                -X github.com/cosmos/cosmos-sdk/version.AppName="quasarnoded" \
+                -X github.com/cosmos/cosmos-sdk/version.AppName="quasard" \
                 -X github.com/cosmos/cosmos-sdk/version.Version=${GIT_VERSION} \
                 -X github.com/cosmos/cosmos-sdk/version.Commit=${GIT_COMMIT} \
                 -X github.com/cosmos/cosmos-sdk/version.BuildTags='netgo,ledger,muslc' \
                 -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
             -trimpath \
-    -o build/quasarnoded \
-    /quasar/cmd/quasarnoded/main.go
+    -o build/quasard \
+    /quasar/cmd/quasard/main.go
 
 
 # --------------------------------------------------------
@@ -62,7 +62,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM ${RUNNER_IMAGE} as runner
 
-COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
+COPY --from=builder /quasar/build/quasard /bin/quasard
 
 ENV HOME /quasar
 WORKDIR $HOME
@@ -71,7 +71,7 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
-CMD ["quasarnoded"]
+CMD ["quasard"]
 
 # --------------------------------------------------------
 # Development
@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 	apt-get update && apt-get install -y $PACKAGES
 
 
-COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
+COPY --from=builder /quasar/build/quasard /bin/quasard
 
 
 ENV HOME /quasar
@@ -100,5 +100,5 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
-CMD ["quasarnoded"]
+CMD ["quasard"]
 ENTRYPOINT ["./entrypoint.sh"]

@@ -20,10 +20,10 @@ for i in "${conn_arr[@]}"
 do
    echo "##########################"
    echo "connection-id - $i"
-   ibc_q_client_id=`quasarnoded q ibc connection end $i --node tcp://localhost:26659 -o json | jq '.connection.client_id' | tr -d '"'`
+   ibc_q_client_id=`quasard q ibc connection end $i --node tcp://localhost:26659 -o json | jq '.connection.client_id' | tr -d '"'`
    echo "client id - $ibc_q_client_id"
    test_error $ibc_q_client_id
-   ibc_q_cp_chainid=`quasarnoded q ibc client state $ibc_q_client_id --node tcp://localhost:26659  -o json | jq ".client_state.chain_id" | tr -d '""'`
+   ibc_q_cp_chainid=`quasard q ibc client state $ibc_q_client_id --node tcp://localhost:26659  -o json | jq ".client_state.chain_id" | tr -d '""'`
    test_error $ibc_q_cp_chainid
    echo "cp chain id - $ibc_q_cp_chainid"
 done
@@ -37,7 +37,7 @@ do
    ibc_q_client_id=`osmosisd q ibc connection end $i --node tcp://localhost:26679 -o json | jq '.connection.client_id' | tr -d '"'`
    test_error $ibc_q_client_id
    echo "client id - $ibc_q_client_id"
-   ibc_q_cp_chainid=`quasarnoded q ibc client state $ibc_q_client_id --node tcp://localhost:26679  -o json | jq ".client_state.chain_id" | tr -d '""'`
+   ibc_q_cp_chainid=`quasard q ibc client state $ibc_q_client_id --node tcp://localhost:26679  -o json | jq ".client_state.chain_id" | tr -d '""'`
    test_error $ibc_q_cp_chainid
    echo "cp chain id - $ibc_q_cp_chainid"
 done
@@ -51,7 +51,7 @@ do
    ibc_q_client_id=`osmosisd q ibc connection end $i --node tcp://localhost:26669 -o json | jq '.connection.client_id' | tr -d '"'`
    test_error $ibc_q_client_id
    echo "client id - $ibc_q_client_id"
-   ibc_q_cp_chainid=`quasarnoded q ibc client state $ibc_q_client_id --node tcp://localhost:26669  -o json | jq ".client_state.chain_id" | tr -d '""'`
+   ibc_q_cp_chainid=`quasard q ibc client state $ibc_q_client_id --node tcp://localhost:26669  -o json | jq ".client_state.chain_id" | tr -d '""'`
    test_error $ibc_q_cp_chainid
    echo "cp chain id - $ibc_q_cp_chainid"
 done

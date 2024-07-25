@@ -1,5 +1,5 @@
 #!/bin/sh
-pkill quasarnoded
+pkill quasard
 
 ./quasar_localnet.sh
 

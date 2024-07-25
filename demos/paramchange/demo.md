@@ -9,26 +9,26 @@ ignite chain serve -c demos/paramchange/quasar.yml --home run/quasar/home --rese
 `
 4. Submit mind module param change proposal
 `
-quasarnoded tx gov submit-proposal param-change ./mint_param_change.json --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --home ~/.quasarnode --chain-id quasar --output json | jq
+quasard tx gov submit-proposal param-change ./mint_param_change.json --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --home ~/.quasarnode --chain-id quasar --output json | jq
 
 `
 5. Query the proposal state.
 `
-quasarnoded q gov proposals --node tcp://localhost:26659  --chain-id quasar  --output json | jq
+quasard q gov proposals --node tcp://localhost:26659  --chain-id quasar  --output json | jq
 `
 
 6. Query the mint param and notice value
 `
-quasarnoded q mint params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
+quasard q mint params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
 
 `
 7. Vote 
 `
-quasarnoded tx gov vote 1 yes --node tcp://localhost:26659   --chain-id quasar --from alice --output json | jq
+quasard tx gov vote 1 yes --node tcp://localhost:26659   --chain-id quasar --from alice --output json | jq
 
 `
 
 8. Query the mint param again after 5 minutes of configured voting period.
 `
-quasarnoded q mint params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
+quasard q mint params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
 `

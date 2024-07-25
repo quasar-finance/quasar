@@ -5,7 +5,7 @@ set -e
 on_error() {
     echo "Some error occurred"
 
-    quasarnoded q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
+    quasard q wasm contract-state smart $ADDR1 '{"trapped_errors":{}}'
 
     afplay /System/Library/Sounds/Sosumi.aiff
 }
@@ -42,7 +42,7 @@ cd ../../../smart-contracts
 
 docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
 
-BINARY=quasarnoded-go-18
+BINARY=quasard-go-18
 CHAIN_ID="quasar"
 ACCOUNT_NAME="my_treasury"
 ACCOUNT_ADDRESS="quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"

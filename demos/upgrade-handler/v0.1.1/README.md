@@ -15,7 +15,7 @@ After the execution:
 
 - Now that the governance proposal has been success the chain should have been halted. You can check the quasar.log file
   expecting to find: UPGRADE "v0.1.1" NEEDED at height: 30: CONSENSUS FAILURE!!!
-- You can now "make install" the new version and check that blocks are produced as expected by running "quasarnoded
+- You can now "make install" the new version and check that blocks are produced as expected by running "quasard
   start". It should start producing blocks from height 31.
 
 ## Usage

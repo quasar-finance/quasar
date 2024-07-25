@@ -163,8 +163,8 @@ To create a new token, use the create-denom command from the tokenfactory module
 To create a new token we can use the create-denom command.
 
 ```sh
-quasarnoded tx tokenfactory create-denom ufoo --keyring-backend=test --from alice --keyring-backend test --home ~/.quasarnode --chain-id quasar --node tcp://localhost:26659
-quasarnoded q tokenfactory denom-authority-metadata  factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo --node tcp://localhost:26659
+quasard tx tokenfactory create-denom ufoo --keyring-backend=test --from alice --keyring-backend test --home ~/.quasarnode --chain-id quasar --node tcp://localhost:26659
+quasard q tokenfactory denom-authority-metadata  factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo --node tcp://localhost:26659
 
 ```
 
@@ -172,16 +172,16 @@ quasarnoded q tokenfactory denom-authority-metadata  factory/quasar1sqlsc5024ssz
 Once a new token is created, it can be minted using the mint command in the tokenfactory module. Note that the complete tokenfactory address, in the format of factory/{creator address}/{subdenom}, must be used to mint the token.
 
 ```sh
-quasarnoded tx tokenfactory mint 100000000000factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo --keyring-backend=test --from alice --keyring-backend test --home ~/.quasarnode --chain-id quasar --node tcp://localhost:26659
+quasard tx tokenfactory mint 100000000000factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo --keyring-backend=test --from alice --keyring-backend test --home ~/.quasarnode --chain-id quasar --node tcp://localhost:26659
 ```
 
 ## Checking Token metadata
 To view a token's metadata, use the denom-metadata command in the bank module. The following example queries the metadata for the token factory/osmo1c584m4lq25h83yp6ag8hh4htjr92d954vklzja/ufoo:
 
 ```sh
-quasarnoded query bank denom-metadata --denom factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo
-quasarnoded q tokenfactory denoms-from-creator quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec --node tcp://localhost:26659
-quasarnoded q tokenfactory denom-authority-metadata  factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo --node tcp://localhost:26659
+quasard query bank denom-metadata --denom factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo
+quasard q tokenfactory denoms-from-creator quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec --node tcp://localhost:26659
+quasard q tokenfactory denom-authority-metadata  factory/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec/ufoo --node tcp://localhost:26659
 
 ```
 
@@ -189,5 +189,5 @@ quasarnoded q tokenfactory denom-authority-metadata  factory/quasar1sqlsc5024ssz
 To see a list of tokens created by a specific account, use the denoms-from-creator command in the tokenfactory module. The following example shows tokens created by the account osmo1c584m4lq25h83yp6ag8hh4htjr92d954vklzja:
 
 ```sh
-quasarnoded query tokenfactory denoms-from-creator quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+quasard query tokenfactory denoms-from-creator quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 ```

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ## env variables
-BINARY=quasarnoded
+BINARY=quasard
 CHAIN_ID="quasar"
 ACCOUNT_NAME="my_treasury"
 RPC="http://127.0.0.1:26659"
