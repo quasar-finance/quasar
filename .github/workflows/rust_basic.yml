@@ -9,6 +9,10 @@ on:
       target:
         required: true
         type: string
+      unit_tests:
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   checks:
@@ -34,5 +38,6 @@ jobs:
         run: cargo fmt --all -- --check
         working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
       - name: Run unit-tests
+        if: inputs.unit_tests
         run: cargo unit-test
         working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
