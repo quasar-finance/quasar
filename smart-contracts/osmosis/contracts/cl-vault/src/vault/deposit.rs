@@ -43,6 +43,8 @@ pub fn execute_deposit(
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
+    // NOTE: both the deposit arms here have some repeated math logic,
+    // in case of any math change please consider both arms
     match deposit_type {
         DepositType::Exact => {
             handle_exact_deposit(deps, env, recipient, pool_config, deposit, refund)
@@ -577,20 +579,6 @@ mod tests {
                 },
             )
             .unwrap();
-
-        // STRATEGIST_REWARDS
-        //     .save(deps.as_mut().storage, &CoinList::new())
-        //     .unwrap();
-        // POOL_CONFIG
-        //     .save(
-        //         deps.as_mut().storage,
-        //         &PoolConfig {
-        //             pool_id: 1,
-        //             token0: "token0".to_string(),
-        //             token1: "token1".to_string(),
-        //         },
-        //     )
-        //     .unwrap();
 
         execute_deposit(
             deps.as_mut(),
