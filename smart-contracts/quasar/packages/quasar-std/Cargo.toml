@@ -4,6 +4,8 @@ name = "quasar-std"
 version = "0.1.0"
 
 [dependencies]
-prost = { workspace = true }
+prost = { workspace = true, default-features = false, features = ["prost-derive"] }
 prost-types = { workspace = true }
 cosmos-sdk-proto = { workspace = true }
+quasar-std-derive = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["stargate"] }

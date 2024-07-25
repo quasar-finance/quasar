@@ -1,0 +1,19 @@
+[package]
+description = "Procedural macro for quasar-std"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+name = "quasar-std-derive"
+version = "0.20.1"
+
+
+[features]
+backtraces = []
+
+[lib]
+proc-macro = true
+
+[dependencies]
+itertools = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
