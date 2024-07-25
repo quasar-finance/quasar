@@ -1,0 +1,27 @@
+name: proto build
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/quasar/proto-build/Cargo.toml'
+      - 'smart-contracts/quasar/proto-build/**.rs'
+      - '.github/workflows/proto_build.yml'
+      - '.github/workflows/rust_basic.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/quasar/proto-build/Cargo.toml'
+      - 'smart-contracts/quasar/proto-build/**.rs'
+      - '.github/workflows/proto_build.yml'
+      - '.github/workflows/rust_basic.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: quasar/proto-build
+      workspace: quasar

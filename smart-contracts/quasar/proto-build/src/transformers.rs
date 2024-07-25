@@ -318,20 +318,16 @@ pub fn allow_serde_option_vec_u8_as_base64_encoded_string(s: syn::ItemStruct) ->
                 if let Some(segment) = type_path.path.segments.last() {
                     if segment.ident == "Option" {
                         if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                            if let Some(arg) = args.args.first() {
-                                if let syn::GenericArgument::Type(inner_ty) = arg {
-                                    if let syn::Type::Path(inner_path) = inner_ty {
-                                        if let Some(inner_segment) = inner_path.path.segments.last() {
-                                            if inner_segment.ident == "Vec" {
-                                                let from_str: syn::Attribute = parse_quote! {
-                                                    #[serde(
-                                                        serialize_with = "crate::serde::as_option_base64_encoded_string::serialize",
-                                                        deserialize_with = "crate::serde::as_option_base64_encoded_string::deserialize"
-                                                    )]
-                                                };
-                                                field.attrs.push(from_str);
-                                            }
-                                        }
+                            if let Some(syn::GenericArgument::Type(syn::Type::Path(inner_path))) = args.args.first() {
+                                if let Some(inner_segment) = inner_path.path.segments.last() {
+                                    if inner_segment.ident == "Vec" {
+                                        let from_str: syn::Attribute = parse_quote! {
+                                            #[serde(
+                                                serialize_with = "crate::serde::as_option_base64_encoded_string::serialize",
+                                                deserialize_with = "crate::serde::as_option_base64_encoded_string::deserialize"
+                                            )]
+                                        };
+                                        field.attrs.push(from_str);
                                     }
                                 }
                             }
@@ -600,7 +596,7 @@ pub fn append_querier(
         vec![]
     };
 
-    vec![items, querier].concat()
+    [items, querier]
 }
 
 /// This is a hack to fix a clashing name in the stake_authorization module
