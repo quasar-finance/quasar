@@ -2,7 +2,6 @@ use heck::ToUpperCamelCase;
 use log::debug;
 use prost_types::FileDescriptorSet;
 
-use regex::Regex;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::{fs, io};
@@ -55,13 +54,6 @@ fn transform(src: &Path, descriptor: &FileDescriptorSet) -> io::Result<()> {
             return Ok(());
         }
     };
-
-    for &(regex, replacement) in transformers::REPLACEMENTS {
-        contents = Regex::new(regex)
-            .unwrap_or_else(|_| panic!("invalid regex: {}", regex))
-            .replace_all(&contents, replacement)
-            .to_string();
-    }
 
     let file = syn::parse_file(&contents);
     if let Ok(file) = file {
