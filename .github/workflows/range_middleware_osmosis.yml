@@ -23,4 +23,5 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'osmosis/contracts/range-middleware'
+      target: contracts/range-middleware
+      workspace: osmosis

@@ -27,4 +27,5 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'osmosis/contracts/cl-vault'
+      target: contracts/cl-vault
+      workspace: osmosis

@@ -3,9 +3,16 @@ name: Unit Test (rust)
 on:
   workflow_call:
     inputs:
+      workspace:
+        required: true
+        type: string
       target:
         required: true
         type: string
+      unit_tests:
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   checks:
@@ -21,15 +28,16 @@ jobs:
           path: |
             ~/.cargo
             ~/go
-            smart-contracts/osmosis/**/target
-          key: ${{ runner.os }}-cargo-osmosis-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo-osmosis
+            smart-contracts/${{ inputs.workspace }}/**/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
       - name: Rust lint
         run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
-        working-directory: smart-contracts/${{ inputs.target }}
+        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
       - name: Rust format check
         run: cargo fmt --all -- --check
-        working-directory: smart-contracts/${{ inputs.target }}
+        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
       - name: Run unit-tests
+        if: inputs.unit_tests
         run: cargo unit-test
-        working-directory: smart-contracts/${{ inputs.target }}
+        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
