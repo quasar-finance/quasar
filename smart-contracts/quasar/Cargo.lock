@@ -131,6 +131,7 @@ dependencies = [
 name = "babylon-vault"
 version = "0.0.1"
 dependencies = [
+ "cosmos-sdk-proto",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus",

@@ -1,4 +1,4 @@
-use crate::tests::setup::{OWNER, SUBDENOM, USER};
+use crate::tests::setup::{OWNER, SUBDENOM, USER, VAULT_DENOM};
 use crate::{
     contract::{instantiate, query, reply, CREATE_DENOM_REPLY_ID},
     msg::{InstantiateMsg, QueryMsg},
@@ -40,8 +40,6 @@ fn test_instantiate() {
         .into()
     );
 
-    let new_token = "new_token".to_string();
-
     assert!(reply(
         deps.as_mut(),
         env.clone(),
@@ -51,7 +49,7 @@ fn test_instantiate() {
                 events: vec![],
                 data: Some(
                     MsgCreateDenomResponse {
-                        new_token_denom: new_token.clone(),
+                        new_token_denom: VAULT_DENOM.to_string(),
                     }
                     .encode_to_vec()
                     .into()
@@ -61,7 +59,7 @@ fn test_instantiate() {
     )
     .is_ok());
 
-    let vault_token =
+    let vault_denom =
         from_json::<String>(&query(deps.as_ref(), env, QueryMsg::Denom {}).unwrap()).unwrap();
-    assert_eq!(vault_token, new_token);
+    assert_eq!(vault_denom, VAULT_DENOM);
 }

@@ -106,6 +106,6 @@ fn unregister_fails_if_denom_is_not_registered() {
 
     assert_eq!(
         result.unwrap_err(),
-        VaultError::LstNotFound { denom: other_denom }
+        VaultError::DenomNotFound { denom: other_denom }
     );
 }
