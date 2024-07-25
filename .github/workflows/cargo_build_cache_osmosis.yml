@@ -1,31 +1,16 @@
-name: Store cargo build cache
+name: Store cargo build cache (osmosis)
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'smart-contracts/**.rs'
-      - 'smart-contracts/**.toml'
+      - 'smart-contracts/osmosis/**.rs'
+      - 'smart-contracts/osmosis/**.toml'
   workflow_dispatch:
 
 jobs:
-  store-build-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Rust check
-        run: cargo check
-        working-directory: smart-contracts/osmosis
-      - name: Store dependencies
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.cargo
-            ~/go
-            smart-contracts/osmosis/**/target
-          key: ${{ runner.os }}-cargo-osmosis-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo
+  osmosis-build-cache:
+    uses: ./.github/workflows/cargo_build_cache.yml
+    with:
+      workspace: osmosis

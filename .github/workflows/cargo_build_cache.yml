@@ -1,0 +1,29 @@
+name: Store cargo build cache
+
+on:
+  workflow_call:
+    inputs:
+      workspace:
+        required: true
+        type: string
+
+jobs:
+  store-build-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust check
+        run: cargo check
+        working-directory: smart-contracts/${{ inputs.workspace }}
+      - name: Store dependencies
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo
+            ~/go
+            smart-contracts/${{ inputs.workspace }}/**/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
