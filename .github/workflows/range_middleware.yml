@@ -7,18 +7,20 @@ on:
     paths:
       - 'smart-contracts/contracts/range-middleware/Cargo.toml'
       - 'smart-contracts/contracts/range-middleware/**.rs'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/range_middleware.yml'
   push:
     branches:
       - main
     paths:
       - 'smart-contracts/contracts/range-middleware/Cargo.toml'
       - 'smart-contracts/contracts/range-middleware/**.rs'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/range_middleware.yml'
   workflow_dispatch:
 
 jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'contract/range-middleware'
+      target: 'contracts/range-middleware'
