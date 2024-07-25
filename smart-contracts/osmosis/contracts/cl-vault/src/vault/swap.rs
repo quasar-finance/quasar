@@ -1,7 +1,6 @@
-use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
+use cosmwasm_std::{Addr, CosmosMsg, DepsMut, Fraction, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-use crate::helpers::assert::assert_range_admin;
 use crate::helpers::msgs::swap_msg;
 use crate::msg::SwapOperation;
 use crate::state::POOL_CONFIG;
@@ -28,54 +27,47 @@ pub struct SwapParams {
 
 pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
+    contract_address: Addr,
     swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
-    // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
-    assert_range_admin(deps.storage, &info.sender)?;
-
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     if swap_operations.is_empty() {
         return Err(ContractError::EmptySwapOperations {});
     }
-
-    let mut swap_msgs: Vec<CosmosMsg> = vec![];
+    let mut swap_msgs = Vec::new();
 
     for swap_operation in swap_operations {
-        let token_in_denom = swap_operation.token_in_denom.clone();
-        let pool_token_0 = pool_config.token0.clone();
-        let pool_token_1 = pool_config.token1.clone();
+        let token_in_denom = &swap_operation.token_in_denom;
 
         // Assert that no BASE_DENOM or QUOTE_DENOM is trying to be swapped as token_in
-        if token_in_denom == pool_token_0 || token_in_denom == pool_token_1 {
+        if token_in_denom == &pool_config.token0 || token_in_denom == &pool_config.token1 {
             return Err(ContractError::InvalidSwapAssets {});
         }
 
-        // Throw an Error if contract balance for the wanted denom is 0
+        // Get contract balance for the input token
         let balance_in_contract = deps
             .querier
-            .query_balance(
-                env.clone().contract.address,
-                swap_operation.clone().token_in_denom,
-            )?
+            .query_balance(contract_address.clone(), token_in_denom.clone())?
             .amount;
 
-        // TODO_FUTURE: This could be a <= condition against a threshold value mayube in dollars to avoid dust swaps
-        if balance_in_contract == Uint128::zero() {
-            // TODO: Use InsufficientFundsForSwap instead, this has been removed after STRATEGIST_REWARDS state eval removal
-            return Err(ContractError::InsufficientFunds {});
+        if balance_in_contract.is_zero() {
+            return Err(ContractError::InsufficientFundsForSwap {
+                balance: balance_in_contract,
+                needed: Uint128::new(1),
+            });
         }
 
-        // TODO_FUTURE: We could be swapping into the actual vault balance so we could prepend_swap() the autocompound entrypoint.
+        // Split the balance in contract into two parts
+        // 1. tokens to be swapped in token0
+        // 2. tokens to be swapped in token1
         let part_0_amount = balance_in_contract.checked_div(Uint128::new(2))?;
         let part_1_amount = balance_in_contract
             .checked_add(Uint128::new(1))?
             .checked_div(Uint128::new(2))?;
 
-        // TODO_FUTURE: We should be passing the max_slippage from outside as we do during ModifyRange
+        // Calculate the minimum amount of tokens to be received
         let token_out_min_amount_0 = part_0_amount.checked_multiply_ratio(
             vault_config.swap_max_slippage.numerator(),
             vault_config.swap_max_slippage.denominator(),
@@ -87,25 +79,25 @@ pub fn execute_swap_non_vault_funds(
 
         swap_msgs.push(swap_msg(
             &deps,
-            &env,
+            contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_0,
                 token_in_amount: part_0_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_0,
-                token_out_denom: pool_token_0,
+                token_out_denom: pool_config.token0.clone(),
                 forced_swap_route: swap_operation.forced_swap_route_token_0,
             },
         )?);
         swap_msgs.push(swap_msg(
             &deps,
-            &env,
+            contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_1,
                 token_in_amount: part_1_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_1,
-                token_out_denom: pool_token_1,
+                token_out_denom: pool_config.token1.clone(),
                 forced_swap_route: swap_operation.forced_swap_route_token_1,
             },
         )?);
@@ -116,54 +108,6 @@ pub fn execute_swap_non_vault_funds(
         .add_attribute("method", "execute")
         .add_attribute("action", "swap_non_vault_funds"))
 }
-
-/// estimate_swap can be used to pass correct token_out_min_amount values into swap()
-/// for now this function can only be used for our pool
-/// this will likely be expanded once we allow arbitrary pool swaps
-// pub fn _estimate_swap(
-//     querier: &QuerierWrapper,
-//     storage: &mut dyn Storage,
-//     _env: &Env,
-//     token_in_amount: Uint128,
-//     token_in_denom: &String,
-//     _token_out_min_amount: Uint128,
-// ) -> Result<Coin, ContractError> {
-//     let pool_config = POOL_CONFIG.load(storage)?;
-
-//     if !pool_config.pool_contains_token(token_in_denom) {
-//         return Err(ContractError::BadTokenForSwap {
-//             base_token: pool_config.token0,
-//             quote_token: pool_config.token1,
-//         });
-//     }
-
-//     // get token_out_denom
-//     let token_out_denom = if *token_in_denom == pool_config.token0 {
-//         pool_config.token1
-//     } else {
-//         pool_config.token0
-//     };
-
-//     // we will only ever have a route length of one, this will likely change once we start selecting different routes
-//     let pool_route = SwapAmountInRoute {
-//         pool_id: pool_config.pool_id,
-//         token_out_denom: token_out_denom.to_string(),
-//     };
-
-//     let pm_querier =
-//         osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier::new(querier);
-
-//     let result = pm_querier.estimate_swap_exact_amount_in(
-//         pool_config.pool_id,
-//         token_in_amount.to_string() + token_in_denom,
-//         vec![pool_route],
-//     )?;
-
-//     Ok(Coin {
-//         denom: token_out_denom,
-//         amount: Uint128::from_str(&result.token_out_amount)?,
-//     })
-// }
 
 #[cfg(test)]
 mod tests {
@@ -210,7 +154,7 @@ mod tests {
             forced_swap_route: None,
         };
 
-        let result = super::swap_msg(&deps_mut, &env, swap_params).unwrap();
+        let result = super::swap_msg(&deps_mut, env.contract.address.clone(), swap_params).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =

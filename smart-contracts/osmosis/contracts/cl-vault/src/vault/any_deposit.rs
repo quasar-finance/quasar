@@ -333,7 +333,7 @@ fn calculate_swap_amount(
     // pool on which the vault is running
     let swap_msg = swap_msg(
         &deps,
-        env,
+        env.contract.address.clone(),
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
