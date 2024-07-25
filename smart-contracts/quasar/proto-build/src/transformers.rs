@@ -572,7 +572,7 @@ pub fn append_querier(
         }
     }).collect::<Vec<TokenStream2>>());
 
-    let querier = if let Some(query_fns) = query_fns {
+    let mut querier = if let Some(query_fns) = query_fns {
         if !nested_mod {
             vec![
                 parse_quote! {
@@ -596,7 +596,8 @@ pub fn append_querier(
         vec![]
     };
 
-    [items, querier]
+    querier.extend(items);
+    querier
 }
 
 /// This is a hack to fix a clashing name in the stake_authorization module
