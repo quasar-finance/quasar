@@ -23,5 +23,5 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: quasar/proto-build
+      target: proto-build
       workspace: quasar
