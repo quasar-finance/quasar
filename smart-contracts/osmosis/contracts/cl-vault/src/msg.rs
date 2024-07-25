@@ -173,6 +173,11 @@ pub struct InstantiateMsg {
     pub initial_upper_tick: i64,
 }
 
+pub enum DepositType {
+    Exact,
+    Any { max_slippage: Decimal },
+}
+
 #[cw_serde]
 pub struct MigrateMsg {
     pub dex_router: Addr,

@@ -13,7 +13,7 @@ use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{DepositType, ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
 use crate::query::{
     query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
     query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
@@ -32,14 +32,13 @@ use crate::state::{
 #[allow(deprecated)]
 use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
-use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
 };
+use crate::vault::deposit::{execute_deposit, handle_any_deposit_swap_reply};
 use crate::vault::distribution::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
-use crate::vault::exact_deposit::execute_exact_deposit;
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
@@ -80,9 +79,15 @@ pub fn execute(
             asset: _,
             recipient,
             max_slippage,
-        } => execute_any_deposit(deps, env, info, recipient, max_slippage),
+        } => execute_deposit(
+            deps,
+            env,
+            info,
+            recipient,
+            DepositType::Any { max_slippage },
+        ),
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
-            execute_exact_deposit(deps, env, info, recipient)
+            execute_deposit(deps, env, info, recipient, DepositType::Exact)
         }
         cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             prepend_claim_msg(
@@ -97,10 +102,10 @@ pub fn execute(
                 }
                 crate::msg::ExtensionExecuteMsg::Authz(msg) => match msg {
                     crate::msg::AuthzExtension::ExactDeposit {} => {
-                        execute_exact_deposit(deps, env, info, None)
+                        execute_deposit(deps, env, info, None, DepositType::Exact)
                     }
                     crate::msg::AuthzExtension::AnyDeposit { max_slippage } => {
-                        execute_any_deposit(deps, env, info, None, max_slippage)
+                        execute_deposit(deps, env, info, None, DepositType::Any { max_slippage })
                     }
                     crate::msg::AuthzExtension::Redeem { amount } => prepend_claim_msg(
                         &env,

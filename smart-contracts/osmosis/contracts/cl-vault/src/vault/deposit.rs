@@ -1,42 +1,72 @@
-use cosmwasm_std::{coin, DepsMut, Env, MessageInfo, Response, Uint128, Uint256};
+use cosmwasm_std::{
+    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Uint256,
+};
 
+use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
 use crate::helpers::assert::must_pay_one_or_two;
-use crate::helpers::getters::{get_asset0_value, get_depositable_tokens};
-use crate::helpers::msgs::refund_bank_msg;
+use crate::helpers::getters::{
+    get_asset0_value, get_depositable_tokens, get_swap_amount_and_direction, get_twap_price,
+};
+use crate::helpers::msgs::{refund_bank_msg, swap_msg};
+use crate::msg::DepositType;
 use crate::query::query_total_vault_token_supply;
+use crate::reply::Replies;
+use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
 use crate::{
     query::query_total_assets,
     state::{POOL_CONFIG, SHARES, VAULT_DENOM},
     ContractError,
 };
 
-/// Try to deposit as much user funds as we can in the current ratio of the vault and
-/// refund the rest to the caller.
-pub(crate) fn execute_exact_deposit(
+use super::concentrated_liquidity::{get_cl_pool_info, get_position};
+use super::range::SwapDirection;
+use super::swap::{SwapCalculationResult, SwapParams};
+
+pub fn execute_deposit(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     recipient: Option<String>,
+    deposit_type: DepositType,
 ) -> Result<Response, ContractError> {
-    // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
-    let pool = POOL_CONFIG.load(deps.storage)?;
-    let (token0, token1) = must_pay_one_or_two(&info, (pool.token0.clone(), pool.token1.clone()))?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let (token0, token1) = must_pay_one_or_two(
+        &info,
+        (pool_config.token0.clone(), pool_config.token1.clone()),
+    )?;
 
-    // get the amount of funds we can deposit from this ratio
     let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
-    let vault_denom = VAULT_DENOM.load(deps.storage)?;
-    let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
+    match deposit_type {
+        DepositType::Exact => {
+            handle_exact_deposit(deps, env, recipient, pool_config, deposit, refund)
+        }
+        DepositType::Any { max_slippage } => handle_any_deposit(
+            deps,
+            env,
+            recipient,
+            pool_config,
+            deposit,
+            refund,
+            max_slippage,
+        ),
+    }
+}
 
-    let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
-    let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
-
-    // calculate the amount of shares we can mint for this
+fn handle_exact_deposit(
+    deps: DepsMut,
+    env: Env,
+    recipient: Addr,
+    pool_config: PoolConfig,
+    deposit: (Uint128, Uint128),
+    refund: (Uint128, Uint128),
+) -> Result<Response, ContractError> {
     let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
     let total_assets_value = get_asset0_value(
         deps.storage,
@@ -45,7 +75,12 @@ pub(crate) fn execute_exact_deposit(
         total_assets.token1.amount,
     )?;
 
-    // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
+
+    let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
+    let refund_value = get_asset0_value(deps.storage, &deps.querier, refund.0, refund.1)?;
+
     let user_shares: Uint128 = if total_vault_shares.is_zero() {
         user_value
     } else {
@@ -57,6 +92,202 @@ pub(crate) fn execute_exact_deposit(
                     .checked_sub(refund_value)?
                     .into(),
             )?
+            .try_into()?
+    };
+
+    SHARES.update(
+        deps.storage,
+        recipient.clone(),
+        |old| -> Result<Uint128, ContractError> {
+            if let Some(existing_user_shares) = old {
+                Ok(user_shares + existing_user_shares)
+            } else {
+                Ok(user_shares)
+            }
+        },
+    )?;
+
+    let mint_msg = MsgMint {
+        sender: env.clone().contract.address.to_string(),
+        amount: Some(coin(user_shares.into(), vault_denom).into()),
+        mint_to_address: env.clone().contract.address.to_string(),
+    };
+
+    let mut resp = Response::new()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "exact_deposit")
+        .add_attribute("amount0", deposit.0)
+        .add_attribute("amount1", deposit.1)
+        .add_message(mint_msg)
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str());
+
+    if let Some((bank_msg, bank_attr)) = refund_bank_msg(
+        recipient,
+        Some(coin(refund.0.u128(), pool_config.token0)),
+        Some(coin(refund.1.u128(), pool_config.token1)),
+    )? {
+        resp = resp.add_message(bank_msg).add_attributes(bank_attr);
+    }
+
+    Ok(resp)
+}
+
+fn handle_any_deposit(
+    deps: DepsMut,
+    env: Env,
+    recipient: Addr,
+    pool_config: PoolConfig,
+    deposit: (Uint128, Uint128),
+    refund: (Uint128, Uint128),
+    max_slippage: Decimal,
+) -> Result<Response, ContractError> {
+    let position = get_position(deps.storage, &deps.querier)?
+        .position
+        .ok_or(ContractError::MissingPosition {})?;
+
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+    if !refund.0.is_zero() || !refund.1.is_zero() {
+        let (swap_amount, swap_direction) = get_swap_amount_and_direction(
+            refund.0,
+            refund.1,
+            pool_details.current_tick,
+            position.lower_tick,
+            position.upper_tick,
+        )
+        .unwrap();
+
+        let swap_calc_result = calculate_swap_amount(
+            deps,
+            &env,
+            pool_config,
+            swap_direction,
+            swap_amount,
+            refund,
+            deposit,
+            max_slippage,
+            &recipient,
+        )?;
+
+        return Ok(Response::new()
+            .add_submessage(SubMsg::reply_on_success(
+                swap_calc_result.swap_msg,
+                Replies::AnyDepositSwap.into(),
+            ))
+            .add_attributes(vec![
+                attr("method", "execute"),
+                attr("action", "any_deposit"),
+                attr(
+                    "token_in",
+                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+                ),
+                attr(
+                    "token_out_min",
+                    format!("{}", swap_calc_result.token_out_min_amount),
+                ),
+            ]));
+    }
+
+    let (mint_msg, user_shares) = mint_msg_user_shares(deps, &env, &deposit, &recipient)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "execute")
+        .add_attribute("action", "any_deposit")
+        .add_attribute("amount0", deposit.0)
+        .add_attribute("amount1", deposit.1)
+        .add_message(mint_msg)
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str()))
+}
+
+pub fn handle_any_deposit_swap_reply(
+    mut deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
+    let resp: MsgSwapExactAmountInResponse = data.try_into()?;
+
+    let (swap_direction, left_over_amount, recipient, deposit_amount_in_ratio) =
+        CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
+
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
+    // get post swap balances to create positions with
+    let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
+        SwapDirection::ZeroToOne => (
+            left_over_amount,
+            Uint128::new(resp.token_out_amount.parse()?),
+        ),
+        SwapDirection::OneToZero => (
+            Uint128::new(resp.token_out_amount.parse()?),
+            left_over_amount,
+        ),
+    };
+
+    // Create the tuple for minting coins
+    let coins_to_mint_for = (
+        Coin {
+            denom: pool_config.token0.clone(),
+            amount: balance0 + deposit_amount_in_ratio.0,
+        },
+        Coin {
+            denom: pool_config.token1.clone(),
+            amount: balance1 + deposit_amount_in_ratio.1,
+        },
+    );
+
+    let (mint_msg, user_shares) = mint_msg_user_shares(
+        deps.branch(),
+        &env,
+        &(coins_to_mint_for.0.amount, coins_to_mint_for.1.amount),
+        &recipient,
+    )?;
+
+    CURRENT_SWAP_ANY_DEPOSIT.remove(deps.storage);
+
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_any_deposit_swap")
+        .add_attribute("amount0", balance0)
+        .add_attribute("amount1", balance1)
+        .add_message(mint_msg)
+        .add_attribute("mint_shares_amount", user_shares)
+        .add_attribute("receiver", recipient.as_str()))
+}
+
+fn mint_msg_user_shares(
+    deps: DepsMut,
+    env: &Env,
+    deposit_amount_in_ratio: &(Uint128, Uint128),
+    recipient: &Addr,
+) -> Result<(MsgMint, Uint128), ContractError> {
+    // calculate the amount of shares we can mint for this
+    let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
+    let total_assets_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        total_assets.token0.amount,
+        total_assets.token1.amount,
+    )?;
+
+    let vault_denom = VAULT_DENOM.load(deps.storage)?;
+    let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
+
+    let user_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        deposit_amount_in_ratio.0,
+        deposit_amount_in_ratio.1,
+    )?;
+
+    // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
+    let user_shares: Uint128 = if total_vault_shares.is_zero() {
+        user_value
+    } else {
+        total_vault_shares
+            .checked_mul(user_value.into())?
+            .checked_div(total_assets_value.into())?
             .try_into()?
     };
 
@@ -84,24 +315,82 @@ pub(crate) fn execute_exact_deposit(
         mint_to_address: env.clone().contract.address.to_string(),
     };
 
-    let mut resp = Response::new()
-        .add_attribute("method", "execute")
-        .add_attribute("action", "exact_deposit")
-        .add_attribute("amount0", deposit.0)
-        .add_attribute("amount1", deposit.1)
-        .add_message(mint_msg)
-        .add_attribute("mint_shares_amount", user_shares)
-        .add_attribute("receiver", recipient.as_str());
+    Ok((mint_msg, user_shares))
+}
 
-    if let Some((bank_msg, bank_attr)) = refund_bank_msg(
-        recipient,
-        Some(coin(refund.0.u128(), pool.token0)),
-        Some(coin(refund.1.u128(), pool.token1)),
-    )? {
-        resp = resp.add_message(bank_msg).add_attributes(bank_attr);
+#[allow(clippy::too_many_arguments)]
+fn calculate_swap_amount(
+    deps: DepsMut,
+    env: &Env,
+    pool_config: PoolConfig,
+    swap_direction: SwapDirection,
+    token_in_amount: Uint128,
+    swappable_amount: (Uint128, Uint128),
+    deposit_amount_in_ratio: (Uint128, Uint128),
+    max_slippage: Decimal,
+    recipient: &Addr,
+) -> Result<SwapCalculationResult, ContractError> {
+    let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
+    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
+        match swap_direction {
+            SwapDirection::ZeroToOne => (
+                &pool_config.token0,
+                &pool_config.token1,
+                token_in_amount
+                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+                swappable_amount.0.checked_sub(token_in_amount)?,
+            ),
+            SwapDirection::OneToZero => (
+                &pool_config.token1,
+                &pool_config.token0,
+                token_in_amount
+                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+                swappable_amount.1.checked_sub(token_in_amount)?,
+            ),
+        };
+
+    CURRENT_SWAP_ANY_DEPOSIT.save(
+        deps.storage,
+        &(
+            swap_direction,
+            left_over_amount,
+            recipient.clone(),
+            deposit_amount_in_ratio,
+        ),
+    )?;
+
+    let token_out_min_amount = token_out_ideal_amount?
+        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
+
+    if !pool_config.pool_contains_token(token_in_denom) {
+        return Err(ContractError::BadTokenForSwap {
+            base_token: pool_config.token0,
+            quote_token: pool_config.token1,
+        });
     }
 
-    Ok(resp)
+    // generate a swap message with recommended path as the current
+    // pool on which the vault is running
+    let swap_msg = swap_msg(
+        &deps,
+        env,
+        SwapParams {
+            pool_id: pool_config.pool_id,
+            token_in_amount,
+            token_out_min_amount,
+            token_in_denom: token_in_denom.clone(),
+            token_out_denom: token_out_denom.clone(),
+            forced_swap_route: None, // TODO: check this None
+        },
+    )?;
+
+    Ok(SwapCalculationResult {
+        swap_msg,
+        token_in_denom: token_in_denom.to_string(),
+        token_out_min_amount,
+        token_in_amount,
+        position_id: None,
+    })
 }
 
 #[cfg(test)]
@@ -303,7 +592,7 @@ mod tests {
         //     )
         //     .unwrap();
 
-        execute_exact_deposit(
+        execute_deposit(
             deps.as_mut(),
             env,
             MessageInfo {
@@ -311,6 +600,7 @@ mod tests {
                 funds: vec![coin(100, "token0"), coin(100, "token1")],
             },
             None,
+            DepositType::Exact,
         )
         .unwrap();
 

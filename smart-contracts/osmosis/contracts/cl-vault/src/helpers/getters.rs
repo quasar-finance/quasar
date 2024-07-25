@@ -1,5 +1,6 @@
 use crate::math::tick::tick_to_price;
 use crate::state::{PoolConfig, RANGE_ADMIN};
+use crate::vault::range::SwapDirection;
 use std::str::FromStr;
 
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
@@ -243,6 +244,40 @@ pub fn get_tokens_provided(
     }
 
     Ok(tokens_provided)
+}
+
+pub fn get_swap_amount_and_direction(
+    balance0: Uint128,
+    balance1: Uint128,
+    current_tick: i64,
+    target_lower_tick: i64,
+    target_upper_tick: i64,
+) -> Result<(Uint128, SwapDirection), ContractError> {
+    if !balance0.is_zero() {
+        let token_in_amount = if current_tick > target_upper_tick {
+            balance0
+        } else {
+            get_single_sided_deposit_0_to_1_swap_amount(
+                balance0,
+                target_lower_tick,
+                current_tick,
+                target_upper_tick,
+            )?
+        };
+        Ok((token_in_amount, SwapDirection::ZeroToOne))
+    } else {
+        let token_in_amount = if current_tick < target_lower_tick {
+            balance1
+        } else {
+            get_single_sided_deposit_1_to_0_swap_amount(
+                balance1,
+                target_lower_tick,
+                current_tick,
+                target_upper_tick,
+            )?
+        };
+        Ok((token_in_amount, SwapDirection::OneToZero))
+    }
 }
 
 #[cfg(test)]

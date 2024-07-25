@@ -2,9 +2,8 @@ use crate::{
     helpers::{
         assert::assert_range_admin,
         getters::{
-            get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided, get_twap_price,
-            get_unused_pair_balances,
+            get_swap_amount_and_direction,
+            get_tokens_provided, get_twap_price, get_unused_pair_balances,
         },
         msgs::swap_msg,
     },
@@ -340,36 +339,14 @@ fn calculate_swap_amount(
 ) -> Result<Option<SwapCalculationResult>, ContractError> {
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
-    let (token_in_amount, swap_direction) = if !balance0.is_zero() {
-        (
-            // range is above current tick
-            if current_tick > target_upper_tick {
-                balance0
-            } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    balance0,
-                    target_lower_tick,
-                    current_tick,
-                    target_upper_tick,
-                )?
-            },
-            SwapDirection::ZeroToOne,
-        )
-    } else if !balance1.is_zero() {
-        (
-            // current tick is above range
-            if current_tick < target_lower_tick {
-                balance1
-            } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    balance1,
-                    target_lower_tick,
-                    current_tick,
-                    target_upper_tick,
-                )?
-            },
-            SwapDirection::OneToZero,
-        )
+    let (token_in_amount, swap_direction) = if !balance0.is_zero() || !balance1.is_zero() {
+        get_swap_amount_and_direction(
+            balance0,
+            balance1,
+            current_tick,
+            target_lower_tick,
+            target_upper_tick,
+        )?
     } else {
         // Load the current Position to extract join_time and claim_after which is unchangeable in this context
         let position = POSITION.load(deps.storage)?;
