@@ -40,7 +40,7 @@ pub fn execute_any_deposit(
         .ok_or(ContractError::MissingPosition {})?;
 
     let (token0, token1) = must_pay_one_or_two(
-        &info,
+        &info.funds,
         (pool_config.token0.clone(), pool_config.token1.clone()),
     )?;
 
