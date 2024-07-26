@@ -1,6 +1,7 @@
-use cosmwasm_std::{Addr, CosmosMsg, DepsMut, Fraction, Response, Uint128};
+use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
+use crate::helpers::getters::get_twap_price;
 use crate::helpers::msgs::swap_msg;
 use crate::msg::SwapOperation;
 use crate::state::POOL_CONFIG;
@@ -27,7 +28,7 @@ pub struct SwapParams {
 
 pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
-    contract_address: Addr,
+    env: Env,
     swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -49,7 +50,7 @@ pub fn execute_swap_non_vault_funds(
         // Get contract balance for the input token
         let balance_in_contract = deps
             .querier
-            .query_balance(contract_address.clone(), token_in_denom.clone())?
+            .query_balance(env.clone().contract.address, token_in_denom.clone())?
             .amount;
 
         if balance_in_contract.is_zero() {
@@ -60,29 +61,31 @@ pub fn execute_swap_non_vault_funds(
         }
 
         // Split the balance in contract into two parts
-        // 1. tokens to be swapped in token0
-        // 2. tokens to be swapped in token1
-        let part_0_amount = balance_in_contract.checked_div(Uint128::new(2))?;
-        let part_1_amount = balance_in_contract
-            .checked_add(Uint128::new(1))?
-            .checked_div(Uint128::new(2))?;
+        // TODO: Make this dynamic based on the current position's balancing
+        let half_balance_amount = balance_in_contract.checked_div(Uint128::new(2))?;
 
-        // Calculate the minimum amount of tokens to be received
-        let token_out_min_amount_0 = part_0_amount.checked_multiply_ratio(
-            vault_config.swap_max_slippage.numerator(),
-            vault_config.swap_max_slippage.denominator(),
-        )?;
-        let token_out_min_amount_1 = part_1_amount.checked_multiply_ratio(
-            vault_config.swap_max_slippage.numerator(),
-            vault_config.swap_max_slippage.denominator(),
-        )?;
+        // Get twap price
+        // TODO: Think how we want to pass the twap_window_seconds that now is hardcoded to 0
+        let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 0)?;
+        let token_out_min_amount_0 = half_balance_amount
+            .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator())? // twap
+            .checked_multiply_ratio(
+                vault_config.swap_max_slippage.numerator(),
+                vault_config.swap_max_slippage.denominator(),
+            )?; // slippage
+        let token_out_min_amount_1 = half_balance_amount
+            .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator())? // twap
+            .checked_multiply_ratio(
+                vault_config.swap_max_slippage.numerator(),
+                vault_config.swap_max_slippage.denominator(),
+            )?; // slippage
 
         swap_msgs.push(swap_msg(
             &deps,
-            contract_address.clone(),
+            env.clone().contract.address,
             SwapParams {
                 pool_id: swap_operation.pool_id_0,
-                token_in_amount: part_0_amount,
+                token_in_amount: half_balance_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_0,
                 token_out_denom: pool_config.token0.clone(),
@@ -91,10 +94,10 @@ pub fn execute_swap_non_vault_funds(
         )?);
         swap_msgs.push(swap_msg(
             &deps,
-            contract_address.clone(),
+            env.clone().contract.address,
             SwapParams {
                 pool_id: swap_operation.pool_id_1,
-                token_in_amount: part_1_amount,
+                token_in_amount: half_balance_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_1,
                 token_out_denom: pool_config.token1.clone(),
