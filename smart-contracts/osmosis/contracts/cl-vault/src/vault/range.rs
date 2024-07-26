@@ -425,7 +425,7 @@ fn calculate_swap_amount(
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.to_string(),
-            forced_swap_route: forced_swap_route,
+            forced_swap_route,
         },
     )?;
 
