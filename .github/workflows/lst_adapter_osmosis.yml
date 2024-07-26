@@ -23,4 +23,5 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'osmosis/contracts/lst-adapter-osmosis'
+      target: contracts/lst-adapter-osmosis
+      workspace: osmosis

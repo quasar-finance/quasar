@@ -23,4 +23,5 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'osmosis/packages/quasar-types'
+      target: packages/quasar-types
+      workspace: osmosis

@@ -23,4 +23,5 @@ jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'osmosis/contracts/dex-router-osmosis'
+      target: contracts/dex-router-osmosis
+      workspace: osmosis

@@ -1,5 +1,8 @@
 //! This is based on the proto-compiler code in github.com/informalsystems/ibc-rs.
 
+use prost::Message;
+use prost_types::FileDescriptorSet;
+use proto_build::transform;
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -28,6 +31,39 @@ macro_rules! info {
     };
 }
 
+pub fn file_descriptor_set(dir: &Path) -> FileDescriptorSet {
+    // list all files in self.tmp_namespaced_dir()
+    let files = fs::read_dir(dir)
+        .unwrap()
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>()
+        .unwrap();
+
+    // filter only files that match "descriptor_*.bin"
+    let descriptor_files = files
+        .iter()
+        .filter(|f| {
+            f.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .starts_with("descriptor_")
+        })
+        .collect::<Vec<_>>();
+
+    // read all files and merge them into one FileDescriptorSet
+    let mut file_descriptor_set = FileDescriptorSet { file: vec![] };
+    for descriptor_file in descriptor_files {
+        let descriptor_bytes = &fs::read(descriptor_file).unwrap()[..];
+        let mut file_descriptor_set_tmp = FileDescriptorSet::decode(descriptor_bytes).unwrap();
+        file_descriptor_set
+            .file
+            .append(&mut file_descriptor_set_tmp.file);
+    }
+
+    file_descriptor_set
+}
+
 fn main() {
     let tmp_build_dir: PathBuf = TMP_BUILD_DIR.parse().unwrap();
     let proto_dir: PathBuf = PROTO_DIR.parse().unwrap();
@@ -39,6 +75,8 @@ fn main() {
     let temp_dir = tmp_build_dir.join("quasar");
 
     compile_proto_and_services(&temp_dir);
+    let file_descriptors = file_descriptor_set(&temp_dir);
+    transform::transform_all(&temp_dir, &file_descriptors);
     copy_generated_files(&temp_dir, &proto_dir);
 
     if tmp_build_dir.exists() {
@@ -193,6 +231,10 @@ fn copy_and_patch(src: impl AsRef<Path>, dest: impl AsRef<Path>) -> io::Result<(
             "/// Generated server implementations.",
             "/// Generated server implementations.\n\
              #[cfg(feature = \"grpc\")]",
+        ),
+        (
+            "#\\[derive\\(Clone, PartialEq, ::prost::Message\\)\\]",
+            "#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]",
         ),
     ];
 

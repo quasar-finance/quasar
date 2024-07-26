@@ -15,4 +15,13 @@ tonic-build = { version = "0.10" }
 regex = { version = "1" }
 walkdir = { version = "2" }
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}
+itertools = "0.10.3"
+proc-macro2 = "1.0.52"
+quote = "1.0.26"
+syn = "1.0.98"
+prettyplease = "0.1.16"
+heck = "0.4.0"
+log = "0.4.17"
 
+quasar-std = { path = "packages/quasar-std" }
+quasar-std-derive = { path = "packages/quasar-std-derive" }

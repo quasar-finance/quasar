@@ -1,9 +1,10 @@
-// @generated
 /// Params defines the parameters for the module.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct Params {}
 /// GenesisState defines the qoracle module's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct GenesisState {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
@@ -11,7 +12,8 @@ pub struct GenesisState {
     pub osmosis_genesis_state: ::core::option::Option<OsmosisGenesisState>,
 }
 /// OsmosisGenesisState defines the qoracle osmosis submodule's genesis state.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct OsmosisGenesisState {
     #[prost(string, tag = "1")]
     pub port: ::prost::alloc::string::String,
@@ -19,7 +21,8 @@ pub struct OsmosisGenesisState {
     pub params: ::core::option::Option<osmosis::Params>,
 }
 /// Pool defines the generalized structure of a liquidity pool coming from any source chain to qoracle.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct Pool {
     /// The identifier of this pool in the source chain
     #[prost(string, tag = "1")]
@@ -41,17 +44,20 @@ pub struct Pool {
     pub updated_at: ::core::option::Option<::prost_types::Timestamp>,
 }
 /// QueryParamsRequest is request type for the Query/Params RPC method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct QueryParamsRequest {}
 /// QueryParamsResponse is response type for the Query/Params RPC method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct QueryParamsResponse {
     /// params holds all the parameters of this module.
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
 }
 /// QueryPoolsRequest is request type for the Query/Pools RPC method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct QueryPoolsRequest {
     /// denom filters the pools by their denom. If empty, pools with any denom returned.
     #[prost(string, tag = "1")]
@@ -62,7 +68,8 @@ pub struct QueryPoolsRequest {
         ::core::option::Option<cosmos_sdk_proto::cosmos::base::query::v1beta1::PageRequest>,
 }
 /// QueryPoolsResponse is response type for the Query/Pools RPC method.
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, ::prost::Message, ::quasar_std_derive::CosmwasmExt)]
+#[proto_message(type_url = "/quasarlabs.quasarnode.qoracle.")]
 pub struct QueryPoolsResponse {
     #[prost(message, repeated, tag = "1")]
     pub pools: ::prost::alloc::vec::Vec<Pool>,
@@ -71,4 +78,3 @@ pub struct QueryPoolsResponse {
     pub pagination:
         ::core::option::Option<cosmos_sdk_proto::cosmos::base::query::v1beta1::PageResponse>,
 }
-// @@protoc_insertion_point(module)
