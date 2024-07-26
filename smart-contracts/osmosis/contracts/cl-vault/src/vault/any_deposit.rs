@@ -1,26 +1,25 @@
 use cosmwasm_std::{
-    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Uint256,
+    attr, coin, Addr, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult,
+    Uint128, Uint256,
 };
-use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
+use osmosis_std::types::osmosis::{
+    poolmanager::v1beta1::MsgSwapExactAmountInResponse, tokenfactory::v1beta1::MsgMint,
+};
 
 use crate::{
     helpers::{
         assert::must_pay_one_or_two,
         getters::{
             get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
+            get_single_sided_deposit_1_to_0_swap_amount,
         },
-        msgs::swap_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
     reply::Replies,
-    state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{CURRENT_SWAP_ANY_DEPOSIT, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
-        range::SwapDirection,
-        swap::{SwapCalculationResult, SwapParams},
+        swap::{calculate_swap_amount, SwapDirection},
     },
     ContractError,
 };
@@ -110,6 +109,8 @@ pub fn execute_any_deposit(
         swap_direction,
         swap_amount,
         max_slippage,
+        None, // TODO: check this None
+        24u64,
     )?;
 
     // rest minting logic remains same
@@ -248,64 +249,4 @@ fn mint_msg_user_shares(
     };
 
     Ok((mint_msg, user_shares))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn calculate_swap_amount(
-    deps: DepsMut,
-    env: &Env,
-    pool_config: PoolConfig,
-    swap_direction: SwapDirection,
-    token_in_amount: Uint128,
-    max_slippage: Decimal,
-) -> Result<SwapCalculationResult, ContractError> {
-    // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    // TODO check on the twap_window_seconds (taking hardcoded value for now)
-    let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
-    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            &pool_config.token0,
-            &pool_config.token1,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-        ),
-        SwapDirection::OneToZero => (
-            &pool_config.token1,
-            &pool_config.token0,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-        ),
-    };
-
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
-
-    if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0,
-            quote_token: pool_config.token1,
-        });
-    }
-
-    // generate a swap message with recommended path as the current
-    // pool on which the vault is running
-    let swap_msg = swap_msg(
-        &deps,
-        env,
-        SwapParams {
-            pool_id: pool_config.pool_id,
-            token_in_amount,
-            token_out_min_amount,
-            token_in_denom: token_in_denom.clone(),
-            token_out_denom: token_out_denom.clone(),
-            forced_swap_route: None, // TODO: check this None
-        },
-    )?;
-
-    Ok(SwapCalculationResult {
-        swap_msg,
-        token_in_denom: token_in_denom.to_string(),
-        token_out_min_amount,
-        token_in_amount,
-    })
 }
