@@ -306,6 +306,7 @@ pub fn do_swap_deposit_merge(
         return Ok(response.add_attribute("new_position", position_id.unwrap().to_string()));
     }
 
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let swap_calc_result = calculate_swap_amount(
         deps,
         env,
@@ -316,6 +317,8 @@ pub fn do_swap_deposit_merge(
         target_lower_tick,
         target_upper_tick,
         twap_window_seconds,
+        mrs.max_slippage,
+        mrs.forced_swap_route,
     )?;
 
     Ok(response
@@ -349,6 +352,8 @@ fn calculate_swap_amount(
     target_lower_tick: i64,
     target_upper_tick: i64,
     twap_window_seconds: u64,
+    max_slippage: Decimal,
+    forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 ) -> Result<SwapCalculationResult, ContractError> {
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
@@ -401,9 +406,8 @@ fn calculate_swap_amount(
         ),
     };
 
-    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
+        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
 
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
@@ -421,7 +425,7 @@ fn calculate_swap_amount(
             token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.to_string(),
-            forced_swap_route: mrs.forced_swap_route,
+            forced_swap_route: forced_swap_route,
         },
     )?;
 
