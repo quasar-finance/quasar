@@ -12,7 +12,7 @@ use crate::{
             get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
             get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
         },
-        msgs::swap_msg;
+        msgs::swap_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
     reply::Replies,
@@ -20,8 +20,8 @@ use crate::{
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
         range::SwapDirection,
-        swap::{SwapParams, SwapCalculationResult},
-    }
+        swap::{SwapCalculationResult, SwapParams},
+    },
     ContractError,
 };
 
@@ -65,48 +65,51 @@ pub fn execute_any_deposit(
 
     // Swap logic
     // TODO_FUTURE: Optimize this if conditions
-    let (swap_amount, swap_direction) = if !swappable_amount.0.is_zero() {
-        (
-            // range is above current tick
-            if pool_details.current_tick > position.upper_tick {
-                swappable_amount.0
-            } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    swappable_amount.0,
-                    position.lower_tick,
-                    pool_details.current_tick,
-                    position.upper_tick,
-                )?
-            },
-            SwapDirection::ZeroToOne,
-        )
+    let (swap_amount, swap_direction, left_over_amount) = if !swappable_amount.0.is_zero() {
+        // range is above current tick
+        let swap_amount = if pool_details.current_tick > position.upper_tick {
+            swappable_amount.0
+        } else {
+            get_single_sided_deposit_0_to_1_swap_amount(
+                swappable_amount.0,
+                position.lower_tick,
+                pool_details.current_tick,
+                position.upper_tick,
+            )?
+        };
+        let left_over_amount = swappable_amount.0.checked_sub(swap_amount)?;
+        (swap_amount, SwapDirection::ZeroToOne, left_over_amount)
     } else {
-        (
-            // current tick is above range
-            if pool_details.current_tick < position.lower_tick {
-                swappable_amount.1
-            } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    swappable_amount.1,
-                    position.lower_tick,
-                    pool_details.current_tick,
-                    position.upper_tick,
-                )?
-            },
-            SwapDirection::OneToZero,
-        )
+        // current tick is above range
+        let swap_amount = if pool_details.current_tick < position.lower_tick {
+            swappable_amount.1
+        } else {
+            get_single_sided_deposit_1_to_0_swap_amount(
+                swappable_amount.1,
+                position.lower_tick,
+                pool_details.current_tick,
+                position.upper_tick,
+            )?
+        };
+        let left_over_amount = swappable_amount.1.checked_sub(swap_amount)?;
+        (swap_amount, SwapDirection::OneToZero, left_over_amount)
     };
-
+    CURRENT_SWAP_ANY_DEPOSIT.save(
+        deps.storage,
+        &(
+            swap_direction.clone(),
+            left_over_amount,
+            recipient.clone(),
+            deposit_amount_in_ratio,
+        ),
+    )?;
     let swap_calc_result = calculate_swap_amount(
         deps,
         &env,
         pool_config,
         swap_direction,
         swap_amount,
-        swappable_amount,
-        deposit_amount_in_ratio,
         max_slippage,
-        &recipient,
     )?;
 
     // rest minting logic remains same
@@ -254,41 +257,25 @@ fn calculate_swap_amount(
     pool_config: PoolConfig,
     swap_direction: SwapDirection,
     token_in_amount: Uint128,
-    swappable_amount: (Uint128, Uint128),
-    deposit_amount_in_ratio: (Uint128, Uint128),
     max_slippage: Decimal,
-    recipient: &Addr,
 ) -> Result<SwapCalculationResult, ContractError> {
     // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
     // TODO check on the twap_window_seconds (taking hardcoded value for now)
     let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
-    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
-        match swap_direction {
-            SwapDirection::ZeroToOne => (
-                &pool_config.token0,
-                &pool_config.token1,
-                token_in_amount
-                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-                swappable_amount.0.checked_sub(token_in_amount)?,
-            ),
-            SwapDirection::OneToZero => (
-                &pool_config.token1,
-                &pool_config.token0,
-                token_in_amount
-                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-                swappable_amount.1.checked_sub(token_in_amount)?,
-            ),
-        };
-
-    CURRENT_SWAP_ANY_DEPOSIT.save(
-        deps.storage,
-        &(
-            swap_direction,
-            left_over_amount,
-            recipient.clone(),
-            deposit_amount_in_ratio,
+    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
+        SwapDirection::ZeroToOne => (
+            &pool_config.token0,
+            &pool_config.token1,
+            token_in_amount
+                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
         ),
-    )?;
+        SwapDirection::OneToZero => (
+            &pool_config.token1,
+            &pool_config.token0,
+            token_in_amount
+                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+        ),
+    };
 
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
