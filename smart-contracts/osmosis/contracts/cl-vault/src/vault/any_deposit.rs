@@ -5,26 +5,25 @@ use cosmwasm_std::{
 use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
-use crate::helpers::assert::must_pay_one_or_two;
-use crate::helpers::getters::{
-    get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-    get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
-};
-use crate::helpers::msgs::swap_msg;
-use crate::query::query_total_vault_token_supply;
-use crate::reply::Replies;
-use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
-use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::range::SwapDirection;
-use crate::vault::swap::SwapParams;
 use crate::{
-    query::query_total_assets,
-    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::get_position,
+    helpers::{
+        assert::must_pay_one_or_two,
+        getters::{
+            get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
+        },
+        msgs::swap_msg;
+    },
+    query::{query_total_assets, query_total_vault_token_supply},
+    reply::Replies,
+    state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT, POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::{
+        concentrated_liquidity::{get_cl_pool_info, get_position},
+        range::SwapDirection,
+        swap::{SwapParams, SwapCalculationResult},
+    }
     ContractError,
 };
-
-use super::swap::SwapCalculationResult;
 
 pub fn execute_any_deposit(
     mut deps: DepsMut,
@@ -33,7 +32,6 @@ pub fn execute_any_deposit(
     recipient: Option<String>,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
