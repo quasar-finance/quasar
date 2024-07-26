@@ -31,3 +31,6 @@ thiserror = { workspace = true }
 cw2 = { workspace = true }
 mars-owner = { workspace = true }
 quasar-std = { workspace = true }
+
+[dev-dependencies]
+prost = { workspace = true }

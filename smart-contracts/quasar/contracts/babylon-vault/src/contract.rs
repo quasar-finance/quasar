@@ -1,18 +1,23 @@
 use crate::error::VaultError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, LstInfo, QueryMsg};
-use crate::state::{LSTS, OWNER};
+use crate::state::{LSTS, OWNER, VAULT_DENOM};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
+    SubMsg,
 };
 use cw2::set_contract_version;
-use quasar_std::quasarlabs::quasarnode::tokenfactory::v1beta1::MsgCreateDenom;
+use quasar_std::quasarlabs::quasarnode::tokenfactory::v1beta1::{
+    MsgCreateDenom, MsgCreateDenomResponse,
+};
 
 const CONTRACT_NAME: &str = "quasar:babylon-vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub type VaultResult<T = Response> = Result<T, VaultError>;
+
+pub(crate) const CREATE_DENOM_REPLY_ID: u64 = 1;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -31,7 +36,20 @@ pub fn instantiate(
         sender: env.contract.address.to_string(),
         subdenom: msg.subdenom,
     };
-    Ok(Response::new().add_message(msg))
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(msg, CREATE_DENOM_REPLY_ID)))
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> VaultResult {
+    match reply.id {
+        CREATE_DENOM_REPLY_ID => {
+            let response: MsgCreateDenomResponse = reply.result.try_into()?;
+            VAULT_DENOM.save(deps.storage, &response.new_token_denom)?;
+
+            Ok(Response::new().add_attribute("vault_denom", response.new_token_denom))
+        }
+        _ => unimplemented!(),
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
