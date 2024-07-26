@@ -36,13 +36,13 @@ pub(crate) fn must_pay_one_or_two(
     let token0 = funds
         .iter()
         .find(|coin| coin.denom == denoms.0)
-        .map(|coin| coin.clone())
+        .cloned()
         .unwrap_or(coin(0, denoms.0));
 
     let token1 = funds
         .iter()
         .find(|coin| coin.denom == denoms.1)
-        .map(|coin| coin.clone())
+        .cloned()
         .unwrap_or(coin(0, denoms.1));
 
     Ok((token0, token1))
