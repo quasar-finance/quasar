@@ -54,6 +54,7 @@ import (
 const (
 	AccountAddressPrefix = "quasar"
 	Name                 = "quasar"
+	DirName              = "quasarnode"
 )
 
 var (
@@ -90,7 +91,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, "."+Name)
+	DefaultNodeHome = filepath.Join(userHomeDir, "."+DirName)
 }
 
 // QuasarApp extends an ABCI application, but with most of its parameters exported.
