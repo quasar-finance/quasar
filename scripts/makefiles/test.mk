@@ -2,9 +2,9 @@
 ###                                   Tests                                 ###
 ###############################################################################
 
-PACKAGES_UNIT=$(shell go list ./x/epochs/... ./x/qoracle/... ./x/tokenfactory/... ./x/qtransfer/... ./x/qvesting/... ./app/... | grep -E -v "simapp|e2e" | grep -E -v "x/qoracle/client/cli")
+PACKAGES_UNIT=$(shell go list ./... )
 PACKAGES_E2E=$(shell go list ./... | grep '/tests/e2e')
-PACKAGES_SIM=$(shell go list ./... | grep '/tests/simulator')
+PACKAGES_SIM=$(shell go list ./... )
 TEST_PACKAGES=./...
 
 test-help:

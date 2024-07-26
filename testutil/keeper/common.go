@@ -25,7 +25,9 @@ const (
 func (kf KeeperFactory) ParamsKeeper() paramskeeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
 	transientStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+
 	kf.StateStore.MountStoreWithDB(transientStoreKey, storetypes.StoreTypeTransient, kf.DB)
 
 	paramsKeeper := paramskeeper.NewKeeper(kf.EncodingConfig.Marshaler, kf.EncodingConfig.Amino, storeKey, transientStoreKey)
@@ -101,7 +103,6 @@ func (kf KeeperFactory) DistributionKeeper(
 	stakingKeeper stakingkeeper.Keeper,
 	feeCollectorName string,
 ) distrkeeper.Keeper {
-
 	storeKey := sdk.NewKVStoreKey(distrtypes.StoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
 

@@ -2,7 +2,6 @@ package upgrades
 
 import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/quasarlabs/quasarnode/app/keepers"
@@ -31,10 +30,11 @@ type Upgrade struct {
 	StoreUpgrades storetypes.StoreUpgrades
 }
 
-func isMainnet(ctx sdk.Context) bool {
-	return ctx.ChainID() == ProdChainID
-}
-
-func isTestnet(ctx sdk.Context) bool {
-	return ctx.ChainID() == TestChainID
-}
+// todo before release
+// func isMainnet(ctx sdk.Context) bool {
+//	return ctx.ChainID() == ProdChainID
+//}
+//
+//func isTestnet(ctx sdk.Context) bool {
+//	return ctx.ChainID() == TestChainID
+//}
