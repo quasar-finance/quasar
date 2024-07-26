@@ -1,10 +1,10 @@
 use crate::tests::setup::{OWNER, SUBDENOM, USER};
 use crate::{
-    contract::{instantiate, reply, CREATE_DENOM_REPLY_ID},
-    msg::InstantiateMsg,
-    state::VAULT_DENOM,
+    contract::{instantiate, query, reply, CREATE_DENOM_REPLY_ID},
+    msg::{InstantiateMsg, QueryMsg},
 };
 use cosmwasm_std::{
+    from_json,
     testing::{mock_dependencies, mock_env, mock_info},
     Reply, SubMsgResponse, SubMsgResult,
 };
@@ -44,7 +44,7 @@ fn test_instantiate() {
 
     assert!(reply(
         deps.as_mut(),
-        env,
+        env.clone(),
         Reply {
             id: CREATE_DENOM_REPLY_ID,
             result: SubMsgResult::Ok(SubMsgResponse {
@@ -61,6 +61,7 @@ fn test_instantiate() {
     )
     .is_ok());
 
-    let vault_token = VAULT_DENOM.load(deps.as_ref().storage).unwrap();
+    let vault_token =
+        from_json::<String>(&query(deps.as_ref(), env, QueryMsg::Denom {}).unwrap()).unwrap();
     assert_eq!(vault_token, new_token);
 }

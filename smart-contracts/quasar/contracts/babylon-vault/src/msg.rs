@@ -35,14 +35,12 @@ pub struct LstInfo {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    #[returns(Vec<Claim>)]
-    Pending { address: String },
     #[returns(Uint128)]
-    Claimable { address: String },
-    #[returns(Uint128)]
-    BalanceInUnderlying {},
+    Value {},
     #[returns(OwnerResponse)]
     Owner {},
     #[returns(Vec<LstInfo>)]
     Lsts {},
+    #[returns(String)]
+    Denom {},
 }

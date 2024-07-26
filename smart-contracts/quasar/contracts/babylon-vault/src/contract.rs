@@ -84,6 +84,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> VaultResult<Binary> {
     match msg {
         QueryMsg::Owner {} => Ok(to_json_binary(&OWNER.query(deps.storage)?)?),
         QueryMsg::Lsts {} => Ok(to_json_binary(&query_lsts(deps)?)?),
+        QueryMsg::Denom {} => Ok(to_json_binary(&VAULT_DENOM.load(deps.storage)?)?),
         _ => Ok(Binary::default()),
     }
 }
