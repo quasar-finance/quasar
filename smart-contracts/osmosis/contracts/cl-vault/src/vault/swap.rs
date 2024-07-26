@@ -123,6 +123,7 @@ pub fn execute_swap_non_vault_funds(
         .add_attribute("action", "swap_non_vault_funds"))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn calculate_swap_amount(
     deps: DepsMut,
     env: &Env,
