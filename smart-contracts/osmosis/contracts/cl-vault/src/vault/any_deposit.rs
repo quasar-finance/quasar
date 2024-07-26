@@ -51,10 +51,24 @@ pub fn execute_any_deposit(
     let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
+    if swappable_amount.0.is_zero() && swappable_amount.1.is_zero() {
+        let (mint_msg, user_shares) =
+            mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
+
+        return Ok(Response::new()
+            .add_attribute("method", "execute")
+            .add_attribute("action", "any_deposit")
+            .add_attribute("amount0", deposit_amount_in_ratio.0)
+            .add_attribute("amount1", deposit_amount_in_ratio.1)
+            .add_message(mint_msg)
+            .add_attribute("mint_shares_amount", user_shares)
+            .add_attribute("receiver", recipient.as_str()));
+    }
+
     // Swap logic
     // TODO_FUTURE: Optimize this if conditions
-    if !swappable_amount.0.is_zero() {
-        let (swap_amount, swap_direction) = (
+    let (swap_amount, swap_direction) = if !swappable_amount.0.is_zero() {
+        (
             // range is above current tick
             if pool_details.current_tick > position.upper_tick {
                 swappable_amount.0
@@ -67,39 +81,9 @@ pub fn execute_any_deposit(
                 )?
             },
             SwapDirection::ZeroToOne,
-        );
-        let swap_calc_result = calculate_swap_amount(
-            deps,
-            &env,
-            pool_config,
-            swap_direction,
-            swap_amount,
-            swappable_amount,
-            deposit_amount_in_ratio,
-            max_slippage,
-            &recipient,
-        )?;
-
-        // rest minting logic remains same
-        Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(
-                swap_calc_result.swap_msg,
-                Replies::AnyDepositSwap.into(),
-            ))
-            .add_attributes(vec![
-                attr("method", "execute"),
-                attr("action", "any_deposit"),
-                attr(
-                    "token_in",
-                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-                ),
-                attr(
-                    "token_out_min",
-                    format!("{}", swap_calc_result.token_out_min_amount),
-                ),
-            ]))
-    } else if !swappable_amount.1.is_zero() {
-        let (swap_amount, swap_direction) = (
+        )
+    } else {
+        (
             // current tick is above range
             if pool_details.current_tick < position.lower_tick {
                 swappable_amount.1
@@ -112,50 +96,39 @@ pub fn execute_any_deposit(
                 )?
             },
             SwapDirection::OneToZero,
-        );
-        let swap_calc_result = calculate_swap_amount(
-            deps,
-            &env,
-            pool_config,
-            swap_direction,
-            swap_amount,
-            swappable_amount,
-            deposit_amount_in_ratio,
-            max_slippage,
-            &recipient,
-        )?;
+        )
+    };
 
-        // rest minting logic remains same
-        Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(
-                swap_calc_result.swap_msg,
-                Replies::AnyDepositSwap.into(),
-            ))
-            .add_attributes(vec![
-                attr("method", "execute"),
-                attr("action", "any_deposit"),
-                attr(
-                    "token_in",
-                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-                ),
-                attr(
-                    "token_out_min",
-                    format!("{}", swap_calc_result.token_out_min_amount),
-                ),
-            ]))
-    } else {
-        let (mint_msg, user_shares) =
-            mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
+    let swap_calc_result = calculate_swap_amount(
+        deps,
+        &env,
+        pool_config,
+        swap_direction,
+        swap_amount,
+        swappable_amount,
+        deposit_amount_in_ratio,
+        max_slippage,
+        &recipient,
+    )?;
 
-        Ok(Response::new()
-            .add_attribute("method", "execute")
-            .add_attribute("action", "any_deposit")
-            .add_attribute("amount0", deposit_amount_in_ratio.0)
-            .add_attribute("amount1", deposit_amount_in_ratio.1)
-            .add_message(mint_msg)
-            .add_attribute("mint_shares_amount", user_shares)
-            .add_attribute("receiver", recipient.as_str()))
-    }
+    // rest minting logic remains same
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_on_success(
+            swap_calc_result.swap_msg,
+            Replies::AnyDepositSwap.into(),
+        ))
+        .add_attributes(vec![
+            attr("method", "execute"),
+            attr("action", "any_deposit"),
+            attr(
+                "token_in",
+                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+            ),
+            attr(
+                "token_out_min",
+                format!("{}", swap_calc_result.token_out_min_amount),
+            ),
+        ]))
 }
 
 pub fn handle_any_deposit_swap_reply(
