@@ -13,7 +13,6 @@ pub struct SwapCalculationResult {
     pub token_in_denom: String,
     pub token_in_amount: Uint128,
     pub token_out_min_amount: Uint128,
-    pub position_id: Option<u64>,
 }
 
 /// SwapParams holds the parameters for a swap

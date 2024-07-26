@@ -434,7 +434,6 @@ fn calculate_swap_amount(
         token_in_denom: token_in_denom.to_string(),
         token_in_amount,
         token_out_min_amount,
-        position_id: None,
     })
 }
 
