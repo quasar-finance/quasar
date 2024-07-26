@@ -284,12 +284,33 @@ pub fn do_swap_deposit_merge(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+
+    let response = Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "do_swap_deposit_merge");
+    if balance0.is_zero() && balance1.is_zero() {
+        let position = POSITION.load(deps.storage)?;
+
+        // if we have not tokens to swap, that means all tokens we correctly used in the create position
+        // this means we can save the position id of the first create_position
+        POSITION.save(
+            deps.storage,
+            &Position {
+                position_id: position_id.expect("position id should be set if no swap is needed"),
+                join_time: position.join_time,
+                claim_after: position.claim_after,
+            },
+        )?;
+
+        SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
+        return Ok(response.add_attribute("new_position", position_id.unwrap().to_string()));
+    }
+
     let swap_calc_result = calculate_swap_amount(
         deps,
         env,
         &pool_config,
         pool_details.current_tick,
-        position_id,
         balance0,
         balance1,
         target_lower_tick,
@@ -297,32 +318,24 @@ pub fn do_swap_deposit_merge(
         twap_window_seconds,
     )?;
 
-    // Start constructing the response
-    let response = Response::new()
-        .add_attribute("method", "reply")
-        .add_attribute("action", "do_swap_deposit_merge");
-
-    // Check if there is a swap message and append accordingly
-    if let Some(calculated) = swap_calc_result {
-        Ok(response
-            .add_submessage(SubMsg::reply_on_success(
-                calculated.swap_msg,
-                Replies::Swap.into(),
-            ))
-            .add_attributes(vec![
-                attr(
-                    "token_in",
-                    format!(
-                        "{}{}",
-                        calculated.token_in_amount, calculated.token_in_denom
-                    ),
+    Ok(response
+        .add_submessage(SubMsg::reply_on_success(
+            swap_calc_result.swap_msg,
+            Replies::Swap.into(),
+        ))
+        .add_attributes(vec![
+            attr(
+                "token_in",
+                format!(
+                    "{}{}",
+                    swap_calc_result.token_in_amount, swap_calc_result.token_in_denom
                 ),
-                attr("token_out_min", calculated.token_out_min_amount.to_string()),
-            ]))
-    } else {
-        // If no swap message, add a new position attribute
-        Ok(response.add_attribute("new_position", position_id.unwrap().to_string()))
-    }
+            ),
+            attr(
+                "token_out_min",
+                swap_calc_result.token_out_min_amount.to_string(),
+            ),
+        ]))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -331,13 +344,12 @@ fn calculate_swap_amount(
     env: Env,
     pool_config: &PoolConfig,
     current_tick: i64,
-    position_id: Option<u64>,
     balance0: Uint128,
     balance1: Uint128,
     target_lower_tick: i64,
     target_upper_tick: i64,
     twap_window_seconds: u64,
-) -> Result<Option<SwapCalculationResult>, ContractError> {
+) -> Result<SwapCalculationResult, ContractError> {
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
     let (token_in_amount, swap_direction) = if !balance0.is_zero() {
@@ -355,7 +367,7 @@ fn calculate_swap_amount(
             },
             SwapDirection::ZeroToOne,
         )
-    } else if !balance1.is_zero() {
+    } else {
         (
             // current tick is above range
             if current_tick < target_lower_tick {
@@ -370,25 +382,6 @@ fn calculate_swap_amount(
             },
             SwapDirection::OneToZero,
         )
-    } else {
-        // Load the current Position to extract join_time and claim_after which is unchangeable in this context
-        let position = POSITION.load(deps.storage)?;
-
-        // if we have not tokens to swap, that means all tokens we correctly used in the create position
-        // this means we can save the position id of the first create_position
-        POSITION.save(
-            deps.storage,
-            &Position {
-                // if position not found, then we should panic here anyway ?
-                position_id: position_id.expect("position id should be set if no swap is needed"),
-                join_time: position.join_time,
-                claim_after: position.claim_after,
-            },
-        )?;
-
-        SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
-
-        return Ok(None);
     };
 
     // TODO: check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
@@ -432,13 +425,13 @@ fn calculate_swap_amount(
         },
     )?;
 
-    Ok(Some(SwapCalculationResult {
+    Ok(SwapCalculationResult {
         swap_msg,
         token_in_denom: token_in_denom.to_string(),
         token_in_amount,
         token_out_min_amount,
         position_id: None,
-    }))
+    })
 }
 
 // do deposit
