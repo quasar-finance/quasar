@@ -577,59 +577,6 @@ mod tests {
         let info = mock_info("addr0000", &[]);
         let env = mock_env();
 
-        // let mut deps = mock_deps_with_querier_with_balance(
-        //     &info,
-        //     &[(MOCK_CONTRACT_ADDR, &[coin(11234, "token1")])],
-        // );
-
-        // // moving into a range
-        // MODIFY_RANGE_STATE
-        //     .save(
-        //         deps.as_mut().storage,
-        //         &Some(crate::state::ModifyRangeState {
-        //             lower_tick: 100,
-        //             upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
-        //             new_range_position_ids: vec![],
-        //             max_slippage: Decimal::zero(),
-        //             ratio_of_swappable_funds_to_use: Decimal::one(),
-        //             twap_window_seconds: 45,
-        //             recommended_swap_route: None,
-        //             force_swap_route: false,
-        //         }),
-        //     )
-        //     .unwrap();
-
-        // // Reply
-        // //first test fully one-sided withdraw
-        // let data = SubMsgResult::Ok(SubMsgResponse {
-        //     events: vec![],
-        //     data: Some(
-        //         MsgWithdrawPositionResponse {
-        //             amount0: "0".to_string(),
-        //             amount1: "10000".to_string(),
-        //         }
-        //         .try_into()
-        //         .unwrap(),
-        //     ),
-        // });
-
-        // let res = super::handle_withdraw_position_reply(deps.as_mut(), env.clone(), data).unwrap();
-
-        // // verify that we went straight to swap_deposit_merge
-        // assert_eq!(res.messages.len(), 1);
-        // assert_eq!(res.attributes[1].value, "do_swap_deposit_merge");
-        // // check that our token1 attribute is incremented with the local balance
-        // assert_eq!(
-        //     res.attributes
-        //         .iter()
-        //         .find(|a| { a.key == "token_in" })
-        //         .unwrap()
-        //         .value,
-        //     "5962token1"
-        // );
-
-        // SECOND CASE STARTS HERE
-
         let mut deps = mock_deps_with_querier_with_balance(
             &info,
             &[(
@@ -638,7 +585,6 @@ mod tests {
             )],
         );
 
-        // moving into a range
         MODIFY_RANGE_STATE
             .save(
                 deps.as_mut().storage,
