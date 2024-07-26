@@ -1,9 +1,11 @@
 name: Lint (Go)
 
+# todo remove v3.x beafore merge to main
 on:
   pull_request:
     branches:
       - main
+      - v3.x
     paths-ignore:
       - 'smart-contracts/**'
       - '**.md'
