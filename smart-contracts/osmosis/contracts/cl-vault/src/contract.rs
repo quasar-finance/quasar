@@ -559,7 +559,7 @@ mod tests {
         if let Some(SubMsg {
             msg: CosmosMsg::Bank(BankMsg::Send { to_address, amount }),
             ..
-        }) = migrate_resp.messages.get(0)
+        }) = migrate_resp.messages.first()
         {
             assert_eq!(to_address, "treasury");
             assert_eq!(amount, &rewards_coins);
@@ -622,7 +622,7 @@ mod tests {
         }
     }
 
-    fn assert_multi_send(msg: &CosmosMsg, expected_user: &String, user_rewards_coins: &Vec<Coin>) {
+    fn assert_multi_send(msg: &CosmosMsg, expected_user: &String, user_rewards_coins: &[Coin]) {
         if let CosmosMsg::Stargate { type_url, value } = msg {
             // Decode and validate the MsgMultiSend message
             // This has been decoded manually rather than encoding the expected message because its simpler to assert the values
