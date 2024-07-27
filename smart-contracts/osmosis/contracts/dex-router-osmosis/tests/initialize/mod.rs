@@ -55,7 +55,7 @@ pub fn single_cl_pool_fixture(
 
     let pm = PoolManager::new(app);
     let cl = ConcentratedLiquidity::new(app);
-    let gov = GovWithAppAccess::new(&app);
+    let gov = GovWithAppAccess::new(app);
 
     gov.propose_and_execute(
         CreateConcentratedLiquidityPoolsProposal::TYPE_URL.to_string(),
@@ -65,12 +65,12 @@ pub fn single_cl_pool_fixture(
             pool_records: vec![PoolRecord {
                 denom0: cl_pool.denom0.clone(),
                 denom1: cl_pool.denom1.clone(),
-                tick_spacing: cl_pool.tick_spacing.clone(),
+                tick_spacing: cl_pool.tick_spacing,
                 spread_factor: cl_pool.spread_factor.clone(),
             }],
         },
         admin.address(),
-        &admin,
+        admin,
     )
     .unwrap();
 
@@ -110,7 +110,7 @@ pub fn single_cl_pool_fixture(
                 token_min_amount0: "1".to_string(),
                 token_min_amount1: "1".to_string(),
             },
-            &admin,
+            admin,
         )
         .unwrap();
 
@@ -199,18 +199,18 @@ pub fn single_gamm_pool_fixture(
                     .unwrap(),
                 },
             ],
-            &admin,
+            admin,
         )
         .unwrap();
 
     let ty = "pool_created";
-    let keys = vec!["pool_id"];
+    let key = "pool_id";
     let pool_id: u64 = response
         .events
         .iter()
         .filter(|event| event.ty == ty)
         .flat_map(|event| event.attributes.clone())
-        .filter(|attribute| keys.contains(&attribute.key.as_str()))
+        .filter(|attribute| key == attribute.key.as_str())
         .collect::<Vec<Attribute>>()
         .first()
         .unwrap()
@@ -220,7 +220,7 @@ pub fn single_gamm_pool_fixture(
 
     let _ = MsgJoinPool {
         sender: admin.address().to_string(),
-        pool_id: pool_id.clone(),
+        pool_id,
         share_out_amount: "100".to_string(),
         token_in_maxs: vec![
             Coin {
@@ -303,7 +303,7 @@ pub fn setup_paths(
     admin: &SigningAccount,
 ) {
     wasm.execute(
-        &contract_address.to_string(),
+        contract_address.as_ref(),
         &ExecuteMsg::SetPath {
             path,
             bidirectional: true,
@@ -339,7 +339,7 @@ pub fn perform_swap(
     admin: &SigningAccount,
 ) -> Result<ExecuteResponse<MsgExecuteContractResponse>, osmosis_test_tube::RunnerError> {
     wasm.execute(
-        &contract_address.to_string(),
+        contract_address.as_ref(),
         &ExecuteMsg::Swap {
             out_denom: ask_denom,
             path: Some(path.first().unwrap().clone()),
