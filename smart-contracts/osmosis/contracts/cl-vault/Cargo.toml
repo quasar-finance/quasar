@@ -17,12 +17,12 @@ name = "schema"
 
 [[test]]
 name = "test-tube"
-path = "tests/integration.rs"
+path = "tests/test-tube/integration.rs"
 required-features = ["test-tube"]
 
 [[test]]
 name = "prop-test"
-path = "tests/fuzzer.rs"
+path = "tests/test-tube/fuzzer.rs"
 required-features = ["test-tube"]
 
 [features]

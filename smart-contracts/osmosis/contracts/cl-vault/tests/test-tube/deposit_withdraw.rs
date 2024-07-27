@@ -1,5 +1,3 @@
-#![cfg(feature = "test-tube")]
-
 use crate::setup::{
     fixture_default, get_event_attributes_by_ty_and_key, ACCOUNTS_INIT_BALANCE, DENOM_BASE,
     DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,

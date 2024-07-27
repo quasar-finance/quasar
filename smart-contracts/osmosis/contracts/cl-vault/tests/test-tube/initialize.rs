@@ -1,5 +1,3 @@
-#![cfg(feature = "test-tube")]
-
 use crate::setup::{
     fixture_default, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };

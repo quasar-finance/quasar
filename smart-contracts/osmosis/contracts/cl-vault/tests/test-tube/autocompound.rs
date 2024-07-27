@@ -1,5 +1,3 @@
-#![cfg(feature = "test-tube")]
-
 use crate::setup::{
     calculate_expected_refunds, fixture_dex_router, get_balance_amount,
     get_event_attributes_by_ty_and_key, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
