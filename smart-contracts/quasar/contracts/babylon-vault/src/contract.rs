@@ -152,7 +152,10 @@ fn deposit(deps: DepsMut, env: Env, info: MessageInfo) -> VaultResult {
     let new_shares = if existing_shares.is_zero() {
         info.funds[0].amount
     } else {
-        existing_shares.checked_mul_floor(Decimal::from_ratio(deposit_value, contract_value))?
+        existing_shares.checked_mul_floor(Decimal::from_ratio(
+            deposit_value,
+            contract_value.checked_sub(deposit_value)?,
+        ))?
     };
 
     Ok(Response::default().add_message(MsgMint {
