@@ -1,7 +1,8 @@
 #![cfg(feature = "test-tube")]
 
-mod setup;
-use setup::{fixture_default, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT};
+use crate::setup::{
+    fixture_default, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+};
 
 use cl_vault::{
     msg::{

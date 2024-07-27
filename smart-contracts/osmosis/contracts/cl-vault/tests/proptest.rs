@@ -1,7 +1,6 @@
 #![cfg(feature = "test-tube")]
 
-mod setup;
-use setup::{
+use crate::setup::{
     get_event_attributes_by_ty_and_key, init_test_contract, MAX_SLIPPAGE_HIGH,
     PERFORMANCE_FEE_DEFAULT,
 };
@@ -332,13 +331,13 @@ fn get_cases() -> u32 {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(get_cases()))]
     #[test]
-    #[ignore]
     fn test_complete_works(
         (initial_lower_tick, initial_upper_tick) in get_initial_range(),
         actions in get_strategy_list(),
         percentages in get_percentage_list(),
         account_indexes in get_account_index_list()
     ) {
+        println!("start");
         let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
@@ -369,6 +368,7 @@ proptest! {
             Uint128::zero(),
             PERFORMANCE_FEE_DEFAULT
         );
+        println!("wasm");
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);
         let bank = Bank::new(&app);
@@ -387,6 +387,7 @@ proptest! {
         }
 
         for i in 0..ITERATIONS_NUMBER {
+            println!("iter");
             match actions[i] {
                 Action::Deposit => {
                     deposit(&wasm, &bank, &contract_address, &accounts[account_indexes[i] as usize], percentages[i], DENOM_BASE, DENOM_QUOTE);

@@ -1,7 +1,6 @@
 #![cfg(feature = "test-tube")]
 
-mod setup;
-use setup::{
+use crate::setup::{
     fixture_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
     MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
