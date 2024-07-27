@@ -41,6 +41,7 @@ fix_formatting() {
     echo "Changes in ${target}"
     cd ${REPO_ROOT}/smart-contracts/${target}
     # fix formatting
+    echo "format"
     cargo fmt --all
     cd ${REPO_ROOT}
     NEW_CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)

@@ -104,10 +104,17 @@ fn first_successful_deposit_mints_fund_tokens_according_to_first_provided_asset(
 fn second_successful_deposit_mints_fund_tokens_according_to_share_of_assets() {
     let deposits = 10000u128;
     let fund_shares = 50000u64;
+    let new_deposit = 2500;
 
     let mut deps = setup_with_balances(&[
         ("some_wallet", &[coin(fund_shares.into(), VAULT_DENOM)]),
-        (MOCK_CONTRACT_ADDR, &[coin(deposits, DEPOSIT_DENOM)]),
+        (
+            MOCK_CONTRACT_ADDR,
+            &[
+                coin(deposits, DEPOSIT_DENOM),
+                coin(new_deposit, OTHER_DEPOSIT_DENOM),
+            ],
+        ),
     ]);
     deps.querier.update_wasm(mock_wasm_querier(
         "oracle".to_string(),
@@ -139,11 +146,7 @@ fn second_successful_deposit_mints_fund_tokens_according_to_share_of_assets() {
     )
     .is_ok());
 
-    let deposit_amount = 2500;
-    let info = mock_info(
-        USER,
-        &[coin(deposit_amount, OTHER_DEPOSIT_DENOM.to_string())],
-    );
+    let info = mock_info(USER, &[coin(new_deposit, OTHER_DEPOSIT_DENOM.to_string())]);
     let response = execute(
         deps.as_mut(),
         env.clone(),

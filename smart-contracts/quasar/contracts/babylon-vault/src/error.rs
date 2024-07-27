@@ -1,5 +1,5 @@
 use crate::state::{LSTS, VAULT_DENOM};
-use cosmwasm_std::{CheckedMultiplyFractionError, Coin, Order, StdError, Storage};
+use cosmwasm_std::{CheckedMultiplyFractionError, Coin, Order, OverflowError, StdError, Storage};
 use mars_owner::OwnerError;
 use thiserror::Error;
 
@@ -13,6 +13,9 @@ pub enum VaultError {
 
     #[error("{0}")]
     CheckedMultiply(#[from] CheckedMultiplyFractionError),
+
+    #[error("{0}")]
+    Overflow(#[from] OverflowError),
 
     #[error("{denom} not found")]
     DenomNotFound { denom: String },
