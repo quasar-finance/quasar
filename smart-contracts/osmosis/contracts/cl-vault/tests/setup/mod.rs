@@ -126,9 +126,8 @@ pub fn fixture_dex_router(
         )
 }
 
-// INIT PRIVATE METHODS
-
 // TODO: This is pub because of the proptest still not having a default_init implementation
+#[allow(clippy::too_many_arguments)]
 pub fn init_test_contract(
     filename: &str,
     admin_balance: &[Coin],
@@ -260,6 +259,7 @@ pub fn init_test_contract(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn init_test_contract_with_dex_router_and_swap_pools(
     filename_cl: &str,
     filename_dex: &str,
@@ -366,7 +366,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
     // TODO: We could be using a mixed set of CL and gAMM pools here
     let mut lp_pools = vec![];
     for pool_coins in &pools_coins {
-        let lp_pool = gm.create_basic_pool(&pool_coins, &admin).unwrap();
+        let lp_pool = gm.create_basic_pool(pool_coins, &admin).unwrap();
         lp_pools.push(lp_pool.data.pool_id);
     }
 
@@ -480,8 +480,8 @@ fn init_test_contract_with_dex_router_and_swap_pools(
 fn set_dex_router_paths(
     app: &OsmosisTestApp,
     dex_router: String,
-    pools: &Vec<u64>,
-    pools_coins: &Vec<Vec<Coin>>,
+    pools: &[u64],
+    pools_coins: &[Vec<Coin>],
     admin: &SigningAccount,
 ) {
     let wasm = Wasm::new(app);
@@ -498,7 +498,7 @@ fn set_dex_router_paths(
                 bidirectional: true,
             },
             vec![].as_ref(),
-            &admin,
+            admin,
         )
         .unwrap();
     }
@@ -530,7 +530,7 @@ pub fn get_balance_amount(app: &OsmosisTestApp, address: String, denom: String) 
         .unwrap()
 }
 
-pub fn get_amount_from_denom(value: &String) -> u128 {
+pub fn get_amount_from_denom(value: &str) -> u128 {
     // Find the position where the non-numeric part starts
     let pos = value.find(|c: char| !c.is_numeric()).unwrap_or(value.len());
     // Extract the numeric part from the string

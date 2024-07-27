@@ -67,14 +67,11 @@ fn exact_deposit_withdraw_equal() {
     assert_eq!(deposit_response.data, authz_deposit_response.data);
 
     assert_eq!(
-        deposit_response
-            .events
-            .iter()
-            .find(|e| e.ty == "wasm".to_string()),
+        deposit_response.events.iter().find(|e| e.ty == *"wasm"),
         authz_deposit_response
             .events
             .iter()
-            .find(|e| e.ty == "wasm".to_string())
+            .find(|e| e.ty == *"wasm")
     );
 
     let shares: UserSharesBalanceResponse = wasm
@@ -117,14 +114,11 @@ fn exact_deposit_withdraw_equal() {
 
     assert_eq!(withdraw_response.data, authz_withdraw_response.data);
     assert_eq!(
-        withdraw_response
-            .events
-            .iter()
-            .find(|e| e.ty == "wasm".to_string()),
+        withdraw_response.events.iter().find(|e| e.ty == *"wasm"),
         authz_withdraw_response
             .events
             .iter()
-            .find(|e| e.ty == "wasm".to_string())
+            .find(|e| e.ty == *"wasm")
     );
 }
 
@@ -175,12 +169,12 @@ fn any_deposit_withdraw_equal() {
     let deposit_event = deposit_response
         .events
         .iter()
-        .find(|e| e.ty == "wasm".to_string())
+        .find(|e| e.ty == *"wasm")
         .unwrap();
     let authz_deposit_event = authz_deposit_response
         .events
         .iter()
-        .find(|e| e.ty == "wasm".to_string())
+        .find(|e| e.ty == *"wasm")
         .unwrap();
     // Assert events are equal
     assert_eq!(deposit_event.ty, authz_deposit_event.ty);
@@ -250,12 +244,12 @@ fn any_deposit_withdraw_equal() {
     let withdraw_event = withdraw_response
         .events
         .iter()
-        .find(|e| e.ty == "wasm".to_string())
+        .find(|e| e.ty == *"wasm")
         .unwrap();
     let authz_withdraw_event = authz_withdraw_response
         .events
         .iter()
-        .find(|e| e.ty == "wasm".to_string())
+        .find(|e| e.ty == *"wasm")
         .unwrap();
     // Assert events are equal
     assert_eq!(withdraw_event.ty, authz_withdraw_event.ty);
