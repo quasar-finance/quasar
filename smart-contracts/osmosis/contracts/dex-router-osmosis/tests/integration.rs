@@ -44,7 +44,7 @@ fn default_init_works() {
 
     let resp: BestPathForPairResponse = wasm
         .query(
-            &contract_address.to_string(),
+            contract_address.as_ref(),
             &QueryMsg::BestPathForPair {
                 offer: Coin::new(
                     Uint128::from(100000000u128).into(),
@@ -152,7 +152,7 @@ fn test_set_and_remove_path() {
     );
     let _ = wasm
         .execute(
-            &contract_address.to_string(),
+            contract_address.as_ref(),
             &ExecuteMsg::RemovePath {
                 path: vec![pools.first().unwrap().pool],
                 bidirectional: true,
