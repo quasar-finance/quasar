@@ -48,9 +48,12 @@ jobs:
             smart-contracts/osmosis/**/target
           key: ${{ runner.os }}-cargo-osmosis-$GITHUB_SHA
           restore-keys: ${{ runner.os }}-cargo-osmosis
-      - name: Rust lint
+      - name: Rust lint (dex-router-osmosis)
         run: cargo clippy --features test-tube --all-targets -- -D warnings --A deprecated
         working-directory: smart-contracts/osmosis/contracts/dex-router-osmosis
+      - name: Rust lint (merkle-incentives)
+        run: cargo clippy --features test-tube --all-targets -- -D warnings --A deprecated
+        working-directory: smart-contracts/osmosis/contracts/merkle-incentives
       - name: Build merkle-incentives
         run: cargo test-tube-build
         working-directory: smart-contracts/osmosis/contracts/merkle-incentives

@@ -77,28 +77,16 @@ fn merkle_complete_cycle_works() {
         .unwrap();
 
     let leaves_str = vec![
-        format!("{}900000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!("{}9000000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!("{}90000000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!("{}900000000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!("{}9000000000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!("{}90000000000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!("{}900000000000000ugauge", accounts[0].address().to_string()).to_string(),
-        format!(
-            "{}9000000000900000ugauge",
-            accounts[0].address().to_string()
-        )
-        .to_string(),
-        format!(
-            "{}90000000009000000ugauge",
-            accounts[0].address().to_string()
-        )
-        .to_string(),
-        format!(
-            "{}900000000090000000ugauge",
-            accounts[0].address().to_string()
-        )
-        .to_string(),
+        format!("{}900000000ugauge", accounts[0].address()).to_string(),
+        format!("{}9000000000ugauge", accounts[0].address()).to_string(),
+        format!("{}90000000000ugauge", accounts[0].address()).to_string(),
+        format!("{}900000000000ugauge", accounts[0].address()).to_string(),
+        format!("{}9000000000000ugauge", accounts[0].address()).to_string(),
+        format!("{}90000000000000ugauge", accounts[0].address()).to_string(),
+        format!("{}900000000000000ugauge", accounts[0].address()).to_string(),
+        format!("{}9000000000900000ugauge", accounts[0].address()).to_string(),
+        format!("{}90000000009000000ugauge", accounts[0].address()).to_string(),
+        format!("{}900000000090000000ugauge", accounts[0].address()).to_string(),
     ];
 
     let leaves = leaves_str
@@ -187,7 +175,7 @@ fn merkle_complete_cycle_works() {
         for proof in &claim_account.proof {
             if proof.len() == 32 {
                 let mut arr = [0u8; 32];
-                arr.copy_from_slice(&proof);
+                arr.copy_from_slice(proof);
                 proof_hashes.push(arr);
             } else {
                 eprintln!("Error: Hash is not 32 bytes.");
@@ -205,7 +193,7 @@ fn merkle_complete_cycle_works() {
                     total_leaves_count: 10usize,
                 }),
                 &[],
-                &accounts.get(index).unwrap(),
+                accounts.get(index).unwrap(),
             )
             .unwrap();
 
@@ -220,7 +208,7 @@ fn merkle_complete_cycle_works() {
             claim_account
                 .coins
                 .coins()
-                .get(0)
+                .first()
                 .unwrap()
                 .amount
                 .to_string()
