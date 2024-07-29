@@ -1,0 +1,55 @@
+[package]
+authors = ["Quasar"]
+edition = "2021"
+name = "lst-adapter-osmosis"
+version = "0.0.1"
+readme = "README.md"
+repository = "https://github.com/quasar-finance/quasar"
+homepage = "https://quasar.fi"
+documentation = ""
+license = "MPL-2.0"
+description = "A cosmwasm adapter contract for unbonding stride LSTs on osmosis"
+keywords = ["cosmwasm", "lst", "osmosis"]
+
+exclude = [
+  "lst_adapter_osmosis.wasm",
+  "hash.txt",
+]
+
+[[bin]]
+name = "schema"
+required-features = ["schema"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["export"]
+export = []
+library = []
+schema = ["abstract-app/schema"]
+
+[dependencies]
+cosmwasm-std = { workspace = true, features = ["stargate"] }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+thiserror = { workspace = true }
+mars-owner = { workspace = true }
+osmosis-std = { workspace = true }
+quasar-types = { workspace = true }
+abstract-app = { workspace = true }
+abstract-std = { workspace = true }
+abstract-sdk = { workspace = true }
+cw-orch = { workspace = true }
+const_format = { workspace = true }
+prost = { workspace = true }
+serde_json = { workspace = true }
+ica-oracle = { git = "https://github.com/Stride-Labs/ica-oracle", tag="v1.0.0" }
+
+[dev-dependencies]
+abstract-client = { workspace = true }
+cw-orch-interchain = { workspace = true }
+abstract-interface = { workspace = true }
+abstract-polytone = { workspace = true }
+abstract-cw-orch-polytone = { workspace = true }
+ibc-relayer-types = { workspace = true }

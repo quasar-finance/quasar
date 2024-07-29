@@ -1,13 +1,11 @@
 name: Store cargo build cache
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'smart-contracts/**.rs'
-      - 'smart-contracts/**.toml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      workspace:
+        required: true
+        type: string
 
 jobs:
   store-build-cache:
@@ -19,13 +17,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Rust check
         run: cargo check
-        working-directory: smart-contracts
+        working-directory: smart-contracts/${{ inputs.workspace }}
       - name: Store dependencies
         uses: actions/cache/save@v4
         with:
           path: |
             ~/.cargo
             ~/go
-            **/target
-          key: ${{ runner.os }}-cargo-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo
+            smart-contracts/${{ inputs.workspace }}/**/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}

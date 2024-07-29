@@ -1,0 +1,27 @@
+name: Token Burner (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/contracts/token-burner/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/token-burner/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/token_burner_osmosis.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/contracts/token-burner/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/token-burner/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/token_burner_osmosis.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: contracts/token-burner
+      workspace: osmosis

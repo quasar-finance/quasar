@@ -1,0 +1,4 @@
+version: v1
+name: buf.build/quasar/quasar-std
+deps:
+  - buf.build/cosmos/ibc

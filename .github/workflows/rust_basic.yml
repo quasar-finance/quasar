@@ -3,9 +3,16 @@ name: Unit Test (rust)
 on:
   workflow_call:
     inputs:
+      workspace:
+        required: true
+        type: string
       target:
         required: true
         type: string
+      unit_tests:
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   checks:
@@ -13,34 +20,24 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Get git diff
-        uses: technote-space/get-diff-action@v6.1.2
-        with:
-          PATTERNS: |
-            ${{inputs.contract}}/**.rs
-            ${{inputs.contract}}/Cargo.toml
       - name: Install Rust
-        if: env.GIT_DIFF
         uses: dtolnay/rust-toolchain@stable
       - name: Restore dependencies
-        if: env.GIT_DIFF
         uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cargo
             ~/go
-            **/target
-          key: ${{ runner.os }}-cargo-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo
+            smart-contracts/${{ inputs.workspace }}/**/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
       - name: Rust lint
-        if: env.GIT_DIFF
-        run: RUSTFLAGS="-Dwarnings" cargo clippy --workspace -- -D warnings --A deprecated
-        working-directory: smart-contracts/${{ inputs.target }}
+        run: cargo clippy --workspace -- -D warnings --A deprecated
+        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
       - name: Rust format check
-        if: env.GIT_DIFF
         run: cargo fmt --all -- --check
-        working-directory: smart-contracts/${{ inputs.target }}
+        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
       - name: Run unit-tests
-        if: env.GIT_DIFF
+        if: inputs.unit_tests
         run: cargo unit-test
-        working-directory: smart-contracts/${{ inputs.target }}
+        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
