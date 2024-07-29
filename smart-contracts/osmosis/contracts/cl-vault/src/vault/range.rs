@@ -17,7 +17,7 @@ use crate::{
     vault::{
         concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
         merge::MergeResponse,
-        swap::{calculate_swap_amount, SwapDirection},
+        swap::calculate_swap_amount,
     },
     ContractError,
 };
@@ -30,6 +30,8 @@ use osmosis_std::types::osmosis::{
     poolmanager::v1beta1::SwapAmountInRoute,
 };
 use std::str::FromStr;
+
+use super::swap::SwapDirection;
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range

@@ -1,11 +1,17 @@
-use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
+use cosmwasm_std::{CosmosMsg, Decimal, DepsMut, Env, Fraction, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-use crate::helpers::assert::assert_range_admin;
+use crate::helpers::getters::get_twap_price;
 use crate::helpers::msgs::swap_msg;
 use crate::msg::SwapOperation;
-use crate::state::POOL_CONFIG;
+use crate::state::{PoolConfig, POOL_CONFIG};
 use crate::{state::VAULT_CONFIG, ContractError};
+
+#[cosmwasm_schema::cw_serde]
+pub enum SwapDirection {
+    ZeroToOne,
+    OneToZero,
+}
 
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
@@ -13,7 +19,6 @@ pub struct SwapCalculationResult {
     pub token_in_denom: String,
     pub token_in_amount: Uint128,
     pub token_out_min_amount: Uint128,
-    pub position_id: Option<u64>,
 }
 
 /// SwapParams holds the parameters for a swap
@@ -153,7 +158,7 @@ pub fn calculate_swap_amount(
     // pool on which the vault is running
     let swap_msg = swap_msg(
         &deps,
-        env,
+        env.clone().contract.address,
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
