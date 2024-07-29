@@ -55,10 +55,10 @@ pub fn execute_swap_non_vault_funds(
     let mut swap_msgs = Vec::new();
 
     for swap_operation in swap_operations {
-        let token_in_denom = swap_operation.token_in_denom;
+        let token_in_denom = &swap_operation.token_in_denom;
 
         // Assert that no BASE_DENOM or QUOTE_DENOM is trying to be swapped as token_in
-        if token_in_denom == pool_config.token0 || token_in_denom == pool_config.token1 {
+        if token_in_denom == &pool_config.token0 || token_in_denom == &pool_config.token1 {
             return Err(ContractError::InvalidSwapAssets {});
         }
 
@@ -80,8 +80,8 @@ pub fn execute_swap_non_vault_funds(
             env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
             swap_operation.pool_id_0,
-            token_in_denom,
-            pool_config.token0,
+            token_in_denom.to_string(),
+            pool_config.clone().token0,
         )?;
         // TODO: Validate that the swap_operation.pool_id_1 is about token_in_denom and pool_config.token1 assets or throw error
         let twap_price_token_1 = get_twap_price(
@@ -89,14 +89,18 @@ pub fn execute_swap_non_vault_funds(
             env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
             swap_operation.pool_id_1,
-            token_in_denom,
-            pool_config.token1,
+            token_in_denom.to_string(),
+            pool_config.clone().token1,
         )?;
 
         // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
         let position_balance = get_position_balance(deps.storage, &deps.querier)?;
-        let to_token0_amount = balance_in_contract.checked_mul(position_balance.0)?; // balance * ratio computed by current position balancing
-        let to_token1_amount = balance_in_contract.checked_mul(position_balance.1)?; // balance * ratio computed by current position balancing
+        // let to_token0_amount: Uint128 = balance_in_contract.checked_mul(position_balance.0)?; // balance * ratio computed by current position balancing
+        // let to_token1_amount: Uint128 = balance_in_contract.checked_mul(position_balance.1)?; // balance * ratio computed by current position balancing
+        let to_token0_amount =
+            Uint128::from((balance_in_contract.u128() as f64 * position_balance.0) as u128); // balance * ratio computed by current position balancing
+        let to_token1_amount =
+            Uint128::from((balance_in_contract.u128() as f64 * position_balance.1) as u128); // balance * ratio computed by current position balancing
 
         // Calculate the minimum amount of token0 and token1 to receive after the swap
         let slippage_adjustment_numerator = vault_config.swap_max_slippage.denominator()
@@ -167,14 +171,13 @@ pub fn calculate_swap_amount(
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: u64,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
         twap_window_seconds,
         pool_config.pool_id,
-        pool_config.token0,
-        pool_config.token1,
+        pool_config.clone().token0,
+        pool_config.clone().token1,
     )?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
