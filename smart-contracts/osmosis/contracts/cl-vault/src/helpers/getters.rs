@@ -53,8 +53,19 @@ pub fn get_position_balance(
     let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
     let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
+    // Handle cases where either asset amount is zero
+    if asset0_amount.is_zero() && asset1_amount.is_zero() {
+        return Ok((0.0, 0.0));
+    } else if asset0_amount.is_zero() {
+        return Ok((0.0, 1.0));
+    } else if asset1_amount.is_zero() {
+        return Ok((1.0, 0.0));
+    }
+
+    // Get the total amount of the vault's position in asset0 denom
     let asset_0_value = get_asset0_value(storage, querier, asset0_amount, asset1_amount)?;
 
+    // Calculate the ratio of the vault's position in asset0 and asset1
     let asset_0_ratio = asset0_amount.u128() as f64 / asset_0_value.u128() as f64;
     let asset_1_ratio = asset1_amount.u128() as f64 / asset_0_value.u128() as f64;
 
@@ -66,15 +77,15 @@ pub fn get_twap_price(
     block_time: Timestamp,
     twap_window_seconds: u64,
     pool_id: u64,
-    token0: String,
-    token1: String,
+    token0_denom: String,
+    token1_denom: String,
 ) -> Result<Decimal, ContractError> {
     let twap_querier = TwapQuerier::new(querier);
     let start_of_window = block_time.minus_seconds(twap_window_seconds);
     let twap_price = twap_querier.arithmetic_twap_to_now(
         pool_id,
-        token0,
-        token1,
+        token0_denom,
+        token1_denom,
         Some(OsmoTimestamp {
             seconds: start_of_window.seconds().try_into()?,
             nanos: 0,
