@@ -3,7 +3,6 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::getters::get_twap_price;
 use crate::helpers::msgs::swap_msg;
-use crate::msg::SwapOperation;
 use crate::state::{PoolConfig, POOL_CONFIG};
 use crate::{state::VAULT_CONFIG, ContractError};
 
@@ -11,6 +10,16 @@ use crate::{state::VAULT_CONFIG, ContractError};
 pub enum SwapDirection {
     ZeroToOne,
     OneToZero,
+}
+
+// struct used by swap.rs on swap non vault funds
+#[cosmwasm_schema::cw_serde]
+pub struct SwapOperation {
+    pub token_in_denom: String,
+    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// SwapCalculationResult holds the result of a swap calculation
