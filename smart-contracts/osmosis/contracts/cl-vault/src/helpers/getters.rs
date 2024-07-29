@@ -13,7 +13,7 @@ use crate::{
 };
 use cosmwasm_std::{
     Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
-    Uint128, Uint256,
+    Timestamp, Uint128, Uint256,
 };
 use osmosis_std::try_proto_to_cosmwasm_coins;
 
@@ -27,8 +27,8 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 pub fn get_asset0_value(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    token0: Uint128,
-    token1: Uint128,
+    token0_amount: Uint128,
+    token1_amount: Uint128,
 ) -> Result<Uint128, ContractError> {
     let pool_config = POOL_CONFIG.load(storage)?;
 
@@ -38,26 +38,43 @@ pub fn get_asset0_value(
         .spot_price
         .parse()?;
 
-    let total = token0
-        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
+    let total = token0_amount.checked_add(
+        token1_amount.multiply_ratio(spot_price.denominator(), spot_price.numerator()),
+    )?;
 
     Ok(total)
 }
 
-pub fn get_twap_price(
+pub fn get_position_balance(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    env: &Env,
-    twap_window_seconds: u64,
-) -> Result<Decimal, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
+) -> Result<(f64, f64), ContractError> {
+    let position = get_position(storage, querier)?;
+    let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
+    let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
+    let asset_0_value = get_asset0_value(storage, querier, asset0_amount, asset1_amount)?;
+
+    let asset_0_ratio = asset0_amount.u128() as f64 / asset_0_value.u128() as f64;
+    let asset_1_ratio = asset1_amount.u128() as f64 / asset_0_value.u128() as f64;
+
+    Ok((asset_0_ratio, asset_1_ratio))
+}
+
+pub fn get_twap_price(
+    querier: &QuerierWrapper,
+    block_time: Timestamp,
+    twap_window_seconds: u64,
+    pool_id: u64,
+    token0: String,
+    token1: String,
+) -> Result<Decimal, ContractError> {
     let twap_querier = TwapQuerier::new(querier);
-    let start_of_window = env.block.time.minus_seconds(twap_window_seconds);
+    let start_of_window = block_time.minus_seconds(twap_window_seconds);
     let twap_price = twap_querier.arithmetic_twap_to_now(
-        pool_config.pool_id,
-        pool_config.token0,
-        pool_config.token1,
+        pool_id,
+        token0,
+        token1,
         Some(OsmoTimestamp {
             seconds: start_of_window.seconds().try_into()?,
             nanos: 0,

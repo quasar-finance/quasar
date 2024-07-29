@@ -20,8 +20,7 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // get the amount of funds we can deposit from this ratio
-    let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
-        get_depositable_tokens(&deps, &info.funds, &pool_config)?;
+    let (deposit, refund) = get_depositable_tokens(&deps, &info.funds, &pool_config)?;
 
     execute_deposit(
         &mut deps,

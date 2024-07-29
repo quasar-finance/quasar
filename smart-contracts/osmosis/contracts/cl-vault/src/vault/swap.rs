@@ -1,7 +1,7 @@
 use cosmwasm_std::{CosmosMsg, Decimal, DepsMut, Env, Fraction, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-use crate::helpers::getters::get_twap_price;
+use crate::helpers::getters::{get_position_balance, get_twap_price};
 use crate::helpers::msgs::swap_msg;
 use crate::state::{PoolConfig, POOL_CONFIG};
 use crate::{state::VAULT_CONFIG, ContractError};
@@ -55,10 +55,10 @@ pub fn execute_swap_non_vault_funds(
     let mut swap_msgs = Vec::new();
 
     for swap_operation in swap_operations {
-        let token_in_denom = &swap_operation.token_in_denom;
+        let token_in_denom = swap_operation.token_in_denom;
 
         // Assert that no BASE_DENOM or QUOTE_DENOM is trying to be swapped as token_in
-        if token_in_denom == &pool_config.token0 || token_in_denom == &pool_config.token1 {
+        if token_in_denom == pool_config.token0 || token_in_denom == pool_config.token1 {
             return Err(ContractError::InvalidSwapAssets {});
         }
 
@@ -67,7 +67,6 @@ pub fn execute_swap_non_vault_funds(
             .querier
             .query_balance(env.clone().contract.address, token_in_denom.clone())?
             .amount;
-
         if balance_in_contract.is_zero() {
             return Err(ContractError::InsufficientFundsForSwap {
                 balance: balance_in_contract,
@@ -75,36 +74,62 @@ pub fn execute_swap_non_vault_funds(
             });
         }
 
-        // Split the balance in contract into two parts
-        // TODO: Make this dynamic based on the current position's balancing
-        let half_balance_amount = balance_in_contract.checked_div(Uint128::new(2))?;
-
-        // Get twap price
-        let twap_price = get_twap_price(
-            deps.storage,
+        // TODO: Validate that the swap_operation.pool_id_0 is about token_in_denom and pool_config.token0 assets or throw error
+        let twap_price_token_0 = get_twap_price(
             &deps.querier,
-            &env,
+            env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
+            swap_operation.pool_id_0,
+            token_in_denom,
+            pool_config.token0,
         )?;
-        let token_out_min_amount_0 = half_balance_amount
-            .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator())? // twap
+        // TODO: Validate that the swap_operation.pool_id_1 is about token_in_denom and pool_config.token1 assets or throw error
+        let twap_price_token_1 = get_twap_price(
+            &deps.querier,
+            env.block.time,
+            twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
+            swap_operation.pool_id_1,
+            token_in_denom,
+            pool_config.token1,
+        )?;
+
+        // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
+        let position_balance = get_position_balance(deps.storage, &deps.querier)?;
+        let to_token0_amount = balance_in_contract.checked_mul(position_balance.0)?; // balance * ratio computed by current position balancing
+        let to_token1_amount = balance_in_contract.checked_mul(position_balance.1)?; // balance * ratio computed by current position balancing
+
+        // Calculate the minimum amount of token0 and token1 to receive after the swap
+        let slippage_adjustment_numerator = vault_config.swap_max_slippage.denominator()
+            - vault_config.swap_max_slippage.numerator();
+        let slippage_adjustment_denominator = vault_config.swap_max_slippage.denominator();
+
+        // Compute token_out_min_amount(s)
+        let token_out_min_amount_0 = to_token0_amount
             .checked_multiply_ratio(
-                vault_config.swap_max_slippage.numerator(),
-                vault_config.swap_max_slippage.denominator(),
+                twap_price_token_0.numerator(),
+                twap_price_token_0.denominator(),
+            )? // twap
+            .checked_multiply_ratio(
+                slippage_adjustment_numerator,
+                slippage_adjustment_denominator,
             )?; // slippage
-        let token_out_min_amount_1 = half_balance_amount
-            .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator())? // twap
+        let token_out_min_amount_1 = to_token1_amount
             .checked_multiply_ratio(
-                vault_config.swap_max_slippage.numerator(),
-                vault_config.swap_max_slippage.denominator(),
+                twap_price_token_1.denominator(),
+                twap_price_token_1.numerator(),
+            )? // twap TODO check, this should not be inverted here as we always query external token as base_denom
+            .checked_multiply_ratio(
+                slippage_adjustment_numerator,
+                slippage_adjustment_denominator,
             )?; // slippage
 
+        // Push swap msgs
         swap_msgs.push(swap_msg(
             &deps,
             env.clone().contract.address,
             SwapParams {
                 pool_id: swap_operation.pool_id_0,
-                token_in_amount: half_balance_amount,
+                token_in_amount: to_token0_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_0,
                 token_out_denom: pool_config.token0.clone(),
@@ -116,7 +141,7 @@ pub fn execute_swap_non_vault_funds(
             env.clone().contract.address,
             SwapParams {
                 pool_id: swap_operation.pool_id_1,
-                token_in_amount: half_balance_amount,
+                token_in_amount: to_token1_amount,
                 token_in_denom: token_in_denom.clone(),
                 token_out_min_amount: token_out_min_amount_1,
                 token_out_denom: pool_config.token1.clone(),
@@ -142,7 +167,15 @@ pub fn calculate_swap_amount(
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: u64,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let twap_price = get_twap_price(deps.storage, &deps.querier, env, twap_window_seconds)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let twap_price = get_twap_price(
+        &deps.querier,
+        env.block.time,
+        twap_window_seconds,
+        pool_config.pool_id,
+        pool_config.token0,
+        pool_config.token1,
+    )?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             &pool_config.token0,
@@ -176,9 +209,9 @@ pub fn calculate_swap_amount(
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
-            token_out_min_amount,
             token_in_denom: token_in_denom.clone(),
             token_out_denom: token_out_denom.clone(),
+            token_out_min_amount,
             forced_swap_route,
         },
     )?;
@@ -186,17 +219,22 @@ pub fn calculate_swap_amount(
     Ok(SwapCalculationResult {
         swap_msg,
         token_in_denom: token_in_denom.to_string(),
-        token_out_min_amount,
         token_in_amount,
+        token_out_min_amount,
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::vault::swap::SwapParams;
+    use std::str::FromStr;
+
+    use crate::{
+        state::{VaultConfig, VAULT_CONFIG},
+        vault::swap::{execute_swap_non_vault_funds, SwapOperation, SwapParams},
+    };
     use cosmwasm_std::{
-        testing::{mock_dependencies_with_balance, mock_env},
-        Coin, CosmosMsg, Uint128,
+        testing::{mock_dependencies_with_balance, mock_env, mock_info},
+        Addr, Coin, CosmosMsg, Decimal, Uint128,
     };
 
     use crate::state::{PoolConfig, POOL_CONFIG};
@@ -206,6 +244,16 @@ mod tests {
             pool_id: 1,
             token0: "token0".to_string(),
             token1: "token1".to_string(),
+        }
+    }
+
+    // Mock vault configuration
+    fn mock_vault_config() -> VaultConfig {
+        VaultConfig {
+            swap_max_slippage: Decimal::from_str("0.005").unwrap(),
+            performance_fee: Decimal::from_str("0.2").unwrap(),
+            treasury: Addr::unchecked("treasury"),
+            dex_router: Addr::unchecked("dex_router"),
         }
     }
 
@@ -255,6 +303,69 @@ mod tests {
         } else {
             panic!("Unexpected message type: {:?}", result);
         }
+    }
+
+    #[test]
+    fn test_execute_swap_non_vault_funds() {
+        let mut deps = mock_dependencies_with_balance(&[Coin {
+            denom: "uscrt".to_string(),
+            amount: Uint128::new(100),
+        }]);
+        let env = mock_env();
+        let info = mock_info("tester", &[]);
+
+        // Save the mock configurations
+        POOL_CONFIG
+            .save(deps.as_mut().storage, &mock_pool_config())
+            .unwrap();
+        VAULT_CONFIG
+            .save(deps.as_mut().storage, &mock_vault_config())
+            .unwrap();
+
+        let swap_operations = vec![SwapOperation {
+            token_in_denom: "uscrt".to_string(),
+            pool_id_0: 1,
+            pool_id_1: 1,
+            forced_swap_route_token_0: None,
+            forced_swap_route_token_1: None,
+        }];
+
+        let response =
+            execute_swap_non_vault_funds(deps.as_mut(), env, swap_operations, None).unwrap();
+
+        // Check response attributes
+        assert_eq!(response.attributes[0].value, "execute");
+        assert_eq!(response.attributes[1].value, "swap_non_vault_funds");
+
+        // Check messages
+        assert_eq!(response.messages.len(), 2);
+
+        let token_out_min_amount_expected = Uint128::new(4975); // Expected minimum amount after slippage adjustment (49.75 from 50)
+
+        println!("{:?}", response.messages[0].msg);
+        println!("{:?}", response.messages[1].msg);
+
+        // if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[0].msg {
+        //     let msg_swap = osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(value).unwrap();
+        //     assert_eq!(msg_swap.token_in.clone().unwrap().denom, "uscrt");
+        //     assert_eq!(msg_swap.token_in.unwrap().amount, "50");
+        //     assert_eq!(msg_swap.routes[0].pool_id, 1);
+        //     assert_eq!(msg_swap.routes[0].token_out_denom, "token0");
+        //     assert_eq!(msg_swap.token_out_min_amount, token_out_min_amount_expected.to_string());
+        // } else {
+        //     panic!("Unexpected message type: {:?}", response.messages[0].msg);
+        // }
+
+        // if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[1].msg {
+        //     let msg_swap = osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(value).unwrap();
+        //     assert_eq!(msg_swap.token_in.clone().unwrap().denom, "uscrt");
+        //     assert_eq!(msg_swap.token_in.unwrap().amount, "50");
+        //     assert_eq!(msg_swap.routes[0].pool_id, 1);
+        //     assert_eq!(msg_swap.routes[0].token_out_denom, "token1");
+        //     assert_eq!(msg_swap.token_out_min_amount, token_out_min_amount_expected.to_string());
+        // } else {
+        //     panic!("Unexpected message type: {:?}", response.messages[1].msg);
+        // }
     }
 
     // TODO: Move this test logic into any invoker of swap_msg tests as now its their concern to
