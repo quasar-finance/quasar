@@ -76,6 +76,8 @@ pub fn execute_swap_non_vault_funds(
             });
         }
 
+        // TODO: This TWAP now is included in the swap calculation, we should remove it from here
+
         // TODO: Validate that the swap_operation.pool_id_0 is about token_in_denom and pool_config.token0 assets or throw error
         let twap_price_token_0 = get_twap_price(
             &deps.querier,
@@ -213,7 +215,8 @@ pub fn calculate_swap_amount(
         pool_config.clone().token1,
     )?;
 
-    // TODO: At this point token_in_denom is useless, we are enforcing from above arguments, lets use token_in.denom and pass a new token_out_denom argument to derive the direction directly here?
+    // TODO: At this point token_in_denom is useless, we are enforcing from above arguments,
+    // lets use token_in.denom and pass a new token_out_denom argument to derive the direction directly here?
     // So we can remove the SwapDirection enum and the match statement
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
@@ -235,9 +238,7 @@ pub fn calculate_swap_amount(
         }
     };
 
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
-
+    // TODO: Remove that, only do for directions, not custom
     if !pool_config.pool_contains_token(token_in_denom) {
         return Err(ContractError::BadTokenForSwap {
             base_token: pool_config.token0,
@@ -245,10 +246,9 @@ pub fn calculate_swap_amount(
         });
     }
 
-    let token_in = Coin {
-        denom: (&token_in.denom).to_string(),
-        amount: token_in.amount,
-    };
+    let token_out_min_amount = token_out_ideal_amount?
+        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
+
     let min_token_out = Coin {
         denom: (&token_in_denom).to_string(),
         amount: token_out_min_amount,
