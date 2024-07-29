@@ -3,7 +3,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::getters::{get_position_balance, get_twap_price};
 use crate::helpers::msgs::swap_msg;
-use crate::state::{PoolConfig, POOL_CONFIG};
+use crate::state::POOL_CONFIG;
 use crate::{state::VAULT_CONFIG, ContractError};
 
 #[cosmwasm_schema::cw_serde]
@@ -17,8 +17,8 @@ pub enum SwapDirection {
 #[cosmwasm_schema::cw_serde]
 pub struct SwapOperation {
     pub token_in_denom: String,
-    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_token_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_token_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
     pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
     pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
 }
@@ -77,7 +77,7 @@ pub fn execute_swap_non_vault_funds(
             &deps.querier,
             env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
-            swap_operation.pool_id_0,
+            swap_operation.pool_id_token_0,
             token_in_denom.to_string(),
             pool_config.clone().token0,
         )?;
@@ -86,7 +86,7 @@ pub fn execute_swap_non_vault_funds(
             &deps.querier,
             env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
-            swap_operation.pool_id_1,
+            swap_operation.pool_id_token_1,
             token_in_denom.to_string(),
             pool_config.clone().token1,
         )?;
@@ -322,8 +322,8 @@ mod tests {
 
         let swap_operations = vec![SwapOperation {
             token_in_denom: "uscrt".to_string(),
-            pool_id_0: 1,
-            pool_id_1: 1,
+            pool_id_token_0: 1,
+            pool_id_token_1: 1,
             forced_swap_route_token_0: None,
             forced_swap_route_token_1: None,
         }];
