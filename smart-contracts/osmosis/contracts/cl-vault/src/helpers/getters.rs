@@ -67,6 +67,7 @@ pub fn get_twap_price(
     Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
 }
 
+#[allow(clippy::type_complexity)]
 pub fn get_depositable_tokens(
     deps: &DepsMut,
     funds: &[Coin],
@@ -89,92 +90,67 @@ pub struct DepositInfo {
 }
 
 /// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
+#[allow(clippy::type_complexity)]
 fn get_depositable_tokens_impl(
     deps: &DepsMut,
     token0: Coin,
     token1: Coin,
 ) -> Result<DepositInfo, ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
-    let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
-    let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
+    let asset0: Coin = position.asset0.try_into()?;
+    let asset1: Coin = position.asset1.try_into()?;
 
-    match (asset0_amount.is_zero(), asset1_amount.is_zero()) {
-        (true, false) => Ok(DepositInfo {
-            base_deposit: Uint128::zero(),
-            quote_deposit: token1.amount,
-            base_refund: token0.amount,
-            quote_refund: Uint128::zero(),
-        }),
-        (false, true) => Ok(DepositInfo {
-            base_deposit: token0.amount,
+    let token0 = token0.amount;
+    let token1 = token1.amount;
+    if asset1.amount.is_zero() {
+        return Ok(DepositInfo {
+            base_deposit: token0,
             quote_deposit: Uint128::zero(),
             base_refund: Uint128::zero(),
-            quote_refund: token1.amount,
-        }),
-        /*
-           Figure out how many of the tokens we can use for a double sided position.
-           First we find whether token0 or token0 is the limiting factor for the token by
-           dividing token0 by the current amount of token0 in the position and do the same for token1
-           for calculating further amounts we start from:
-           token0 / token1 = ratio0 / ratio1, where ratio0 / ratio1 are the ratios from the position
+            quote_refund: token1,
+        });
+    }
+    let ratio = Decimal::from_ratio(asset0.amount, asset1.amount);
 
-           if token0 is limiting, we calculate the token1 amount by
-           token1 = token0*ratio1/ratio0
+    // Refund token0 if ratio.numerator is zero
+    if ratio.numerator().is_zero() {
+        return Ok(DepositInfo {
+            base_deposit: Uint128::zero(),
+            quote_deposit: token1,
+            base_refund: token0,
+            quote_refund: Uint128::zero(),
+        });
+    }
 
-           if token1 is limiting, we calculate the token0 amount by
-           token0 = token1 * ratio0 / ratio1
-        */
-        (false, false) => {
-            let token0 = token0.amount;
-            let token1 = token1.amount;
-            let assets = try_proto_to_cosmwasm_coins(vec![
-                position.asset0.unwrap(),
-                position.asset1.unwrap(),
-            ])?;
-            let ratio = Decimal::from_ratio(assets[0].amount, assets[1].amount);
+    let zero_usage: Uint128 = ((Uint256::from(token0)
+        * Uint256::from_u128(1_000_000_000_000_000_000u128))
+        / Uint256::from(ratio.numerator()))
+    .try_into()?;
+    let one_usage: Uint128 = ((Uint256::from(token1)
+        * Uint256::from_u128(1_000_000_000_000_000_000u128))
+        / Uint256::from(ratio.denominator()))
+    .try_into()?;
 
-            // Refund token0 if ratio.numerator is zero
-            if ratio.numerator().is_zero() {
-                return Ok(DepositInfo {
-                    base_deposit: Uint128::zero(),
-                    quote_deposit: token1,
-                    base_refund: token0,
-                    quote_refund: Uint128::zero(),
-                });
-            }
-
-            let zero_usage: Uint128 = ((Uint256::from(token0)
-                * Uint256::from_u128(1_000_000_000_000_000_000u128))
-                / Uint256::from(ratio.numerator()))
-            .try_into()?;
-            let one_usage: Uint128 = ((Uint256::from(token1)
-                * Uint256::from_u128(1_000_000_000_000_000_000u128))
-                / Uint256::from(ratio.denominator()))
-            .try_into()?;
-
-            if zero_usage < one_usage {
-                let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
-                    / Uint256::from(ratio.numerator()))
-                .try_into()?;
-                Ok(DepositInfo {
-                    base_deposit: token0,
-                    quote_deposit: t1,
-                    base_refund: Uint128::zero(),
-                    quote_refund: token1.checked_sub(t1)?,
-                })
-            } else {
-                let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
-                    / Uint256::from(ratio.denominator()))
-                .try_into()?;
-                Ok(DepositInfo {
-                    base_deposit: t0,
-                    quote_deposit: token1,
-                    base_refund: token0.checked_sub(t0)?,
-                    quote_refund: Uint128::zero(),
-                })
-            }
-        }
-        _ => Err(ContractError::InvalidRatioOfSwappableFundsToUse {}),
+    if zero_usage < one_usage {
+        let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
+            / Uint256::from(ratio.numerator()))
+        .try_into()?;
+        Ok(DepositInfo {
+            base_deposit: token0,
+            quote_deposit: t1,
+            base_refund: Uint128::zero(),
+            quote_refund: token1.checked_sub(t1)?,
+        })
+    } else {
+        let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
+            / Uint256::from(ratio.denominator()))
+        .try_into()?;
+        Ok(DepositInfo {
+            base_deposit: t0,
+            quote_deposit: token1,
+            base_refund: token0.checked_sub(t0)?,
+            quote_refund: Uint128::zero(),
+        })
     }
 }
 
