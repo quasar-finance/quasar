@@ -3,9 +3,9 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
-use osmosis_std::types::{
-    cosmos::base::v1beta1::Coin as OsmoCoin,
-    osmosis::{
+use osmosis_std::{
+    cosmwasm_to_proto_coins,
+    types::osmosis::{
         concentratedliquidity::v1beta1::{MsgCollectIncentives, MsgCollectSpreadRewards},
         poolmanager::v1beta1::SwapAmountInRoute,
     },
@@ -69,7 +69,7 @@ pub fn swap_msg(
     // we will only ever have a route length of one, this will likely change once we start selecting different routes
     let pool_route = SwapAmountInRoute {
         pool_id: params.pool_id,
-        token_out_denom: params.token_out_denom.to_string(),
+        token_out_denom: params.min_token_out.denom.to_string(),
     };
 
     // if we don't have a dex_router, we will always swap over the osmosis pool
@@ -77,9 +77,8 @@ pub fn swap_msg(
         return Ok(osmosis_swap_exact_amount_in_msg(
             contract_address,
             pool_route,
-            params.token_in_amount,
-            &params.token_in_denom.to_string(),
-            params.token_out_min_amount,
+            params.token_in,
+            params.min_token_out.amount,
         ));
     }
 
@@ -87,27 +86,21 @@ pub fn swap_msg(
     cw_dex_execute_swap_operations_msg(
         dex_router.clone().unwrap(),
         params.forced_swap_route,
-        params.token_in_denom.to_string(),
-        params.token_in_amount,
-        params.token_out_denom.to_string(),
-        params.token_out_min_amount,
+        params.token_in,
+        params.min_token_out,
     )
 }
 
 fn osmosis_swap_exact_amount_in_msg(
     contract_address: Addr,
     pool_route: SwapAmountInRoute,
-    token_in_amount: Uint128,
-    token_in_denom: &String,
+    token_in: Coin,
     token_out_min_amount: Uint128,
 ) -> CosmosMsg {
     osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
         sender: contract_address.to_string(),
         routes: vec![pool_route],
-        token_in: Some(OsmoCoin {
-            denom: token_in_denom.to_string(),
-            amount: token_in_amount.to_string(),
-        }),
+        token_in: cosmwasm_to_proto_coins([token_in]).first().cloned(),
         token_out_min_amount: token_out_min_amount.to_string(),
     }
     .into()
@@ -116,22 +109,17 @@ fn osmosis_swap_exact_amount_in_msg(
 fn cw_dex_execute_swap_operations_msg(
     dex_router_address: Addr,
     path: Option<Vec<SwapAmountInRoute>>,
-    token_in_denom: String,
-    token_in_amount: Uint128,
-    token_out_denom: String,
-    token_out_min_amount: Uint128,
+    token_in: Coin,
+    min_token_out: Coin,
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
         contract_addr: dex_router_address.to_string(),
         msg: to_json_binary(&DexRouterExecuteMsg::Swap {
             path,
-            out_denom: token_out_denom,
-            minimum_receive: Some(token_out_min_amount),
+            out_denom: min_token_out.denom,
+            minimum_receive: Some(min_token_out.amount),
         })?,
-        funds: vec![Coin {
-            denom: token_in_denom,
-            amount: token_in_amount,
-        }],
+        funds: vec![token_in],
     }
     .into();
 

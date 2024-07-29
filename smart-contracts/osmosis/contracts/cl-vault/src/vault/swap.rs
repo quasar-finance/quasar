@@ -1,4 +1,4 @@
-use cosmwasm_std::{CosmosMsg, Decimal, DepsMut, Env, Fraction, Response, Uint128};
+use cosmwasm_std::{Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::getters::{get_position_balance, get_twap_price};
@@ -10,6 +10,7 @@ use crate::{state::VAULT_CONFIG, ContractError};
 pub enum SwapDirection {
     ZeroToOne,
     OneToZero,
+    Custom, // TODO: choose if AnyToZero and AnyToOne is a better nomenclature
 }
 
 // struct used by swap.rs on swap non vault funds
@@ -25,18 +26,15 @@ pub struct SwapOperation {
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
-    pub token_in_denom: String,
-    pub token_in_amount: Uint128,
-    pub token_out_min_amount: Uint128,
+    pub token_in: Coin,
+    pub min_token_out: Coin,
 }
 
 /// SwapParams holds the parameters for a swap
 pub struct SwapParams {
     pub pool_id: u64, // the osmosis pool id in case of no cw_dex_router or no best/recommended route
-    pub token_in_amount: Uint128,
-    pub token_in_denom: String,
-    pub token_out_min_amount: Uint128,
-    pub token_out_denom: String,
+    pub token_in: Coin,
+    pub min_token_out: Coin,
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
@@ -52,7 +50,7 @@ pub fn execute_swap_non_vault_funds(
     if swap_operations.is_empty() {
         return Err(ContractError::EmptySwapOperations {});
     }
-    let mut swap_msgs = Vec::new();
+    let mut swap_msgs: Vec<CosmosMsg> = Vec::new();
 
     for swap_operation in swap_operations {
         let token_in_denom = &swap_operation.token_in_denom;
@@ -94,64 +92,46 @@ pub fn execute_swap_non_vault_funds(
         )?;
 
         // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
+        // TODO: This new get_position_balance helper looks redundant with get_depositable_tokens_impl, can we reuse this instead?
         let position_balance = get_position_balance(deps.storage, &deps.querier)?;
-        // let to_token0_amount: Uint128 = balance_in_contract.checked_mul(position_balance.0)?; // balance * ratio computed by current position balancing
-        // let to_token1_amount: Uint128 = balance_in_contract.checked_mul(position_balance.1)?; // balance * ratio computed by current position balancing
         let to_token0_amount =
             Uint128::from((balance_in_contract.u128() as f64 * position_balance.0) as u128); // balance * ratio computed by current position balancing
         let to_token1_amount =
             Uint128::from((balance_in_contract.u128() as f64 * position_balance.1) as u128); // balance * ratio computed by current position balancing
 
-        // Calculate the minimum amount of token0 and token1 to receive after the swap
-        let slippage_adjustment_numerator = vault_config.swap_max_slippage.denominator()
-            - vault_config.swap_max_slippage.numerator();
-        let slippage_adjustment_denominator = vault_config.swap_max_slippage.denominator();
-
-        // Compute token_out_min_amount(s)
-        let token_out_min_amount_0 = to_token0_amount
-            .checked_multiply_ratio(
-                twap_price_token_0.numerator(),
-                twap_price_token_0.denominator(),
-            )? // twap
-            .checked_multiply_ratio(
-                slippage_adjustment_numerator,
-                slippage_adjustment_denominator,
-            )?; // slippage
-        let token_out_min_amount_1 = to_token1_amount
-            .checked_multiply_ratio(
-                twap_price_token_1.denominator(),
-                twap_price_token_1.numerator(),
-            )? // twap TODO check, this should not be inverted here as we always query external token as base_denom
-            .checked_multiply_ratio(
-                slippage_adjustment_numerator,
-                slippage_adjustment_denominator,
-            )?; // slippage
-
-        // Push swap msgs
-        swap_msgs.push(swap_msg(
-            &deps,
-            env.clone().contract.address,
-            SwapParams {
-                pool_id: swap_operation.pool_id_0,
-                token_in_amount: to_token0_amount,
-                token_in_denom: token_in_denom.clone(),
-                token_out_min_amount: token_out_min_amount_0,
-                token_out_denom: pool_config.token0.clone(),
-                forced_swap_route: swap_operation.forced_swap_route_token_0,
-            },
-        )?);
-        swap_msgs.push(swap_msg(
-            &deps,
-            env.clone().contract.address,
-            SwapParams {
-                pool_id: swap_operation.pool_id_1,
-                token_in_amount: to_token1_amount,
-                token_in_denom: token_in_denom.clone(),
-                token_out_min_amount: token_out_min_amount_1,
-                token_out_denom: pool_config.token1.clone(),
-                forced_swap_route: swap_operation.forced_swap_route_token_1,
-            },
-        )?);
+        // Get swap messages
+        swap_msgs.push(
+            calculate_swap_amount(
+                deps,
+                &env,
+                pool_config,
+                SwapDirection::Custom,
+                Coin {
+                    denom: token_in_denom.to_string(),
+                    amount: to_token0_amount,
+                },
+                vault_config.swap_max_slippage,
+                swap_operation.forced_swap_route_token_0,
+                twap_window_seconds.unwrap_or_default(),
+            )?
+            .swap_msg,
+        );
+        swap_msgs.push(
+            calculate_swap_amount(
+                deps,
+                &env,
+                pool_config,
+                SwapDirection::Custom,
+                Coin {
+                    denom: token_in_denom.to_string(),
+                    amount: to_token1_amount,
+                },
+                vault_config.swap_max_slippage,
+                swap_operation.forced_swap_route_token_1,
+                twap_window_seconds.unwrap_or_default(),
+            )?
+            .swap_msg,
+        );
     }
 
     Ok(Response::new()
@@ -166,7 +146,7 @@ pub fn calculate_swap_amount(
     env: &Env,
     pool_config: PoolConfig,
     swap_direction: SwapDirection,
-    token_in_amount: Uint128,
+    token_in: Coin, // this is a coin so we can pass external funds as token_in
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: u64,
@@ -179,19 +159,27 @@ pub fn calculate_swap_amount(
         pool_config.clone().token0,
         pool_config.clone().token1,
     )?;
+
+    // TODO: At this point token_in_denom is useless, we are enforcing from above arguments, lets use token_in.denom and pass a new token_out_denom argument to derive the direction directly here?
+    // So we can remove the SwapDirection enum and the match statement
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             &pool_config.token0,
             &pool_config.token1,
-            token_in_amount
+            token_in
+                .amount
                 .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
         ),
         SwapDirection::OneToZero => (
             &pool_config.token1,
             &pool_config.token0,
-            token_in_amount
+            token_in
+                .amount
                 .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
         ),
+        SwapDirection::Custom => {
+            todo!()
+        }
     };
 
     let token_out_min_amount = token_out_ideal_amount?
@@ -204,6 +192,15 @@ pub fn calculate_swap_amount(
         });
     }
 
+    let token_in = Coin {
+        denom: (&token_in.denom).to_string(),
+        amount: token_in.amount,
+    };
+    let min_token_out = Coin {
+        denom: (&token_in_denom).to_string(),
+        amount: token_out_min_amount,
+    };
+
     // generate a swap message with recommended path as the current
     // pool on which the vault is running
     let swap_msg = swap_msg(
@@ -211,19 +208,16 @@ pub fn calculate_swap_amount(
         env.clone().contract.address,
         SwapParams {
             pool_id: pool_config.pool_id,
-            token_in_amount,
-            token_in_denom: token_in_denom.clone(),
-            token_out_denom: token_out_denom.clone(),
-            token_out_min_amount,
+            token_in,
+            min_token_out,
             forced_swap_route,
         },
     )?;
 
     Ok(SwapCalculationResult {
         swap_msg,
-        token_in_denom: token_in_denom.to_string(),
-        token_in_amount,
-        token_out_min_amount,
+        token_in,
+        min_token_out,
     })
 }
 
@@ -270,20 +264,22 @@ mod tests {
 
         let env = mock_env();
 
-        let token_in_amount = Uint128::new(100);
-        let token_in_denom = "token0".to_string();
-        let token_out_min_amount = Uint128::new(100);
-        let token_out_denom = "token1".to_string();
+        let token_in = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(100),
+        };
+        let min_token_out = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
 
         POOL_CONFIG
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
         let swap_params = SwapParams {
             pool_id: 1,
-            token_in_amount,
-            token_out_min_amount,
-            token_in_denom,
-            token_out_denom,
+            token_in,
+            min_token_out,
             forced_swap_route: None,
         };
 
@@ -302,7 +298,7 @@ mod tests {
             assert!(msg_swap.routes[0].token_out_denom == *"token1");
             assert!(msg_swap.token_in.clone().unwrap().denom == *"token0");
             assert!(msg_swap.token_in.unwrap().amount == *"100");
-            assert!(token_out_min_amount.to_string() == *"100");
+            assert!(min_token_out.amount.to_string() == *"100");
         } else {
             panic!("Unexpected message type: {:?}", result);
         }
@@ -370,42 +366,4 @@ mod tests {
         //     panic!("Unexpected message type: {:?}", response.messages[1].msg);
         // }
     }
-
-    // TODO: Move this test logic into any invoker of swap_msg tests as now its their concern to
-    // validate the token_in_denom based on the context we swap (either non vault funds or during a rerange / anydeposit)
-    // #[test]
-    // fn test_bad_denom_swap() {
-    //     let mut deps = mock_dependencies_with_balance(&[Coin {
-    //         denom: "token0".to_string(),
-    //         amount: Uint128::new(1000),
-    //     }]);
-    //     let deps_mut = deps.as_mut();
-
-    //     let env = mock_env();
-
-    //     let token_in_amount = Uint128::new(100);
-    //     let token_in_denom = "token3".to_string();
-    //     let token_out_min_amount = Uint128::new(100);
-    //     let token_out_denom = "token1".to_string();
-
-    //     let swap_params = SwapParams {
-    //         token_in_amount,
-    //         token_out_min_amount,
-    //         token_in_denom,
-    //         token_out_denom,
-    //         recommended_swap_route: None,
-    //         force_swap_route: false,
-    //     };
-
-    //     POOL_CONFIG
-    //         .save(deps_mut.storage, &mock_pool_config())
-    //         .unwrap();
-
-    //     let err = super::swap_msg(&deps_mut, &env, swap_params).unwrap_err();
-
-    //     assert_eq!(
-    //         err.to_string(),
-    //         "Bad token out requested for swap, must be one of: \"token0\", \"token1\"".to_string()
-    //     );
-    // }
 }

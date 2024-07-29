@@ -22,7 +22,7 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
+    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
     SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
@@ -303,18 +303,24 @@ pub fn do_swap_deposit_merge(
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     // if we have a balance of 0 for one of the tokens, we can just swap the other token
-    let (token_in_amount, swap_direction) = if !balance0.is_zero() {
+    let (token_in, swap_direction) = if !balance0.is_zero() {
         (
             // range is above current tick
             if pool_details.current_tick > target_upper_tick {
-                balance0
+                Coin {
+                    denom: pool_config.token0.clone(),
+                    amount: balance0,
+                }
             } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    balance0,
-                    target_lower_tick,
-                    pool_details.current_tick,
-                    target_upper_tick,
-                )?
+                Coin {
+                    denom: pool_config.token1.clone(),
+                    amount: get_single_sided_deposit_0_to_1_swap_amount(
+                        balance0,
+                        target_lower_tick,
+                        pool_details.current_tick,
+                        target_upper_tick,
+                    )?,
+                }
             },
             SwapDirection::ZeroToOne,
         )
@@ -322,14 +328,20 @@ pub fn do_swap_deposit_merge(
         (
             // current tick is above range
             if pool_details.current_tick < target_lower_tick {
-                balance1
+                Coin {
+                    denom: pool_config.token0.clone(),
+                    amount: balance1,
+                }
             } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    balance1,
-                    target_lower_tick,
-                    pool_details.current_tick,
-                    target_upper_tick,
-                )?
+                Coin {
+                    denom: pool_config.token1.clone(),
+                    amount: get_single_sided_deposit_1_to_0_swap_amount(
+                        balance1,
+                        target_lower_tick,
+                        pool_details.current_tick,
+                        target_upper_tick,
+                    )?,
+                }
             },
             SwapDirection::OneToZero,
         )
@@ -339,7 +351,7 @@ pub fn do_swap_deposit_merge(
         &env,
         pool_config,
         swap_direction,
-        token_in_amount,
+        token_in,
         mrs.max_slippage,
         mrs.forced_swap_route,
         twap_window_seconds,
@@ -351,17 +363,8 @@ pub fn do_swap_deposit_merge(
             Replies::Swap.into(),
         ))
         .add_attributes(vec![
-            attr(
-                "token_in",
-                format!(
-                    "{}{}",
-                    swap_calc_result.token_in_amount, swap_calc_result.token_in_denom
-                ),
-            ),
-            attr(
-                "token_out_min",
-                swap_calc_result.token_out_min_amount.to_string(),
-            ),
+            attr("token_in", swap_calc_result.token_in.to_string()),
+            attr("min_token_out", swap_calc_result.min_token_out.to_string()),
         ]))
 }
 

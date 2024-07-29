@@ -52,7 +52,7 @@ pub(crate) fn execute_any_deposit(
 
     // Swap logic
     // TODO_FUTURE: Optimize this if conditions
-    let (swap_amount, swap_direction, left_over_amount) = if !swappable_amount.0.is_zero() {
+    let (token_in, swap_direction, left_over_amount) = if !swappable_amount.0.is_zero() {
         // range is above current tick
         let swap_amount = if pool_details.current_tick > position.upper_tick {
             swappable_amount.0
@@ -95,7 +95,7 @@ pub(crate) fn execute_any_deposit(
         &env,
         pool_config,
         swap_direction,
-        swap_amount,
+        token_in,
         max_slippage,
         None, // TODO: check this None
         24u64,
@@ -110,14 +110,8 @@ pub(crate) fn execute_any_deposit(
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
-            attr(
-                "token_in",
-                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-            ),
-            attr(
-                "token_out_min",
-                format!("{}", swap_calc_result.token_out_min_amount),
-            ),
+            attr("token_in", token_in.to_string()),
+            attr("min_token_out", swap_calc_result.min_token_out.to_string()),
         ]))
 }
 
@@ -143,6 +137,7 @@ pub fn handle_any_deposit_swap_reply(
             Uint128::new(resp.token_out_amount.parse()?),
             left_over_amount,
         ),
+        _ => return Err(ContractError::InvalidSwapDirection {}),
     };
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
