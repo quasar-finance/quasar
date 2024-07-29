@@ -5,6 +5,10 @@ authors = ["Quasar"]
 edition = "2018"
 publish = false
 
+[features]
+# dummy feature, workaround for rust-analyzer not being able to specify features per workspace
+test-tube = []
+
 [dependencies]
 prost = { workspace = true }
 prost-build = { workspace = true }

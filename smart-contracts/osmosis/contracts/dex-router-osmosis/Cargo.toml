@@ -22,6 +22,11 @@ crate-type = ["cdylib", "rlib"]
 [[bin]]
 name = "schema"
 
+[[test]]
+name = "test-tube"
+path = "tests/integration.rs"
+required-features = ["test-tube"]
+
 [features]
 default = []
 library = []

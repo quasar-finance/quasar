@@ -10,6 +10,11 @@ crate-type = ["cdylib", "rlib"]
 [[bin]]
 name = "schema"
 
+[[test]]
+name = "test-tube"
+path = "tests/merkle.rs"
+required-features = ["test-tube"]
+
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
 library = []

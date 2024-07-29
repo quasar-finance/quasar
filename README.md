@@ -64,8 +64,34 @@ In order to run test-tube the following dependencies are required:
 * go1.21 ([see here](https://go.dev/doc/install))
 * libwasmvm ([see here](https://github.com/CosmWasm/wasmvm) -- !Instructions don't cover installation, copy the files to your desired install location or add the subfolder `wasmvm/internal/api` to your library paths) 
 
-## Pre-commit hook
+## Git hooks
+To automatically use both the pre-commit hook and the post-merge hook, you can adjust the hook path of git: `git config core.hooksPath ${PWD}/scripts/git`.
+
+#### Pre-commit hook
 Enable the pre-commit hook by copying the entrypoint to the hooks folder: `cp scripts/pre-commit .git/hooks`.
 
 It forwards to `scripts/git/pre-commit`, which contains the actual implementation.
 If you are concerned about automatically picking up changes in a bash script from the repository you may install the pre-commit hook via: `cp scripts/git/pre-commit .git/hooks`
+
+#### Post-merge hook
+The post-merge hook automatically removes branches that have been removed on the remote.
+WARNING: Only use this if you are disciplined with your usage of git.
+
+## IDE Configuration
+Rust-analyzer does not pick up optional dependencies (even when specified as required-dependencies for a target). Moreover, it can get confused it it finds too many workspaces.
+
+#### vscode
+The following template enables rust-analyzer for test-tube tests and adds the workspace paths.
+
+Template for `./.vscode/settings.json`:
+```
+{
+    "rust-analyzer.linkedProjects": [
+        "<REPO_ROOT>/smart-contracts/osmosis/Cargo.toml",
+        "<REPO_ROOT>/smart-contracts/quasar/Cargo.toml",
+    ],
+    "rust-analyzer.cargo.features": [
+        "test-tube"
+    ]
+}
+```

@@ -1,4 +1,3 @@
-#![cfg(feature = "test-tube")]
 #![allow(dead_code)]
 
 use cl_vault::{helpers::generic::sort_tokens, msg::InstantiateMsg, state::VaultConfig};

@@ -1,7 +1,7 @@
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyRatioError, Coin, CoinFromStrError,
-    ConversionOverflowError, Decimal256, Decimal256RangeExceeded, DivideByZeroError, OverflowError,
-    StdError, Uint128,
+    CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
+    CoinFromStrError, ConversionOverflowError, Decimal256, Decimal256RangeExceeded,
+    DivideByZeroError, OverflowError, StdError, Uint128,
 };
 use cw_utils::PaymentError;
 use prost::DecodeError;
@@ -157,19 +157,22 @@ pub enum ContractError {
     ConversionOverflowError(#[from] ConversionOverflowError),
 
     #[error("{0}")]
+    CheckedMultiplyRatio(#[from] CheckedMultiplyRatioError),
+
+    #[error("{0}")]
+    CheckedMultiplyFraction(#[from] CheckedMultiplyFractionError),
+
+    #[error("{0}")]
     DecodeError(#[from] DecodeError),
 
     #[error("{0}")]
     CoinFromStrError(#[from] CoinFromStrError),
 
     #[error("{0}")]
-    MultiplyRatioError(#[from] CheckedFromRatioError),
+    CheckedFromRatio(#[from] CheckedFromRatioError),
 
     #[error("{0}")]
     DivideByZeroError(#[from] DivideByZeroError),
-
-    #[error("{0}")]
-    CheckedMultiplyRatioError(#[from] CheckedMultiplyRatioError),
 
     #[error("{0}")]
     Decimal256RangeExceededError(#[from] Decimal256RangeExceeded),
