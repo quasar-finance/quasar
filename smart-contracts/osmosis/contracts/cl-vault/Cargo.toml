@@ -15,6 +15,16 @@ crate-type = ["cdylib", "rlib"]
 [[bin]]
 name = "schema"
 
+[[test]]
+name = "test-tube"
+path = "tests/test-tube/integration.rs"
+required-features = ["test-tube"]
+
+[[test]]
+name = "prop-test"
+path = "tests/test-tube/fuzzer.rs"
+required-features = ["test-tube"]
+
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
 library = []

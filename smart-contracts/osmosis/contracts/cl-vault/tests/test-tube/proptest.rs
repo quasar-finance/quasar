@@ -1,7 +1,4 @@
-#![cfg(feature = "test-tube")]
-
-mod setup;
-use setup::{
+use crate::setup::{
     get_event_attributes_by_ty_and_key, init_test_contract, MAX_SLIPPAGE_HIGH,
     PERFORMANCE_FEE_DEFAULT,
 };
@@ -332,7 +329,6 @@ fn get_cases() -> u32 {
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(get_cases()))]
     #[test]
-    #[ignore]
     fn test_complete_works(
         (initial_lower_tick, initial_upper_tick) in get_initial_range(),
         actions in get_strategy_list(),

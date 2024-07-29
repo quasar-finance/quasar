@@ -2,6 +2,5 @@
 wasm = "build --release --lib --target wasm32-unknown-unknown"
 unit-test = "test --lib"
 schema = "run --bin schema"
-test-tube = "test --test * --features test-tube -- --test-threads=1"
-prop-test = "test tests::proptest::test_complete_works --lib -- --test-threads=1 --exact"
+test-tube = "test --test test-tube --features test-tube -- --test-threads=1"
 test-tube-build = "build --release --lib --target  wasm32-unknown-unknown --target-dir ./test-tube-build"

@@ -1,7 +1,4 @@
-#![cfg(feature = "test-tube")]
-
-mod setup;
-use setup::{
+use crate::setup::{
     calculate_expected_refunds, fixture_dex_router, get_balance_amount,
     get_event_attributes_by_ty_and_key, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
     DENOM_QUOTE, DENOM_REWARD, DEPOSIT_AMOUNT, INITIAL_POSITION_BURN, PERFORMANCE_FEE_DEFAULT,

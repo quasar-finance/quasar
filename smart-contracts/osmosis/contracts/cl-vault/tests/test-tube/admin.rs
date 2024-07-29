@@ -1,7 +1,4 @@
-#![cfg(feature = "test-tube")]
-
-mod setup;
-use setup::{fixture_default, PERFORMANCE_FEE_DEFAULT};
+use crate::setup::{fixture_default, PERFORMANCE_FEE_DEFAULT};
 
 use cl_vault::{
     msg::{
