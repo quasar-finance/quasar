@@ -32,17 +32,16 @@ pub(crate) fn execute_exact_deposit(
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // get the amount of funds we can deposit from this ratio
-    let (deposit, refund): ((Uint128, Uint128), (Uint128, Uint128)) =
-        get_depositable_tokens(&deps, &info.funds, &pool_config)?;
+    let deposit_info = get_depositable_tokens(&deps, &info.funds, &pool_config)?;
 
     execute_deposit(
         &mut deps,
         env,
         recipient,
-        deposit,
+        (deposit_info.base_deposit, deposit_info.quote_deposit),
         (
-            coin(refund.0.into(), pool_config.token0),
-            coin(refund.1.into(), pool_config.token1),
+            coin(deposit_info.base_refund.into(), pool_config.token0),
+            coin(deposit_info.quote_refund.into(), pool_config.token1),
         ),
     )
 }
@@ -63,15 +62,15 @@ pub(crate) fn execute_any_deposit(
         .ok_or(ContractError::MissingPosition {})?;
 
     // get the amount of funds we can deposit from this ratio
-    let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
-        get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
+    // let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
+    let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
 
-    if swappable_amount.0.is_zero() && swappable_amount.1.is_zero() {
+    if deposit_info.base_refund.is_zero() && deposit_info.quote_refund.is_zero() {
         return execute_deposit(
             &mut deps,
             env,
             recipient,
-            deposit_amount_in_ratio,
+            (deposit_info.base_deposit, deposit_info.quote_deposit),
             (
                 coin(0u128, pool_config.token0),
                 coin(0u128, pool_config.token1),
@@ -81,33 +80,33 @@ pub(crate) fn execute_any_deposit(
 
     // Swap logic
     // TODO_FUTURE: Optimize this if conditions
-    let (swap_amount, swap_direction, left_over_amount) = if !swappable_amount.0.is_zero() {
+    let (swap_amount, swap_direction, left_over_amount) = if !deposit_info.base_refund.is_zero() {
         // range is above current tick
         let swap_amount = if pool_details.current_tick > position.upper_tick {
-            swappable_amount.0
+            deposit_info.base_refund
         } else {
             get_single_sided_deposit_0_to_1_swap_amount(
-                swappable_amount.0,
+                deposit_info.base_refund,
                 position.lower_tick,
                 pool_details.current_tick,
                 position.upper_tick,
             )?
         };
-        let left_over_amount = swappable_amount.0.checked_sub(swap_amount)?;
+        let left_over_amount = deposit_info.base_refund.checked_sub(swap_amount)?;
         (swap_amount, SwapDirection::ZeroToOne, left_over_amount)
     } else {
         // current tick is above range
         let swap_amount = if pool_details.current_tick < position.lower_tick {
-            swappable_amount.1
+            deposit_info.quote_refund
         } else {
             get_single_sided_deposit_1_to_0_swap_amount(
-                swappable_amount.1,
+                deposit_info.quote_refund,
                 position.lower_tick,
                 pool_details.current_tick,
                 position.upper_tick,
             )?
         };
-        let left_over_amount = swappable_amount.1.checked_sub(swap_amount)?;
+        let left_over_amount = deposit_info.quote_refund.checked_sub(swap_amount)?;
         (swap_amount, SwapDirection::OneToZero, left_over_amount)
     };
     CURRENT_SWAP_ANY_DEPOSIT.save(
@@ -116,7 +115,7 @@ pub(crate) fn execute_any_deposit(
             swap_direction.clone(),
             left_over_amount,
             recipient.clone(),
-            deposit_amount_in_ratio,
+            (deposit_info.base_deposit, deposit_info.quote_deposit),
         ),
     )?;
     let swap_calc_result = calculate_swap_amount(
