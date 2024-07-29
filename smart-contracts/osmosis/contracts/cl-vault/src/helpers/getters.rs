@@ -1,5 +1,3 @@
-use crate::math::tick::tick_to_price;
-use crate::state::{PoolConfig, RANGE_ADMIN};
 use std::str::FromStr;
 
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
@@ -7,7 +5,12 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
 
 use crate::vault::concentrated_liquidity::get_position;
-use crate::{state::POOL_CONFIG, ContractError};
+use crate::{
+    helpers::assert::must_pay_one_or_two,
+    math::tick::tick_to_price,
+    state::{PoolConfig, POOL_CONFIG, RANGE_ADMIN},
+    ContractError,
+};
 use cosmwasm_std::{
     Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
     Uint128, Uint256,
@@ -64,10 +67,24 @@ pub fn get_twap_price(
     Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
 }
 
-/// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
 #[allow(clippy::type_complexity)]
 pub fn get_depositable_tokens(
-    deps: DepsMut,
+    deps: &DepsMut,
+    funds: &[Coin],
+    pool_config: &PoolConfig,
+) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
+    let (token0, token1) = must_pay_one_or_two(
+        funds,
+        (pool_config.token0.clone(), pool_config.token1.clone()),
+    )?;
+
+    get_depositable_tokens_impl(deps, token0, token1)
+}
+
+/// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
+#[allow(clippy::type_complexity)]
+fn get_depositable_tokens_impl(
+    deps: &DepsMut,
     token0: Coin,
     token1: Coin,
 ) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
@@ -247,13 +264,83 @@ pub fn get_tokens_provided(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use cosmwasm_std::testing::mock_dependencies;
+    use std::collections::HashMap;
+    use std::{marker::PhantomData, str::FromStr};
+
+    use cosmwasm_std::{
+        coin,
+        testing::{MockApi, MockStorage, MOCK_CONTRACT_ADDR},
+        Coin, Decimal256, Empty, OwnedDeps,
+    };
+
+    use osmosis_std::types::{
+        cosmos::base::v1beta1::Coin as OsmoCoin,
+        osmosis::concentratedliquidity::v1beta1::{
+            FullPositionBreakdown, Position as OsmoPosition,
+        },
+    };
+
+    use crate::{
+        state::{Position, POSITION},
+        test_helpers::QuasarQuerier,
+    };
 
     use crate::math::tick::{build_tick_exp_cache, price_to_tick};
 
     use super::*;
+
+    fn mock_deps_with_position(
+        token0: Option<Coin>,
+        token1: Option<Coin>,
+    ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+        let position_id = 2;
+
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: QuasarQuerier::new(
+                FullPositionBreakdown {
+                    position: Some(OsmoPosition {
+                        position_id,
+                        address: MOCK_CONTRACT_ADDR.to_string(),
+                        pool_id: 1,
+                        lower_tick: 100,
+                        upper_tick: 1000,
+                        join_time: None,
+                        liquidity: "1000000.2".to_string(),
+                    }),
+                    asset0: token0.map(|c| c.into()),
+                    asset1: token1.map(|c| c.into()),
+                    claimable_spread_rewards: vec![
+                        OsmoCoin {
+                            denom: "token0".to_string(),
+                            amount: "100".to_string(),
+                        },
+                        OsmoCoin {
+                            denom: "token1".to_string(),
+                            amount: "100".to_string(),
+                        },
+                    ],
+                    claimable_incentives: vec![],
+                    forfeited_incentives: vec![],
+                },
+                500,
+            ),
+            custom_query_type: PhantomData,
+        };
+        POSITION
+            .save(
+                deps.as_mut().storage,
+                &Position {
+                    position_id,
+                    join_time: 0,
+                    claim_after: None,
+                },
+            )
+            .unwrap();
+        deps
+    }
 
     #[test]
     fn test_0_to_1_swap() {
@@ -370,5 +457,145 @@ mod tests {
 
             assert_eq!(swap_amount, result);
         }
+    }
+
+    #[test]
+    fn test_position_in_both_asset() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(1_000_000_000u128),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
+        };
+
+        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mutdeps = deps.as_mut();
+
+        let result = get_depositable_tokens_impl(&mutdeps, token0, token1).unwrap();
+        assert_eq!(
+            result,
+            (
+                (
+                    Uint128::zero(),
+                    Uint128::new(100_000_000_000_000_000_000_000_000_000u128)
+                ),
+                (Uint128::new(1_000_000_000u128), Uint128::zero())
+            )
+        );
+    }
+
+    #[test]
+    fn test_position_in_asset1_only() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
+        let mut deps = mock_deps_with_position(
+            Some(Coin {
+                denom: "token0".to_string(),
+                amount: Uint128::zero(),
+            }),
+            Some(token1.clone()),
+        );
+
+        let result = get_depositable_tokens_impl(&deps.as_mut(), token0, token1).unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::zero(), Uint128::new(100)),
+                (Uint128::new(50), Uint128::zero())
+            )
+        );
+    }
+
+    #[test]
+    fn test_position_in_asset0_only() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        // Osmosis is not using None for missing assets, but Some with amount 0, so we need to mimic that here
+        let mut deps = mock_deps_with_position(
+            Some(token0.clone()),
+            Some(Coin {
+                denom: "token1".to_string(),
+                amount: Uint128::zero(),
+            }),
+        );
+
+        let result = get_depositable_tokens_impl(&deps.as_mut(), token0, token1).unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::new(50), Uint128::zero()),
+                (Uint128::zero(), Uint128::new(100))
+            )
+        );
+    }
+
+    #[test]
+    fn test_both_assets_present_token0_limiting() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        // we use a ratio of 1/2
+        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+
+        let result =
+            get_depositable_tokens_impl(&deps.as_mut(), coin(2000, "token0"), coin(5000, "token1"))
+                .unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::new(2000), Uint128::new(4000)),
+                (Uint128::zero(), Uint128::new(1000))
+            )
+        );
+    }
+
+    #[test]
+    fn test_both_assets_present_token1_limiting() {
+        let token0 = Coin {
+            denom: "token0".to_string(),
+            amount: Uint128::new(50),
+        };
+        let token1 = Coin {
+            denom: "token1".to_string(),
+            amount: Uint128::new(100),
+        };
+
+        // we use a ratio of 1/2
+        let mut deps = mock_deps_with_position(Some(token0.clone()), Some(token1.clone()));
+        let mutdeps = deps.as_mut();
+
+        let result =
+            get_depositable_tokens_impl(&mutdeps, coin(2000, "token0"), coin(3000, "token1"))
+                .unwrap();
+        assert_eq!(
+            result,
+            (
+                (Uint128::new(1500), Uint128::new(3000)),
+                (Uint128::new(500), Uint128::zero())
+            )
+        );
     }
 }
