@@ -347,9 +347,8 @@ pub fn do_swap_deposit_merge(
         )
     };
     let swap_calc_result = calculate_swap_amount(
-        deps,
+        &deps,
         &env,
-        pool_config,
         swap_direction,
         token_in,
         mrs.max_slippage,

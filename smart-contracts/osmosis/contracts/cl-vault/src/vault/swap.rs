@@ -102,9 +102,8 @@ pub fn execute_swap_non_vault_funds(
         // Get swap messages
         swap_msgs.push(
             calculate_swap_amount(
-                deps,
+                &deps,
                 &env,
-                pool_config,
                 SwapDirection::Custom,
                 Coin {
                     denom: token_in_denom.to_string(),
@@ -118,9 +117,8 @@ pub fn execute_swap_non_vault_funds(
         );
         swap_msgs.push(
             calculate_swap_amount(
-                deps,
+                &deps,
                 &env,
-                pool_config,
                 SwapDirection::Custom,
                 Coin {
                     denom: token_in_denom.to_string(),
@@ -142,15 +140,16 @@ pub fn execute_swap_non_vault_funds(
 
 #[allow(clippy::too_many_arguments)]
 pub fn calculate_swap_amount(
-    deps: DepsMut,
+    deps: &DepsMut,
     env: &Env,
-    pool_config: PoolConfig,
     swap_direction: SwapDirection,
     token_in: Coin, // this is a coin so we can pass external funds as token_in
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: u64,
 ) -> Result<SwapCalculationResult, ContractError> {
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
@@ -208,8 +207,8 @@ pub fn calculate_swap_amount(
         env.clone().contract.address,
         SwapParams {
             pool_id: pool_config.pool_id,
-            token_in,
-            min_token_out,
+            token_in: token_in.clone(),
+            min_token_out: min_token_out.clone(),
             forced_swap_route,
         },
     )?;
@@ -279,7 +278,7 @@ mod tests {
         let swap_params = SwapParams {
             pool_id: 1,
             token_in,
-            min_token_out,
+            min_token_out: min_token_out.clone(),
             forced_swap_route: None,
         };
 
