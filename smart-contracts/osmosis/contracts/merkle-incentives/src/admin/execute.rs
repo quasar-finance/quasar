@@ -89,7 +89,7 @@ mod tests {
     fn test_update_merkle_root_valid() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("admin", &vec![]);
+        let info = mock_info("admin", &[]);
 
         // Set incentives admin
         INCENTIVES_ADMIN
@@ -112,7 +112,7 @@ mod tests {
     fn test_update_merkle_root_invalid() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("admin", &vec![]);
+        let info = mock_info("admin", &[]);
 
         // Set incentives admin
         INCENTIVES_ADMIN

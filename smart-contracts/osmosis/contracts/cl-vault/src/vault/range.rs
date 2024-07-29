@@ -3,25 +3,24 @@ use crate::{
         assert::assert_range_admin,
         getters::{
             get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided, get_twap_price,
+            get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided,
             get_unused_pair_balances,
         },
-        msgs::swap_msg,
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, PoolConfig, Position, SwapDepositMergeState, MODIFY_RANGE_STATE,
-        POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
+        POSITION, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
-        concentrated_liquidity::{create_position, get_position},
+        concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
         merge::MergeResponse,
+        swap::{calculate_swap_amount, SwapDirection},
     },
     ContractError,
 };
-use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
     SubMsg, SubMsgResult, Uint128,
@@ -31,11 +30,6 @@ use osmosis_std::types::osmosis::{
     poolmanager::v1beta1::SwapAmountInRoute,
 };
 use std::str::FromStr;
-
-use super::{
-    concentrated_liquidity::get_cl_pool_info,
-    swap::{SwapCalculationResult, SwapParams},
-};
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range
@@ -284,94 +278,11 @@ pub fn do_swap_deposit_merge(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-    let swap_calc_result = calculate_swap_amount(
-        deps,
-        env,
-        &pool_config,
-        pool_details.current_tick,
-        position_id,
-        balance0,
-        balance1,
-        target_lower_tick,
-        target_upper_tick,
-        twap_window_seconds,
-    )?;
 
-    // Start constructing the response
     let response = Response::new()
         .add_attribute("method", "reply")
         .add_attribute("action", "do_swap_deposit_merge");
-
-    // Check if there is a swap message and append accordingly
-    if let Some(calculated) = swap_calc_result {
-        Ok(response
-            .add_submessage(SubMsg::reply_on_success(
-                calculated.swap_msg,
-                Replies::Swap.into(),
-            ))
-            .add_attributes(vec![
-                attr(
-                    "token_in",
-                    format!(
-                        "{}{}",
-                        calculated.token_in_amount, calculated.token_in_denom
-                    ),
-                ),
-                attr("token_out_min", calculated.token_out_min_amount.to_string()),
-            ]))
-    } else {
-        // If no swap message, add a new position attribute
-        Ok(response.add_attribute("new_position", position_id.unwrap().to_string()))
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn calculate_swap_amount(
-    deps: DepsMut,
-    env: Env,
-    pool_config: &PoolConfig,
-    current_tick: i64,
-    position_id: Option<u64>,
-    balance0: Uint128,
-    balance1: Uint128,
-    target_lower_tick: i64,
-    target_upper_tick: i64,
-    twap_window_seconds: u64,
-) -> Result<Option<SwapCalculationResult>, ContractError> {
-    //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
-    // to reduce the total number of non-deposited tokens that we will then need to refund
-    let (token_in_amount, swap_direction) = if !balance0.is_zero() {
-        (
-            // range is above current tick
-            if current_tick > target_upper_tick {
-                balance0
-            } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    balance0,
-                    target_lower_tick,
-                    current_tick,
-                    target_upper_tick,
-                )?
-            },
-            SwapDirection::ZeroToOne,
-        )
-    } else if !balance1.is_zero() {
-        (
-            // current tick is above range
-            if current_tick < target_lower_tick {
-                balance1
-            } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    balance1,
-                    target_lower_tick,
-                    current_tick,
-                    target_upper_tick,
-                )?
-            },
-            SwapDirection::OneToZero,
-        )
-    } else {
-        // Load the current Position to extract join_time and claim_after which is unchangeable in this context
+    if balance0.is_zero() && balance1.is_zero() {
         let position = POSITION.load(deps.storage)?;
 
         // if we have not tokens to swap, that means all tokens we correctly used in the create position
@@ -379,7 +290,6 @@ fn calculate_swap_amount(
         POSITION.save(
             deps.storage,
             &Position {
-                // if position not found, then we should panic here anyway ?
                 position_id: position_id.expect("position id should be set if no swap is needed"),
                 join_time: position.join_time,
                 claim_after: position.claim_after,
@@ -387,58 +297,73 @@ fn calculate_swap_amount(
         )?;
 
         SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
-
-        return Ok(None);
-    };
-
-    // TODO: check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
-    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            &pool_config.token0,
-            &pool_config.token1,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-        ),
-        SwapDirection::OneToZero => (
-            &pool_config.token1,
-            &pool_config.token0,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-        ),
-    };
-
-    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(mrs.max_slippage.numerator(), mrs.max_slippage.denominator())?;
-
-    if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0.clone(),
-            quote_token: pool_config.token1.clone(),
-        });
+        return Ok(response.add_attribute("new_position", position_id.unwrap().to_string()));
     }
 
-    let swap_msg = swap_msg(
-        &deps,
-        env.contract.address.clone(),
-        SwapParams {
-            pool_id: pool_config.pool_id,
-            token_in_amount,
-            token_out_min_amount,
-            token_in_denom: token_in_denom.clone(),
-            token_out_denom: token_out_denom.to_string(),
-            forced_swap_route: mrs.forced_swap_route,
-        },
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+
+    //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
+    // to reduce the total number of non-deposited tokens that we will then need to refund
+    let (token_in_amount, swap_direction) = if !balance0.is_zero() {
+        (
+            // range is above current tick
+            if pool_details.current_tick > target_upper_tick {
+                balance0
+            } else {
+                get_single_sided_deposit_0_to_1_swap_amount(
+                    balance0,
+                    target_lower_tick,
+                    pool_details.current_tick,
+                    target_upper_tick,
+                )?
+            },
+            SwapDirection::ZeroToOne,
+        )
+    } else {
+        (
+            // current tick is above range
+            if pool_details.current_tick < target_lower_tick {
+                balance1
+            } else {
+                get_single_sided_deposit_1_to_0_swap_amount(
+                    balance1,
+                    target_lower_tick,
+                    pool_details.current_tick,
+                    target_upper_tick,
+                )?
+            },
+            SwapDirection::OneToZero,
+        )
+    };
+    let swap_calc_result = calculate_swap_amount(
+        deps,
+        &env,
+        pool_config,
+        swap_direction,
+        token_in_amount,
+        mrs.max_slippage,
+        mrs.forced_swap_route,
+        twap_window_seconds,
     )?;
 
-    Ok(Some(SwapCalculationResult {
-        swap_msg,
-        token_in_denom: token_in_denom.to_string(),
-        token_in_amount,
-        token_out_min_amount,
-        position_id: None,
-    }))
+    Ok(response
+        .add_submessage(SubMsg::reply_on_success(
+            swap_calc_result.swap_msg,
+            Replies::Swap.into(),
+        ))
+        .add_attributes(vec![
+            attr(
+                "token_in",
+                format!(
+                    "{}{}",
+                    swap_calc_result.token_in_amount, swap_calc_result.token_in_denom
+                ),
+            ),
+            attr(
+                "token_out_min",
+                swap_calc_result.token_out_min_amount.to_string(),
+            ),
+        ]))
 }
 
 // do deposit
@@ -570,12 +495,6 @@ pub fn handle_merge_reply(
         .add_attribute("status", "success"))
 }
 
-#[cw_serde]
-pub enum SwapDirection {
-    ZeroToOne,
-    OneToZero,
-}
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -658,59 +577,6 @@ mod tests {
         let info = mock_info("addr0000", &[]);
         let env = mock_env();
 
-        // let mut deps = mock_deps_with_querier_with_balance(
-        //     &info,
-        //     &[(MOCK_CONTRACT_ADDR, &[coin(11234, "token1")])],
-        // );
-
-        // // moving into a range
-        // MODIFY_RANGE_STATE
-        //     .save(
-        //         deps.as_mut().storage,
-        //         &Some(crate::state::ModifyRangeState {
-        //             lower_tick: 100,
-        //             upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
-        //             new_range_position_ids: vec![],
-        //             max_slippage: Decimal::zero(),
-        //             ratio_of_swappable_funds_to_use: Decimal::one(),
-        //             twap_window_seconds: 45,
-        //             recommended_swap_route: None,
-        //             force_swap_route: false,
-        //         }),
-        //     )
-        //     .unwrap();
-
-        // // Reply
-        // //first test fully one-sided withdraw
-        // let data = SubMsgResult::Ok(SubMsgResponse {
-        //     events: vec![],
-        //     data: Some(
-        //         MsgWithdrawPositionResponse {
-        //             amount0: "0".to_string(),
-        //             amount1: "10000".to_string(),
-        //         }
-        //         .try_into()
-        //         .unwrap(),
-        //     ),
-        // });
-
-        // let res = super::handle_withdraw_position_reply(deps.as_mut(), env.clone(), data).unwrap();
-
-        // // verify that we went straight to swap_deposit_merge
-        // assert_eq!(res.messages.len(), 1);
-        // assert_eq!(res.attributes[1].value, "do_swap_deposit_merge");
-        // // check that our token1 attribute is incremented with the local balance
-        // assert_eq!(
-        //     res.attributes
-        //         .iter()
-        //         .find(|a| { a.key == "token_in" })
-        //         .unwrap()
-        //         .value,
-        //     "5962token1"
-        // );
-
-        // SECOND CASE STARTS HERE
-
         let mut deps = mock_deps_with_querier_with_balance(
             &info,
             &[(
@@ -719,7 +585,6 @@ mod tests {
             )],
         );
 
-        // moving into a range
         MODIFY_RANGE_STATE
             .save(
                 deps.as_mut().storage,

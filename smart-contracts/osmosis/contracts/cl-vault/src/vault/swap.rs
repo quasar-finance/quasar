@@ -1,7 +1,7 @@
-use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, Response, Uint128};
+use cosmwasm_std::{CosmosMsg, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-use crate::helpers::getters::get_twap_price;
+use crate::helpers::assert::assert_range_admin;
 use crate::helpers::msgs::swap_msg;
 use crate::msg::SwapOperation;
 use crate::state::POOL_CONFIG;
@@ -110,6 +110,66 @@ pub fn execute_swap_non_vault_funds(
         .add_messages(swap_msgs)
         .add_attribute("method", "execute")
         .add_attribute("action", "swap_non_vault_funds"))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn calculate_swap_amount(
+    deps: DepsMut,
+    env: &Env,
+    pool_config: PoolConfig,
+    swap_direction: SwapDirection,
+    token_in_amount: Uint128,
+    max_slippage: Decimal,
+    forced_swap_route: Option<Vec<SwapAmountInRoute>>,
+    twap_window_seconds: u64,
+) -> Result<SwapCalculationResult, ContractError> {
+    let twap_price = get_twap_price(deps.storage, &deps.querier, env, twap_window_seconds)?;
+    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
+        SwapDirection::ZeroToOne => (
+            &pool_config.token0,
+            &pool_config.token1,
+            token_in_amount
+                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+        ),
+        SwapDirection::OneToZero => (
+            &pool_config.token1,
+            &pool_config.token0,
+            token_in_amount
+                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+        ),
+    };
+
+    let token_out_min_amount = token_out_ideal_amount?
+        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
+
+    if !pool_config.pool_contains_token(token_in_denom) {
+        return Err(ContractError::BadTokenForSwap {
+            base_token: pool_config.token0,
+            quote_token: pool_config.token1,
+        });
+    }
+
+    // generate a swap message with recommended path as the current
+    // pool on which the vault is running
+    let swap_msg = swap_msg(
+        &deps,
+        env,
+        SwapParams {
+            pool_id: pool_config.pool_id,
+            token_in_amount,
+            token_out_min_amount,
+            token_in_denom: token_in_denom.clone(),
+            token_out_denom: token_out_denom.clone(),
+            forced_swap_route,
+        },
+    )?;
+
+    Ok(SwapCalculationResult {
+        swap_msg,
+        token_in_denom: token_in_denom.to_string(),
+        token_out_min_amount,
+        token_in_amount,
+    })
 }
 
 #[cfg(test)]

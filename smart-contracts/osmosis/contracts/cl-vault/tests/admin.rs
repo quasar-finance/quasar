@@ -46,5 +46,5 @@ fn admin_build_tick_cache_works() {
             )),
         )
         .unwrap();
-    assert_eq!((), verify_resp.result.unwrap());
+    assert!(verify_resp.result.is_ok());
 }

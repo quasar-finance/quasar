@@ -348,8 +348,7 @@ mod tests {
             amount0: "1000".to_string(),
             amount1: "1000".to_string(),
         }
-        .try_into()
-        .unwrap();
+        .into();
 
         let response = handle_withdraw_user_reply(
             deps.as_mut(),

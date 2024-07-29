@@ -54,7 +54,7 @@ impl QuasarQuerier {
 
 impl Querier for QuasarQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> cosmwasm_std::QuerierResult {
-        let request: QueryRequest<Empty> = from_json(&Binary::from(bin_request)).unwrap();
+        let request: QueryRequest<Empty> = from_json(Binary::from(bin_request)).unwrap();
         match request {
             QueryRequest::Stargate { path, data } => match path.as_str() {
                 "/osmosis.concentratedliquidity.v1beta1.Query/PositionById" => {
@@ -89,11 +89,11 @@ impl Querier for QuasarQuerier {
                     ))
                 }
                 "/cosmos.bank.v1beta.Query/Balance" => {
-                    let query: BankQuery = from_json(&Binary::from(bin_request)).unwrap();
+                    let query: BankQuery = from_json(Binary::from(bin_request)).unwrap();
                     self.bank.query(&query)
                 }
                 "/cosmos.bank.v1beta.Query/AllBalances" => {
-                    let query: BankQuery = from_json(&Binary::from(bin_request)).unwrap();
+                    let query: BankQuery = from_json(Binary::from(bin_request)).unwrap();
                     self.bank.query(&query)
                 }
                 "/osmosis.poolmanager.v1beta1.Query/Pool" => {
