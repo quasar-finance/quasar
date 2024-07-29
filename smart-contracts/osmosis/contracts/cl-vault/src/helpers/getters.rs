@@ -78,6 +78,14 @@ impl PoolAssets {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct DepositInfo {
+    pub base_deposit: Uint128,
+    pub quote_deposit: Uint128,
+    pub base_refund: Uint128,
+    pub quote_refund: Uint128,
+}
+
 pub fn get_depositable_tokens(
     deps: &DepsMut,
     funds: &[Coin],
@@ -93,43 +101,34 @@ pub fn get_depositable_tokens(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
-    get_depositable_tokens_impl(&assets, token0, token1)
+    compute_deposit_and_refund_tokens(&assets, token0, token1)
 }
 
-#[derive(Debug, PartialEq)]
-pub struct DepositInfo {
-    pub base_deposit: Uint128,
-    pub quote_deposit: Uint128,
-    pub base_refund: Uint128,
-    pub quote_refund: Uint128,
-}
-
-/// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
-fn get_depositable_tokens_impl(
+fn compute_deposit_and_refund_tokens(
     assets: &PoolAssets,
-    token0: Coin,
-    token1: Coin,
+    provided_base: Coin,
+    provided_quote: Coin,
 ) -> Result<DepositInfo, ContractError> {
-    let token0_amount: Uint256 = token0.amount.into();
-    let token1_amount: Uint256 = token1.amount.into();
+    let provided_base_amount: Uint256 = provided_base.amount.into();
+    let provided_quote_amount: Uint256 = provided_quote.amount.into();
 
     let base_deposit = if assets.quote.amount.is_zero() {
-        token0_amount
+        provided_base_amount
     } else {
         min(
-            token0_amount,
-            token1_amount.checked_mul_floor(Decimal256::from_ratio(
+            provided_base_amount,
+            provided_quote_amount.checked_mul_floor(Decimal256::from_ratio(
                 assets.base.amount,
                 assets.quote.amount,
             ))?,
         )
     };
     let quote_deposit = if assets.base.amount.is_zero() {
-        token1_amount
+        provided_quote_amount
     } else {
         min(
-            token1_amount,
-            token0_amount.checked_mul_floor(Decimal256::from_ratio(
+            provided_quote_amount,
+            provided_base_amount.checked_mul_floor(Decimal256::from_ratio(
                 assets.quote.amount,
                 assets.base.amount,
             ))?,
@@ -139,8 +138,10 @@ fn get_depositable_tokens_impl(
     Ok(DepositInfo {
         base_deposit: base_deposit.try_into()?,
         quote_deposit: quote_deposit.try_into()?,
-        base_refund: token0_amount.checked_sub(base_deposit)?.try_into()?,
-        quote_refund: token1_amount.checked_sub(quote_deposit)?.try_into()?,
+        base_refund: provided_base_amount.checked_sub(base_deposit)?.try_into()?,
+        quote_refund: provided_quote_amount
+            .checked_sub(quote_deposit)?
+            .try_into()?,
     })
 }
 
@@ -392,7 +393,7 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result = get_depositable_tokens_impl(&assets, token0, token1).unwrap();
+        let result = compute_deposit_and_refund_tokens(&assets, token0, token1).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -422,7 +423,7 @@ mod tests {
             },
             quote: token1.clone(),
         };
-        let result = get_depositable_tokens_impl(&assets, token0, token1).unwrap();
+        let result = compute_deposit_and_refund_tokens(&assets, token0, token1).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -452,7 +453,7 @@ mod tests {
             },
             base: token0.clone(),
         };
-        let result = get_depositable_tokens_impl(&assets, token0, token1).unwrap();
+        let result = compute_deposit_and_refund_tokens(&assets, token0, token1).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -480,7 +481,7 @@ mod tests {
             quote: token1.clone(),
         };
         let result =
-            get_depositable_tokens_impl(&assets, coin(2000, "token0"), coin(5000, "token1"))
+            compute_deposit_and_refund_tokens(&assets, coin(2000, "token0"), coin(5000, "token1"))
                 .unwrap();
         assert_eq!(
             result,
@@ -509,7 +510,7 @@ mod tests {
             quote: token1.clone(),
         };
         let result =
-            get_depositable_tokens_impl(&assets, coin(2000, "token0"), coin(3000, "token1"))
+            compute_deposit_and_refund_tokens(&assets, coin(2000, "token0"), coin(3000, "token1"))
                 .unwrap();
         assert_eq!(
             result,
