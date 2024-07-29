@@ -44,6 +44,7 @@ pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
     env: Env,
     swap_operations: Vec<SwapOperation>,
+    twap_window_seconds: Option<u64>,
 ) -> Result<Response, ContractError> {
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -79,8 +80,12 @@ pub fn execute_swap_non_vault_funds(
         let half_balance_amount = balance_in_contract.checked_div(Uint128::new(2))?;
 
         // Get twap price
-        // TODO: Think how we want to pass the twap_window_seconds that now is hardcoded to 0
-        let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 0)?;
+        let twap_price = get_twap_price(
+            deps.storage,
+            &deps.querier,
+            &env,
+            twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
+        )?;
         let token_out_min_amount_0 = half_balance_amount
             .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator())? // twap
             .checked_multiply_ratio(

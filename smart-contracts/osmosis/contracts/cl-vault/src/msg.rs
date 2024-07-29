@@ -32,7 +32,10 @@ pub enum ExtensionExecuteMsg {
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
     /// SwapNonVaultFunds
-    SwapNonVaultFunds { swap_operations: Vec<SwapOperation> },
+    SwapNonVaultFunds {
+        swap_operations: Vec<SwapOperation>,
+        twap_window_seconds: Option<u64>,
+    },
 }
 
 /// Extension messages for Authz. This interface basically reexports certain vault functionality
