@@ -39,7 +39,7 @@ then
     # Update osmo chain params
     echo
     echo "Updating osmosis chain params on quasar"
-    quasarnoded tx qoracle update-osmosis-chain-params --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --output json --keyring-backend test
+    quasard tx qoracle update-osmosis-chain-params --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --output json --keyring-backend test
     echo
 
     read -p "Do we have chain params? Refresh here until yes (epochs info should not be empty): http://localhost:1311/quasarlabs/quasarnode/qoracle/osmosis/chain_params (Y/n)" -n 1 -r
@@ -78,29 +78,29 @@ cd ../../smart-contracts
 RUSTFLAGS='-C link-arg=-s' cargo wasm
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store target/wasm32-unknown-unknown/release/qoracle_bindings_test.wasm --from alice -y --output json -b block $TXFLAG) 
+RES=$(quasard tx wasm store target/wasm32-unknown-unknown/release/qoracle_bindings_test.wasm --from alice -y --output json -b block $TXFLAG)
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
 # swallow output
-OUT=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT" --from alice --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
-ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
+OUT=$(quasard tx wasm instantiate $CODE_ID "$INIT" --from alice --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+ADDR=$(quasard query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR"
 
 echo "Executing message... ('$MSG1')"
-quasarnoded tx wasm execute $ADDR "$MSG1" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
+quasard tx wasm execute $ADDR "$MSG1" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
 
 sleep 5 # keep getting account sequence mismatch
 echo 
 
 echo "Executing message... ('$MSG2')"
-quasarnoded tx wasm execute $ADDR "$MSG2" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
+quasard tx wasm execute $ADDR "$MSG2" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
 
 sleep 5 # keep getting account sequence mismatch
 echo
 
 echo "Executing message... ('$MSG3')"
-quasarnoded tx wasm execute $ADDR "$MSG3" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
+quasard tx wasm execute $ADDR "$MSG3" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID --log_level trace
 
 cd -

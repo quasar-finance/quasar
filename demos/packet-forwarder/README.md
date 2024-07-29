@@ -54,7 +54,7 @@ Now the 3 blockchains are able to communicate.
 Users' addresses are already fixed in the yaml config files file with mnemonics.
 
 ```bash
-quasarnoded keys list --home run/quasar/home/
+quasard keys list --home run/quasar/home/
 ```
 
 Alice's address on quasar is: `quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec`
@@ -68,7 +68,7 @@ curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77
 or
 
 ```bash
-quasarnoded q bank balances $(quasarnoded keys show -a alice --home run/quasar/home) --home run/quasar/home/ --node http://localhost:26659
+quasard q bank balances $(quasard keys show -a alice --home run/quasar/home) --home run/quasar/home/ --node http://localhost:26659
 ```
 
 3. Now Bob transfers 2000 uatom from `cosmos` to `quasar`
@@ -86,7 +86,7 @@ curl http://localhost:1311/bank/balances/quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77
 or
 
 ```bash
-quasarnoded q bank balances $(quasarnoded keys show -a alice --home run/quasar/home) --home run/quasar/home/ --node http://localhost:26659
+quasard q bank balances $(quasard keys show -a alice --home run/quasar/home) --home run/quasar/home/ --node http://localhost:26659
 ```
 
 3. Alice has the ATOM available in the form of an IBC token on `quasar`. We now transfer it to `osmosis` but doing a multi-hop transaction via `cosmos` using the packet forwarder.

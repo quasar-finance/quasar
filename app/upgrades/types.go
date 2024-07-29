@@ -1,20 +1,19 @@
 package upgrades
 
 import (
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 )
 
-// BaseAppParamManager defines an interrace that BaseApp is expected to fullfil
-// that allows upgrade handlers to modify BaseApp parameters.
-type BaseAppParamManager interface {
-	GetConsensusParams(ctx sdk.Context) *tmproto.ConsensusParams
-	StoreConsensusParams(ctx sdk.Context, cp *tmproto.ConsensusParams)
-}
+const (
+	ProdChainID = "quasar-1"
+	TestChainID = "quasar-test-1"
+
+	// upgrade name consts: vMMmmppUpgradeName (M=Major, m=minor, p=patch).
+	V030000UpgradeName = "v3.0.0"
+)
 
 // Upgrade defines a struct containing necessary fields that a SoftwareUpgradeProposal
 // must have written, in order for the state migration to go smoothly.
@@ -25,13 +24,17 @@ type Upgrade struct {
 	UpgradeName string
 
 	// CreateUpgradeHandler defines the function that creates an upgrade handler
-	CreateUpgradeHandler func(
-		mm *module.Manager,
-		configurator module.Configurator,
-		bam BaseAppParamManager,
-		keepers *keepers.AppKeepers,
-	) upgradetypes.UpgradeHandler
+	CreateUpgradeHandler func(*module.Manager, module.Configurator, *keepers.AppKeepers) upgradetypes.UpgradeHandler
 
 	// Store upgrades, should be used for any new modules introduced, new modules deleted, or store names renamed.
-	StoreUpgrades store.StoreUpgrades
+	StoreUpgrades storetypes.StoreUpgrades
 }
+
+// todo before release
+// func isMainnet(ctx sdk.Context) bool {
+//	return ctx.ChainID() == ProdChainID
+//}
+//
+//func isTestnet(ctx sdk.Context) bool {
+//	return ctx.ChainID() == TestChainID
+//}

@@ -10,7 +10,7 @@ import (
 	"github.com/quasarlabs/quasarnode/app/params"
 )
 
-// Structure holding storage context for initializing test keepers
+// KeeperFactory Structure holding storage context for initializing test keepers.
 type KeeperFactory struct {
 	DB             *tmdb.MemDB
 	StateStore     store.CommitMultiStore
@@ -18,7 +18,7 @@ type KeeperFactory struct {
 	EncodingConfig params.EncodingConfig
 }
 
-// Create an KeeperFactory with in memory database and default codecs
+// NewKeeperFactory Creates with in memory database and default codecs.
 func NewKeeperFactory(
 	db *tmdb.MemDB,
 	stateStore store.CommitMultiStore,
@@ -33,14 +33,14 @@ func NewKeeperFactory(
 	}
 }
 
-// TestModuleAccountPerms returns module account permissions for testing
+// TestModuleAccountPerms returns module account permissions for testing.
 func (kf KeeperFactory) TestModuleAccountPerms() map[string][]string {
 	moduleAccPerms := app.GetMaccPerms()
 	// moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
 	return moduleAccPerms
 }
 
-// BlockedModuleAccountAddrs returns all the app's module account addresses that are active
+// BlockedModuleAccountAddrs returns all the app's module account addresses that are active.
 func (kf KeeperFactory) BlockedModuleAccountAddrs(maccPerms map[string][]string) map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {

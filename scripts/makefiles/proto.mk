@@ -1,9 +1,10 @@
 ###############################################################################
 ###                         Proto & Mock Generation                         ###
 ###############################################################################
-protoVer=0.13.0
+
+PROTO_BUILDER_IMAGE=ghcr.io/cosmos/proto-builder:0.14.0
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE)
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
 proto-help:
 	@echo "proto subcommands"
@@ -12,29 +13,85 @@ proto-help:
 	@echo "  make proto-[command]"
 	@echo ""
 	@echo "Available Commands:"
-	@echo "  all        Run proto-format and proto-gen"
-	@echo "  gen        Generate Protobuf files"
-	@echo "  gen-1      Generate Protobuf files (old relic)"
-	@echo "  doc        Generate proto docs"
+	@echo "  all           Run proto-format and proto-gen"
+	@echo "  format        Format Protobuf files"
+	@echo "  gen           Generate Protobuf files"
+	@echo "  download-deps Download proto deps"
+	@echo "  docs		   Push the protobuf Docker image"
 
 proto: proto-help
-proto-all: proto-format proto-lint proto-gen
+proto-all: proto-format proto-gen
 
-# todo : @AJ needs to address this after removing third_party. Refer this for removal https://github.com/osmosis-labs/osmosis/blob/188abfcd15544ca07d468c0dc0169876ffde6079/scripts/makefiles/proto.mk#L39
 proto-gen:
 	@echo "Generating Protobuf files"
-	@$(protoImage) sh ./scripts/protocgen.sh
+	@$(DOCKER) run --rm -u 0 -v $(CURDIR):/workspace --workdir /workspace $(PROTO_BUILDER_IMAGE) sh ./scripts/protocgen.sh
 
 proto-format:
-	@$(protoImage) find ./ -name "*.proto" -exec clang-format -i {} \;
+	@echo "Formatting Protobuf files"
+	@$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/docker-build-proto \
+		find ./proto -name "*.proto" -exec clang-format -i {} \;
 
-proto-lint:
-	@$(protoImage) buf lint --error-format=json
+SWAGGER_DIR=./swagger-proto
+THIRD_PARTY_DIR=$(SWAGGER_DIR)/third_party
 
-proto-update-deps:
-	@echo "Updating Protobuf dependencies"
-	$(DOCKER) run --rm -v $(CURDIR)/proto:/workspace --workdir /workspace $(protoImageName) buf mod update
+proto-download-deps:
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos_tmp" && \
+	cd "$(THIRD_PARTY_DIR)/cosmos_tmp" && \
+	git init && \
+	git remote add origin "https://github.com/cosmos/cosmos-sdk.git" && \
+	git config core.sparseCheckout true && \
+	printf "proto\nthird_party\n" > .git/info/sparse-checkout && \
+	git pull origin main && \
+	rm -f ./proto/buf.* && \
+	mv ./proto/* ..
+	rm -rf "$(THIRD_PARTY_DIR)/cosmos_tmp"
 
-proto-doc:
-	@echo "Generating Protoc docs"
-	@sh ./scripts/generate-docs.sh
+	mkdir -p "$(THIRD_PARTY_DIR)/ibc_tmp" && \
+	cd "$(THIRD_PARTY_DIR)/ibc_tmp" && \
+	git init && \
+	git remote add origin "https://github.com/cosmos/ibc-go.git" && \
+	git config core.sparseCheckout true && \
+	printf "proto\n" > .git/info/sparse-checkout && \
+	git pull origin main && \
+	rm -f ./proto/buf.* && \
+	mv ./proto/* ..
+	rm -rf "$(THIRD_PARTY_DIR)/ibc_tmp"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos_proto_tmp" && \
+	cd "$(THIRD_PARTY_DIR)/cosmos_proto_tmp" && \
+	git init && \
+	git remote add origin "https://github.com/cosmos/cosmos-proto.git" && \
+	git config core.sparseCheckout true && \
+	printf "proto\n" > .git/info/sparse-checkout && \
+	git pull origin main && \
+	rm -f ./proto/buf.* && \
+	mv ./proto/* ..
+	rm -rf "$(THIRD_PARTY_DIR)/cosmos_proto_tmp"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/gogoproto" && \
+	curl -SSL https://raw.githubusercontent.com/cosmos/gogoproto/main/gogoproto/gogo.proto > "$(THIRD_PARTY_DIR)/gogoproto/gogo.proto"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/google/api" && \
+	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto > "$(THIRD_PARTY_DIR)/google/api/annotations.proto"
+	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto > "$(THIRD_PARTY_DIR)/google/api/http.proto"
+
+	mkdir -p "$(THIRD_PARTY_DIR)/cosmos/ics23/v1" && \
+	curl -sSL https://raw.githubusercontent.com/cosmos/ics23/master/proto/cosmos/ics23/v1/proofs.proto > "$(THIRD_PARTY_DIR)/cosmos/ics23/v1/proofs.proto"
+
+proto-docs:
+	@echo
+	@echo "=========== Generate Message ============"
+	@echo
+	@make proto-download-deps
+	./scripts/generate-docs.sh
+
+	statik -src=client/docs/static -dest=client/docs -f -m
+	@if [ -n "$(git status --porcelain)" ]; then \
+  	     echo "\033[91mSwagger docs are out of sync!!!\033[0m";\
+  	     exit 1;\
+  	 else \
+  	     echo "\033[92mSwagger docs are in sync\033[0m";\
+  	 fi
+	@echo
+	@echo "=========== Generate Complete ============"
+	@echo

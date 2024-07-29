@@ -4,7 +4,7 @@ A Quasar vault is a smart contract to receive Cosmos native tokens
 The packages directory provides packages for strategists to ease development
 
 ## Building the CLI
-These smart contracts are build on the Quasar chain. Using ``` go install -mod=readonly ./cmd/quasarnoded/``` from the quasar root directory. we build de quasarnoded CLI 
+These smart contracts are build on the Quasar chain. Using ``` go install -mod=readonly ./cmd/quasard/``` from the quasar root directory. we build de quasard CLI 
 ## Running the chain locally
 These smart contracts are build on the Quasar chain, thus we also want to run the chain.
 ```
@@ -29,11 +29,11 @@ We need to use the workspace optimizer because we have a separate directory wher
 Now that we have our CLI, a running chain and our compiled contract, we can now upload the contract and instantiate it.
 to upload the contract:
 ```
-quasarnoded tx wasm store ./artifacts/cw_4626.wasm --from alice --gas auto
+quasard tx wasm store ./artifacts/cw_4626.wasm --from alice --gas auto
 ```
 check that it's uploaded:
 ```
-quasarnoded query wasm list-code --node http://0.0.0.0:26657
+quasard query wasm list-code --node http://0.0.0.0:26657
 ```
 
 now to instantiate it, we first create the instantaite message and safe that into an env var for later user:
@@ -42,7 +42,7 @@ INSTANTIATE='{"name":"test-vault","symbol":"TEV","reserve_denom":"uqsar","reserv
 ```
 For easy editing, the instantion of the vault can also be found in `readme_instantion.json`
 ```
-quasarnoded tx wasm instantiate 1 "$INSTANTIATE" --label test --no-admin --from alice
+quasard tx wasm instantiate 1 "$INSTANTIATE" --label test --no-admin --from alice
 ```
 ## Interacting with the contract
 
@@ -51,7 +51,7 @@ Now lets deposit some funds:
 EXECUTE='{"deposit":{}}'
 ```
 ```
- quasarnoded tx wasm execute YOUR_CONTRACT_ADDRESS "$EXECUTE" --amount 1000uatom --from alice
+ quasard tx wasm execute YOUR_CONTRACT_ADDRESS "$EXECUTE" --amount 1000uatom --from alice
 ```
 
 

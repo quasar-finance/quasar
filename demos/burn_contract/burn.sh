@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BINARY=quasarnoded
+BINARY=quasard
 CHAIN_ID="quasar"
 ACCOUNT_NAME="alice"
 ACCOUNT_ADDRESS="quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec"
@@ -20,13 +20,13 @@ OUT1=$($BINARY tx wasm instantiate $CODE_ID "{}" --from $ACCOUNT_NAME --keyring-
 ADDR1=$($BINARY query wasm list-contract-by-code $CODE_ID --output json | jq -r '.contracts[0]')
 echo "Got address of burn coin contract = $ADDR1"
 
-quasarnoded q bank total
+quasard q bank total
 
 echo "Should not fail"
-quasarnoded tx wasm execute $ADDR1 '{"burn":{}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block --amount 90000000000000000uqsr,200000000stake,20000token
+quasard tx wasm execute $ADDR1 '{"burn":{}}' --from $ACCOUNT_NAME --keyring-backend test -y --output json --chain-id $CHAIN_ID --fees 10000uqsr --gas 7000000 -b block --amount 90000000000000000uqsr,200000000stake,20000token
 
-quasarnoded q wasm contract-state smart $ADDR1 '{"total_burnt_query":{}}'
+quasard q wasm contract-state smart $ADDR1 '{"total_burnt_query":{}}'
 
-quasarnoded q bank total
+quasard q bank total
 
 

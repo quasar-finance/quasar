@@ -38,17 +38,17 @@ Here's an example of how to interact with the Burn Coins Contract:
 
 1. **Instantiate the Contract**:
     ```
-    quasarnoded tx wasm instantiate <vault code ID> "" --from <account-name> --keyring-backend <name-of-keyring> --label "burn coins contract" --gas auto --fees <amount-denom> -b block -y --admin <admin-address>
+    quasard tx wasm instantiate <vault code ID> "" --from <account-name> --keyring-backend <name-of-keyring> --label "burn coins contract" --gas auto --fees <amount-denom> -b block -y --admin <admin-address>
     ```
 
 2. **Execute Coin Burning**:
     ```
-    quasarnoded tx wasm execute <contract-address> '{"burn":{}}' -y --from <account-name> --keyring-backend <name-of-keyring> --gas auto --fees <amount-denom> --chain-id <chain-id> --amount <denom-amount,denom-amount>
+    quasard tx wasm execute <contract-address> '{"burn":{}}' -y --from <account-name> --keyring-backend <name-of-keyring> --gas auto --fees <amount-denom> --chain-id <chain-id> --amount <denom-amount,denom-amount>
     ```
 
 3. **Query Total Burnt Amount**:
     ```
-    # quasarnoded query wasm contract-state smart <contract-address> '{"total_burnt_query":{}}' --output json
+    # quasard query wasm contract-state smart <contract-address> '{"total_burnt_query":{}}' --output json
     ```
 
 ## Considerations

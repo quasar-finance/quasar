@@ -2,13 +2,13 @@
 #set -o xtrace
 : '
 # Samples 
-num_channels=`quasarnoded q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels | length"`
-state=`quasarnoded q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].state" | tr -d '"'`
-port_id=`quasarnoded q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].port_id" | tr -d '"'`
-channel_id=`quasarnoded q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].channel_id" | tr -d '"'`
-cp_port_id=`quasarnoded q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].counterparty.port_id" | tr -d '"'`
-cp_channel_id=`quasarnoded q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].counterparty.channel_id" | tr -d '"'`
-cp_chain_id=`quasarnoded q ibc channel client-state transfer channel-0 --node tcp://localhost:26659 -o json | jq ".client_state.chain_id" | tr -d '"'`
+num_channels=`quasard q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels | length"`
+state=`quasard q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].state" | tr -d '"'`
+port_id=`quasard q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].port_id" | tr -d '"'`
+channel_id=`quasard q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].channel_id" | tr -d '"'`
+cp_port_id=`quasard q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].counterparty.port_id" | tr -d '"'`
+cp_channel_id=`quasard q ibc channel channels --node tcp://localhost:26659 -o json | jq ".channels[0].counterparty.channel_id" | tr -d '"'`
+cp_chain_id=`quasard q ibc channel client-state transfer channel-0 --node tcp://localhost:26659 -o json | jq ".client_state.chain_id" | tr -d '"'`
 
 echo $num_channels
 echo "state | port_id | channel_id | cp_port_id | cp_channel_id "
@@ -25,8 +25,8 @@ fi
 
 binary_name=""
 grpc_port=""
-declare -a binary_arr=("quasarnoded" "osmosisd" "gaiad") 
-#declare -a binary_arr=("quasarnoded")
+declare -a binary_arr=("quasard" "osmosisd" "gaiad")
+#declare -a binary_arr=("quasard")
 
 for b in "${binary_arr[@]}"
 do  
@@ -34,7 +34,7 @@ do
 	echo " "
 	echo "### $binary_name ############################"
 	case "$binary_name" in
-	"quasarnoded") grpc_port="26659"
+	"quasard") grpc_port="26659"
 	;;
 	"osmosisd") grpc_port="26679"
 	;;
@@ -46,7 +46,7 @@ do
 	echo "grpc_port=$grpc_port"
 
 	# Get the list of channel info under a connection-id
-	# quasarnoded q ibc channel connections connection-1  --node tcp://localhost:26659 -o json | jq 
+	# quasard q ibc channel connections connection-1  --node tcp://localhost:26659 -o json | jq
 	# Get the number of channel under a connection-id
 	#num=`$binary_name q ibc channel connections connection-1  --node tcp://localhost:$grpc_port -o json | jq ".channels | length"`
 	declare -a conn_arr=("connection-0" "connection-1")

@@ -14,11 +14,11 @@ help:
 	@echo "Usage:"
 	@echo "    make [command]"
 	@echo ""
-	@echo "  make build                 Build quasarnoded binary"
+	@echo "  make build                 Build quasard binary"
 	@echo "  make build-help            Show available build commands"
 	@echo "  make docker			    Show available docker commands"
 	@echo "  make e2e                   Show available e2e commands"
-	@echo "  make install               Install quasarnoded binary"
+	@echo "  make install               Install quasard binary"
 	@echo "  make lint                  Show available lint commands"
 	@echo "  make test                  Show available test commands"
 	@echo ""
@@ -86,7 +86,7 @@ build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 # process linker flags
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=quasar \
-		  -X github.com/cosmos/cosmos-sdk/version.AppName=quasarnoded \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=quasard \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
@@ -134,7 +134,7 @@ build: build-check-version go.sum
 	@go mod tidy
 
 	mkdir -p $(BUILDDIR)/
-	GOWORK=off go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/ $(GO_MODULE)/cmd/quasarnoded
+	GOWORK=off go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/ $(GO_MODULE)/cmd/quasard
 
 	# clean up before install
 	@mv go.mod.backup go.mod
@@ -148,7 +148,7 @@ install: build-check-version go.sum
 	@cp go.sum go.sum.backup
 	@go mod tidy
 
-	GOWORK=off go install -mod=readonly $(BUILD_FLAGS) $(GO_MODULE)/cmd/quasarnoded
+	GOWORK=off go install -mod=readonly $(BUILD_FLAGS) $(GO_MODULE)/cmd/quasard
 
 	# clean up before install
 	@mv go.mod.backup go.mod

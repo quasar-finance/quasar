@@ -38,27 +38,23 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	ibctestingtypes "github.com/cosmos/ibc-go/v7/testing/types"
-	"github.com/spf13/cast"
-
 	// Quasar imports
 	quasarante "github.com/quasarlabs/quasarnode/ante"
 	"github.com/quasarlabs/quasarnode/app/keepers"
 	"github.com/quasarlabs/quasarnode/app/openapiconsole"
 	appParams "github.com/quasarlabs/quasarnode/app/params"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
-	v0 "github.com/quasarlabs/quasarnode/app/upgrades/v0"
-	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
 	"github.com/quasarlabs/quasarnode/docs"
+	"github.com/spf13/cast"
 )
 
 const (
 	AccountAddressPrefix = "quasar"
-	Name                 = "quasarnode"
+	Name                 = "quasar"
+	DirName              = "quasarnode"
 )
 
 var (
@@ -75,8 +71,6 @@ var (
 
 	// module account permissions
 	maccPerms = ModuleAccountPermissions
-
-	Upgrades = []upgrades.Upgrade{v0.Upgrade, v2.Upgrade}
 )
 
 // overrideWasmVariables overrides the wasm variables to:
@@ -97,7 +91,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, "."+Name)
+	DefaultNodeHome = filepath.Join(userHomeDir, "."+DirName)
 }
 
 // QuasarApp extends an ABCI application, but with most of its parameters exported.
@@ -290,7 +284,7 @@ func New(
 	app.SetEndBlocker(app.EndBlocker)
 
 	app.setupUpgradeHandlers()
-	app.setupUpgradeStoreLoaders()
+	app.setUpgradeStoreLoaders()
 
 	// Register snapshot extensions to enable state-sync for wasm.
 	if manager := app.SnapshotManager(); manager != nil {
@@ -327,39 +321,6 @@ func New(
 	}
 
 	return app
-}
-
-func (app *QuasarApp) setupUpgradeStoreLoaders() {
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
-	if err != nil {
-		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
-	}
-
-	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		return
-	}
-
-	for _, upgrade := range Upgrades {
-		upgrade := upgrade
-		if upgradeInfo.Name == upgrade.UpgradeName {
-			storeUpgrades := upgrade.StoreUpgrades
-			app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
-		}
-	}
-}
-
-func (app *QuasarApp) setupUpgradeHandlers() {
-	for _, upgrade := range Upgrades {
-		app.UpgradeKeeper.SetUpgradeHandler(
-			upgrade.UpgradeName,
-			upgrade.CreateUpgradeHandler(
-				app.mm,
-				app.configurator,
-				app.BaseApp,
-				app.AppKeepers,
-			),
-		)
-	}
 }
 
 // Name returns the name of the QuasarApp

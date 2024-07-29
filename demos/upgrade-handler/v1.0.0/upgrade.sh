@@ -2,7 +2,7 @@
 
 ## run chain upgrade procedure
 echo "RUNNING CHAIN UPGRADE PROCEDURE"
-BINARY=quasarnoded-go-18
+BINARY=quasard-go-18
 CHAIN_ID="quasar"
 ACCOUNT_NAME="my_treasury"
 RPC="http://127.0.0.1:26659"
@@ -44,11 +44,11 @@ $BINARY query gov proposal 1 --chain-id $CHAIN_ID --output json
 sleep 30
 
 echo "killing the old quasar instance to start the new one"
-pkill quasarnoded
+pkill quasard
 rm ./logs/quasar.log
 
 # run chain upgrade
-BINARY=quasarnoded
+BINARY=quasard
 HOME_QSR=$HOME/.quasarnode
 
 echo "starting with new binary"

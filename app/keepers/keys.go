@@ -5,8 +5,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // GenerateKeys generates new keys (KV Store, Transient store, and memory store).
@@ -15,16 +13,10 @@ func (appKeepers *AppKeepers) GenerateKeys() {
 	// Cosmos-SDK modules each have a "key" that allows the application to reference what they've stored on the chain.
 	appKeepers.keys = sdk.NewKVStoreKeys(KVStoreKeys()...)
 
-	// Define transient store keys
-	appKeepers.tkeys = sdk.NewTransientStoreKeys(
-		paramstypes.TStoreKey,
-		qoraclemoduletypes.TStoreKey,
-	)
-
 	// MemKeys are for information that is stored only in RAM.
 	appKeepers.memKeys = sdk.NewMemoryStoreKeys(
 		capabilitytypes.MemStoreKey,
-		qoraclemoduletypes.MemStoreKey,
+		QOracleMemStoreKey,
 	)
 }
 

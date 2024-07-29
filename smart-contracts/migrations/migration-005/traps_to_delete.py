@@ -21,7 +21,7 @@ bond_ids = {"prim1": [], "prim2": [], "prim3": []}
 
 for i, prim in enumerate([prim1, prim2, prim3]):
     output, error = run_command(
-        f'quasarnoded q wasm contract-state smart {prim} {query} {node} | tee {prim[-3:]}_trapped_errors.json')
+        f'quasard q wasm contract-state smart {prim} {query} {node} | tee {prim[-3:]}_trapped_errors.json')
 
     data = json.loads(output) if not error else print(
         'Error executing command 1:', error)
@@ -69,7 +69,7 @@ vault = "quasar18a2u6az6dzw528rptepfg6n49ak6hdzkf8ewf0n5r0nwju7gtdgqamr7qu"
 null_ids_prim1 = []
 for id in bond_ids['prim1']:
     output, error = run_command(
-        f'quasarnoded q wasm contract-state smart {vault} \'{{"pending_bonds_by_id": {{"bond_id": "{id[1]}"}}}}\' {node}')
+        f'quasard q wasm contract-state smart {vault} \'{{"pending_bonds_by_id": {{"bond_id": "{id[1]}"}}}}\' {node}')
     if ':null' in output:
         null_ids_prim1.append(id)
 
@@ -77,7 +77,7 @@ for id in bond_ids['prim1']:
 null_ids_prim2 = []
 for id in bond_ids['prim2']:
     output, error = run_command(
-        f'quasarnoded q wasm contract-state smart {vault} \'{{"pending_bonds_by_id": {{"bond_id": "{id[1]}"}}}}\' {node}')
+        f'quasard q wasm contract-state smart {vault} \'{{"pending_bonds_by_id": {{"bond_id": "{id[1]}"}}}}\' {node}')
     if ':null' in output:
         null_ids_prim2.append(id)
 
@@ -85,7 +85,7 @@ for id in bond_ids['prim2']:
 null_ids_prim3 = []
 for id in bond_ids['prim3']:
     output, error = run_command(
-        f'quasarnoded q wasm contract-state smart {vault} \'{{"pending_bonds_by_id": {{"bond_id": "{id[1]}"}}}}\' {node}')
+        f'quasard q wasm contract-state smart {vault} \'{{"pending_bonds_by_id": {{"bond_id": "{id[1]}"}}}}\' {node}')
     if ':null' in output:
         null_ids_prim3.append(id)
 

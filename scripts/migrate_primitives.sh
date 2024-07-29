@@ -19,6 +19,6 @@ CONFIG3='{"lock_period":300,"pool_id":3,"pool_denom":"gamm/pool/3","base_denom":
 PRIM1="quasar1qum2tr7hh4y7ruzew68c64myjec0dq2s2njf6waja5t0w879lutqtvz03d"
 PRIM2="quasar1tqwwyth34550lg2437m05mjnjp8w7h5ka7m70jtzpxn4uh2ktsmqqthn5d"
 PRIM3="quasar1vguuxez2h5ekltfj9gjd62fs5k4rl2zy5hfrncasykzw08rezpfsah6jpz"
-quasarnoded tx wasm migrate $PRIM1 $PRIM_CODE_ID "{\"config\": $CONFIG1}" --from test-laurens --keyring-backend test -b block $TXFLAG 
-quasarnoded tx wasm migrate $PRIM2 $PRIM_CODE_ID "{\"config\": $CONFIG2}" --from test-laurens --keyring-backend test -b block $TXFLAG 
-quasarnoded tx wasm migrate $PRIM3 $PRIM_CODE_ID "{\"config\": $CONFIG3}" --from test-laurens --keyring-backend test -b block $TXFLAG 
+quasard tx wasm migrate $PRIM1 $PRIM_CODE_ID "{\"config\": $CONFIG1}" --from test-laurens --keyring-backend test -b block $TXFLAG
+quasard tx wasm migrate $PRIM2 $PRIM_CODE_ID "{\"config\": $CONFIG2}" --from test-laurens --keyring-backend test -b block $TXFLAG
+quasard tx wasm migrate $PRIM3 $PRIM_CODE_ID "{\"config\": $CONFIG3}" --from test-laurens --keyring-backend test -b block $TXFLAG

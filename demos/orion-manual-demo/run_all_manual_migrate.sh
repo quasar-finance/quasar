@@ -82,7 +82,7 @@ osmosisd tx ibc-transfer transfer transfer channel-0 quasar185fflsvwrz0cx46w6qad
 
 sleep 20
 
-quasarnoded query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
+quasard query bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec
 echo "killing relayer to fail bonds"
 kill $RLY_PID_2
 
