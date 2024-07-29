@@ -95,8 +95,7 @@ fn do_and_verify_any_deposit(
             .find(|coin| coin.denom == DENOM_QUOTE)
             .map(|coin| {
                 let quote_amount = Uint128::from(coin.amount.parse::<u128>().unwrap());
-                let quote_as_base = quote_amount * spot_price_quote_to_base;
-                quote_as_base
+                quote_amount * spot_price_quote_to_base
             })
             .unwrap_or_else(Uint128::zero);
 
@@ -115,8 +114,7 @@ fn do_and_verify_any_deposit(
             .find(|coin| coin.denom == DENOM_QUOTE)
             .map(|coin| {
                 let quote_amount = Uint128::from(coin.amount.parse::<u128>().unwrap());
-                let quote_as_base = quote_amount * spot_price_quote_to_base;
-                quote_as_base
+                quote_amount * spot_price_quote_to_base
             })
             .unwrap_or_else(Uint128::zero);
 

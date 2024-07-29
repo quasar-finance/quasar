@@ -18,11 +18,11 @@ update_schemas_and_formatting() {
   if [[ $CHANGES == *contracts/${contract}* ]]
   then
     echo "Changes in ${contract} contract"
-    cd ${REPO_ROOT}/smart-contracts/contracts/${contract}
+    cd ${REPO_ROOT}/smart-contracts/osmosis/contracts/${contract}
 
     # generate schemas
     cargo schema
-    NEW_CHANGES=$(git diff --name-only origin/main)
+    NEW_CHANGES=$(git diff --name-only origin/main..HEAD)
     if [[ $NEW_CHANGES == *schema/* ]]
     then
       git add schema
@@ -33,7 +33,7 @@ update_schemas_and_formatting() {
     # fix formatting
     cargo fmt --all
     cd ${REPO_ROOT}
-    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=A)
+    NEW_CHANGES=$(git diff --name-only origin/main..HEAD --diff-filter=AMR)
     git add $NEW_CHANGES
   fi
 }

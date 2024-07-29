@@ -211,7 +211,7 @@ mod tests {
             )
             .unwrap();
 
-        let result = withdraw_from_position(&mut deps.storage, &env, liquidity_amount).unwrap();
+        let result = withdraw_from_position(&deps.storage, &env, liquidity_amount).unwrap();
 
         assert_eq!(
             result,

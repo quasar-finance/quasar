@@ -50,7 +50,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-osmosis
       - name: Rust lint
         run: cargo clippy --features test-tube --all-targets -- -D warnings --A deprecated
-        working-directory: smart-contracts/osmosis/contracts/dex-router-osmosis
+        working-directory: smart-contracts/osmosis
       - name: Build merkle-incentives
         run: cargo test-tube-build
         working-directory: smart-contracts/osmosis/contracts/merkle-incentives

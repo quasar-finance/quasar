@@ -72,20 +72,20 @@ fn single_deposit_withdraw_works() {
 
     // assert that the refund + used funds are equal to what we deposited
     let refund0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund0"])
-        .get(0)
+        .first()
         .map(|attr| attr.value.parse().unwrap())
         .unwrap_or(0);
     let refund1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["refund1"])
-        .get(0)
+        .first()
         .map(|attr| attr.value.parse().unwrap())
         .unwrap_or(0);
 
     let deposited0: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount0"])
-        .get(0)
+        .first()
         .map(|attr| attr.value.parse().unwrap())
         .unwrap_or(0);
     let deposited1: u128 = get_event_attributes_by_ty_and_key(&response, "wasm", vec!["amount1"])
-        .get(0)
+        .first()
         .map(|attr| attr.value.parse().unwrap())
         .unwrap_or(0);
 

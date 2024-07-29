@@ -173,7 +173,7 @@ mod tests {
     fn coins_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -200,7 +200,7 @@ mod tests {
     fn coins_only_positive_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -227,7 +227,7 @@ mod tests {
     fn sub_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -290,7 +290,7 @@ mod tests {
     fn percentage_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -321,7 +321,7 @@ mod tests {
     fn sub_percentage_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -365,7 +365,7 @@ mod tests {
     fn add_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -403,7 +403,7 @@ mod tests {
     fn update_rewards_works() {
         let mut rewards = CoinList::new();
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),
@@ -420,7 +420,7 @@ mod tests {
             .unwrap();
 
         rewards
-            .update_rewards(&vec![
+            .update_rewards(&[
                 OsmoCoin {
                     denom: "uosmo".into(),
                     amount: "1000".into(),

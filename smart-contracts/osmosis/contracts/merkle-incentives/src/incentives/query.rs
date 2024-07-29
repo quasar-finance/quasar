@@ -107,7 +107,7 @@ mod tests {
     fn test_query_merkle_root() {
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("admin", &vec![]);
+        let info = mock_info("admin", &[]);
 
         // Set incentives admin
         INCENTIVES_ADMIN
