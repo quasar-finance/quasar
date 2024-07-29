@@ -1,30 +1,28 @@
 use cosmwasm_std::{
-    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Uint256,
+    attr, coin, Addr, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult,
+    Uint128, Uint256,
 };
-use osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountInResponse;
-use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
+use osmosis_std::types::osmosis::{
+    poolmanager::v1beta1::MsgSwapExactAmountInResponse, tokenfactory::v1beta1::MsgMint,
+};
 
-use crate::helpers::assert::must_pay_one_or_two;
-use crate::helpers::getters::{
-    get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-    get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
-};
-use crate::helpers::msgs::swap_msg;
-use crate::query::query_total_vault_token_supply;
-use crate::reply::Replies;
-use crate::state::{PoolConfig, CURRENT_SWAP_ANY_DEPOSIT};
-use crate::vault::concentrated_liquidity::get_cl_pool_info;
-use crate::vault::range::SwapDirection;
-use crate::vault::swap::SwapParams;
 use crate::{
-    query::query_total_assets,
-    state::{POOL_CONFIG, SHARES, VAULT_DENOM},
-    vault::concentrated_liquidity::get_position,
+    helpers::{
+        assert::must_pay_one_or_two,
+        getters::{
+            get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount,
+        },
+    },
+    query::{query_total_assets, query_total_vault_token_supply},
+    reply::Replies,
+    state::{CURRENT_SWAP_ANY_DEPOSIT, POOL_CONFIG, SHARES, VAULT_DENOM},
+    vault::{
+        concentrated_liquidity::{get_cl_pool_info, get_position},
+        swap::{calculate_swap_amount, SwapDirection},
+    },
     ContractError,
 };
-
-use super::swap::SwapCalculationResult;
 
 pub fn execute_any_deposit(
     mut deps: DepsMut,
@@ -33,7 +31,6 @@ pub fn execute_any_deposit(
     recipient: Option<String>,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
-    // Unwrap recipient or use caller's address
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -51,111 +48,89 @@ pub fn execute_any_deposit(
     let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
         get_depositable_tokens(deps.branch(), token0.clone(), token1.clone())?;
 
-    // Swap logic
-    // TODO_FUTURE: Optimize this if conditions
-    if !swappable_amount.0.is_zero() {
-        let (swap_amount, swap_direction) = (
-            // range is above current tick
-            if pool_details.current_tick > position.upper_tick {
-                swappable_amount.0
-            } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    swappable_amount.0,
-                    position.lower_tick,
-                    pool_details.current_tick,
-                    position.upper_tick,
-                )?
-            },
-            SwapDirection::ZeroToOne,
-        );
-        let swap_calc_result = calculate_swap_amount(
-            deps,
-            &env,
-            pool_config,
-            swap_direction,
-            swap_amount,
-            swappable_amount,
-            deposit_amount_in_ratio,
-            max_slippage,
-            &recipient,
-        )?;
-
-        // rest minting logic remains same
-        Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(
-                swap_calc_result.swap_msg,
-                Replies::AnyDepositSwap.into(),
-            ))
-            .add_attributes(vec![
-                attr("method", "execute"),
-                attr("action", "any_deposit"),
-                attr(
-                    "token_in",
-                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-                ),
-                attr(
-                    "token_out_min",
-                    format!("{}", swap_calc_result.token_out_min_amount),
-                ),
-            ]))
-    } else if !swappable_amount.1.is_zero() {
-        let (swap_amount, swap_direction) = (
-            // current tick is above range
-            if pool_details.current_tick < position.lower_tick {
-                swappable_amount.1
-            } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    swappable_amount.1,
-                    position.lower_tick,
-                    pool_details.current_tick,
-                    position.upper_tick,
-                )?
-            },
-            SwapDirection::OneToZero,
-        );
-        let swap_calc_result = calculate_swap_amount(
-            deps,
-            &env,
-            pool_config,
-            swap_direction,
-            swap_amount,
-            swappable_amount,
-            deposit_amount_in_ratio,
-            max_slippage,
-            &recipient,
-        )?;
-
-        // rest minting logic remains same
-        Ok(Response::new()
-            .add_submessage(SubMsg::reply_on_success(
-                swap_calc_result.swap_msg,
-                Replies::AnyDepositSwap.into(),
-            ))
-            .add_attributes(vec![
-                attr("method", "execute"),
-                attr("action", "any_deposit"),
-                attr(
-                    "token_in",
-                    format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
-                ),
-                attr(
-                    "token_out_min",
-                    format!("{}", swap_calc_result.token_out_min_amount),
-                ),
-            ]))
-    } else {
+    if swappable_amount.0.is_zero() && swappable_amount.1.is_zero() {
         let (mint_msg, user_shares) =
             mint_msg_user_shares(deps, &env, &deposit_amount_in_ratio, &recipient)?;
 
-        Ok(Response::new()
+        return Ok(Response::new()
             .add_attribute("method", "execute")
             .add_attribute("action", "any_deposit")
             .add_attribute("amount0", deposit_amount_in_ratio.0)
             .add_attribute("amount1", deposit_amount_in_ratio.1)
             .add_message(mint_msg)
             .add_attribute("mint_shares_amount", user_shares)
-            .add_attribute("receiver", recipient.as_str()))
+            .add_attribute("receiver", recipient.as_str()));
     }
+
+    // Swap logic
+    // TODO_FUTURE: Optimize this if conditions
+    let (swap_amount, swap_direction, left_over_amount) = if !swappable_amount.0.is_zero() {
+        // range is above current tick
+        let swap_amount = if pool_details.current_tick > position.upper_tick {
+            swappable_amount.0
+        } else {
+            get_single_sided_deposit_0_to_1_swap_amount(
+                swappable_amount.0,
+                position.lower_tick,
+                pool_details.current_tick,
+                position.upper_tick,
+            )?
+        };
+        let left_over_amount = swappable_amount.0.checked_sub(swap_amount)?;
+        (swap_amount, SwapDirection::ZeroToOne, left_over_amount)
+    } else {
+        // current tick is above range
+        let swap_amount = if pool_details.current_tick < position.lower_tick {
+            swappable_amount.1
+        } else {
+            get_single_sided_deposit_1_to_0_swap_amount(
+                swappable_amount.1,
+                position.lower_tick,
+                pool_details.current_tick,
+                position.upper_tick,
+            )?
+        };
+        let left_over_amount = swappable_amount.1.checked_sub(swap_amount)?;
+        (swap_amount, SwapDirection::OneToZero, left_over_amount)
+    };
+    CURRENT_SWAP_ANY_DEPOSIT.save(
+        deps.storage,
+        &(
+            swap_direction.clone(),
+            left_over_amount,
+            recipient.clone(),
+            deposit_amount_in_ratio,
+        ),
+    )?;
+    let swap_calc_result = calculate_swap_amount(
+        deps,
+        &env,
+        pool_config,
+        swap_direction,
+        swap_amount,
+        max_slippage,
+        None, // TODO: check this None
+        24u64,
+    )?;
+
+    // rest minting logic remains same
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_on_success(
+            swap_calc_result.swap_msg,
+            Replies::AnyDepositSwap.into(),
+        ))
+        .add_attributes(vec![
+            attr("method", "execute"),
+            attr("action", "any_deposit"),
+            attr(
+                "token_in",
+                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+            ),
+            attr(
+                "token_out_min",
+                format!("{}", swap_calc_result.token_out_min_amount),
+            ),
+        ]))
 }
 
 pub fn handle_any_deposit_swap_reply(
@@ -274,81 +249,4 @@ fn mint_msg_user_shares(
     };
 
     Ok((mint_msg, user_shares))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn calculate_swap_amount(
-    deps: DepsMut,
-    env: &Env,
-    pool_config: PoolConfig,
-    swap_direction: SwapDirection,
-    token_in_amount: Uint128,
-    swappable_amount: (Uint128, Uint128),
-    deposit_amount_in_ratio: (Uint128, Uint128),
-    max_slippage: Decimal,
-    recipient: &Addr,
-) -> Result<SwapCalculationResult, ContractError> {
-    // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    // TODO check on the twap_window_seconds (taking hardcoded value for now)
-    let twap_price = get_twap_price(deps.storage, &deps.querier, env, 24u64)?;
-    let (token_in_denom, token_out_denom, token_out_ideal_amount, left_over_amount) =
-        match swap_direction {
-            SwapDirection::ZeroToOne => (
-                &pool_config.token0,
-                &pool_config.token1,
-                token_in_amount
-                    .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
-                swappable_amount.0.checked_sub(token_in_amount)?,
-            ),
-            SwapDirection::OneToZero => (
-                &pool_config.token1,
-                &pool_config.token0,
-                token_in_amount
-                    .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
-                swappable_amount.1.checked_sub(token_in_amount)?,
-            ),
-        };
-
-    CURRENT_SWAP_ANY_DEPOSIT.save(
-        deps.storage,
-        &(
-            swap_direction,
-            left_over_amount,
-            recipient.clone(),
-            deposit_amount_in_ratio,
-        ),
-    )?;
-
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
-
-    if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0,
-            quote_token: pool_config.token1,
-        });
-    }
-
-    // generate a swap message with recommended path as the current
-    // pool on which the vault is running
-    let swap_msg = swap_msg(
-        &deps,
-        env,
-        SwapParams {
-            pool_id: pool_config.pool_id,
-            token_in_amount,
-            token_out_min_amount,
-            token_in_denom: token_in_denom.clone(),
-            token_out_denom: token_out_denom.clone(),
-            forced_swap_route: None, // TODO: check this None
-        },
-    )?;
-
-    Ok(SwapCalculationResult {
-        swap_msg,
-        token_in_denom: token_in_denom.to_string(),
-        token_out_min_amount,
-        token_in_amount,
-        position_id: None,
-    })
 }

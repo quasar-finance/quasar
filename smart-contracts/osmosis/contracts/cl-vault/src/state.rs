@@ -1,6 +1,6 @@
 use crate::{
     helpers::coinlist::CoinList,
-    vault::{merge::CurrentMergeWithdraw, range::SwapDirection},
+    vault::{merge::CurrentMergeWithdraw, swap::SwapDirection},
 };
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
