@@ -32,14 +32,15 @@ use crate::state::{
 #[allow(deprecated)]
 use crate::state::{Position, OLD_POSITION, POSITION};
 use crate::vault::admin::execute_admin;
-use crate::vault::any_deposit::{execute_any_deposit, handle_any_deposit_swap_reply};
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
+};
+use crate::vault::deposit::{
+    execute_any_deposit, execute_exact_deposit, handle_any_deposit_swap_reply,
 };
 use crate::vault::distribution::{
     execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
 };
-use crate::vault::exact_deposit::execute_exact_deposit;
 use crate::vault::merge::{
     execute_merge_position, handle_merge_create_position_reply,
     handle_merge_withdraw_position_reply,
