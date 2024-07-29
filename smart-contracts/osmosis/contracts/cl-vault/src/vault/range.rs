@@ -95,27 +95,18 @@ pub fn execute_update_range_ticks(
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
-    // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
+    // prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE
+    if MODIFY_RANGE_STATE.may_load(deps.storage)?.is_some() {
+        return Err(ContractError::ModifyRangeStateAlreadyExists {});
+    }
+    // save the new range state
+    MODIFY_RANGE_STATE.save(deps.storage, &Some(modify_range_config))?;
 
     // this will error if we dont have a position anyway
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown
         .position
         .ok_or(ContractError::MissingPosition {})?;
-
-    let withdraw_msg = MsgWithdrawPosition {
-        position_id: position.position_id,
-        sender: env.contract.address.to_string(),
-        liquidity_amount: Decimal256::from_str(position.liquidity.as_str())?
-            .atomics()
-            .to_string(),
-    };
-
-    MODIFY_RANGE_STATE.save(
-        deps.storage,
-        // todo: should ModifyRangeState be an enum?
-        &Some(modify_range_config),
-    )?;
 
     // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
     let position_state = POSITION.load(deps.storage)?;
@@ -127,6 +118,14 @@ pub fn execute_update_range_ticks(
             claim_after,
         },
     )?;
+
+    let withdraw_msg = MsgWithdrawPosition {
+        position_id: position.position_id,
+        sender: env.contract.address.to_string(),
+        liquidity_amount: Decimal256::from_str(position.liquidity.as_str())?
+            .atomics()
+            .to_string(),
+    };
 
     Ok(Response::default()
         .add_submessage(SubMsg::reply_on_success(
@@ -236,7 +235,6 @@ pub fn handle_initial_create_position_reply(
 }
 
 /// this function assumes that we are swapping and depositing into a valid range
-///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 #[allow(clippy::too_many_arguments)]
 pub fn do_swap_deposit_merge(
@@ -304,8 +302,7 @@ pub fn do_swap_deposit_merge(
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
-    //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
-    // to reduce the total number of non-deposited tokens that we will then need to refund
+    // if we have a balance of 0 for one of the tokens, we can just swap the other token
     let (token_in_amount, swap_direction) = if !balance0.is_zero() {
         (
             // range is above current tick
