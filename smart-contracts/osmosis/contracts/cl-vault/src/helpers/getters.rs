@@ -67,12 +67,11 @@ pub fn get_twap_price(
     Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
 }
 
-#[allow(clippy::type_complexity)]
 pub fn get_depositable_tokens(
     deps: &DepsMut,
     funds: &[Coin],
     pool_config: &PoolConfig,
-) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
+) -> Result<DepositInfo, ContractError> {
     let (token0, token1) = must_pay_one_or_two(
         funds,
         (pool_config.token0.clone(), pool_config.token1.clone()),
@@ -81,26 +80,37 @@ pub fn get_depositable_tokens(
     get_depositable_tokens_impl(deps, token0, token1)
 }
 
+#[derive(Debug, PartialEq)]
+pub struct DepositInfo {
+    pub base_deposit: Uint128,
+    pub quote_deposit: Uint128,
+    pub base_refund: Uint128,
+    pub quote_refund: Uint128,
+}
+
 /// Calculate the amount of tokens that can be deposited while maintaining the current position ratio in the vault.
-#[allow(clippy::type_complexity)]
 fn get_depositable_tokens_impl(
     deps: &DepsMut,
     token0: Coin,
     token1: Coin,
-) -> Result<((Uint128, Uint128), (Uint128, Uint128)), ContractError> {
+) -> Result<DepositInfo, ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
     let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
     let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
     match (asset0_amount.is_zero(), asset1_amount.is_zero()) {
-        (true, false) => Ok((
-            (Uint128::zero(), token1.amount),
-            (token0.amount, Uint128::zero()),
-        )),
-        (false, true) => Ok((
-            (token0.amount, Uint128::zero()),
-            (Uint128::zero(), token1.amount),
-        )),
+        (true, false) => Ok(DepositInfo {
+            base_deposit: Uint128::zero(),
+            quote_deposit: token1.amount,
+            base_refund: token0.amount,
+            quote_refund: Uint128::zero(),
+        }),
+        (false, true) => Ok(DepositInfo {
+            base_deposit: token0.amount,
+            quote_deposit: Uint128::zero(),
+            base_refund: Uint128::zero(),
+            quote_refund: token1.amount,
+        }),
         /*
            Figure out how many of the tokens we can use for a double sided position.
            First we find whether token0 or token0 is the limiting factor for the token by
@@ -125,7 +135,12 @@ fn get_depositable_tokens_impl(
 
             // Refund token0 if ratio.numerator is zero
             if ratio.numerator().is_zero() {
-                return Ok(((Uint128::zero(), token1), (token0, Uint128::zero())));
+                return Ok(DepositInfo {
+                    base_deposit: Uint128::zero(),
+                    quote_deposit: token1,
+                    base_refund: token0,
+                    quote_refund: Uint128::zero(),
+                });
             }
 
             let zero_usage: Uint128 = ((Uint256::from(token0)
@@ -141,15 +156,24 @@ fn get_depositable_tokens_impl(
                 let t1: Uint128 = (Uint256::from(token0) * (Uint256::from(ratio.denominator()))
                     / Uint256::from(ratio.numerator()))
                 .try_into()?;
-                Ok(((token0, t1), (Uint128::zero(), token1.checked_sub(t1)?)))
+                Ok(DepositInfo {
+                    base_deposit: token0,
+                    quote_deposit: t1,
+                    base_refund: Uint128::zero(),
+                    quote_refund: token1.checked_sub(t1)?,
+                })
             } else {
                 let t0: Uint128 = ((Uint256::from(token1) * Uint256::from(ratio.numerator()))
                     / Uint256::from(ratio.denominator()))
                 .try_into()?;
-                Ok(((t0, token1), (token0.checked_sub(t0)?, Uint128::zero())))
+                Ok(DepositInfo {
+                    base_deposit: t0,
+                    quote_deposit: token1,
+                    base_refund: token0.checked_sub(t0)?,
+                    quote_refund: Uint128::zero(),
+                })
             }
         }
-        // (true, true) => {
         _ => Err(ContractError::InvalidRatioOfSwappableFundsToUse {}),
     }
 }
@@ -476,13 +500,12 @@ mod tests {
         let result = get_depositable_tokens_impl(&mutdeps, token0, token1).unwrap();
         assert_eq!(
             result,
-            (
-                (
-                    Uint128::zero(),
-                    Uint128::new(100_000_000_000_000_000_000_000_000_000u128)
-                ),
-                (Uint128::new(1_000_000_000u128), Uint128::zero())
-            )
+            DepositInfo {
+                base_deposit: Uint128::zero(),
+                quote_deposit: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
+                base_refund: Uint128::new(1_000_000_000u128),
+                quote_refund: Uint128::zero(),
+            }
         );
     }
 
@@ -509,10 +532,12 @@ mod tests {
         let result = get_depositable_tokens_impl(&deps.as_mut(), token0, token1).unwrap();
         assert_eq!(
             result,
-            (
-                (Uint128::zero(), Uint128::new(100)),
-                (Uint128::new(50), Uint128::zero())
-            )
+            DepositInfo {
+                base_deposit: Uint128::zero(),
+                quote_deposit: Uint128::new(100),
+                base_refund: Uint128::new(50),
+                quote_refund: Uint128::zero(),
+            }
         );
     }
 
@@ -539,10 +564,12 @@ mod tests {
         let result = get_depositable_tokens_impl(&deps.as_mut(), token0, token1).unwrap();
         assert_eq!(
             result,
-            (
-                (Uint128::new(50), Uint128::zero()),
-                (Uint128::zero(), Uint128::new(100))
-            )
+            DepositInfo {
+                base_deposit: Uint128::new(50),
+                quote_deposit: Uint128::zero(),
+                base_refund: Uint128::zero(),
+                quote_refund: Uint128::new(100),
+            }
         );
     }
 
@@ -565,10 +592,12 @@ mod tests {
                 .unwrap();
         assert_eq!(
             result,
-            (
-                (Uint128::new(2000), Uint128::new(4000)),
-                (Uint128::zero(), Uint128::new(1000))
-            )
+            DepositInfo {
+                base_deposit: Uint128::new(2000),
+                quote_deposit: Uint128::new(4000),
+                base_refund: Uint128::zero(),
+                quote_refund: Uint128::new(1000),
+            }
         );
     }
 
@@ -592,10 +621,12 @@ mod tests {
                 .unwrap();
         assert_eq!(
             result,
-            (
-                (Uint128::new(1500), Uint128::new(3000)),
-                (Uint128::new(500), Uint128::zero())
-            )
+            DepositInfo {
+                base_deposit: Uint128::new(1500),
+                quote_deposit: Uint128::new(3000),
+                base_refund: Uint128::new(500),
+                quote_refund: Uint128::zero(),
+            }
         );
     }
 }
