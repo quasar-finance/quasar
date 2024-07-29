@@ -134,8 +134,6 @@ pub fn calculate_swap_amount(
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: u64,
 ) -> Result<SwapCalculationResult, ContractError> {
-    // TODO check that this math is right with spot price (numerators, denominators) if taken by legacy gamm module instead of poolmanager
-    // TODO check on the twap_window_seconds (taking hardcoded value for now)
     let twap_price = get_twap_price(deps.storage, &deps.querier, env, twap_window_seconds)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
