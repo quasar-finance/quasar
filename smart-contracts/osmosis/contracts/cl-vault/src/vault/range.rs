@@ -1,11 +1,7 @@
 use crate::{
     helpers::{
         assert::assert_range_admin,
-        getters::{
-            get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided,
-            get_unused_pair_balances,
-        },
+        getters::{get_tokens_provided, get_unused_pair_balances},
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
@@ -22,7 +18,7 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
+    attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
     SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
@@ -31,7 +27,7 @@ use osmosis_std::types::osmosis::{
 };
 use std::str::FromStr;
 
-use super::swap::SwapDirection;
+use super::swap::calculate_token_in_direction;
 
 /// This function is the entrypoint into the dsm routine that will go through the following steps
 /// * how much liq do we have in current range
@@ -276,12 +272,11 @@ pub fn do_swap_deposit_merge(
         },
     )?;
 
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-
     let response = Response::new()
         .add_attribute("method", "reply")
         .add_attribute("action", "do_swap_deposit_merge");
+
+    // if we have no tokens to swap, we can just save the position id and exit
     if balance0.is_zero() && balance1.is_zero() {
         let position = POSITION.load(deps.storage)?;
 
@@ -300,52 +295,17 @@ pub fn do_swap_deposit_merge(
         return Ok(response.add_attribute("new_position", position_id.unwrap().to_string()));
     }
 
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
+    let position = get_position(deps.storage, &deps.querier)?
+        .position
+        .ok_or(ContractError::MissingPosition {})?;
+
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
-    // if we have a balance of 0 for one of the tokens, we can just swap the other token
-    let (token_in, swap_direction) = if !balance0.is_zero() {
-        (
-            // range is above current tick
-            if pool_details.current_tick > target_upper_tick {
-                Coin {
-                    denom: pool_config.token0.clone(),
-                    amount: balance0,
-                }
-            } else {
-                Coin {
-                    denom: pool_config.token1.clone(),
-                    amount: get_single_sided_deposit_0_to_1_swap_amount(
-                        balance0,
-                        target_lower_tick,
-                        pool_details.current_tick,
-                        target_upper_tick,
-                    )?,
-                }
-            },
-            SwapDirection::ZeroToOne,
-        )
-    } else {
-        (
-            // current tick is above range
-            if pool_details.current_tick < target_lower_tick {
-                Coin {
-                    denom: pool_config.token0.clone(),
-                    amount: balance1,
-                }
-            } else {
-                Coin {
-                    denom: pool_config.token1.clone(),
-                    amount: get_single_sided_deposit_1_to_0_swap_amount(
-                        balance1,
-                        target_lower_tick,
-                        pool_details.current_tick,
-                        target_upper_tick,
-                    )?,
-                }
-            },
-            SwapDirection::OneToZero,
-        )
-    };
+    let (token_in, swap_direction, _) =
+        calculate_token_in_direction(pool_config, pool_details, position, balance0, balance1)?;
+
     let swap_calc_result = calculate_swap_amount(
         &deps,
         &env,

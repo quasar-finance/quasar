@@ -1,9 +1,6 @@
 use crate::{
     helpers::{
-        getters::{
-            get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount,
-        },
+        getters::{get_asset0_value, get_depositable_tokens},
         msgs::refund_bank_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
@@ -22,6 +19,8 @@ use cosmwasm_std::{
 use osmosis_std::types::osmosis::{
     poolmanager::v1beta1::MsgSwapExactAmountInResponse, tokenfactory::v1beta1::MsgMint,
 };
+
+use super::swap::calculate_token_in_direction;
 
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
@@ -82,47 +81,13 @@ pub(crate) fn execute_any_deposit(
     // TODO: Optimize this if conditions
     // TODO: Deprecate swapDirection here or in the calculate_swap_amount function,
     //  probably better here so we can do from any of the invoking places where we invoke calculate_swap_amount
-    let (token_in, swap_direction, left_over_amount) = if !swappable_amount.0.is_zero() {
-        // range is above current tick
-        let token_in = if pool_details.current_tick > position.upper_tick {
-            Coin {
-                denom: pool_config.token0.clone(),
-                amount: swappable_amount.0,
-            }
-        } else {
-            Coin {
-                denom: pool_config.token0.clone(),
-                amount: get_single_sided_deposit_0_to_1_swap_amount(
-                    swappable_amount.0,
-                    position.lower_tick,
-                    pool_details.current_tick,
-                    position.upper_tick,
-                )?,
-            }
-        };
-        let left_over_amount = swappable_amount.0.checked_sub(token_in.amount)?;
-        (token_in, SwapDirection::ZeroToOne, left_over_amount)
-    } else {
-        // current tick is above range
-        let token_in = if pool_details.current_tick < position.lower_tick {
-            Coin {
-                denom: pool_config.token1.clone(),
-                amount: swappable_amount.1,
-            }
-        } else {
-            Coin {
-                denom: pool_config.token1.clone(),
-                amount: get_single_sided_deposit_1_to_0_swap_amount(
-                    swappable_amount.1,
-                    position.lower_tick,
-                    pool_details.current_tick,
-                    position.upper_tick,
-                )?,
-            }
-        };
-        let left_over_amount = swappable_amount.1.checked_sub(token_in.amount)?;
-        (token_in, SwapDirection::OneToZero, left_over_amount)
-    };
+    let (token_in, swap_direction, left_over_amount) = calculate_token_in_direction(
+        pool_config,
+        pool_details,
+        position,
+        swappable_amount.0,
+        swappable_amount.1,
+    )?;
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
         &(

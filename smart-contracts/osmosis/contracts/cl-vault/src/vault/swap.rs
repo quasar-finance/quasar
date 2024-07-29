@@ -1,9 +1,13 @@
 use cosmwasm_std::{Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, Response, Uint128};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{Pool, Position as OsmoPosition};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
-use crate::helpers::getters::{get_position_balance, get_twap_price};
+use crate::helpers::getters::{
+    get_position_balance, get_single_sided_deposit_0_to_1_swap_amount,
+    get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
+};
 use crate::helpers::msgs::swap_msg;
-use crate::state::POOL_CONFIG;
+use crate::state::{PoolConfig, POOL_CONFIG};
 use crate::{state::VAULT_CONFIG, ContractError};
 
 #[cosmwasm_schema::cw_serde]
@@ -136,6 +140,56 @@ pub fn execute_swap_non_vault_funds(
         .add_messages(swap_msgs)
         .add_attribute("method", "execute")
         .add_attribute("action", "swap_non_vault_funds"))
+}
+
+pub fn calculate_token_in_direction(
+    pool_config: PoolConfig,
+    pool_details: Pool,
+    position: OsmoPosition,
+    balance0: Uint128,
+    balance1: Uint128,
+) -> Result<(Coin, SwapDirection, Uint128), ContractError> {
+    if !balance0.is_zero() {
+        // range is above current tick
+        let token_in = if pool_details.current_tick > position.upper_tick {
+            Coin {
+                denom: pool_config.token0.clone(),
+                amount: balance0,
+            }
+        } else {
+            Coin {
+                denom: pool_config.token0.clone(),
+                amount: get_single_sided_deposit_0_to_1_swap_amount(
+                    balance0,
+                    position.lower_tick,
+                    pool_details.current_tick,
+                    position.upper_tick,
+                )?,
+            }
+        };
+        let left_over_amount = balance0.checked_sub(token_in.amount)?;
+        Ok((token_in, SwapDirection::ZeroToOne, left_over_amount))
+    } else {
+        // current tick is above range
+        let token_in = if pool_details.current_tick < position.lower_tick {
+            Coin {
+                denom: pool_config.token1.clone(),
+                amount: balance1,
+            }
+        } else {
+            Coin {
+                denom: pool_config.token1.clone(),
+                amount: get_single_sided_deposit_1_to_0_swap_amount(
+                    balance1,
+                    position.lower_tick,
+                    pool_details.current_tick,
+                    position.upper_tick,
+                )?,
+            }
+        };
+        let left_over_amount = balance1.checked_sub(token_in.amount)?;
+        Ok((token_in, SwapDirection::OneToZero, left_over_amount))
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
