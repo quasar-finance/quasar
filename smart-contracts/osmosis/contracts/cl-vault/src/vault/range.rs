@@ -429,6 +429,7 @@ pub fn handle_iteration_create_position_reply(
 
     // clear state to allow for new liquidity movement operations
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
+    MODIFY_RANGE_STATE.remove(deps.storage);
 
     Ok(Response::new()
         .add_submessage(merge_submsg)

@@ -60,8 +60,6 @@ pub(crate) fn execute_any_deposit(
         .position
         .ok_or(ContractError::MissingPosition {})?;
 
-    // get the amount of funds we can deposit from this ratio
-    // let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
     let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
 
     // If we have no refunds let's proceed for the deposit
