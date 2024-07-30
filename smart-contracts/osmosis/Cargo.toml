@@ -17,7 +17,7 @@ members = [
   "contracts/dex-router-osmosis",
   "contracts/lst-dex-adapter-osmosis",
   "contracts/lst-adapter-osmosis",
-  "packages/quasar-types",
+  "packages/*",
 ]
 
 [workspace.dependencies]
