@@ -10,8 +10,9 @@ use std::ops::Mul;
 use std::ops::Sub;
 use std::str::FromStr;
 
+use cl_vault::vault::swap::SwapOperation;
 use cl_vault::msg::{
-    ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, SwapOperation,
+    ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg,
     UserBalanceQueryMsg::UserSharesBalance,
 };
 use cl_vault::query::{
@@ -287,8 +288,8 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::SwapNonVaultFunds {
             swap_operations: vec![SwapOperation {
                 token_in_denom: DENOM_REWARD.to_string(),
-                pool_id_0: swap_pools_ids[2],
-                pool_id_1: swap_pools_ids[1],
+                pool_id_token_0: swap_pools_ids[2],
+                pool_id_token_1: swap_pools_ids[1],
                 forced_swap_route_token_0: Some(vec![
                     SwapAmountInRoute {
                         pool_id: swap_pools_ids[1],
@@ -304,6 +305,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                     token_out_denom: DENOM_QUOTE.to_string(),
                 }]),
             }],
+            twap_window_seconds: None,
         }),
         &[],
         &admin,
