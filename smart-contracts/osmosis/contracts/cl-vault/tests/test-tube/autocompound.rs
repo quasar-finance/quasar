@@ -10,7 +10,6 @@ use std::ops::Mul;
 use std::ops::Sub;
 use std::str::FromStr;
 
-use cl_vault::vault::swap::SwapOperation;
 use cl_vault::msg::{
     ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg,
     UserBalanceQueryMsg::UserSharesBalance,
@@ -18,6 +17,7 @@ use cl_vault::msg::{
 use cl_vault::query::{
     AssetsBalanceResponse, TotalVaultTokenSupplyResponse, UserSharesBalanceResponse,
 };
+use cl_vault::vault::swap::SwapOperation;
 use cosmwasm_std::assert_approx_eq;
 use cosmwasm_std::{Coin, Uint128};
 use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;

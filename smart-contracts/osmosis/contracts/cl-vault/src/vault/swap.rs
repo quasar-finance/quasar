@@ -203,50 +203,30 @@ pub fn calculate_swap_amount(
 ) -> Result<SwapCalculationResult, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    // TODO: At this point token_in_denom is useless, we are enforcing from above arguments,
-    // lets use token_in.denom and pass a new token_out_denom argument to derive the direction directly here?
-    // So we can remove the SwapDirection enum and the match statement
-    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            &pool_config.token0,
+    // Determine the target token and amount based on swap direction
+    let (denom_out, amount_out_ratio) = match swap_direction {
+        SwapDirection::ZeroToOne | SwapDirection::AnyToOne => (
             &pool_config.token1,
-            token_in
-                .amount
-                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+            (twap_price.numerator(), twap_price.denominator()), // TODO: Check if this is correct order for AnyToOne
         ),
-        SwapDirection::OneToZero => (
-            &pool_config.token1,
+        SwapDirection::OneToZero | SwapDirection::AnyToZero => (
             &pool_config.token0,
-            token_in
-                .amount
-                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+            (twap_price.denominator(), twap_price.numerator()), // TODO: Check if this is correct order for AnyToZero
         ),
-        SwapDirection::AnyToOne => {
-            todo!()
-        }
-        SwapDirection::AnyToZero => {
-            todo!()
-        }
     };
 
-    // TODO: Remove that, only do for directions, not custom
-    if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0,
-            quote_token: pool_config.token1,
-        });
-    }
+    // Compute the ideal amount
+    let token_out_amount = token_in
+        .amount
+        .checked_multiply_ratio(amount_out_ratio.0, amount_out_ratio.1)?;
 
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
-
+    // Compute the minimum amount based on the max slippage
     let min_token_out = Coin {
-        denom: (&token_in_denom).to_string(),
-        amount: token_out_min_amount,
+        denom: denom_out.clone(),
+        amount: token_out_amount
+            .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?,
     };
 
-    // generate a swap message with recommended path as the current
-    // pool on which the vault is running
     let swap_msg = swap_msg(
         &deps,
         env.clone().contract.address,

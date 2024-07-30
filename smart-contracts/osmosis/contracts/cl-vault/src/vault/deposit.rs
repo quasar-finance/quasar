@@ -107,6 +107,9 @@ pub(crate) fn execute_any_deposit(
         pool_config.token1,
     )?;
 
+    deps.api
+        .debug(format!("token_in: {:?}", token_in.to_string()).as_str());
+
     let calculate_swap_amount = calculate_swap_amount(
         &deps,
         &env,
@@ -116,6 +119,13 @@ pub(crate) fn execute_any_deposit(
         None,
         twap_price,
     )?;
+    deps.api.debug(
+        format!(
+            "calculate_swap_amount: {:?}",
+            calculate_swap_amount.swap_msg
+        )
+        .as_str(),
+    );
 
     // rest minting logic remains same
     Ok(Response::new()
@@ -171,6 +181,8 @@ pub fn handle_any_deposit_swap_reply(
         },
     );
 
+    deps.api.debug("DEBUG: 4.25");
+
     execute_deposit(
         &mut deps,
         env,
@@ -189,9 +201,11 @@ fn execute_deposit(
     deps: &mut DepsMut,
     env: Env,
     recipient: Addr,
-    deposit: (Uint128, Uint128),
-    refund: (Coin, Coin),
+    deposit: (Uint128, Uint128), // TODO: This could be DepositInfo struct
+    refund: (Coin, Coin), // TODO: This could be DepositInfo struct assuming .denom0 and .denom1
 ) -> Result<Response, ContractError> {
+    deps.api.debug("DEBUG: 4.5");
+
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
@@ -250,6 +264,7 @@ fn execute_deposit(
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.clone().contract.address.to_string(),
     };
+    deps.api.debug("DEBUG: 5");
 
     let mut resp = Response::new()
         .add_attribute("method", "execute")

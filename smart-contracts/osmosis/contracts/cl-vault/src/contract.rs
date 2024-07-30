@@ -77,10 +77,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         cw_vault_multi_standard::VaultStandardExecuteMsg::AnyDeposit {
-            amount: _,
-            asset: _,
             recipient,
             max_slippage,
+            .. // asset and amount fields are not used in this implementation, they are for CW20 tokens
         } => execute_any_deposit(deps, env, info, recipient, max_slippage),
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
             execute_exact_deposit(deps, env, info, recipient)
