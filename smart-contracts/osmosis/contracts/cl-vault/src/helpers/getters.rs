@@ -57,10 +57,6 @@ pub fn get_position_balance(
     // Handle cases where either asset amount is zero
     if asset0_amount.is_zero() && asset1_amount.is_zero() {
         return Ok((0.0, 0.0));
-    } else if asset0_amount.is_zero() {
-        return Ok((0.0, 1.0));
-    } else if asset1_amount.is_zero() {
-        return Ok((1.0, 0.0));
     }
 
     // Get the total amount of the vault's position in asset0 denom
