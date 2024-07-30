@@ -233,7 +233,7 @@ pub fn calculate_swap_amount(
     };
 
     let swap_msg = swap_msg(
-        &deps,
+        deps,
         env.clone().contract.address,
         SwapParams {
             pool_id: swap_pool_id,
@@ -369,9 +369,6 @@ mod tests {
         assert_eq!(response.messages.len(), 2);
 
         let token_out_min_amount_expected = Uint128::new(4975); // Expected minimum amount after slippage adjustment (49.75 from 50)
-
-        println!("{:?}", response.messages[0].msg);
-        println!("{:?}", response.messages[1].msg);
 
         // if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[0].msg {
         //     let msg_swap = osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(value).unwrap();
