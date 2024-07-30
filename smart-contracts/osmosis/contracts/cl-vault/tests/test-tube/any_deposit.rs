@@ -166,6 +166,8 @@ fn do_any_deposit(
         deposit_coins.push(Coin::new(tokens_provided.1.u128(), DENOM_QUOTE));
     }
 
+    println!("Deposit coins: {:?}", deposit_coins);
+
     let _ = wasm.execute(
         contract_address.clone().as_str(),
         &ExecuteMsg::AnyDeposit {
