@@ -27,8 +27,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 pub fn get_asset0_value(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    token0_amount: Uint128,
-    token1_amount: Uint128,
+    tokens_provided: (Uint128, Uint128),
 ) -> Result<Uint128, ContractError> {
     let pool_config = POOL_CONFIG.load(storage)?;
 
@@ -38,8 +37,10 @@ pub fn get_asset0_value(
         .spot_price
         .parse()?;
 
-    let total = token0_amount.checked_add(
-        token1_amount.multiply_ratio(spot_price.denominator(), spot_price.numerator()),
+    let total = tokens_provided.0.checked_add(
+        tokens_provided
+            .1
+            .multiply_ratio(spot_price.denominator(), spot_price.numerator()),
     )?;
 
     Ok(total)
@@ -63,7 +64,7 @@ pub fn get_position_balance(
     }
 
     // Get the total amount of the vault's position in asset0 denom
-    let asset_0_value = get_asset0_value(storage, querier, asset0_amount, asset1_amount)?;
+    let asset_0_value = get_asset0_value(storage, querier, (asset0_amount, asset1_amount))?;
 
     // Calculate the ratio of the vault's position in asset0 and asset1
     let asset_0_ratio = asset0_amount.u128() as f64 / asset_0_value.u128() as f64;
