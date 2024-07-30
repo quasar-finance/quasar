@@ -1,5 +1,5 @@
 use cosmwasm_std::{Coin, CosmosMsg, Decimal, DepsMut, Env, Fraction, Response, Uint128};
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{Pool, Position as OsmoPosition};
+use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::helpers::getters::{
@@ -145,12 +145,13 @@ pub fn execute_swap_non_vault_funds(
 pub fn calculate_token_in_direction(
     pool_config: &PoolConfig,
     pool_details: Pool,
-    position: OsmoPosition,
     tokens_provided: (Uint128, Uint128),
+    lower_tick: i64,
+    upper_tick: i64,
 ) -> Result<(Coin, SwapDirection, Uint128), ContractError> {
     if !tokens_provided.0.is_zero() {
         // range is above current tick
-        let token_in = if pool_details.current_tick > position.upper_tick {
+        let token_in = if pool_details.current_tick > upper_tick {
             Coin {
                 denom: pool_config.token0.clone(),
                 amount: tokens_provided.0,
@@ -160,9 +161,9 @@ pub fn calculate_token_in_direction(
                 denom: pool_config.token0.clone(),
                 amount: get_single_sided_deposit_0_to_1_swap_amount(
                     tokens_provided.0,
-                    position.lower_tick,
+                    lower_tick,
                     pool_details.current_tick,
-                    position.upper_tick,
+                    upper_tick,
                 )?,
             }
         };
@@ -170,7 +171,7 @@ pub fn calculate_token_in_direction(
         Ok((token_in, SwapDirection::ZeroToOne, left_over_amount))
     } else {
         // current tick is above range
-        let token_in = if pool_details.current_tick < position.lower_tick {
+        let token_in = if pool_details.current_tick < lower_tick {
             Coin {
                 denom: pool_config.token1.clone(),
                 amount: tokens_provided.1,
@@ -180,9 +181,9 @@ pub fn calculate_token_in_direction(
                 denom: pool_config.token1.clone(),
                 amount: get_single_sided_deposit_1_to_0_swap_amount(
                     tokens_provided.1,
-                    position.lower_tick,
+                    lower_tick,
                     pool_details.current_tick,
-                    position.upper_tick,
+                    upper_tick,
                 )?,
             }
         };

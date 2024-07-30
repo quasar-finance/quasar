@@ -81,8 +81,9 @@ pub(crate) fn execute_any_deposit(
     let (token_in, swap_direction, left_over_amount) = calculate_token_in_direction(
         &pool_config,
         pool_details,
-        position,
         (deposit_info.base_refund, deposit_info.quote_refund),
+        position.lower_tick,
+        position.upper_tick,
     )?;
 
     CURRENT_SWAP_ANY_DEPOSIT.save(

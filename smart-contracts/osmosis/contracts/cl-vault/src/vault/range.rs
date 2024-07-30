@@ -294,14 +294,14 @@ pub fn do_swap_deposit_merge(
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-    let position = get_position(deps.storage, &deps.querier)?
-        .position
-        .ok_or(ContractError::MissingPosition {})?;
 
-    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
-    let (token_in, swap_direction, _left_over_amount) =
-        calculate_token_in_direction(&pool_config, pool_details, position, tokens_provided)?;
+    let (token_in, swap_direction, _left_over_amount) = calculate_token_in_direction(
+        &pool_config,
+        pool_details,
+        tokens_provided,
+        target_lower_tick,
+        target_upper_tick,
+    )?;
 
     let twap_price = get_twap_price(
         &deps.querier,
@@ -312,6 +312,8 @@ pub fn do_swap_deposit_merge(
         pool_config.clone().token1,
     )?;
 
+    // Calculate the swap amount using the modify_range_state
+    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let calculate_swap_amount = calculate_swap_amount(
         &deps,
         &env,
