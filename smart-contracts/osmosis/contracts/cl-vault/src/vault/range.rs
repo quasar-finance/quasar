@@ -1,7 +1,7 @@
 use crate::{
     helpers::{
         assert::assert_range_admin,
-        getters::{get_tokens_provided, get_unused_pair_balances},
+        getters::{get_tokens_provided, get_twap_price, get_unused_pair_balances},
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
@@ -301,26 +301,38 @@ pub fn do_swap_deposit_merge(
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
     let (token_in, swap_direction, _left_over_amount) =
-        calculate_token_in_direction(pool_config, pool_details, position, tokens_provided)?;
+        calculate_token_in_direction(&pool_config, pool_details, position, tokens_provided)?;
 
-    let swap_calc_result = calculate_swap_amount(
+    let twap_price = get_twap_price(
+        &deps.querier,
+        env.block.time,
+        twap_window_seconds,
+        pool_config.pool_id,
+        pool_config.clone().token0,
+        pool_config.clone().token1,
+    )?;
+
+    let calculate_swap_amount = calculate_swap_amount(
         &deps,
         &env,
         swap_direction,
         token_in,
         mrs.max_slippage,
         mrs.forced_swap_route,
-        twap_window_seconds,
+        twap_price,
     )?;
 
     Ok(response
         .add_submessage(SubMsg::reply_on_success(
-            swap_calc_result.swap_msg,
+            calculate_swap_amount.swap_msg,
             Replies::Swap.into(),
         ))
         .add_attributes(vec![
-            attr("token_in", swap_calc_result.token_in.to_string()),
-            attr("min_token_out", swap_calc_result.min_token_out.to_string()),
+            attr("token_in", calculate_swap_amount.token_in.to_string()),
+            attr(
+                "min_token_out",
+                calculate_swap_amount.min_token_out.to_string(),
+            ),
         ]))
 }
 

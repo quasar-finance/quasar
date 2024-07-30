@@ -14,7 +14,8 @@ use crate::{state::VAULT_CONFIG, ContractError};
 pub enum SwapDirection {
     ZeroToOne,
     OneToZero,
-    Custom, // TODO: choose if AnyToZero and AnyToOne is a better nomenclature
+    AnyToOne,
+    AnyToZero,
 }
 
 // struct used by swap.rs on swap non vault funds
@@ -76,7 +77,13 @@ pub fn execute_swap_non_vault_funds(
             });
         }
 
-        // TODO: This TWAP now is included in the swap calculation, we should remove it from here
+        // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
+        // TODO: This new get_position_balance helper looks redundant with get_depositable_tokens_impl, can we reuse this instead?
+        let position_balance = get_position_balance(deps.storage, &deps.querier)?;
+        let to_token0_amount =
+            Uint128::from((balance_in_contract.u128() as f64 * position_balance.0) as u128); // balance * ratio computed by current position balancing
+        let to_token1_amount =
+            Uint128::from((balance_in_contract.u128() as f64 * position_balance.1) as u128); // balance * ratio computed by current position balancing
 
         // TODO: Validate that the swap_operation.pool_id_0 is about token_in_denom and pool_config.token0 assets or throw error
         let twap_price_token_0 = get_twap_price(
@@ -87,6 +94,22 @@ pub fn execute_swap_non_vault_funds(
             token_in_denom.to_string(),
             pool_config.clone().token0,
         )?;
+        swap_msgs.push(
+            calculate_swap_amount(
+                &deps,
+                &env,
+                SwapDirection::AnyToZero,
+                Coin {
+                    denom: token_in_denom.to_string(),
+                    amount: to_token0_amount,
+                },
+                vault_config.swap_max_slippage,
+                swap_operation.forced_swap_route_token_0,
+                twap_price_token_0,
+            )?
+            .swap_msg,
+        );
+
         // TODO: Validate that the swap_operation.pool_id_1 is about token_in_denom and pool_config.token1 assets or throw error
         let twap_price_token_1 = get_twap_price(
             &deps.querier,
@@ -96,43 +119,18 @@ pub fn execute_swap_non_vault_funds(
             token_in_denom.to_string(),
             pool_config.clone().token1,
         )?;
-
-        // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
-        // TODO: This new get_position_balance helper looks redundant with get_depositable_tokens_impl, can we reuse this instead?
-        let position_balance = get_position_balance(deps.storage, &deps.querier)?;
-        let to_token0_amount =
-            Uint128::from((balance_in_contract.u128() as f64 * position_balance.0) as u128); // balance * ratio computed by current position balancing
-        let to_token1_amount =
-            Uint128::from((balance_in_contract.u128() as f64 * position_balance.1) as u128); // balance * ratio computed by current position balancing
-
-        // Get swap messages
         swap_msgs.push(
             calculate_swap_amount(
                 &deps,
                 &env,
-                SwapDirection::Custom,
-                Coin {
-                    denom: token_in_denom.to_string(),
-                    amount: to_token0_amount,
-                },
-                vault_config.swap_max_slippage,
-                swap_operation.forced_swap_route_token_0,
-                twap_window_seconds.unwrap_or_default(),
-            )?
-            .swap_msg,
-        );
-        swap_msgs.push(
-            calculate_swap_amount(
-                &deps,
-                &env,
-                SwapDirection::Custom,
+                SwapDirection::AnyToOne,
                 Coin {
                     denom: token_in_denom.to_string(),
                     amount: to_token1_amount,
                 },
                 vault_config.swap_max_slippage,
                 swap_operation.forced_swap_route_token_1,
-                twap_window_seconds.unwrap_or_default(),
+                twap_price_token_1,
             )?
             .swap_msg,
         );
@@ -145,7 +143,7 @@ pub fn execute_swap_non_vault_funds(
 }
 
 pub fn calculate_token_in_direction(
-    pool_config: PoolConfig,
+    pool_config: &PoolConfig,
     pool_details: Pool,
     position: OsmoPosition,
     tokens_provided: (Uint128, Uint128),
@@ -201,19 +199,9 @@ pub fn calculate_swap_amount(
     token_in: Coin, // this is a coin so we can pass external funds as token_in
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
-    twap_window_seconds: u64,
+    twap_price: Decimal,
 ) -> Result<SwapCalculationResult, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-
-    // TODO: Decide if we want the twap here, or if we want to pass it as an argument
-    let twap_price = get_twap_price(
-        &deps.querier,
-        env.block.time,
-        twap_window_seconds,
-        pool_config.pool_id,
-        pool_config.clone().token0,
-        pool_config.clone().token1,
-    )?;
 
     // TODO: At this point token_in_denom is useless, we are enforcing from above arguments,
     // lets use token_in.denom and pass a new token_out_denom argument to derive the direction directly here?
@@ -233,7 +221,10 @@ pub fn calculate_swap_amount(
                 .amount
                 .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
         ),
-        SwapDirection::Custom => {
+        SwapDirection::AnyToOne => {
+            todo!()
+        }
+        SwapDirection::AnyToZero => {
             todo!()
         }
     };

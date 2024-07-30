@@ -1,6 +1,6 @@
 use crate::{
     helpers::{
-        getters::{get_asset0_value, get_depositable_tokens},
+        getters::{get_asset0_value, get_depositable_tokens, get_twap_price},
         msgs::refund_bank_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
@@ -82,7 +82,7 @@ pub(crate) fn execute_any_deposit(
     // TODO: Deprecate swapDirection here or in the calculate_swap_amount function,
     //  probably better here so we can do from any of the invoking places where we invoke calculate_swap_amount
     let (token_in, swap_direction, left_over_amount) = calculate_token_in_direction(
-        pool_config,
+        &pool_config,
         pool_details,
         position,
         (deposit_info.base_deposit, deposit_info.quote_deposit),
@@ -96,27 +96,41 @@ pub(crate) fn execute_any_deposit(
             (deposit_info.base_deposit, deposit_info.quote_deposit),
         ),
     )?;
-    let swap_calc_result = calculate_swap_amount(
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+
+    let twap_price = get_twap_price(
+        &deps.querier,
+        env.block.time,
+        24u64, // TODO: Check if we need a vault_config.twap_window_seconds as default as we do for slippage
+        pool_config.pool_id,
+        pool_config.token0,
+        pool_config.token1,
+    )?;
+
+    let calculate_swap_amount = calculate_swap_amount(
         &deps,
         &env,
         swap_direction,
         token_in.clone(),
         max_slippage,
         None,
-        0u64, // TODO: Check if we need a vault_config.twap_in_seconds as default as we do for slippage
+        twap_price,
     )?;
 
     // rest minting logic remains same
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
-            swap_calc_result.swap_msg,
+            calculate_swap_amount.swap_msg,
             Replies::AnyDepositSwap.into(),
         ))
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
             attr("token_in", token_in.to_string()),
-            attr("min_token_out", swap_calc_result.min_token_out.to_string()),
+            attr(
+                "min_token_out",
+                calculate_swap_amount.min_token_out.to_string(),
+            ),
         ]))
 }
 
