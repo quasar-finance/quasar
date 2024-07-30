@@ -320,6 +320,7 @@ pub fn do_swap_deposit_merge(
         swap_direction,
         token_in,
         mrs.max_slippage,
+        Some(pool_config.pool_id),
         mrs.forced_swap_route,
         twap_price,
     )?;

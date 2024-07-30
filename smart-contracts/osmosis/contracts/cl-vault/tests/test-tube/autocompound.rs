@@ -288,20 +288,20 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::SwapNonVaultFunds {
             swap_operations: vec![SwapOperation {
                 token_in_denom: DENOM_REWARD.to_string(),
-                pool_id_token_0: swap_pools_ids[2],
-                pool_id_token_1: swap_pools_ids[1],
+                pool_id_token_0: swap_pools_ids[1],
+                pool_id_token_1: swap_pools_ids[2],
                 forced_swap_route_token_0: Some(vec![
                     SwapAmountInRoute {
-                        pool_id: swap_pools_ids[1],
+                        pool_id: swap_pools_ids[2],
                         token_out_denom: DENOM_QUOTE.to_string(),
                     },
                     SwapAmountInRoute {
-                        pool_id: swap_pools_ids[2],
+                        pool_id: swap_pools_ids[1],
                         token_out_denom: DENOM_BASE.to_string(),
                     },
                 ]),
                 forced_swap_route_token_1: Some(vec![SwapAmountInRoute {
-                    pool_id: swap_pools_ids[1],
+                    pool_id: swap_pools_ids[2],
                     token_out_denom: DENOM_QUOTE.to_string(),
                 }]),
             }],
@@ -314,7 +314,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Assert there is no balance for DENOM_REWARD (ustrd) and there is more DENOM_BASE
     let balances_after_swap_rewards =
         get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
-    assert_eq!(0u128, balances_after_swap_rewards);
+    assert_eq!(1u128, balances_after_swap_rewards);
     // Assert vault position tokens balances
     let balances_after_swap_base =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());

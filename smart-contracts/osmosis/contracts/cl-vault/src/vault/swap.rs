@@ -37,7 +37,7 @@ pub struct SwapCalculationResult {
 
 /// SwapParams holds the parameters for a swap
 pub struct SwapParams {
-    pub pool_id: u64, // the osmosis pool id in case of no cw_dex_router or no best/recommended route
+    pub pool_id: Option<u64>, // the osmosis pool id in case of no cw_dex_router or no best/recommended route
     pub token_in: Coin,
     pub min_token_out: Coin,
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
@@ -80,6 +80,7 @@ pub fn execute_swap_non_vault_funds(
         // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
         // TODO: This new get_position_balance helper looks redundant with get_depositable_tokens_impl, can we reuse this instead?
         let position_balance = get_position_balance(deps.storage, &deps.querier)?;
+
         let to_token0_amount =
             Uint128::from((balance_in_contract.u128() as f64 * position_balance.0) as u128); // balance * ratio computed by current position balancing
         let to_token1_amount =
@@ -104,6 +105,7 @@ pub fn execute_swap_non_vault_funds(
                     amount: to_token0_amount,
                 },
                 vault_config.swap_max_slippage,
+                Some(swap_operation.pool_id_token_0),
                 swap_operation.forced_swap_route_token_0,
                 twap_price_token_0,
             )?
@@ -129,6 +131,7 @@ pub fn execute_swap_non_vault_funds(
                     amount: to_token1_amount,
                 },
                 vault_config.swap_max_slippage,
+                Some(swap_operation.pool_id_token_1),
                 swap_operation.forced_swap_route_token_1,
                 twap_price_token_1,
             )?
@@ -199,6 +202,7 @@ pub fn calculate_swap_amount(
     swap_direction: SwapDirection,
     token_in: Coin, // this is a coin so we can pass external funds as token_in
     max_slippage: Decimal,
+    swap_pool_id: Option<u64>,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_price: Decimal,
 ) -> Result<SwapCalculationResult, ContractError> {
@@ -232,7 +236,7 @@ pub fn calculate_swap_amount(
         &deps,
         env.clone().contract.address,
         SwapParams {
-            pool_id: pool_config.pool_id,
+            pool_id: swap_pool_id,
             token_in: token_in.clone(),
             min_token_out: min_token_out.clone(),
             forced_swap_route,
@@ -302,7 +306,7 @@ mod tests {
             .save(deps_mut.storage, &mock_pool_config())
             .unwrap();
         let swap_params = SwapParams {
-            pool_id: 1,
+            pool_id: Some(1),
             token_in,
             min_token_out: min_token_out.clone(),
             forced_swap_route: None,

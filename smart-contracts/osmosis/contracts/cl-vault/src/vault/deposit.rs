@@ -111,6 +111,7 @@ pub(crate) fn execute_any_deposit(
         swap_direction,
         token_in.clone(),
         max_slippage,
+        Some(pool_config.pool_id),
         None,
         twap_price,
     )?;

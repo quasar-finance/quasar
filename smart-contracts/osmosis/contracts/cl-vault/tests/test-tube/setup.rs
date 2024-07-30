@@ -302,7 +302,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
         ],
         vec![
             Coin {
-                denom: DENOM_QUOTE.to_string(),
+                denom: DENOM_BASE.to_string(),
                 amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
             },
             Coin {
@@ -312,7 +312,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
         ],
         vec![
             Coin {
-                denom: DENOM_BASE.to_string(),
+                denom: DENOM_QUOTE.to_string(),
                 amount: Uint128::from_str(TOKENS_PROVIDED_AMOUNT_HIGH).unwrap(),
             },
             Coin {

@@ -66,14 +66,18 @@ pub fn swap_msg(
     // let pool_config = POOL_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
-    // we will only ever have a route length of one, this will likely change once we start selecting different routes
-    let pool_route = SwapAmountInRoute {
-        pool_id: params.pool_id,
-        token_out_denom: params.min_token_out.denom.to_string(),
-    };
-
     // if we don't have a dex_router, we will always swap over the osmosis pool
     if dex_router.is_none() {
+        // if the cl_pool hasnt been provided
+        if params.pool_id.is_none() {
+            return Err(ContractError::PoolIdNotProvided {});
+        }
+
+        let pool_route = SwapAmountInRoute {
+            pool_id: params.pool_id.unwrap(),
+            token_out_denom: params.min_token_out.denom.to_string(),
+        };
+
         return Ok(osmosis_swap_exact_amount_in_msg(
             contract_address,
             pool_route,

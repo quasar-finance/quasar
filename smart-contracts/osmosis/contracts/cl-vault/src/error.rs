@@ -24,6 +24,9 @@ pub enum ContractError {
     #[error("Position Not Found")]
     PositionNotFound,
 
+    #[error("Pool Id not provided")]
+    PoolIdNotProvided {},
+
     #[error("Sent the wrong amount of denoms")]
     IncorrectAmountFunds,
 
