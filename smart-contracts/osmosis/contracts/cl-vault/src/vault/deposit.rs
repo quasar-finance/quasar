@@ -64,6 +64,7 @@ pub(crate) fn execute_any_deposit(
     // let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
     let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
 
+    // If we have no refunds let's proceed for the deposit
     if deposit_info.base_refund.is_zero() && deposit_info.quote_refund.is_zero() {
         return execute_deposit(
             &mut deps,
@@ -77,16 +78,13 @@ pub(crate) fn execute_any_deposit(
         );
     }
 
-    // Swap logic
-    // TODO: Optimize this if conditions
-    // TODO: Deprecate swapDirection here or in the calculate_swap_amount function,
-    //  probably better here so we can do from any of the invoking places where we invoke calculate_swap_amount
     let (token_in, swap_direction, left_over_amount) = calculate_token_in_direction(
         &pool_config,
         pool_details,
         position,
-        (deposit_info.base_deposit, deposit_info.quote_deposit),
+        (deposit_info.base_refund, deposit_info.quote_refund),
     )?;
+
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
         &(
@@ -96,8 +94,9 @@ pub(crate) fn execute_any_deposit(
             (deposit_info.base_deposit, deposit_info.quote_deposit),
         ),
     )?;
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
 
+    // Get TWAP price
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
@@ -106,9 +105,6 @@ pub(crate) fn execute_any_deposit(
         pool_config.token0,
         pool_config.token1,
     )?;
-
-    deps.api
-        .debug(format!("token_in: {:?}", token_in.to_string()).as_str());
 
     let calculate_swap_amount = calculate_swap_amount(
         &deps,
@@ -119,13 +115,6 @@ pub(crate) fn execute_any_deposit(
         None,
         twap_price,
     )?;
-    deps.api.debug(
-        format!(
-            "calculate_swap_amount: {:?}",
-            calculate_swap_amount.swap_msg
-        )
-        .as_str(),
-    );
 
     // rest minting logic remains same
     Ok(Response::new()
@@ -181,8 +170,6 @@ pub fn handle_any_deposit_swap_reply(
         },
     );
 
-    deps.api.debug("DEBUG: 4.25");
-
     execute_deposit(
         &mut deps,
         env,
@@ -204,8 +191,6 @@ fn execute_deposit(
     deposit: (Uint128, Uint128), // TODO: This could be DepositInfo struct
     refund: (Coin, Coin), // TODO: This could be DepositInfo struct assuming .denom0 and .denom1
 ) -> Result<Response, ContractError> {
-    deps.api.debug("DEBUG: 4.5");
-
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
@@ -264,7 +249,6 @@ fn execute_deposit(
         amount: Some(coin(user_shares.into(), vault_denom).into()),
         mint_to_address: env.clone().contract.address.to_string(),
     };
-    deps.api.debug("DEBUG: 5");
 
     let mut resp = Response::new()
         .add_attribute("method", "execute")
