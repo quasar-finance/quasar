@@ -44,7 +44,7 @@ distribution module.
 
 ## Query CLI command with pagination (optionals)
 ```bash
-quasarnoded query qvesting spendable-balances <account_address> (--limit 1) (--count-total)
+quasard query qvesting spendable-balances <account_address> (--limit 1) (--count-total)
 ```
 
 ## Testing with standard account
@@ -54,7 +54,7 @@ quasarnoded query qvesting spendable-balances <account_address> (--limit 1) (--c
 To create a vesting account, you can use the following command:
 
 ```bash
-quasarnoded tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from my_treasury --chain-id quasar --keyring-backend test
+quasard tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from my_treasury --chain-id quasar --keyring-backend test
 ```
 
 #### Querying vesting account information
@@ -62,7 +62,7 @@ quasarnoded tx qvesting create-vesting-account <account_address> <original_vesti
 To query the vesting account information, you can use the following command:
 
 ```bash
-quasarnoded query auth account <account_address>
+quasard query auth account <account_address>
 ```
 
 -----
@@ -74,42 +74,42 @@ create-vesting-account transaction with multi-sig accounts, follow these steps:
 
 Create multiple accounts to act as signers for the multi-sig transaction:
 ```bash
-quasarnoded keys add signer1 --keyring-backend test
-quasarnoded keys add signer2 --keyring-backend test
-quasarnoded keys add signer3 --keyring-backend test
+quasard keys add signer1 --keyring-backend test
+quasard keys add signer2 --keyring-backend test
+quasard keys add signer3 --keyring-backend test
 ```
 
 Create a multi-sig account using the created signer accounts:
 ```bash
-quasarnoded keys add multisig_account --multisig-threshold 2 --multisig "signer1,signer2,signer3" --keyring-backend test
+quasard keys add multisig_account --multisig-threshold 2 --multisig "signer1,signer2,signer3" --keyring-backend test
 ```
 
 Fund the multi-sig account and the signer accounts.
 ```bash
-quasarnoded tx bank send <my_treasury_address> <multisig_account_address> 1000uqsr --from my_treasury --chain-id quasar --keyring-backend test
+quasard tx bank send <my_treasury_address> <multisig_account_address> 1000uqsr --from my_treasury --chain-id quasar --keyring-backend test
 ```
 
 Create a create-vesting-account transaction using the multi-sig account as the signer:
 ```bash
-quasarnoded tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from multisig_account --chain-id quasar --keyring-backend test --generate-only > tx.json
+quasard tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from multisig_account --chain-id quasar --keyring-backend test --generate-only > tx.json
 ```
 
 Sign the transaction with each signer:
 ```bash
-quasarnoded tx sign tx.json --from signer1 --multisig <multisig_account_address> --chain-id quasar --keyring-backend test --output-document tx_signed1.json
-quasarnoded tx sign tx.json --from signer2 --multisig <multisig_account_address> --chain-id quasar --keyring-backend test --output-document tx_signed2.json
-quasarnoded tx sign tx.json --from signer3 --multisig <multisig_account_address> --chain-id quasar --keyring-backend test --output-document tx_signed3.json
+quasard tx sign tx.json --from signer1 --multisig <multisig_account_address> --chain-id quasar --keyring-backend test --output-document tx_signed1.json
+quasard tx sign tx.json --from signer2 --multisig <multisig_account_address> --chain-id quasar --keyring-backend test --output-document tx_signed2.json
+quasard tx sign tx.json --from signer3 --multisig <multisig_account_address> --chain-id quasar --keyring-backend test --output-document tx_signed3.json
 ```
 
 Assemble the signatures and broadcast the transaction:
 ```bash
-quasarnoded tx multisign tx.json multisig_account tx_signed1.json tx_signed2.json tx_signed3.json --chain-id quasar --keyring-backend test > tx_multisig.json
-quasarnoded tx broadcast tx_multisig.json --chain-id quasar --keyring-backend test -y
+quasard tx multisign tx.json multisig_account tx_signed1.json tx_signed2.json tx_signed3.json --chain-id quasar --keyring-backend test > tx_multisig.json
+quasard tx broadcast tx_multisig.json --chain-id quasar --keyring-backend test -y
 ```
 
 Verify the custom vesting account has been created successfully:
 ```bash
-quasarnoded query auth account <account_address>
+quasard query auth account <account_address>
 ```
 
 ## Testing with Ledger Hardware Wallet
@@ -120,29 +120,29 @@ Connect your Ledger device and ensure the Cosmos app is installed and running.
 
 Retrieve the Ledger account address and adding the key to the keyring:
 ```bash
-quasarnoded keys add ledger_account --ledger
+quasard keys add ledger_account --ledger
 ```
 
 Fund the Ledger account.
 
 Create a create-vesting-account transaction using the Ledger account as the signer:
 ```bash
-quasarnoded tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from ledger_account --chain-id quasar --keyring-backend test --generate-only > tx.json
+quasard tx qvesting create-vesting-account <account_address> <original_vesting> <start_time> <end_time> --from ledger_account --chain-id quasar --keyring-backend test --generate-only > tx.json
 ```
 
 Sign the transaction with the Ledger device:
 ```bash
-quasarnoded tx sign tx.json --from ledger_account --chain-id quasar --keyring-backend test --output-document tx_signed.json
+quasard tx sign tx.json --from ledger_account --chain-id quasar --keyring-backend test --output-document tx_signed.json
 ```
 
 Broadcast the signed transaction:
 ```bash
-quasarnoded tx broadcast tx_signed.json --chain-id quasar
+quasard tx broadcast tx_signed.json --chain-id quasar
 ```
 
 Verify the custom vesting account has been created successfully:
 ```bash
-quasarnoded query auth account <account_address>
+quasard query auth account <account_address>
 ```
 
 By performing these tests, you can ensure that the x/qvesting module is compatible with multi-signature

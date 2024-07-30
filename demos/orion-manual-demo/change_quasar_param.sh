@@ -1,6 +1,6 @@
 #!/bin/bash
 # Configure variables
-BINARY=quasarnoded
+BINARY=quasard
 HOME_QSR=$HOME/.quasarnode
 CHAIN_ID=quasar
 

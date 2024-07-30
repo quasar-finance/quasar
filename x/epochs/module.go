@@ -6,10 +6,6 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
-	// abci "github.com/cometbft/cometbft/abci/types"
-	// "github.com/cosmos/cosmos-sdk/api/tendermint/abci"
-	// "github.com/cosmos/cosmos-sdk/api/tendermint/abci"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -107,6 +103,7 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule
 // ----------------------------------------------------------------------------
 
+// AppModule implements the AppModule interface for the capability module.
 type AppModule struct {
 	AppModuleBasic
 
@@ -153,7 +150,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.Ra
 	InitGenesis(ctx, &am.keeper, genState)
 }
 
-// ExportGenesis returns the capability module's exported genesis state as raw JSON bytes.
 // ExportGenesis returns the capability module's exported genesis state as raw JSON bytes.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	genState := ExportGenesis(ctx, &am.keeper)

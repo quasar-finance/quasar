@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
@@ -60,15 +61,9 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	appparams "github.com/quasarlabs/quasarnode/app/params"
 	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	"github.com/quasarlabs/quasarnode/x/qtransfer"
-	qtransferkeeper "github.com/quasarlabs/quasarnode/x/qtransfer/keeper"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	qvestingmodulekeeper "github.com/quasarlabs/quasarnode/x/qvesting/keeper"
-	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
 	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
 	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 	tfmodulekeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
@@ -111,9 +106,7 @@ type AppKeepers struct {
 	IBCWasmClientKeeper *ibcwasmkeeper.Keeper
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	WasmKeeper          *wasmkeeper.Keeper
-	QTransferKeeper     qtransferkeeper.Keeper
 	EpochsKeeper        *epochsmodulekeeper.Keeper
-	QVestingKeeper      qvestingmodulekeeper.Keeper
 	TfKeeper            tfmodulekeeper.Keeper
 	AuthzKeeper         authzkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
@@ -122,9 +115,6 @@ type AppKeepers struct {
 	// IBC modules
 	// transfer module
 	RawIcs20TransferAppModule transfer.AppModule
-	TransferStack             *qtransfer.IBCMiddleware
-	Ics20WasmHooks            *qtransfer.WasmHooks
-	HooksICS4Wrapper          qtransfer.ICS4Middleware
 
 	// keys to access the substores
 	keys    map[string]*storetypes.KVStoreKey
@@ -324,10 +314,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	appKeepers.RawIcs20TransferAppModule = transfer.NewAppModule(appKeepers.TransferKeeper)
 
-	// Hooks Middleware
-	hooksTransferModule := qtransfer.NewIBCMiddleware(transfer.NewIBCModule(appKeepers.TransferKeeper), &appKeepers.HooksICS4Wrapper)
-	appKeepers.TransferStack = &hooksTransferModule
-
 	appKeepers.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, appKeepers.keys[icacontrollertypes.StoreKey],
 		appKeepers.GetSubspace(icacontrollertypes.SubModuleName),
@@ -477,22 +463,14 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	ibcRouter := ibcporttypes.NewRouter()
 
-	wasmHooks := qtransfer.NewWasmHooks(appKeepers.QTransferKeeper, *appKeepers.WasmKeeper)
-	appKeepers.Ics20WasmHooks = &wasmHooks
-	appKeepers.HooksICS4Wrapper = qtransfer.NewICS4Middleware(
-		appKeepers.IBCKeeper.ChannelKeeper,
-		appKeepers.Ics20WasmHooks,
-	)
-
 	// Register host and authentication routes
 	// TODO_IMPORTANT - addition of qtransfer module
 	ibcRouter.
 		AddRoute(wasmtypes.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper,
 			appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
-		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(*appKeepers.ICAHostKeeper)).
-		AddRoute(ibctransfertypes.ModuleName, appKeepers.TransferStack)
+		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(*appKeepers.ICAHostKeeper))
 
-		//AddRoute(qosmotypes.SubModuleName, qosmo.NewIBCModule(appKeepers.QOsmosisKeeper))
+	//AddRoute(qosmotypes.SubModuleName, qosmo.NewIBCModule(appKeepers.QOsmosisKeeper))
 	//	AddRoute(qoraclemoduletypes.ModuleName, qoracleIBCModule)
 
 	appKeepers.IBCKeeper.SetRouter(ibcRouter)
@@ -517,9 +495,7 @@ func (appKeepers *AppKeepers) initParamsKeeper(appCodec codec.BinaryCodec, legac
 	paramsKeeper.Subspace(icqtypes.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
-	paramsKeeper.Subspace(qtransfertypes.ModuleName)
 	paramsKeeper.Subspace(tftypes.ModuleName)
-	paramsKeeper.Subspace(qvestingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(authztypes.ModuleName)
 
 	return paramsKeeper
@@ -547,9 +523,7 @@ func KVStoreKeys() []string {
 		icqtypes.StoreKey,
 		ibcwasmtypes.StoreKey,
 		wasmtypes.StoreKey,
-		qtransfertypes.StoreKey,
 		tftypes.StoreKey,
-		qvestingmoduletypes.StoreKey,
 		authzkeeper.StoreKey,
 		consensusparamtypes.StoreKey,
 		crisistypes.StoreKey,

@@ -20,16 +20,16 @@ cd ../smart-contracts
 # docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/workspace-optimizer-arm64:0.12.11
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/lp_strategy-aarch64.wasm --from testnet-relayer --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasard tx wasm store artifacts/lp_strategy-aarch64.wasm --from testnet-relayer --keyring-backend test -y --output json -b block $TXFLAG)
 echo $RES
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
 # swallow output
-# quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from testnet-relayer --keyring-backend test -y --label "primitive-1" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID
-OUT1=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT1" --from testnet-relayer --keyring-backend test -y --label "primitive-1" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
-ADDR1=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
+# quasard tx wasm instantiate $CODE_ID "$INIT1" --from testnet-relayer --keyring-backend test -y --label "primitive-1" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID
+OUT1=$(quasard tx wasm instantiate $CODE_ID "$INIT1" --from testnet-relayer --keyring-backend test -y --label "primitive-1" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
+ADDR1=$(quasard query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR1"
 
 # rly transact channel quasar_osmosis --src-port "wasm.$ADDR1" --dst-port icqhost --order unordered --version icq-1 --override
@@ -37,9 +37,9 @@ echo "Got address of deployed contract = $ADDR1"
 
 # sleep 6
 
-OUT2=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT2" --from testnet-relayer --keyring-backend test --label "primitive-2" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
-# quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE
-ADDR2=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[1]')
+OUT2=$(quasard tx wasm instantiate $CODE_ID "$INIT2" --from testnet-relayer --keyring-backend test --label "primitive-2" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
+# quasard query wasm list-contract-by-code $CODE_ID --output json $NODE
+ADDR2=$(quasard query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[1]')
 echo "Got address of deployed contract = $ADDR2"
 
 # rly transact channel quasar_osmosis --src-port "wasm.$ADDR2" --dst-port icqhost --order unordered --version icq-1 --override
@@ -47,8 +47,8 @@ echo "Got address of deployed contract = $ADDR2"
 
 # sleep 6
 
-# OUT3=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT3" --from testnet-relayer --keyring-backend test --label "primitive-3" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
-# ADDR3=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[2]')
+# OUT3=$(quasard tx wasm instantiate $CODE_ID "$INIT3" --from testnet-relayer --keyring-backend test --label "primitive-3" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
+# ADDR3=$(quasard query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[2]')
 # echo "Got address of deployed contract = $ADDR3"
 
 # rly transact channel quasar_osmosis --src-port "wasm.$ADDR3" --dst-port icqhost --order unordered --version icq-1 --override
@@ -61,7 +61,7 @@ VAULT_INIT='{"thesis":"yurmum","decimals":6,"symbol":"ORN","min_withdrawal":"1",
 echo $VAULT_INIT
 
 echo "Running store code (vault)"
-RES=$(quasarnoded tx wasm store artifacts/basic_vault-aarch64.wasm --from testnet-relayer --keyring-backend test -y --output json -b block $TXFLAG)
+RES=$(quasard tx wasm store artifacts/basic_vault-aarch64.wasm --from testnet-relayer --keyring-backend test -y --output json -b block $TXFLAG)
 
 VAULT_CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[1].value')
 
@@ -69,7 +69,7 @@ echo "Got CODE_ID = $VAULT_CODE_ID"
 
 echo "Deploying contract (vault)"
 # swallow output
-OUT=$(quasarnoded tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from testnet-relayer --keyring-backend test --label "vault-contract" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
-VAULT_ADDR=$(quasarnoded query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
+OUT=$(quasard tx wasm instantiate $VAULT_CODE_ID "$VAULT_INIT" --from testnet-relayer --keyring-backend test --label "vault-contract" --gas-prices $FEE --gas auto --gas-adjustment 1.3 -b block -y --admin "quasar1wzdhlvurmav577eu7n3z329eg5ykaez050az8l" $NODE --chain-id $CHAIN_ID)
+VAULT_ADDR=$(quasard query wasm list-contract-by-code $VAULT_CODE_ID --output json $NODE | jq -r '.contracts[0]')
 
 echo "Got address of deployed contract = $VAULT_ADDR (vault)"

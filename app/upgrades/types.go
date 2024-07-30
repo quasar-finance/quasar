@@ -1,7 +1,7 @@
 package upgrades
 
 import (
-	store "cosmossdk.io/store/types"
+	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -16,6 +16,14 @@ type BaseAppParamManager interface {
 	StoreConsensusParams(ctx sdk.Context, cp tmproto.ConsensusParams) error
 }
 
+const (
+	ProdChainID = "quasar-1"
+	TestChainID = "quasar-test-1"
+
+	// upgrade name consts: vMMmmppUpgradeName (M=Major, m=minor, p=patch).
+	V030000UpgradeName = "v3.0.0"
+)
+
 // Upgrade defines a struct containing necessary fields that a SoftwareUpgradeProposal
 // must have written, in order for the state migration to go smoothly.
 // An upgrade must implement this struct, and then set it in the app.go.
@@ -28,10 +36,18 @@ type Upgrade struct {
 	CreateUpgradeHandler func(
 		mm *module.Manager,
 		configurator module.Configurator,
-		bam BaseAppParamManager,
 		keepers *keepers.AppKeepers,
 	) upgradetypes.UpgradeHandler
 
 	// Store upgrades, should be used for any new modules introduced, new modules deleted, or store names renamed.
-	StoreUpgrades store.StoreUpgrades
+	StoreUpgrades storetypes.StoreUpgrades
 }
+
+// todo before release
+// func isMainnet(ctx sdk.Context) bool {
+//	return ctx.ChainID() == ProdChainID
+//}
+//
+//func isTestnet(ctx sdk.Context) bool {
+//	return ctx.ChainID() == TestChainID
+//}

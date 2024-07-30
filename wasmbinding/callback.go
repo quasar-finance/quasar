@@ -7,7 +7,6 @@ import (
 	"cosmossdk.io/log"
 	wasmk "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
-	// "github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -156,7 +155,7 @@ type ContractAck struct {
 	} `json:"ack"`
 }
 
-// OnSendPacket registers a packet's sequence number and address of the corresponding wasm contract
+// OnSendPacket registers a packet's sequence number and address of the corresponding wasm contract.
 func (c *CallbackPlugin) OnSendPacket(ctx sdk.Context, seq uint64, channel string, portID string, addr sdk.AccAddress) {
 	if c.sentMessages == nil {
 		c.sentMessages = make(map[key]sdk.AccAddress)

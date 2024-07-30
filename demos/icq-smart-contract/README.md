@@ -4,7 +4,7 @@
 This demo runs 2 local chains, Quasar and Osmosis, and sets up an ibc connection between them using the `run_all.sh` script. Using the demo, we then compile the icq demo smart contract, deploy the contract, create the necessary IBC channel and send a query over icq using our contract.
 
 ## Requirements
-In order to run this demo, a local `quasarnoded` and a local `osmosisd` binary need to be present. The local `quasarnoded` only needs to have wasm intergrated, and thus can be built from main or any recent branch. The `osmosisd` binary needs to have icq with the correct packet format integrated. A working version can be built from our osmosis branch found [here](https://github.com/quasar-finance/osmosis/tree/feature/new_icq_packet_format) and should be built with `make install`.
+In order to run this demo, a local `quasard` and a local `osmosisd` binary need to be present. The local `quasard` only needs to have wasm intergrated, and thus can be built from main or any recent branch. The `osmosisd` binary needs to have icq with the correct packet format integrated. A working version can be built from our osmosis branch found [here](https://github.com/quasar-finance/osmosis/tree/feature/new_icq_packet_format) and should be built with `make install`.
 
 ## Instructions
 Assuming you're in the icq-smart-contract directory,

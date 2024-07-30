@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pkill quasarnoded
+pkill quasard
 pkill osmosisd
 
 ## Run Quasar

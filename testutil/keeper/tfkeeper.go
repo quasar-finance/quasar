@@ -15,7 +15,8 @@ import (
 func (kf KeeperFactory) TfKeeper(paramsKeeper paramskeeper.Keeper,
 	accountKeeper authkeeper.AccountKeeper,
 	bankKeeper bankkeeper.Keeper,
-	communityPoolKeeper distrkeeper.Keeper) keeper.Keeper {
+	communityPoolKeeper distrkeeper.Keeper,
+) keeper.Keeper {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)

@@ -3,18 +3,14 @@ package wasmbinding
 import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	// qoraclekeeper "github.com/quasarlabs/quasarnode/x/qoracle/keeper"
 )
 
-// TODO - SDK 50, Query plugin to be re-written
 func RegisterCustomPlugins(
-	//	intergammKeeper *intergammkeeper.Keeper,
-	// qoracleKeeper qoraclekeeper.Keeper,
 	bank *bankkeeper.BaseKeeper,
 	callback *CallbackPlugin,
 ) []wasmkeeper.Option {
 	queryPluginOpt := wasmkeeper.WithQueryPlugins(&wasmkeeper.QueryPlugins{
-		// Custom: CustomQuerier(qoracleKeeper),
+		Custom: CustomQuerier(),
 	})
 	messengerDecoratorOpt := wasmkeeper.WithMessageHandlerDecorator(
 		CustomMessageDecorator(bank, callback),

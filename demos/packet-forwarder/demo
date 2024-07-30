@@ -140,7 +140,7 @@ tx_bob_cosmos_to_alice_quasar() {
 tx_alice_quasar_to_alice_osmosis_via_cosmos() {
   local home_dir="${run_dir}/quasar/home"
 
-  quasarnoded \
+  quasard \
     --home "$home_dir" \
     --node=http://localhost:26659 \
     --chain-id quasar \
@@ -171,6 +171,6 @@ test -d "${project_dir}/../contrib/osmosis" || fail "osmosis dir not found"
 
 cmd_exists "gaiad"
 cmd_exists "osmosisd"
-cmd_exists "quasarnoded"
+cmd_exists "quasard"
 
 "$@"

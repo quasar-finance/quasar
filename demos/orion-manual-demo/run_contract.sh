@@ -26,17 +26,17 @@ cd ../../smart-contracts
 docker run --rm -v "$(pwd)":/code --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry cosmwasm/rust-optimizer:0.12.6
 
 echo "Running store code"
-RES=$(quasarnoded tx wasm store artifacts/intergamm_bindings_test.wasm --from alice -y --output json -b block $TXFLAG) 
+RES=$(quasard tx wasm store artifacts/intergamm_bindings_test.wasm --from alice -y --output json -b block $TXFLAG)
 CODE_ID=$(echo $RES | jq -r '.logs[0].events[-1].attributes[0].value') 
 echo "Got CODE_ID = $CODE_ID"
 
 echo "Deploying contract"
 # swallow output
-OUT=$(quasarnoded tx wasm instantiate $CODE_ID "$INIT" --from alice --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
-ADDR=$(quasarnoded query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
+OUT=$(quasard tx wasm instantiate $CODE_ID "$INIT" --from alice --label "my first contract" --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 -b block -y --no-admin $NODE --chain-id $CHAIN_ID)
+ADDR=$(quasard query wasm list-contract-by-code $CODE_ID --output json $NODE | jq -r '.contracts[0]')
 echo "Got address of deployed contract = $ADDR"
 
 echo "Executing register ica message... ('$MSG')"
-quasarnoded tx wasm execute $ADDR "$MSG" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+quasard tx wasm execute $ADDR "$MSG" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
 
 cd -

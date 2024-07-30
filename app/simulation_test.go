@@ -1,20 +1,24 @@
 package app_test
 
 import (
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/testutil/sims"
-	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/cosmos/cosmos-sdk/server"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	simulation2 "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/cosmos/ibc-go/v8/testing/simapp"
-	"github.com/stretchr/testify/require"
+	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 
 	"github.com/quasarlabs/quasarnode/app"
 )
 
+// AppChainID hardcoded chainID for simulation
+const AppChainID = "quasar-app"
+
 func init() {
-	simapp.GetSimulatorFlags()
+	simcli.GetSimulatorFlags()
 }
 
 // BenchmarkSimulation run the chain simulation
@@ -23,17 +27,26 @@ func init() {
 // Running as go benchmark test:
 // `go test -benchmem -run=^$ -bench ^BenchmarkSimulation ./app -NumBlocks=200 -BlockSize 50 -Commit=true -Verbose=true -Enabled=true`
 func BenchmarkSimulation(b *testing.B) {
-	simapp.FlagEnabledValue = true
-	simapp.FlagCommitValue = true
-	config, db, dir, logger, _, err := simapp.SetupSimulation("goleveldb-app-sim", "Simulation")
-	require.NoError(b, err, "simulation setup failed")
+	config := simcli.NewConfigFromFlags()
+	config.ChainID = AppChainID
+
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "goleveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+
+	if err != nil {
+		b.Fatalf("simulation setup failed: %s", err.Error())
+	}
+
+	if skip {
+		b.Skip("skipping benchmark application simulation")
+	}
 
 	b.Cleanup(func() {
-		db.Close()
-		err = os.RemoveAll(dir)
-		require.NoError(b, err)
+		require.NoError(b, db.Close())
+		require.NoError(b, os.RemoveAll(dir))
 	})
 
+	appOptions := make(simtestutil.AppOptionsMap, 0)
+	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 	encoding := app.MakeEncodingConfig()
 
 	app := app.New(
@@ -45,7 +58,7 @@ func BenchmarkSimulation(b *testing.B) {
 		app.DefaultNodeHome,
 		0,
 		encoding,
-		sims.EmptyAppOptions{},
+		appOptions,
 		app.EmptyWasmOpts,
 	)
 
@@ -54,9 +67,9 @@ func BenchmarkSimulation(b *testing.B) {
 		b,
 		os.Stdout,
 		app.BaseApp,
-		simapp.AppStateFn(app.AppCodec(), app.SimulationManager()),
+		simulation2.AppStateFn(app.AppCodec(), app.SimulationManager()),
 		simulationtypes.RandomAccounts,
-		simapp.SimulationOperations(app, app.AppCodec(), config),
+		simtestutil.SimulationOperations(app, app.AppCodec(), config),
 		app.ModuleAccountAddrs(),
 		config,
 		app.AppCodec(),

@@ -4,7 +4,7 @@
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
 
 # Configure variables
-BINARY=quasarnoded
+BINARY=quasard
 HOME_QSR=$HOME/.quasarnode
 CHAIN_ID=quasar
 

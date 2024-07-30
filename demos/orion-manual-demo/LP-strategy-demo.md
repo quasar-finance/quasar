@@ -4,7 +4,7 @@
 The LP strategy demo shows how to test the current version of the LP-strategy. This current version only executes the actual strategy part of the LP-strategy, meaning sending tokens to osmosis, joining a pool through join-swap extern-amount-in and locking the tokens.
 
 ## setup
-To get this demo working, at the minimum a local [osmosis](https://github.com/osmosis-labs/osmosis) release >= v13 such as the [13.1.2](https://github.com/osmosis-labs/osmosis/releases/tag/v13.1.2) release, the local quasarnoded contained in this repo and the [go relayer](https://github.com/cosmos/relayer/releases/tag/v2.1.2). Optionally, if packet forwarding needs to be tested aswell, a local chain of that token is also needed. Most logical is to try this with [gaiad](https://github.com/cosmos/gaia/releases/tag/v7.1.0) for uatom.
+To get this demo working, at the minimum a local [osmosis](https://github.com/osmosis-labs/osmosis) release >= v13 such as the [13.1.2](https://github.com/osmosis-labs/osmosis/releases/tag/v13.1.2) release, the local quasard contained in this repo and the [go relayer](https://github.com/cosmos/relayer/releases/tag/v2.1.2). Optionally, if packet forwarding needs to be tested aswell, a local chain of that token is also needed. Most logical is to try this with [gaiad](https://github.com/cosmos/gaia/releases/tag/v7.1.0) for uatom.
 
 ## execution
 the `run_all.sh` script sets up the local chains, and starts to run the go relayer. The current setup of the go relayer assumes that a local gaiad instance is running. Through `create_and_execute_contract.sh`, a contract is setup and a channel between the contract and the ica host on osmosis is made. The contract is now ready to be interacted with. 

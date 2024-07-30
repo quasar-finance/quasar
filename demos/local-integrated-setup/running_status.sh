@@ -1,11 +1,11 @@
 #!/bin/sh
 
-qpid=`ps -ef | grep quasarnoded | grep -v "grep" |  awk '{ printf $2 }'`
+qpid=`ps -ef | grep quasard | grep -v "grep" |  awk '{ printf $2 }'`
 if [ -z "$qpid" ]
 then
-      echo "quasarnoded not running"
+      echo "quasard not running"
 else
-      echo "quasarnoded is running with process id $qpid"   
+      echo "quasard is running with process id $qpid"
 fi
 
 opid=`ps -ef | grep osmosisd | grep -v "grep" |  awk '{ printf $2 }'`

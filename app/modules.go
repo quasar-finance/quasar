@@ -41,9 +41,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-
-	// upgradeclient "cosmossdk.io/x/upgrade/client"
-	// upgradetypes "cosmossdk.io/x/upgrade/types"
 	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
@@ -51,8 +48,6 @@ import (
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-
-	// ibcclientclient "github.com/cosmos/ibc-go/v8/modules/core/02-client/client"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
@@ -60,13 +55,6 @@ import (
 	appparams "github.com/quasarlabs/quasarnode/app/params"
 	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
 	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-
-	// qoraclemodule "github.com/quasarlabs/quasarnode/x/qoracle"
-	// qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
-	"github.com/quasarlabs/quasarnode/x/qtransfer"
-	qtransfertypes "github.com/quasarlabs/quasarnode/x/qtransfer/types"
-	qvestingmodule "github.com/quasarlabs/quasarnode/x/qvesting"
-	qvestingmoduletypes "github.com/quasarlabs/quasarnode/x/qvesting/types"
 	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
 	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
@@ -113,13 +101,10 @@ var AppModuleBasics = []module.AppModuleBasic{
 	transfer.AppModuleBasic{},
 	vesting.AppModuleBasic{},
 	epochsmodule.AppModuleBasic{},
-	// qoraclemodule.AppModuleBasic{},
 	ica.AppModuleBasic{},
 	ibcwasm.AppModuleBasic{},
 	wasm.AppModuleBasic{},
-	qtransfer.AppModuleBasic{},
 	tfmodule.AppModuleBasic{},
-	qvestingmodule.AppModuleBasic{},
 	authzmodule.AppModuleBasic{},
 	consensus.AppModuleBasic{},
 	ibctm.AppModuleBasic{},
@@ -193,12 +178,9 @@ func orderBeginBlockers() []string {
 		ibchost.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		// qoraclemoduletypes.ModuleName,
-		// qtransfertypes.ModuleName,
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
 		tftypes.ModuleName,
-		// qvestingmoduletypes.ModuleName,
 	}
 }
 
@@ -208,8 +190,6 @@ func orderEndBlockers() []string {
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibcexported.ModuleName,
-
-		// qtransfertypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibchost.ModuleName,
 		feegrant.ModuleName,
@@ -229,7 +209,6 @@ func orderEndBlockers() []string {
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
 		tftypes.ModuleName,
-		// qvestingmoduletypes.ModuleName,
 		authztypes.ModuleName,
 		consensusparamtypes.ModuleName,
 	}
@@ -259,7 +238,6 @@ func orderInitBlockers() []string {
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		// qoraclemoduletypes.ModuleName,
 		icatypes.ModuleName,
 		vestingtypes.ModuleName,
 		feegrant.ModuleName,
@@ -269,9 +247,7 @@ func orderInitBlockers() []string {
 		// wasm after ibc transfer
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
-		qtransfertypes.ModuleName,
 		tftypes.ModuleName,
-		qvestingmoduletypes.ModuleName,
 		authztypes.ModuleName,
 		consensusparamtypes.ModuleName,
 	}

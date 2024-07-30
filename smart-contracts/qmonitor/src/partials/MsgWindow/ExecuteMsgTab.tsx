@@ -40,7 +40,7 @@ const ExecuteMsgTab = () => {
   }
 
   function sendExecuteMsg (msg: MsgMetadata) {
-    // quasarnoded tx wasm execute $ADDR "$MSG1" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
+    // quasard tx wasm execute $ADDR "$MSG1" --from alice --gas-prices 10$FEE_DENOM --gas auto --gas-adjustment 1.3 $NODE --chain-id $CHAIN_ID
     const envConfig = getEnv(env)
 
     setCommand({

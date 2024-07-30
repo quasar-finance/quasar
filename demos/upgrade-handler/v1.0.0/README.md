@@ -16,7 +16,7 @@ After the execution:
 
 - Now that the governance proposal has been success the chain should have been halted. You can check the quasar.log file
   expecting to find: UPGRADE "v0.1.1" NEEDED at height: 30: CONSENSUS FAILURE!!!
-- You can now "make install" the new version and check that blocks are produced as expected by running "quasarnoded
+- You can now "make install" the new version and check that blocks are produced as expected by running "quasard
   start". It should start producing blocks from height 31.
 
 ## Usage
@@ -85,8 +85,8 @@ Each of these steps involves both technical and functional testing to verify tha
 ## Steps
 
 - Download v0.1.1 from Quasar-preview repository
-- Put this in your path and name it as `quasarnoded-go-18`
-- Checkout to the v1 of Quasar and install it locally as `quasarnoded`
+- Put this in your path and name it as `quasard-go-18`
+- Checkout to the v1 of Quasar and install it locally as `quasard`
 - Once the binaries are in place : 
   - Run :
   ```shell

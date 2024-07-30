@@ -1,4 +1,5 @@
 version: v1
+name: buf.build/quasar-finance/quasar
 deps:
   - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/cosmos-sdk:v0.47.0
@@ -11,7 +12,23 @@ breaking:
 lint:
   use:
     - DEFAULT
+    - COMMENTS
+    - FILE_LOWER_SNAKE_CASE
   except:
+    - UNARY_RPC
+    - COMMENT_FIELD
+    - COMMENT_MESSAGE
+    - COMMENT_SERVICE
+    - COMMENT_RPC
     - SERVICE_SUFFIX
+    - PACKAGE_VERSION_SUFFIX
     - RPC_REQUEST_STANDARD_NAME
+    - PACKAGE_SAME_GO_PACKAGE
+    - PACKAGE_SAME_DIRECTORY
+    - PACKAGE_DIRECTORY_MATCH
     - RPC_RESPONSE_STANDARD_NAME
+    - COMMENT_ENUM_VALUE
+    - COMMENT_ENUM
+    - ENUM_ZERO_VALUE_SUFFIX
+  ignore:
+    - tendermint

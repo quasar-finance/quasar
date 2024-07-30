@@ -6,7 +6,6 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/quasarlabs/quasarnode/app/keepers"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
 )
 
 // qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
@@ -18,7 +17,6 @@ import (
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
-	bpm upgrades.BaseAppParamManager,
 	keepers *keepers.AppKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
