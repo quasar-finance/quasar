@@ -141,8 +141,6 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
-    let tokens_provided =
-        get_tokens_provided(unused_pair_balances.0, unused_pair_balances.1, &pool_config)?;
 
     // if only one token is being deposited, and we are moving into a position where any amount of the other token is needed,
     // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
@@ -176,7 +174,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            tokens_provided,
+            get_tokens_provided(unused_pair_balances.0, unused_pair_balances.1, &pool_config)?,
             Uint128::zero(),
             Uint128::zero(),
         )?;
@@ -238,7 +236,7 @@ pub fn do_swap_deposit_merge(
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
-    tokens_provided: (Uint128, Uint128),
+    mut tokens_provided: (Uint128, Uint128),
     position_id: Option<u64>,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
@@ -247,16 +245,15 @@ pub fn do_swap_deposit_merge(
         return Err(ContractError::SwapInProgress {});
     }
 
-    let (balance0, balance1) = (
-        tokens_provided.0.checked_multiply_ratio(
-            ratio_of_swappable_funds_to_use.numerator(),
-            ratio_of_swappable_funds_to_use.denominator(),
-        )?,
-        tokens_provided.1.checked_multiply_ratio(
-            ratio_of_swappable_funds_to_use.numerator(),
-            ratio_of_swappable_funds_to_use.denominator(),
-        )?,
-    );
+    // Mutate tokens_provided accordingly to the ratio_of_swappable_funds
+    tokens_provided.0 = tokens_provided.0.checked_multiply_ratio(
+        ratio_of_swappable_funds_to_use.numerator(),
+        ratio_of_swappable_funds_to_use.denominator(),
+    )?;
+    tokens_provided.1 = tokens_provided.1.checked_multiply_ratio(
+        ratio_of_swappable_funds_to_use.numerator(),
+        ratio_of_swappable_funds_to_use.denominator(),
+    )?;
 
     let mut target_range_position_ids = vec![];
     if let Some(pos_id) = position_id {
@@ -277,7 +274,7 @@ pub fn do_swap_deposit_merge(
         .add_attribute("action", "do_swap_deposit_merge");
 
     // if we have no tokens to swap, we can just save the position id and exit
-    if balance0.is_zero() && balance1.is_zero() {
+    if tokens_provided.0.is_zero() && tokens_provided.1.is_zero() {
         let position = POSITION.load(deps.storage)?;
 
         // if we have not tokens to swap, that means all tokens we correctly used in the create position
@@ -303,8 +300,8 @@ pub fn do_swap_deposit_merge(
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
-    let (token_in, swap_direction, _) =
-        calculate_token_in_direction(pool_config, pool_details, position, balance0, balance1)?;
+    let (token_in, swap_direction, _left_over_amount) =
+        calculate_token_in_direction(pool_config, pool_details, position, tokens_provided)?;
 
     let swap_calc_result = calculate_swap_amount(
         &deps,

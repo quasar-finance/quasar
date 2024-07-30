@@ -148,48 +148,47 @@ pub fn calculate_token_in_direction(
     pool_config: PoolConfig,
     pool_details: Pool,
     position: OsmoPosition,
-    balance0: Uint128,
-    balance1: Uint128,
+    tokens_provided: (Uint128, Uint128),
 ) -> Result<(Coin, SwapDirection, Uint128), ContractError> {
-    if !balance0.is_zero() {
+    if !tokens_provided.0.is_zero() {
         // range is above current tick
         let token_in = if pool_details.current_tick > position.upper_tick {
             Coin {
                 denom: pool_config.token0.clone(),
-                amount: balance0,
+                amount: tokens_provided.0,
             }
         } else {
             Coin {
                 denom: pool_config.token0.clone(),
                 amount: get_single_sided_deposit_0_to_1_swap_amount(
-                    balance0,
+                    tokens_provided.0,
                     position.lower_tick,
                     pool_details.current_tick,
                     position.upper_tick,
                 )?,
             }
         };
-        let left_over_amount = balance0.checked_sub(token_in.amount)?;
+        let left_over_amount = tokens_provided.0.checked_sub(token_in.amount)?;
         Ok((token_in, SwapDirection::ZeroToOne, left_over_amount))
     } else {
         // current tick is above range
         let token_in = if pool_details.current_tick < position.lower_tick {
             Coin {
                 denom: pool_config.token1.clone(),
-                amount: balance1,
+                amount: tokens_provided.1,
             }
         } else {
             Coin {
                 denom: pool_config.token1.clone(),
                 amount: get_single_sided_deposit_1_to_0_swap_amount(
-                    balance1,
+                    tokens_provided.1,
                     position.lower_tick,
                     pool_details.current_tick,
                     position.upper_tick,
                 )?,
             }
         };
-        let left_over_amount = balance1.checked_sub(token_in.amount)?;
+        let left_over_amount = tokens_provided.1.checked_sub(token_in.amount)?;
         Ok((token_in, SwapDirection::OneToZero, left_over_amount))
     }
 }
@@ -206,6 +205,7 @@ pub fn calculate_swap_amount(
 ) -> Result<SwapCalculationResult, ContractError> {
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
+    // TODO: Decide if we want the twap here, or if we want to pass it as an argument
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,

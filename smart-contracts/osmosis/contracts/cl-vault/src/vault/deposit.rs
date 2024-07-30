@@ -1,9 +1,6 @@
 use crate::{
     helpers::{
-        getters::{
-            get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount,
-        },
+        getters::{get_asset0_value, get_depositable_tokens},
         msgs::refund_bank_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
@@ -88,8 +85,7 @@ pub(crate) fn execute_any_deposit(
         pool_config,
         pool_details,
         position,
-        swappable_amount.0,
-        swappable_amount.1,
+        (deposit_info.base_deposit, deposit_info.quote_deposit),
     )?;
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
