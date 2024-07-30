@@ -91,10 +91,6 @@ pub fn execute_update_range_ticks(
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
-    // prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE
-    if MODIFY_RANGE_STATE.may_load(deps.storage)?.is_some() {
-        return Err(ContractError::ModifyRangeStateAlreadyExists {});
-    }
     // save the new range state
     MODIFY_RANGE_STATE.save(deps.storage, &Some(modify_range_config))?;
 

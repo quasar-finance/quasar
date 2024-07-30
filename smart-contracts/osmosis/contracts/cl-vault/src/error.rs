@@ -54,9 +54,6 @@ pub enum ContractError {
     #[error("This message does no accept funds")]
     NonPayable {},
 
-    #[error("Modify range state already exists")]
-    ModifyRangeStateAlreadyExists {},
-
     // Add any other custom errors you like here.
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 
