@@ -62,7 +62,6 @@ pub(crate) fn execute_any_deposit(
 
     let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
 
-    // If we have no refunds let's proceed for the deposit
     if deposit_info.base_refund.is_zero() && deposit_info.quote_refund.is_zero() {
         return execute_deposit(
             &mut deps,
