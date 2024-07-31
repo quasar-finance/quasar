@@ -22,10 +22,10 @@ pub enum SwapDirection {
 #[cosmwasm_schema::cw_serde]
 pub struct SwapOperation {
     pub token_in_denom: String,
-    pub pool_id_token_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub pool_id_token_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
-    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
+    pub pool_id_base: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_quote: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_base: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_quote: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// SwapCalculationResult holds the result of a swap calculation
@@ -89,11 +89,11 @@ pub fn execute_swap_non_vault_funds(
         );
 
         // TODO: Validate that the swap_operation.pool_id_0 is about token_in_denom and pool_config.token0 assets or throw error
-        let twap_price_token_0 = get_twap_price(
+        let twap_price_base = get_twap_price(
             &deps.querier,
             env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
-            swap_operation.pool_id_token_0,
+            swap_operation.pool_id_base,
             token_in_denom.to_string(),
             pool_config.clone().token0,
         )?;
@@ -107,19 +107,19 @@ pub fn execute_swap_non_vault_funds(
                     amount: to_token0_amount,
                 },
                 vault_config.swap_max_slippage,
-                Some(swap_operation.pool_id_token_0),
-                swap_operation.forced_swap_route_token_0,
-                twap_price_token_0,
+                Some(swap_operation.pool_id_base),
+                swap_operation.forced_swap_route_base,
+                twap_price_base,
             )?
             .swap_msg,
         );
 
         // TODO: Validate that the swap_operation.pool_id_1 is about token_in_denom and pool_config.token1 assets or throw error
-        let twap_price_token_1 = get_twap_price(
+        let twap_price_quote = get_twap_price(
             &deps.querier,
             env.block.time,
             twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
-            swap_operation.pool_id_token_1,
+            swap_operation.pool_id_quote,
             token_in_denom.to_string(),
             pool_config.clone().token1,
         )?;
@@ -133,9 +133,9 @@ pub fn execute_swap_non_vault_funds(
                     amount: to_token1_amount,
                 },
                 vault_config.swap_max_slippage,
-                Some(swap_operation.pool_id_token_1),
-                swap_operation.forced_swap_route_token_1,
-                twap_price_token_1,
+                Some(swap_operation.pool_id_quote),
+                swap_operation.forced_swap_route_quote,
+                twap_price_quote,
             )?
             .swap_msg,
         );
@@ -371,10 +371,10 @@ mod tests {
 
         let swap_operations = vec![SwapOperation {
             token_in_denom: "uscrt".to_string(),
-            pool_id_token_0: 1,
-            pool_id_token_1: 1,
-            forced_swap_route_token_0: None,
-            forced_swap_route_token_1: None,
+            pool_id_base: 1,
+            pool_id_quote: 1,
+            forced_swap_route_base: None,
+            forced_swap_route_quote: None,
         }];
 
         let response =

@@ -715,7 +715,7 @@
           "token_in_denom"
         ],
         "properties": {
-          "forced_swap_route_token_0": {
+          "forced_swap_route_base": {
             "type": [
               "array",
               "null"
@@ -724,7 +724,7 @@
               "$ref": "#/definitions/SwapAmountInRoute"
             }
           },
-          "forced_swap_route_token_1": {
+          "forced_swap_route_quote": {
             "type": [
               "array",
               "null"
