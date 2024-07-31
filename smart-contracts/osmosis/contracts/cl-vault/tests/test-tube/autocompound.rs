@@ -1,4 +1,3 @@
-use crate::setup::SPREAD_FACTOR_HIGH;
 use crate::setup::{
     calculate_expected_refunds, fixture_dex_router, get_balance_amount,
     get_event_attributes_by_ty_and_key, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
@@ -19,7 +18,7 @@ use cl_vault::query::{
     AssetsBalanceResponse, TotalVaultTokenSupplyResponse, UserSharesBalanceResponse,
 };
 use cl_vault::vault::swap::SwapOperation;
-use cosmwasm_std::{assert_approx_eq, Decimal};
+use cosmwasm_std::assert_approx_eq;
 use cosmwasm_std::{Coin, Uint128};
 use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
 use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
@@ -56,7 +55,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         )
         .unwrap();
 
-    // Get the initial vault token shares LP tokens supply right after the vault deployment
     // Assert that this is equal to the burnt amount of the initial position.
     let initial_total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
@@ -98,9 +96,9 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Get the balance of the contract before any user deposit
     // This will be useful after all deposits to assert the contract balance
-    let balance_before_contract_base =
+    let initial_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
-    let balance_before_contract_quote =
+    let initial_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
 
     // Execute exact_deposit for each account using the same amount of tokens for each asset and user
@@ -245,7 +243,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Asssert that contract balances for base and quote denoms are consistent with the amount of funds deposited and refunded by users
     // for base denom
     let expected_balance_base_after_deposit = users_total_deposit_per_asset
-        .checked_add(balance_before_contract_base) // this takes in account of the INITIAL_POSITION_BURN
+        .checked_add(initial_base_balance)
         .unwrap()
         .checked_sub(refund0_amount_total.u128())
         .unwrap();
@@ -258,7 +256,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     );
     // for quote denom
     let expected_balance_quote_after_deposit = users_total_deposit_per_asset
-        .checked_add(balance_before_contract_quote) // this takes in account of the INITIAL_POSITION_BURN
+        .checked_add(initial_quote_balance)
         .unwrap()
         .checked_sub(refund1_amount_total.u128())
         .unwrap();
@@ -293,8 +291,8 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-    // // Calculate the numerator and denominator for the deposit_ratio obtained by the fixture
-    // // This allows to know the current position balance so we can predict how many token should be swapped into base, and how much into quote
+    // Calculate the numerator and denominator for the deposit_ratio obtained by the fixture
+    // This allows to know the current position balance so we can predict how many token should be swapped into base, and how much into quote
     // Consider that here we are hardcoding a 0.01 fee which is the one Balancer pool appplies over the swap, no slippage taken in account by that tho.
     let numerator = ((1.0 - 0.01) * 1_000_000.0) as u128;
     let denominator = 1_000_000u128;
