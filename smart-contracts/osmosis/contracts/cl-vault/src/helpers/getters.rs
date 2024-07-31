@@ -27,8 +27,8 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 pub fn get_asset0_value(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    token0_amount: Uint128,
-    token1_amount: Uint128,
+    token0: Uint128,
+    token1: Uint128,
 ) -> Result<Uint128, ContractError> {
     let pool_config = POOL_CONFIG.load(storage)?;
 
@@ -38,9 +38,8 @@ pub fn get_asset0_value(
         .spot_price
         .parse()?;
 
-    let total = token0_amount.checked_add(
-        token1_amount.multiply_ratio(spot_price.denominator(), spot_price.numerator()),
-    )?;
+    let total = token0
+        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
 
     Ok(total)
 }
@@ -125,15 +124,16 @@ pub fn get_depositable_tokens(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
-    compute_deposit_and_refund_tokens(&assets, (token0.amount, token1.amount))
+    compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount)
 }
 
 fn compute_deposit_and_refund_tokens(
     assets: &PoolAssets,
-    tokens_provided: (Uint128, Uint128),
+    provided_base: Uint128,
+    provided_quote: Uint128,
 ) -> Result<DepositInfo, ContractError> {
-    let provided_base_amount: Uint256 = tokens_provided.0.into();
-    let provided_quote_amount: Uint256 = tokens_provided.1.into();
+    let provided_base_amount: Uint256 = provided_base.into();
+    let provided_quote_amount: Uint256 = provided_quote.into();
 
     let base_deposit = if assets.quote.amount.is_zero() {
         provided_base_amount
@@ -417,7 +417,7 @@ mod tests {
             quote: token1.clone(),
         };
         let result =
-            compute_deposit_and_refund_tokens(&assets, (token0.amount, token1.amount)).unwrap();
+            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -448,7 +448,7 @@ mod tests {
             quote: token1.clone(),
         };
         let result =
-            compute_deposit_and_refund_tokens(&assets, (token0.amount, token1.amount)).unwrap();
+            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -479,7 +479,7 @@ mod tests {
             base: token0.clone(),
         };
         let result =
-            compute_deposit_and_refund_tokens(&assets, (token0.amount, token1.amount)).unwrap();
+            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -508,7 +508,8 @@ mod tests {
         };
         let result = compute_deposit_and_refund_tokens(
             &assets,
-            (coin(2000, "token0").amount, coin(5000, "token1").amount),
+            coin(2000, "token0").amount,
+            coin(5000, "token1").amount,
         )
         .unwrap();
         assert_eq!(
@@ -539,7 +540,8 @@ mod tests {
         };
         let result = compute_deposit_and_refund_tokens(
             &assets,
-            (coin(2000, "token0").amount, coin(3000, "token1").amount),
+            coin(2000, "token0").amount,
+            coin(3000, "token1").amount,
         )
         .unwrap();
         assert_eq!(
