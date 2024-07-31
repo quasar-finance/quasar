@@ -293,27 +293,20 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-    // Swap non vault funds to vault funds
-    // 50000000000ustride to 49500000000uatom as spot price 1.0 less swap_fees
-    // 50000000000ustride to 49500000000uosmo as spot price 1.0 less swap_fees
-    // let expected_amount_rewards = 49500000000u128;
-
-    // Calculate the numerator and denominator for the ratio
+    // Calculate the numerator and denominator for the deposit_ratio obtained by the fixture
+    // This allows to know the current position balance so we can predict how many token should be swapped into base, and how much into quote
     let numerator = ((1.0 - SPREAD_FACTOR_HIGH) * 1_000_000.0) as u128;
     let denominator = 1_000_000u128;
     let deposit_ratio_quote = 1.0 - deposit_ratio;
-
-    // Use checked_multiply_ratio with the calculated numerator and denominator
     let expected_amount_rewards_to_both_assets = Uint128::new(DENOM_REWARD_AMOUNT)
         .checked_multiply_ratio(numerator, denominator)
         .expect("Multiplication overflow");
-
     let expected_amount_rewards_to_base = Uint128::from(
         (expected_amount_rewards_to_both_assets.u128() as f64 * deposit_ratio) as u128,
-    ); // balance * ratio computed by current position balancing
+    );
     let expected_amount_rewards_to_quote = Uint128::from(
         (expected_amount_rewards_to_both_assets.u128() as f64 * deposit_ratio_quote) as u128,
-    ); // balance * ratio computed by current position balancing
+    );
 
     // Execute the swap non vault funds
     // We want to swap DENOM_REWARDS and pass the SwapOperation information to perform the swap using the dex-router
