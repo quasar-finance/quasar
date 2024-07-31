@@ -197,7 +197,7 @@ pub fn mock_deps_with_querier_with_balance(
                 claimable_incentives: vec![],
                 forfeited_incentives: vec![],
             },
-            500,
+            0,
             balances,
         ),
         custom_query_type: PhantomData,

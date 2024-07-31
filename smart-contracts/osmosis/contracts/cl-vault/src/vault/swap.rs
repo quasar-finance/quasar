@@ -225,11 +225,16 @@ pub fn calculate_swap_amount(
         .amount
         .checked_multiply_ratio(amount_out_ratio.0, amount_out_ratio.1)?;
 
-    // Compute the minimum amount based on the max slippage
+    // compute the minimum amount based on the max slippage
+    // min_token_out_amount = token_out_amount * (1 - max_slippage)
+    let min_token_out_amount = token_out_amount.checked_multiply_ratio(
+        Decimal::one().checked_sub(max_slippage)?.numerator(),
+        Decimal::one().denominator(),
+    )?;
+
     let min_token_out = Coin {
         denom: denom_out.clone(),
-        amount: token_out_amount
-            .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?,
+        amount: min_token_out_amount,
     };
 
     let swap_msg = swap_msg(
@@ -255,15 +260,17 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        state::{VaultConfig, VAULT_CONFIG},
+        state::{VaultConfig, POSITION, VAULT_CONFIG},
+        test_helpers::mock_deps_with_querier_with_balance,
         vault::swap::{execute_swap_non_vault_funds, SwapOperation, SwapParams},
     };
     use cosmwasm_std::{
-        testing::{mock_dependencies_with_balance, mock_env, mock_info},
+        coin,
+        testing::{mock_dependencies_with_balance, mock_env, mock_info, MOCK_CONTRACT_ADDR},
         Addr, Coin, CosmosMsg, Decimal, Uint128,
     };
 
-    use crate::state::{PoolConfig, POOL_CONFIG};
+    use crate::state::{PoolConfig, Position, POOL_CONFIG};
 
     fn mock_pool_config() -> PoolConfig {
         PoolConfig {
@@ -273,7 +280,14 @@ mod tests {
         }
     }
 
-    // Mock vault configuration
+    fn mock_vault_position() -> Position {
+        Position {
+            position_id: 1,
+            join_time: 1,
+            claim_after: None,
+        }
+    }
+
     fn mock_vault_config() -> VaultConfig {
         VaultConfig {
             swap_max_slippage: Decimal::from_str("0.005").unwrap(),
@@ -335,16 +349,19 @@ mod tests {
 
     #[test]
     fn test_execute_swap_non_vault_funds() {
-        let mut deps = mock_dependencies_with_balance(&[Coin {
-            denom: "uscrt".to_string(),
-            amount: Uint128::new(100),
-        }]);
-        let env = mock_env();
         let info = mock_info("tester", &[]);
+        let mut deps = mock_deps_with_querier_with_balance(
+            &info,
+            &[(MOCK_CONTRACT_ADDR, &[coin(1000000, "uscrt")])],
+        );
+        let env = mock_env();
 
         // Save the mock configurations
         POOL_CONFIG
             .save(deps.as_mut().storage, &mock_pool_config())
+            .unwrap();
+        POSITION
+            .save(deps.as_mut().storage, &mock_vault_position())
             .unwrap();
         VAULT_CONFIG
             .save(deps.as_mut().storage, &mock_vault_config())
@@ -361,35 +378,50 @@ mod tests {
         let response =
             execute_swap_non_vault_funds(deps.as_mut(), env, swap_operations, None).unwrap();
 
-        // Check response attributes
+        // Check messages lenght and response attributes
+        assert_eq!(response.messages.len(), 2);
         assert_eq!(response.attributes[0].value, "execute");
         assert_eq!(response.attributes[1].value, "swap_non_vault_funds");
 
-        // Check messages
-        assert_eq!(response.messages.len(), 2);
+        // Expected minimum amount after slippage adjustment (497500 from 500000) at 0.05% slippage accepted
+        // TODO: We have "balance" variable which is a 1000000u128, we can do * 0.995 and divide 2
+        let token_out_min_amount_expected = Uint128::new(497500);
 
-        let token_out_min_amount_expected = Uint128::new(4975); // Expected minimum amount after slippage adjustment (49.75 from 50)
+        // Assert attributes from the messages we sent for swaps
+        if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[0].msg {
+            let msg_swap =
+                osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(
+                    value.clone(),
+                )
+                .unwrap();
+            assert_eq!(msg_swap.token_in.clone().unwrap().denom, "uscrt");
+            assert_eq!(msg_swap.token_in.unwrap().amount, "500000");
+            assert_eq!(msg_swap.routes[0].pool_id, 1);
+            assert_eq!(msg_swap.routes[0].token_out_denom, "token0");
+            assert_eq!(
+                msg_swap.token_out_min_amount,
+                token_out_min_amount_expected.to_string()
+            );
+        } else {
+            panic!("Unexpected message type: {:?}", response.messages[0].msg);
+        }
 
-        // if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[0].msg {
-        //     let msg_swap = osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(value).unwrap();
-        //     assert_eq!(msg_swap.token_in.clone().unwrap().denom, "uscrt");
-        //     assert_eq!(msg_swap.token_in.unwrap().amount, "50");
-        //     assert_eq!(msg_swap.routes[0].pool_id, 1);
-        //     assert_eq!(msg_swap.routes[0].token_out_denom, "token0");
-        //     assert_eq!(msg_swap.token_out_min_amount, token_out_min_amount_expected.to_string());
-        // } else {
-        //     panic!("Unexpected message type: {:?}", response.messages[0].msg);
-        // }
-
-        // if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[1].msg {
-        //     let msg_swap = osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(value).unwrap();
-        //     assert_eq!(msg_swap.token_in.clone().unwrap().denom, "uscrt");
-        //     assert_eq!(msg_swap.token_in.unwrap().amount, "50");
-        //     assert_eq!(msg_swap.routes[0].pool_id, 1);
-        //     assert_eq!(msg_swap.routes[0].token_out_denom, "token1");
-        //     assert_eq!(msg_swap.token_out_min_amount, token_out_min_amount_expected.to_string());
-        // } else {
-        //     panic!("Unexpected message type: {:?}", response.messages[1].msg);
-        // }
+        if let CosmosMsg::Stargate { type_url: _, value } = &response.messages[1].msg {
+            let msg_swap =
+                osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(
+                    value.clone(),
+                )
+                .unwrap();
+            assert_eq!(msg_swap.token_in.clone().unwrap().denom, "uscrt");
+            assert_eq!(msg_swap.token_in.unwrap().amount, "500000");
+            assert_eq!(msg_swap.routes[0].pool_id, 1);
+            assert_eq!(msg_swap.routes[0].token_out_denom, "token1");
+            assert_eq!(
+                msg_swap.token_out_min_amount,
+                token_out_min_amount_expected.to_string()
+            );
+        } else {
+            panic!("Unexpected message type: {:?}", response.messages[1].msg);
+        }
     }
 }
