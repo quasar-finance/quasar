@@ -48,22 +48,22 @@ pub fn get_asset0_value(
 pub fn get_position_balance(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-) -> Result<(f64, f64), ContractError> {
+) -> Result<(Decimal, Decimal), ContractError> {
     let position = get_position(storage, querier)?;
     let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
     let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
     // Handle cases where either asset amount is zero
     if asset0_amount.is_zero() && asset1_amount.is_zero() {
-        return Ok((0.0, 0.0));
+        return Ok((Decimal::zero(), Decimal::zero()));
     }
 
     // Get the total amount of the vault's position in asset0 denom
     let asset_0_value = get_asset0_value(storage, querier, asset0_amount, asset1_amount)?;
 
-    // Calculate the ratio of the vault's position in asset0 and asset1
-    let asset_0_ratio = asset0_amount.u128() as f64 / asset_0_value.u128() as f64;
-    let asset_1_ratio = asset1_amount.u128() as f64 / asset_0_value.u128() as f64;
+    // Calculate the ratio of the vault's position in asset0 and asset1 using Decimal for safe division
+    let asset_0_ratio = Decimal::from_ratio(asset0_amount, asset_0_value);
+    let asset_1_ratio = Decimal::from_ratio(asset1_amount, asset_0_value);
 
     Ok((asset_0_ratio, asset_1_ratio))
 }

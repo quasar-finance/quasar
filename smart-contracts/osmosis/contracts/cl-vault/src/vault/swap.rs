@@ -78,13 +78,15 @@ pub fn execute_swap_non_vault_funds(
         }
 
         // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
-        // TODO: This new get_position_balance helper looks redundant with get_depositable_tokens_impl, can we reuse this instead?
         let position_balance = get_position_balance(deps.storage, &deps.querier)?;
-
-        let to_token0_amount =
-            Uint128::from((balance_in_contract.u128() as f64 * position_balance.0) as u128); // balance * ratio computed by current position balancing
-        let to_token1_amount =
-            Uint128::from((balance_in_contract.u128() as f64 * position_balance.1) as u128); // balance * ratio computed by current position balancing
+        let to_token0_amount = Uint128::from(
+            (balance_in_contract.u128() as f64
+                * position_balance.0.to_string().parse::<f64>().unwrap()) as u128,
+        );
+        let to_token1_amount = Uint128::from(
+            (balance_in_contract.u128() as f64
+                * position_balance.1.to_string().parse::<f64>().unwrap()) as u128,
+        );
 
         // TODO: Validate that the swap_operation.pool_id_0 is about token_in_denom and pool_config.token0 assets or throw error
         let twap_price_token_0 = get_twap_price(
