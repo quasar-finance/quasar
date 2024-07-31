@@ -186,8 +186,8 @@ fn execute_deposit(
     deps: &mut DepsMut,
     env: Env,
     recipient: Addr,
-    deposit: (Uint128, Uint128), // TODO: This could be DepositInfo struct
-    refund: (Coin, Coin), // TODO: This could be DepositInfo struct assuming .denom0 and .denom1
+    deposit: (Uint128, Uint128), // intended as base, quote
+    refund: (Coin, Coin), // intended as base, quote
 ) -> Result<Response, ContractError> {
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
