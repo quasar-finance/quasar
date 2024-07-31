@@ -489,10 +489,10 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
             // Assert after balances expecting the withdrawn amount
             // includes the compounded funds and idle funds from the vault position and balance
-            let balances_after_withdraw_base_denom =
+            let after_withdraw_base_balance =
                 get_balance_amount(&app, account.address().to_string(), DENOM_BASE.to_string());
             assert_approx_eq!(
-                balances_after_withdraw_base_denom
+                after_withdraw_base_balance
                     .checked_sub(before_withdraw_base_balance)
                     .unwrap(),
                 after_autocompound_total_assets.balances[0]
@@ -501,10 +501,10 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                     .div(ACCOUNTS_NUM as u128),
                 &deposit_ratio_approx
             );
-            let balances_after_withdraw_quote_denom =
+            let after_withdraw_quote_balance =
                 get_balance_amount(&app, account.address().to_string(), DENOM_QUOTE.to_string());
             assert_approx_eq!(
-                balances_after_withdraw_quote_denom
+                after_withdraw_quote_balance
                     .checked_sub(before_withdraw_quote_balance)
                     .unwrap(),
                 after_autocompound_total_assets.balances[1]
@@ -519,7 +519,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     }
 
     // Assert total vault shares after autocompounding tokens.
-    let total_vault_token_supply_after_users_redeem: TotalVaultTokenSupplyResponse = wasm
+    let after_withdraw_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::TotalVaultTokenSupply {},
@@ -527,6 +527,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         .unwrap();
     assert_eq!(
         INITIAL_POSITION_BURN.mul(2u128),
-        total_vault_token_supply_after_users_redeem.total.u128()
+        after_withdraw_vault_token_supply.total.u128()
     );
 }
