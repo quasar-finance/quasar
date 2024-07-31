@@ -153,10 +153,8 @@ pub fn handle_instantiate_create_position_reply(
     let asset_value = get_asset0_value(
         deps.storage,
         &deps.querier,
-        (
-            assets[0].amount + free_asset0.amount,
-            assets[1].amount + free_asset1.amount,
-        ),
+        assets[0].amount + free_asset0.amount,
+        assets[1].amount + free_asset1.amount,
     )?;
 
     let vault_denom = VAULT_DENOM.load(deps.storage)?;

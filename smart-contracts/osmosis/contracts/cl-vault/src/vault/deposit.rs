@@ -94,12 +94,11 @@ pub(crate) fn execute_any_deposit(
         ),
     )?;
 
-    // Get TWAP price
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
-        24u64, // TODO: Check if we need a vault_config.twap_window_seconds as default as we do for slippage
+        0u64,
         pool_config.pool_id,
         pool_config.token0,
         pool_config.token1,
@@ -194,11 +193,12 @@ fn execute_deposit(
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
-    let user_value = get_asset0_value(deps.storage, &deps.querier, (deposit.0, deposit.1))?;
+    let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
     let refund_value = get_asset0_value(
         deps.storage,
         &deps.querier,
-        (refund.0.amount, refund.1.amount),
+        refund.0.amount,
+        refund.1.amount,
     )?;
 
     // calculate the amount of shares we can mint for this
@@ -206,7 +206,8 @@ fn execute_deposit(
     let total_assets_value = get_asset0_value(
         deps.storage,
         &deps.querier,
-        (total_assets.token0.amount, total_assets.token1.amount),
+        total_assets.token0.amount,
+        total_assets.token1.amount,
     )?;
 
     // total_vault_shares.is_zero() should never be zero. This should ideally always enter the else and we are just sanity checking.
