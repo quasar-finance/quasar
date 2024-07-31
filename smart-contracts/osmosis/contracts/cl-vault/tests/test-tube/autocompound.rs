@@ -349,7 +349,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Get the contract balances for base and quote denoms after the swap of non vault funds
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
-    let after_swap_base_balance =
+    let _after_swap_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     // assert_approx_eq!(
     //     after_deposit_base_balance
@@ -358,7 +358,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     //     after_swap_base_balance,
     //     &deposit_ratio_approx
     // );
-    let after_swap_quote_balance =
+    let _after_swap_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     // assert_approx_eq!(
     //     after_deposit_quote_balance
@@ -369,7 +369,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // );
 
     // Query contract to convert the same amount of LP token supply into assets after swapping non vault funds
-    let after_swap_total_assets: AssetsBalanceResponse = wasm
+    let _after_swap_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::ConvertToAssets {
@@ -408,9 +408,9 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Get contract balances after the autocompound
     // Assert there are no funds left in the contract after autocompound
-    let after_autocompound_base_balance =
+    let _after_autocompound_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
-    let after_autocompound_quote_balance =
+    let _after_autocompound_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     // assert_approx_eq!(
     //     after_autocompound_base_balance,
