@@ -202,7 +202,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Get total amount of vault token supply after the deposits of users
     // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
-    let total_vault_token_supply_after_deposit: TotalVaultTokenSupplyResponse = wasm
+    let after_deposit_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::TotalVaultTokenSupply {},
@@ -212,16 +212,16 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         total_minted_shares_from_deposits
             .checked_add(initial_total_vault_token_supply.total)
             .unwrap(),
-        total_vault_token_supply_after_deposit.total
+        after_deposit_vault_token_supply.total
     );
 
     // Get the worth of assets of the total current supply of vault tokens
     // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
-    let shares_assets: AssetsBalanceResponse = wasm
+    let after_deposit_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::ConvertToAssets {
-                amount: total_vault_token_supply_after_deposit.total,
+                amount: after_deposit_vault_token_supply.total,
             },
         )
         .unwrap();
@@ -230,41 +230,38 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
             .add(INITIAL_POSITION_BURN),
-        shares_assets.balances[0].amount.u128()
+        after_deposit_total_assets.balances[0].amount.u128()
     );
     assert_eq!(
         users_total_deposit_per_asset
             .sub(refund1_amount_total.u128())
             .add(INITIAL_POSITION_BURN),
-        shares_assets.balances[1].amount.u128()
+        after_deposit_total_assets.balances[1].amount.u128()
     );
 
-    // Get the current contract balance again after deposits
     // Asssert that contract balances for base and quote denoms are consistent with the amount of funds deposited and refunded by users
-    // for base denom
-    let expected_balance_base_after_deposit = users_total_deposit_per_asset
+    let expected_after_deposit_base_balance = users_total_deposit_per_asset
         .checked_add(initial_base_balance)
         .unwrap()
         .checked_sub(refund0_amount_total.u128())
         .unwrap();
 
-    let contract_balance_base =
+    let after_deposit_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     assert_eq!(
-        expected_balance_base_after_deposit.to_string(),
-        contract_balance_base.to_string()
+        expected_after_deposit_base_balance.to_string(),
+        after_deposit_base_balance.to_string()
     );
-    // for quote denom
-    let expected_balance_quote_after_deposit = users_total_deposit_per_asset
+    let expected_after_deposit_quote_balance = users_total_deposit_per_asset
         .checked_add(initial_quote_balance)
         .unwrap()
         .checked_sub(refund1_amount_total.u128())
         .unwrap();
-    let contract_balance_quote =
+    let after_deposit_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     assert_eq!(
-        expected_balance_quote_after_deposit.to_string(),
-        contract_balance_quote.to_string()
+        expected_after_deposit_quote_balance.to_string(),
+        after_deposit_quote_balance.to_string()
     );
 
     // Airdrop some DENOM_REWARD funds to the contract that are not token0 nor token1 from vault position
@@ -280,13 +277,11 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         &admin,
     )
     .unwrap();
-
-    // Assert contract balance about the just airdropped non vault token funds
-    let contract_balance_rewards =
+    let initial_rewards_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
     assert_eq!(
         DENOM_REWARD_AMOUNT.to_string(),
-        contract_balance_rewards.to_string(),
+        initial_rewards_balance.to_string(),
     );
 
     // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
@@ -297,18 +292,16 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     let numerator = ((1.0 - 0.01) * 1_000_000.0) as u128;
     let denominator = 1_000_000u128;
 
-    let expected_amount_rewards_to_both_assets = Uint128::new(DENOM_REWARD_AMOUNT)
+    let total_rewards_swap_amount = Uint128::new(DENOM_REWARD_AMOUNT)
         .checked_multiply_ratio(numerator, denominator)
         .expect("Multiplication overflow");
 
     // Split based on current position balance
     let deposit_ratio_quote = 1.0 - deposit_ratio;
-    let expected_amount_rewards_to_base = Uint128::from(
-        (expected_amount_rewards_to_both_assets.u128() as f64 * deposit_ratio) as u128,
-    );
-    let expected_amount_rewards_to_quote = Uint128::from(
-        (expected_amount_rewards_to_both_assets.u128() as f64 * deposit_ratio_quote) as u128,
-    );
+    let rewards_swap_amount_base =
+        Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio) as u128);
+    let rewards_swap_amount_quote =
+        Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio_quote) as u128);
 
     // Execute the swap non vault funds
     // We want to swap DENOM_REWARDS and pass the SwapOperation information to perform the swap using the dex-router
@@ -342,45 +335,45 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     .unwrap();
 
     // Assert there is no balance for DENOM_REWARD anymore after we swapped
-    let balances_after_swap_rewards =
+    let after_swap_rewards_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
     assert_eq!(
-        expected_amount_rewards_to_both_assets
-            .checked_sub(expected_amount_rewards_to_base)
+        total_rewards_swap_amount
+            .checked_sub(rewards_swap_amount_base)
             .unwrap()
-            .checked_sub(expected_amount_rewards_to_quote)
+            .checked_sub(rewards_swap_amount_quote)
             .unwrap()
             .u128(),
-        balances_after_swap_rewards
+        after_swap_rewards_balance
     );
 
     // Get the contract balances for base and quote denoms after the swap of non vault funds
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
-    let balances_after_swap_base =
+    let after_swap_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     // assert_approx_eq!(
-    //     expected_balance_base_after_deposit
-    //         .checked_add(expected_amount_rewards_to_base.into())
+    //     after_deposit_base_balance
+    //         .checked_add(rewards_swap_amount_base.into())
     //         .unwrap(),
-    //     balances_after_swap_base,
+    //     after_swap_base_balance,
     //     &deposit_ratio_approx
     // );
-    let balances_after_swap_quote =
+    let after_swap_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     // assert_approx_eq!(
-    //     expected_balance_quote_after_deposit
-    //         .checked_add(expected_amount_rewards_to_quote.into())
+    //     after_deposit_quote_balance
+    //         .checked_add(rewards_swap_amount_quote.into())
     //         .unwrap(),
-    //     balances_after_swap_quote,
+    //     after_swap_quote_balance,
     //     &deposit_ratio_approx
     // );
 
     // Query contract to convert the same amount of LP token supply into assets after swapping non vault funds
-    let shares_assets: AssetsBalanceResponse = wasm
+    let after_swap_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::ConvertToAssets {
-                amount: total_vault_token_supply_after_deposit.total,
+                amount: after_deposit_vault_token_supply.total,
             },
         )
         .unwrap();
@@ -390,16 +383,16 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     //     users_total_deposit_per_asset
     //         .sub(refund0_amount_total.u128())
     //         .add(INITIAL_POSITION_BURN)
-    //         .add(expected_amount_rewards_to_base.u128()),
-    //     shares_assets.balances[0].amount.u128(),
+    //         .add(rewards_swap_amount_base.u128()),
+    //     after_swap_total_assets.balances[0].amount.u128(),
     //     &deposit_ratio_approx
     // );
     // assert_approx_eq!(
     //     users_total_deposit_per_asset
     //         .sub(refund1_amount_total.u128())
     //         .add(INITIAL_POSITION_BURN)
-    //         .add(expected_amount_rewards_to_quote.u128()),
-    //     shares_assets.balances[1].amount.u128(),
+    //         .add(rewards_swap_amount_quote.u128()),
+    //     after_swap_total_assets.balances[1].amount.u128(),
     //     &deposit_ratio_approx
     // );
 
@@ -415,17 +408,17 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Get contract balances after the autocompound
     // Assert there are no funds left in the contract after autocompound
-    let contract_balance_after_autocompound_base =
+    let after_autocompound_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
-    let contract_balance_after_autocompound_quote =
+    let after_autocompound_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     // assert_approx_eq!(
-    //     contract_balance_after_autocompound_base,
+    //     after_autocompound_base_balance,
     //     0u128,
     //     &deposit_ratio_approx
     // );
     // assert_approx_eq!(
-    //     contract_balance_after_autocompound_quote,
+    //     after_autocompound_quote_balance,
     //     0u128,
     //     &deposit_ratio_approx
     // );
@@ -433,15 +426,15 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Get again the total vault token supply after autocompound
     // Assert that total existing LP tokens didnt change after autocompound,
     // so we ensure that we just increase the vlaue of underlying assets for the same existing number of shares
-    let total_vault_token_supply_after_autocompound: TotalVaultTokenSupplyResponse = wasm
+    let after_autocompound_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::TotalVaultTokenSupply {},
         )
         .unwrap();
     assert_eq!(
-        total_vault_token_supply_after_deposit.total,
-        total_vault_token_supply_after_autocompound.total
+        after_deposit_vault_token_supply.total,
+        after_autocompound_vault_token_supply.total
     );
     // Assert again, but with previously tracked values to ensure the autocompound worked as expected
     // We expect this to be the exact same amount of total shares of before autocompunding.
@@ -449,15 +442,15 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         total_minted_shares_from_deposits
             .checked_add(initial_total_vault_token_supply.total)
             .unwrap(),
-        total_vault_token_supply_after_autocompound.total
+        after_autocompound_vault_token_supply.total
     );
 
     // Query contract to convert all LP token supply into assets after autocompound
-    let shares_assets: AssetsBalanceResponse = wasm
+    let after_autocompound_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::ConvertToAssets {
-                amount: total_vault_token_supply_after_autocompound.total,
+                amount: after_autocompound_vault_token_supply.total,
             },
         )
         .unwrap();
@@ -465,9 +458,9 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Redeem all shares for each user and assert things accordingly
     for account in &accounts {
         // Get balances before for current account
-        let balances_before_withdraw_base_denom =
+        let before_withdraw_base_balance =
             get_balance_amount(&app, account.address().to_string(), DENOM_BASE.to_string());
-        let balances_before_withdraw_quote_denom =
+        let before_withdraw_quote_balance =
             get_balance_amount(&app, account.address().to_string(), DENOM_QUOTE.to_string());
 
         // Get shares balance for current account
@@ -496,27 +489,25 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
             // Assert after balances expecting the withdrawn amount
             // includes the compounded funds and idle funds from the vault position and balance
-            // Base
             let balances_after_withdraw_base_denom =
                 get_balance_amount(&app, account.address().to_string(), DENOM_BASE.to_string());
             assert_approx_eq!(
                 balances_after_withdraw_base_denom
-                    .checked_sub(balances_before_withdraw_base_denom)
+                    .checked_sub(before_withdraw_base_balance)
                     .unwrap(),
-                shares_assets.balances[0]
+                after_autocompound_total_assets.balances[0]
                     .amount
                     .u128()
                     .div(ACCOUNTS_NUM as u128),
                 &deposit_ratio_approx
             );
-            // Quote
             let balances_after_withdraw_quote_denom =
                 get_balance_amount(&app, account.address().to_string(), DENOM_QUOTE.to_string());
             assert_approx_eq!(
                 balances_after_withdraw_quote_denom
-                    .checked_sub(balances_before_withdraw_quote_denom)
+                    .checked_sub(before_withdraw_quote_balance)
                     .unwrap(),
-                shares_assets.balances[1]
+                after_autocompound_total_assets.balances[1]
                     .amount
                     .u128()
                     .div(ACCOUNTS_NUM as u128),
