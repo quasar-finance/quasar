@@ -136,6 +136,8 @@ dependencies = [
  "cw-storage-plus",
  "cw2",
  "mars-owner",
+ "prost",
+ "quasar-std",
  "thiserror",
 ]
 
