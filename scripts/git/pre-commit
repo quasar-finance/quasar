@@ -3,8 +3,9 @@
 set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
+DIFF_FILTER=ACMR
 
-CHANGES=$(git diff --name-only origin/main --diff-filter=ACMR)
+CHANGES=$(git diff --name-only origin/main --diff-filter=$DIFF_FILTER)
 
 
 if [ -z "$CHANGES" ]
@@ -23,7 +24,7 @@ update_schemas() {
 
     # generate schemas
     cargo schema
-    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=ACMR)
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=$DIFF_FILTER)
     if [[ $NEW_CHANGES == *schema/* ]]
     then
       git add schema
@@ -41,13 +42,9 @@ fix_formatting() {
     cd ${REPO_ROOT}/smart-contracts/${target}
 
     # fix formatting
-    echo "format"
     cargo fmt --all
     cd ${REPO_ROOT}
-    echo "new changes"
-    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=ACMR)
-    echo "new changes res"
-    echo $NEW_CHANGES
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=$DIFF_FILTER)
     git add $NEW_CHANGES
   fi
 }
