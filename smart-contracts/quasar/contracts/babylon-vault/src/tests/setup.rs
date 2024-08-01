@@ -6,6 +6,7 @@ use cosmwasm_std::{
 
 pub const OWNER: &str = "owner";
 pub const USER: &str = "user";
+pub const SUBDENOM: &str = "subdenom";
 
 pub fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
     let mut deps = mock_dependencies();
@@ -18,6 +19,7 @@ pub fn setup() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
         info,
         InstantiateMsg {
             owner: OWNER.to_string(),
+            subdenom: SUBDENOM.to_string(),
         },
     )
     .is_ok());
