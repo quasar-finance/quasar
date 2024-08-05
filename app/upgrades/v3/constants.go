@@ -21,6 +21,7 @@ var Upgrade = upgrades.Upgrade{
 			consensustypes.StoreKey,
 			ibcwasmtypes.StoreKey,
 			icqtypes.StoreKey,
+			// TODO: add circuit module 
 		},
 		Deleted: []string{},
 	},
