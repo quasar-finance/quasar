@@ -21,6 +21,7 @@ var Upgrade = upgrades.Upgrade{
 			consensustypes.StoreKey,
 			ibcwasmtypes.StoreKey,
 			icqtypes.StoreKey,
+			// todo add circuit types for wasm migration
 		},
 		Deleted: []string{},
 	},
