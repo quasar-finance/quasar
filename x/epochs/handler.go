@@ -2,14 +2,13 @@ package epochs
 
 /*
 import (
-	errorsmod "cosmossdk.io/errors"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
+	"github.com/quasar-finance/quasar/x/epochs/keeper"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 )
 
 // NewHandler returns a handler for epochs module messages.

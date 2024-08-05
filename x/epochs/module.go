@@ -14,12 +14,11 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/quasar-finance/quasar/x/epochs/client/cli"
+	"github.com/quasar-finance/quasar/x/epochs/keeper"
+	"github.com/quasar-finance/quasar/x/epochs/simulation"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 	"github.com/spf13/cobra"
-
-	"github.com/quasarlabs/quasarnode/x/epochs/client/cli"
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/simulation"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 var (

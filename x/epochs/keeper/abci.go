@@ -6,8 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 )
 
 // BeginBlocker of epochs module.
