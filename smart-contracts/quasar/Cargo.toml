@@ -1,12 +1,17 @@
 [workspace]
 resolver = "2"
 
-members = [
-  # "packages/quasar-std",
-  "proto-build",
-]
+members = ["contracts/*", "packages/*", "proto-build"]
 
 [workspace.dependencies]
+cosmwasm-std = "1.5.4"
+mars-owner = "2.0.0"
+cosmwasm-schema = "1.5.4"
+cw-storage-plus = "1.2.0"
+cw2 = "1.1.2"
+thiserror = { version = "1.0.56" }
+
+# protobuf code generation
 prost = {version = "0.12.3", default-features = false, features = ["std"]}
 prost-types = {version = "0.12.3", default-features = false}
 prost-build = { version = "0.12.3" }

@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OwnerResponse",
+  "description": "Returned from Owner.query()",
+  "type": "object",
+  "required": [
+    "abolished",
+    "initialized"
+  ],
+  "properties": {
+    "abolished": {
+      "type": "boolean"
+    },
+    "initialized": {
+      "type": "boolean"
+    },
+    "owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "proposed": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
