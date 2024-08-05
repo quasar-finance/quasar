@@ -9,18 +9,20 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 type (
 	Keeper struct {
-		storeKey storetypes.StoreKey
+		storeKey  storetypes.StoreKey
+		permAddrs map[string]authtypes.PermissionsForAddress
 
 		paramSpace paramtypes.Subspace
 
-		accountKeeper       types.AccountKeeper
-		bankKeeper          types.BankKeeper
+		accountKeeper  types.AccountKeeper
+		bankKeeper     types.BankKeeper
+		contractKeeper types.ContractKeeper
+
 		communityPoolKeeper types.CommunityPoolKeeper
 	}
 )
@@ -29,6 +31,7 @@ type (
 func NewKeeper(
 	storeKey storetypes.StoreKey,
 	paramSpace paramtypes.Subspace,
+	maccPerms map[string][]string,
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	communityPoolKeeper types.CommunityPoolKeeper,
@@ -37,9 +40,15 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
+	permAddrs := make(map[string]authtypes.PermissionsForAddress)
+	for name, perms := range maccPerms {
+		permAddrs[name] = authtypes.NewPermissionsForAddress(name, perms)
+	}
+
 	return Keeper{
 		storeKey:   storeKey,
 		paramSpace: paramSpace,
+		permAddrs:  permAddrs,
 
 		accountKeeper:       accountKeeper,
 		bankKeeper:          bankKeeper,
@@ -68,6 +77,11 @@ func (k Keeper) GetCreatorPrefixStore(ctx sdk.Context, creator string) storetype
 func (k Keeper) GetCreatorsPrefixStore(ctx sdk.Context) storetypes.KVStore {
 	store := ctx.KVStore(k.storeKey)
 	return prefix.NewStore(store, types.GetCreatorsPrefix())
+}
+
+// Set the wasm keeper.
+func (k *Keeper) SetContractKeeper(contractKeeper types.ContractKeeper) {
+	k.contractKeeper = contractKeeper
 }
 
 // CreateModuleAccount creates a module account with minting and burning capabilities

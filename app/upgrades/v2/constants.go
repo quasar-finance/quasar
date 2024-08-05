@@ -6,8 +6,7 @@ import (
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	icqtypes "github.com/cosmos/ibc-apps/modules/async-icq/v8/types"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-
-	"github.com/quasarlabs/quasarnode/app/upgrades"
+	"github.com/quasar-finance/quasar/app/upgrades"
 )
 
 // UpgradeName defines the on-chain upgrade name for the Quasar chain v2.0.0 upgrade.

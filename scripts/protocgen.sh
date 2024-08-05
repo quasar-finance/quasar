@@ -30,7 +30,9 @@ echo "Copying ..."
 PWD=$(pwd)
 echo "PWD is - $PWD"
 # Copy the generated go files over
-cp -r github.com/quasarlabs/quasarnode/* .
+cp -r github.com/quasar-finance/quasar/* .
 cp -r github.com github.com.bkp
+rm -r github.com.bkp
+
 
 

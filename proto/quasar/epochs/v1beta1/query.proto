@@ -1,22 +1,32 @@
 syntax = "proto3";
-package quasarlabs.quasarnode.epochs;
+package quasar.epochs.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "quasarlabs/quasarnode/epochs/genesis.proto";
+import "quasar/epochs/v1beta1/genesis.proto";
 
-option go_package = "github.com/quasarlabs/quasarnode/x/epochs/types";
+option go_package = "github.com/quasar-finance/quasar/x/epochs/types";
 
 // Query defines the gRPC querier service.
 service Query {
   // EpochInfos provide running epochInfos
   rpc EpochInfos(QueryEpochsInfoRequest) returns (QueryEpochsInfoResponse) {
-    option (google.api.http).get = "/quasarlabs/epochs/v1beta1/epochs";
+    option (google.api.http) = {
+      get: "/quasar/epochs/v1beta1/epochs"
+      additional_bindings {
+        get: "/quasarlabs/epochs/v1beta1/epochs"
+      }
+    };
   }
   // CurrentEpoch provide current epoch of specified identifier
   rpc CurrentEpoch(QueryCurrentEpochRequest)
       returns (QueryCurrentEpochResponse) {
-    option (google.api.http).get = "/quasarlabs/epochs/v1beta1/current_epoch";
+    option (google.api.http) = {
+      get: "/quasar/epochs/v1beta1/current_epoch"
+      additional_bindings {
+        get: "/quasarlabs/epochs/v1beta1/current_epoch"
+      }
+    };
   }
 }
 

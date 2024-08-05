@@ -6,7 +6,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/quasarlabs/quasarnode/wasmbinding/bindings"
+	"github.com/quasar-finance/quasar/wasmbinding/bindings"
 )
 
 func CustomQuerier() func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {

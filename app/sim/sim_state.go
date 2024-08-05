@@ -1,15 +1,14 @@
 package sim
 
 import (
-	"cosmossdk.io/math"
 	"encoding/json"
 	"fmt"
-	"github.com/quasarlabs/quasarnode/app"
 	"io"
 	"math/rand"
 	"os"
 	"time"
 
+	"cosmossdk.io/math"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -20,6 +19,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/quasar-finance/quasar/app"
 )
 
 // Simulation parameter constants

@@ -5,9 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
-	bindingstypes "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
-	tokenfactorykeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
+	bindingstypes "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
+	tokenfactorykeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 )
 
 // QueryPlugin represents a plugin that provides query functionalities related

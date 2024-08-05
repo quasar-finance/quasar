@@ -1,15 +1,14 @@
 package bindings
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	bindingstypes "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
+	bindingstypes "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
 )
 
 // CustomQuerier dispatches custom CosmWasm bindings queries.

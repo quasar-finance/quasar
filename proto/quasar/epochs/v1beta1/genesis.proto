@@ -1,11 +1,11 @@
 syntax = "proto3";
-package quasarlabs.quasarnode.epochs;
+package quasar.epochs.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/quasarlabs/quasarnode/x/epochs/types";
+option go_package = "github.com/quasar-finance/quasar/x/epochs/types";
 
 message EpochInfo {
   string identifier = 1;

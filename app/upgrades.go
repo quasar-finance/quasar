@@ -5,7 +5,7 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
+	"github.com/quasar-finance/quasar/app/upgrades"
 )
 
 func (app *QuasarApp) setUpgradeStoreLoaders() {

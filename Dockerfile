@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION="1.20"
+ARG GO_VERSION="1.22"
 ARG RUNNER_IMAGE="gcr.io/distroless/static-debian11"
 
 # --------------------------------------------------------
 # Builder
 # --------------------------------------------------------
 
-FROM golang:${GO_VERSION}-alpine3.18 as builder
+FROM golang:${GO_VERSION}-alpine3.20 as builder
 
 ARG GIT_VERSION
 ARG GIT_COMMIT
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Cosmwasm - Download correct libwasmvm version
 RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | sed 's/.* //') && \
     wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$ARCH.a \
-        -O /lib/libwasmvm_muslc.a && \
+    -O /lib/libwasmvm_muslc.a && \
     # verify checksum
     wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/checksums.txt -O /tmp/checksums.txt && \
     sha256sum /lib/libwasmvm_muslc.a | grep $(cat /tmp/checksums.txt | grep libwasmvm_muslc.$ARCH | cut -d ' ' -f 1)
@@ -72,33 +72,3 @@ EXPOSE 26657
 EXPOSE 1317
 
 CMD ["quasard"]
-
-# --------------------------------------------------------
-# Development
-# --------------------------------------------------------
-
-FROM ubuntu:22.04 as dev
-
-ENV PACKAGES jq
-
-RUN rm -f /etc/apt/apt.conf.d/docker-clean
-RUN --mount=type=cache,target=/var/cache/apt \
-	apt-get update && apt-get install -y $PACKAGES
-
-
-COPY --from=builder /quasar/build/quasard /bin/quasard
-
-
-ENV HOME /quasar
-WORKDIR $HOME
-
-COPY tests/docker/bootstrap-scripts/entrypoint.sh /quasar/entrypoint.sh
-COPY tests/docker/bootstrap-scripts/quasar_localnet.sh /quasar/app_init.sh
-RUN chmod +x entrypoint.sh && chmod +x app_init.sh && mkdir logs
-
-EXPOSE 26656
-EXPOSE 26657
-EXPOSE 1317
-
-CMD ["quasard"]
-ENTRYPOINT ["./entrypoint.sh"]

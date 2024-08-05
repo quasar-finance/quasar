@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	wasmbinding "github.com/quasar-finance/quasar/x/tokenfactory/bindings"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	wasmbinding "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
 )
 
 func TestFullDenom(t *testing.T) {

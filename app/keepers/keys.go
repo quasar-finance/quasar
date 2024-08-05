@@ -4,7 +4,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	// qoraclemoduletypes "github.com/quasarlabs/quasarnode/x/qoracle/types"
 )
 
 // GenerateKeys generates new keys (KV Store, Transient store, and memory store).

@@ -7,10 +7,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/testhelpers"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/testhelpers"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 // // Test authz serialize and de-serializes for tokenfactory msg.

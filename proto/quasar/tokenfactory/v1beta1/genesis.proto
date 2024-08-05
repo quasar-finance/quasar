@@ -1,12 +1,11 @@
 syntax = "proto3";
-package quasarlabs.quasarnode.tokenfactory.v1beta1;
+package quasar.tokenfactory.v1beta1;
 
 import "gogoproto/gogo.proto";
-import "quasarlabs/quasarnode/tokenfactory/v1beta1/authorityMetadata.proto";
-import "quasarlabs/quasarnode/tokenfactory/v1beta1/params.proto";
+import "quasar/tokenfactory/v1beta1/authorityMetadata.proto";
+import "quasar/tokenfactory/v1beta1/params.proto";
 
-
-option go_package = "github.com/quasarlabs/quasarnode/x/tokenfactory/types";
+option go_package = "github.com/quasar-finance/quasar/x/tokenfactory/types";
 
 // GenesisState defines the tokenfactory module's genesis state.
 message GenesisState {

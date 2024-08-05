@@ -16,8 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
-	"github.com/quasarlabs/quasarnode/app"
+	"github.com/quasar-finance/quasar/app"
 )
 
 type (

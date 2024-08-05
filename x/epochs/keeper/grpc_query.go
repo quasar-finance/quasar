@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 var _ types.QueryServer = Querier{}
