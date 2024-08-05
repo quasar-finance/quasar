@@ -23,13 +23,12 @@ import (
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
+	"github.com/quasar-finance/quasar/app"
+	"github.com/quasar-finance/quasar/testutil/keeper"
+	"github.com/quasar-finance/quasar/testutil/mock"
+	epochskeeper "github.com/quasar-finance/quasar/x/epochs/keeper"
+	tfkeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/app"
-	"github.com/quasarlabs/quasarnode/testutil/keeper"
-	"github.com/quasarlabs/quasarnode/testutil/mock"
-	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 )
 
 func init() {

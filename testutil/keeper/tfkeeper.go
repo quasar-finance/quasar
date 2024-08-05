@@ -7,9 +7,8 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/keeper"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 func (kf KeeperFactory) TfKeeper(paramsKeeper paramskeeper.Keeper,

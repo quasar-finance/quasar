@@ -51,12 +51,11 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-
-	appparams "github.com/quasarlabs/quasarnode/app/params"
-	epochsmodule "github.com/quasarlabs/quasarnode/x/epochs"
-	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	tfmodule "github.com/quasarlabs/quasarnode/x/tokenfactory"
-	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	appparams "github.com/quasar-finance/quasar/app/params"
+	epochsmodule "github.com/quasar-finance/quasar/x/epochs"
+	epochsmoduletypes "github.com/quasar-finance/quasar/x/epochs/types"
+	tfmodule "github.com/quasar-finance/quasar/x/tokenfactory"
+	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 // moduleAccountPermissions defines module account permissions
@@ -148,7 +147,6 @@ func appModules(
 		// quasar modules
 		epochsmodule.NewAppModule(*app.EpochsKeeper),
 		// qoraclemodule.NewAppModule(appCodec, app.QOracleKeeper, app.QOsmosisKeeper),
-		qtransfer.NewAppModule(app.QTransferKeeper), // TODO - TB BE REMOVED
 		tfmodule.NewAppModule(app.TfKeeper, app.AccountKeeper, app.BankKeeper),
 		// qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper), // TODO - TB BE REMOVED
 	}

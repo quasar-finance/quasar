@@ -60,14 +60,13 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
-
-	appparams "github.com/quasarlabs/quasarnode/app/params"
-	epochsmodulekeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	epochsmoduletypes "github.com/quasarlabs/quasarnode/x/epochs/types"
-	tfbindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
-	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-	tfmodulekeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-	tftypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	appparams "github.com/quasar-finance/quasar/app/params"
+	epochsmodulekeeper "github.com/quasar-finance/quasar/x/epochs/keeper"
+	epochsmoduletypes "github.com/quasar-finance/quasar/x/epochs/types"
+	tfbindings "github.com/quasar-finance/quasar/x/tokenfactory/bindings"
+	tfkeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
+	tfmodulekeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
+	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 const (
@@ -106,6 +105,7 @@ type AppKeepers struct {
 	IBCWasmClientKeeper *ibcwasmkeeper.Keeper
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	WasmKeeper          *wasmkeeper.Keeper
+	ContractKeeper      *wasmkeeper.PermissionedKeeper
 	EpochsKeeper        *epochsmodulekeeper.Keeper
 	TfKeeper            tfmodulekeeper.Keeper
 	AuthzKeeper         authzkeeper.Keeper
@@ -380,7 +380,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	)
 
 	appKeepers.EpochsKeeper = epochsmodulekeeper.NewKeeper(appCodec, appKeepers.keys[epochsmoduletypes.StoreKey])
-
+	appKeepers.ContractKeeper = wasmkeeper.NewDefaultPermissionKeeper(appKeepers.WasmKeeper)
 	// TODO - osmosis ibc-hooks to be used instead.
 	/*
 
@@ -419,12 +419,17 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	)
 
 	/// Token factory Module
-	appKeepers.TfKeeper = tfkeeper.NewKeeper(appKeepers.keys[tftypes.StoreKey],
+	appKeepers.TfKeeper = tfkeeper.NewKeeper(
+		appKeepers.keys[tftypes.StoreKey],
 		appKeepers.GetSubspace(tftypes.ModuleName),
+		maccPerms,
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.DistrKeeper,
 	)
+
+	// set token factory contract keeper
+	appKeepers.TfKeeper.SetContractKeeper(appKeepers.ContractKeeper)
 
 	// TODO - SDK 50
 	// callback := owasm.NewCallbackPlugin(appKeepers.WasmKeeper, appKeepers.QTransferKeeper.GetQTransferAcc())

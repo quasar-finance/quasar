@@ -1,38 +1,35 @@
 package app
 
 import (
-	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
-	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
-	"cosmossdk.io/log"
 	"fmt"
-	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
-	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
-	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
-	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
-	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
-	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
-	quasarante "github.com/quasarlabs/quasarnode/ante"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"cosmossdk.io/log"
+	// capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	// dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	dbm "github.com/cosmos/cosmos-db"
-
 	// "github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -42,22 +39,23 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
-	// capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
+	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
+	quasarante "github.com/quasar-finance/quasar/ante"
+	"github.com/quasar-finance/quasar/app/keepers"
+	"github.com/quasar-finance/quasar/app/openapiconsole"
+	appParams "github.com/quasar-finance/quasar/app/params"
+	"github.com/quasar-finance/quasar/app/upgrades"
+	v2 "github.com/quasar-finance/quasar/app/upgrades/v2"
+	v3 "github.com/quasar-finance/quasar/app/upgrades/v3"
+	"github.com/quasar-finance/quasar/docs"
 	"github.com/spf13/cast"
-
-	"github.com/quasarlabs/quasarnode/app/keepers"
-	"github.com/quasarlabs/quasarnode/app/openapiconsole"
-	appParams "github.com/quasarlabs/quasarnode/app/params"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
-	v2 "github.com/quasarlabs/quasarnode/app/upgrades/v2"
-	"github.com/quasarlabs/quasarnode/docs"
 )
 
 const (
@@ -81,8 +79,7 @@ var (
 	// module account permissions
 	maccPerms = ModuleAccountPermissions
 
-	Upgrades  = []upgrades.Upgrade{v2.Upgrade}
-	maccPerms = ModuleAccountPermissions
+	Upgrades = []upgrades.Upgrade{v2.Upgrade, v3.Upgrade}
 )
 
 // overrideWasmVariables overrides the wasm variables to:

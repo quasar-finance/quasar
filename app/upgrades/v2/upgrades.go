@@ -5,10 +5,10 @@ import (
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/quasarlabs/quasarnode/app/keepers"
+	"github.com/quasar-finance/quasar/app/keepers"
 )
 
-// qosmotypes "github.com/quasarlabs/quasarnode/x/qoracle/osmosis/types"
+// qosmotypes "github.com/quasar-finance/quasar/x/qoracle/osmosis/types"
 
 // TODO -SDK 50 - This files does not need to be present any more. However we will loose some old Handlers,
 // RECHECK, what to do as some of the modules like qoracle is gone.

@@ -1,4 +1,4 @@
-module github.com/quasarlabs/quasarnode/tests/e2e
+module github.com/quasar-finance/quasar/tests/e2e
 
 go 1.19
 

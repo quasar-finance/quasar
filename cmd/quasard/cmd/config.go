@@ -2,8 +2,7 @@ package cmd
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/quasarlabs/quasarnode/app"
+	"github.com/quasar-finance/quasar/app"
 )
 
 func InitTestConfig() {

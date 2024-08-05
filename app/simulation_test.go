@@ -1,7 +1,6 @@
 package app_test
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 
@@ -10,8 +9,8 @@ import (
 	simulation2 "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
-
-	"github.com/quasarlabs/quasarnode/app"
+	"github.com/quasar-finance/quasar/app"
+	"github.com/stretchr/testify/require"
 )
 
 // AppChainID hardcoded chainID for simulation

@@ -5,9 +5,8 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
-	"github.com/quasarlabs/quasarnode/app"
-	"github.com/quasarlabs/quasarnode/app/params"
+	"github.com/quasar-finance/quasar/app"
+	"github.com/quasar-finance/quasar/app/params"
 )
 
 // KeeperFactory Structure holding storage context for initializing test keepers.

@@ -12,11 +12,10 @@ import (
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	dbm "github.com/cosmos/cosmos-db"
-
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	tmtypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -35,11 +34,10 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/quasar-finance/quasar/app"
+	appparams "github.com/quasar-finance/quasar/app/params"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-
-	"github.com/quasarlabs/quasarnode/app"
-	appparams "github.com/quasarlabs/quasarnode/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application

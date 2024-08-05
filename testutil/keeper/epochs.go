@@ -3,8 +3,8 @@ package keeper
 import (
 	storetypes "cosmossdk.io/store/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
+	"github.com/quasar-finance/quasar/x/epochs/keeper"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 )
 
 func (kf KeeperFactory) EpochsKeeper(paramsKeeper paramskeeper.Keeper) *keeper.Keeper {

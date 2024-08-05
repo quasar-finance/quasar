@@ -1,4 +1,4 @@
-package v2
+package v3
 
 import (
 	store "cosmossdk.io/store/types"
@@ -10,7 +10,7 @@ import (
 )
 
 // UpgradeName defines the on-chain upgrade name for the Quasar chain v2.0.0 upgrade.
-const UpgradeName = "v2"
+const UpgradeName = "v3"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
