@@ -4,7 +4,6 @@ import (
 	context "context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	// authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
@@ -28,9 +27,20 @@ type BankKeeper interface {
 type AccountKeeper interface {
 	SetModuleAccount(ctx context.Context, macc sdk.ModuleAccountI)
 	GetAccount(context.Context, sdk.AccAddress) sdk.AccountI
+	GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI
+}
+
+// BankHooks event hooks
+type BankHooks interface {
+	TrackBeforeSend(ctx sdk.Context, from, to sdk.AccAddress, amount sdk.Coins)       // Must be before any send is executed
+	BlockBeforeSend(ctx sdk.Context, from, to sdk.AccAddress, amount sdk.Coins) error // Must be before any send is executed
 }
 
 // CommunityPoolKeeper defines the contract needed to be fulfilled for community pool interactions.
 type CommunityPoolKeeper interface {
 	FundCommunityPool(ctx context.Context, amount sdk.Coins, sender sdk.AccAddress) error
+}
+
+type ContractKeeper interface {
+	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 }

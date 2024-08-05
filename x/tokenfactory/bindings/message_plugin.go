@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	errorsmod "cosmossdk.io/errors"
-
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -12,9 +11,9 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	bindingstypes "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
-	tokenfactorykeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-	tokenfactorytypes "github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	bindingstypes "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
+	tokenfactorykeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
+	tokenfactorytypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 // CustomMessageDecorator returns decorator for custom CosmWasm bindings messages

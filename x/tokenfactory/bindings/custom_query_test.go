@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/quasarlabs/quasarnode/app"
-	bindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
+	"github.com/quasar-finance/quasar/app"
+	bindings "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQueryFullDenom(t *testing.T) {

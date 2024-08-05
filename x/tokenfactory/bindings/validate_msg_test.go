@@ -6,11 +6,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	wasmbinding "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings"
-	bindings "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
-
+	wasmbinding "github.com/quasar-finance/quasar/x/tokenfactory/bindings"
+	bindings "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
 )
 

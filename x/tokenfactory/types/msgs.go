@@ -10,11 +10,13 @@ import (
 
 // constants
 const (
-	TypeMsgCreateDenom      = "create_denom"
-	TypeMsgMint             = "tf_mint"
-	TypeMsgBurn             = "tf_burn"
-	TypeMsgChangeAdmin      = "change_admin"
-	TypeMsgSetDenomMetadata = "set_denom_metadata"
+	TypeMsgCreateDenom       = "create_denom"
+	TypeMsgMint              = "tf_mint"
+	TypeMsgBurn              = "tf_burn"
+	TypeMsgForceTransfer     = "force_transfer"
+	TypeMsgChangeAdmin       = "change_admin"
+	TypeMsgSetDenomMetadata  = "set_denom_metadata"
+	TypeMsgSetBeforeSendHook = "set_before_send_hook"
 )
 
 var _ sdk.Msg = &MsgCreateDenom{}
@@ -136,6 +138,47 @@ func (m MsgBurn) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{sender}
 }
 
+var _ sdk.Msg = &MsgForceTransfer{}
+
+// NewMsgForceTransfer creates a transfer funds from one account to another
+func NewMsgForceTransfer(authorityModule string, amount sdk.Coin, fromAddr, toAddr string) *MsgForceTransfer {
+	return &MsgForceTransfer{
+		Authority:           authorityModule,
+		Amount:              amount,
+		TransferFromAddress: fromAddr,
+		TransferToAddress:   toAddr,
+	}
+}
+
+func (m MsgForceTransfer) Route() string { return RouterKey }
+func (m MsgForceTransfer) Type() string  { return TypeMsgForceTransfer }
+func (m MsgForceTransfer) ValidateBasic() error {
+	_, err := sdk.AccAddressFromBech32(m.Authority)
+	if err != nil {
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "Invalid sender address (%s)", err)
+	}
+
+	_, err = sdk.AccAddressFromBech32(m.TransferFromAddress)
+	if err != nil {
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "Invalid address (%s)", err)
+	}
+	_, err = sdk.AccAddressFromBech32(m.TransferToAddress)
+	if err != nil {
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "Invalid address (%s)", err)
+	}
+
+	if !m.Amount.IsValid() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, m.Amount.String())
+	}
+
+	return nil
+}
+
+func (m MsgForceTransfer) GetSigners() []sdk.AccAddress {
+	sender, _ := sdk.AccAddressFromBech32(m.Authority)
+	return []sdk.AccAddress{sender}
+}
+
 var _ sdk.Msg = &MsgChangeAdmin{}
 
 // NewMsgChangeAdmin creates a message to burn tokens
@@ -213,6 +256,45 @@ func (m MsgSetDenomMetadata) GetSignBytes() []byte {
 }
 
 func (m MsgSetDenomMetadata) GetSigners() []sdk.AccAddress {
+	sender, _ := sdk.AccAddressFromBech32(m.Sender)
+	return []sdk.AccAddress{sender}
+}
+
+var _ sdk.Msg = &MsgSetBeforeSendHook{}
+
+// NewMsgSetBeforeSendHook creates a message to set a new before send hook
+func NewMsgSetBeforeSendHook(sender string, denom string, cosmwasmAddress string) *MsgSetBeforeSendHook {
+	return &MsgSetBeforeSendHook{
+		Sender:          sender,
+		Denom:           denom,
+		CosmwasmAddress: cosmwasmAddress,
+	}
+}
+
+func (m MsgSetBeforeSendHook) Route() string { return RouterKey }
+func (m MsgSetBeforeSendHook) Type() string  { return TypeMsgSetBeforeSendHook }
+func (m MsgSetBeforeSendHook) ValidateBasic() error {
+	_, err := sdk.AccAddressFromBech32(m.Sender)
+	if err != nil {
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "Invalid sender address (%s)", err)
+	}
+
+	if m.CosmwasmAddress != "" {
+		_, err = sdk.AccAddressFromBech32(m.CosmwasmAddress)
+		if err != nil {
+			return errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "Invalid cosmwasm contract address (%s)", err)
+		}
+	}
+
+	_, _, err = DeconstructDenom(m.Denom)
+	if err != nil {
+		return ErrInvalidDenom
+	}
+
+	return nil
+}
+
+func (m MsgSetBeforeSendHook) GetSigners() []sdk.AccAddress {
 	sender, _ := sdk.AccAddressFromBech32(m.Sender)
 	return []sdk.AccAddress{sender}
 }
