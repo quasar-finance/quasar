@@ -2,6 +2,7 @@
 
 ARG GO_VERSION="1.22"
 ARG RUNNER_IMAGE="gcr.io/distroless/static-debian11"
+ARG BUILD_TAGS="netgo,ledger,muslc"
 
 # --------------------------------------------------------
 # Builder
@@ -11,11 +12,13 @@ FROM golang:${GO_VERSION}-alpine3.20 as builder
 
 ARG GIT_VERSION
 ARG GIT_COMMIT
+ARG BUILD_TAGS
 
 RUN apk add --no-cache \
     ca-certificates \
     build-base \
-    linux-headers
+    linux-headers \
+    binutils-gold
 
 # Download go dependencies
 WORKDIR /quasar
@@ -36,31 +39,27 @@ RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm |
 COPY . .
 
 # Build quasard binary
-# force it to use static lib (from above) not standard libgo_cosmwasm.so file
-# then log output of file /quasar/build/quasard
-# then ensure static linking
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
     GOWORK=off go build \
-            -mod=readonly \
-            -tags "netgo,ledger,muslc" \
-            -ldflags \
-                "-X github.com/cosmos/cosmos-sdk/version.Name="quasar" \
-                -X github.com/cosmos/cosmos-sdk/version.AppName="quasard" \
-                -X github.com/cosmos/cosmos-sdk/version.Version=${GIT_VERSION} \
-                -X github.com/cosmos/cosmos-sdk/version.Commit=${GIT_COMMIT} \
-                -X github.com/cosmos/cosmos-sdk/version.BuildTags='netgo,ledger,muslc' \
-                -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
-            -trimpath \
+    -mod=readonly \
+    -tags "netgo,ledger,muslc" \
+    -ldflags \
+    "-X github.com/cosmos/cosmos-sdk/version.Name="quasar" \
+    -X github.com/cosmos/cosmos-sdk/version.AppName="quasard" \
+    -X github.com/cosmos/cosmos-sdk/version.Version=${GIT_VERSION} \
+    -X github.com/cosmos/cosmos-sdk/version.Commit=${GIT_COMMIT} \
+    -X github.com/cosmos/cosmos-sdk/version.BuildTags=${BUILD_TAGS} \
+    -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
+    -trimpath \
     -o build/quasard \
     /quasar/cmd/quasard/main.go
-
 
 # --------------------------------------------------------
 # Runner
 # --------------------------------------------------------
 
-FROM ${RUNNER_IMAGE} as runner
+FROM ${RUNNER_IMAGE}
 
 COPY --from=builder /quasar/build/quasard /bin/quasard
 
