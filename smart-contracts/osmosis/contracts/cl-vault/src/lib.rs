@@ -7,7 +7,7 @@ pub mod msg;
 pub mod query;
 mod reply;
 pub mod state;
-mod vault;
+pub mod vault;
 
 pub use crate::error::ContractError;
 

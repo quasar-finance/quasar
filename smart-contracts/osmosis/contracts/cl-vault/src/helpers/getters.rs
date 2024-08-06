@@ -14,7 +14,7 @@ use crate::{
 };
 use cosmwasm_std::{
     Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
-    Uint128, Uint256,
+    Timestamp, Uint128, Uint256,
 };
 
 use super::coinlist::CoinList;
@@ -44,20 +44,43 @@ pub fn get_asset0_value(
     Ok(total)
 }
 
-pub fn get_twap_price(
+pub fn get_position_balance(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
-    env: &Env,
-    twap_window_seconds: u64,
-) -> Result<Decimal, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
+) -> Result<(Decimal, Decimal), ContractError> {
+    let position = get_position(storage, querier)?;
+    let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
+    let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
+    // Handle cases where either asset amount is zero
+    if asset0_amount.is_zero() && asset1_amount.is_zero() {
+        return Ok((Decimal::zero(), Decimal::zero()));
+    }
+
+    // Get the total amount of the vault's position in asset0 denom
+    let asset_0_value = get_asset0_value(storage, querier, asset0_amount, asset1_amount)?;
+
+    // Calculate the ratio of the vault's position in asset0 and asset1 using Decimal for safe division
+    let asset_0_ratio = Decimal::from_ratio(asset0_amount, asset_0_value);
+    let asset_1_ratio = Decimal::from_ratio(asset1_amount, asset_0_value);
+
+    Ok((asset_0_ratio, asset_1_ratio))
+}
+
+pub fn get_twap_price(
+    querier: &QuerierWrapper,
+    block_time: Timestamp,
+    twap_window_seconds: u64,
+    pool_id: u64,
+    token0_denom: String,
+    token1_denom: String,
+) -> Result<Decimal, ContractError> {
     let twap_querier = TwapQuerier::new(querier);
-    let start_of_window = env.block.time.minus_seconds(twap_window_seconds);
+    let start_of_window = block_time.minus_seconds(twap_window_seconds);
     let twap_price = twap_querier.arithmetic_twap_to_now(
-        pool_config.pool_id,
-        pool_config.token0,
-        pool_config.token1,
+        pool_id,
+        token0_denom,
+        token1_denom,
         Some(OsmoTimestamp {
             seconds: start_of_window.seconds().try_into()?,
             nanos: 0,
@@ -101,16 +124,16 @@ pub fn get_depositable_tokens(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
-    compute_deposit_and_refund_tokens(&assets, token0, token1)
+    compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount)
 }
 
 fn compute_deposit_and_refund_tokens(
     assets: &PoolAssets,
-    provided_base: Coin,
-    provided_quote: Coin,
+    provided_base: Uint128,
+    provided_quote: Uint128,
 ) -> Result<DepositInfo, ContractError> {
-    let provided_base_amount: Uint256 = provided_base.amount.into();
-    let provided_quote_amount: Uint256 = provided_quote.amount.into();
+    let provided_base_amount: Uint256 = provided_base.into();
+    let provided_quote_amount: Uint256 = provided_quote.into();
 
     let base_deposit = if assets.quote.amount.is_zero() {
         provided_base_amount
@@ -393,7 +416,8 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result = compute_deposit_and_refund_tokens(&assets, token0, token1).unwrap();
+        let result =
+            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -423,7 +447,8 @@ mod tests {
             },
             quote: token1.clone(),
         };
-        let result = compute_deposit_and_refund_tokens(&assets, token0, token1).unwrap();
+        let result =
+            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -453,7 +478,8 @@ mod tests {
             },
             base: token0.clone(),
         };
-        let result = compute_deposit_and_refund_tokens(&assets, token0, token1).unwrap();
+        let result =
+            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -480,9 +506,12 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result =
-            compute_deposit_and_refund_tokens(&assets, coin(2000, "token0"), coin(5000, "token1"))
-                .unwrap();
+        let result = compute_deposit_and_refund_tokens(
+            &assets,
+            coin(2000, "token0").amount,
+            coin(5000, "token1").amount,
+        )
+        .unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -509,9 +538,12 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result =
-            compute_deposit_and_refund_tokens(&assets, coin(2000, "token0"), coin(3000, "token1"))
-                .unwrap();
+        let result = compute_deposit_and_refund_tokens(
+            &assets,
+            coin(2000, "token0").amount,
+            coin(3000, "token1").amount,
+        )
+        .unwrap();
         assert_eq!(
             result,
             DepositInfo {

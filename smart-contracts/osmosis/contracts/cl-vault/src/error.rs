@@ -24,6 +24,9 @@ pub enum ContractError {
     #[error("Position Not Found")]
     PositionNotFound,
 
+    #[error("Pool Id not provided")]
+    PoolIdNotProvided {},
+
     #[error("Sent the wrong amount of denoms")]
     IncorrectAmountFunds,
 
@@ -32,6 +35,9 @@ pub enum ContractError {
 
     #[error("ratio_of_swappable_funds_to_use should be >0 and <=1")]
     InvalidRatioOfSwappableFundsToUse,
+
+    #[error("Invalid swap direction")]
+    InvalidSwapDirection,
 
     #[error("Cannot do two swaps at the same time")]
     SwapInProgress,

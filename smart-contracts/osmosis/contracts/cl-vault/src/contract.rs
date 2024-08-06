@@ -77,10 +77,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         cw_vault_multi_standard::VaultStandardExecuteMsg::AnyDeposit {
-            amount: _,
-            asset: _,
             recipient,
             max_slippage,
+            .. // asset and amount fields are not used in this implementation, they are for CW20 tokens
         } => execute_any_deposit(deps, env, info, recipient, max_slippage),
         cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
             execute_exact_deposit(deps, env, info, recipient)
@@ -137,9 +136,10 @@ pub fn execute(
                         claim_after,
                     )?,
                 ),
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds { swap_operations } => {
-                    execute_swap_non_vault_funds(deps, env, info, swap_operations)
-                }
+                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
+                    swap_operations,
+                    twap_window_seconds,
+                } => execute_swap_non_vault_funds(deps, env, swap_operations, twap_window_seconds),
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }

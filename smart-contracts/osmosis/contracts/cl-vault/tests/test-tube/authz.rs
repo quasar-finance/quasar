@@ -186,7 +186,7 @@ fn any_deposit_withdraw_equal() {
         .iter()
         .zip(&authz_deposit_event.attributes)
     {
-        if attr1.key == "token_in" || attr1.key == "token_out_min" {
+        if attr1.key == "token_in" || attr1.key == "min_token_out" {
             assert_approx_eq!(
                 get_amount_from_denom(&attr1.value),
                 get_amount_from_denom(&attr2.value),
