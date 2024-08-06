@@ -4,25 +4,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	bindingstypes "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
-	tokenfactorykeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 )
-
-// QueryPlugin represents a plugin that provides query functionalities related
-// to banking and token factory modules.
-type QueryPlugin struct {
-	bankKeeper         *bankkeeper.BaseKeeper
-	tokenFactoryKeeper *tokenfactorykeeper.Keeper
-}
-
-// NewQueryPlugin returns a reference to a new QueryPlugin object.
-func NewQueryPlugin(b *bankkeeper.BaseKeeper, tfk *tokenfactorykeeper.Keeper) *QueryPlugin {
-	return &QueryPlugin{
-		bankKeeper:         b,
-		tokenFactoryKeeper: tfk,
-	}
-}
 
 // GetDenomAdmin is a query to get denom admin.
 func (qp QueryPlugin) GetDenomAdmin(ctx sdk.Context, denom string) (*bindingstypes.AdminResponse, error) {
@@ -35,7 +18,11 @@ func (qp QueryPlugin) GetDenomAdmin(ctx sdk.Context, denom string) (*bindingstyp
 
 // GetDenomsByCreator is a query to get list of denom strings created by a creator.
 func (qp QueryPlugin) GetDenomsByCreator(ctx sdk.Context, creator string) (*bindingstypes.DenomsByCreatorResponse, error) {
-	// TODO: validate creator address
+	//validate creator address
+	_, err := sdk.AccAddressFromBech32(creator)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address: %s", creator)
+	}
 	denoms := qp.tokenFactoryKeeper.GetDenomsFromCreator(ctx, creator)
 	return &bindingstypes.DenomsByCreatorResponse{Denoms: denoms}, nil
 }

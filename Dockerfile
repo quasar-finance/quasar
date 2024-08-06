@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 
 # Cosmwasm - Download correct libwasmvm version
-RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | sed 's/.* //') && \
+RUN ARCH=$(uname -m) && WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm/v2 | sed 's/.* //') && \
     wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$ARCH.a \
     -O /lib/libwasmvm_muslc.a && \
     # verify checksum
@@ -52,7 +52,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -X github.com/cosmos/cosmos-sdk/version.BuildTags=${BUILD_TAGS} \
     -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
     -trimpath \
-    -o build/quasard \
+    -o /quasar/build/quasard \
     /quasar/cmd/quasard/main.go
 
 # --------------------------------------------------------
@@ -70,4 +70,4 @@ EXPOSE 26656
 EXPOSE 26657
 EXPOSE 1317
 
-CMD ["quasard"]
+ENTRYPOINT ["quasard"]
