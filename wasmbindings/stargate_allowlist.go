@@ -30,5 +30,7 @@ func AcceptedStargateQueries() wasmkeeper.AcceptedQueries {
 
 		// transfer
 		"/ibc.applications.transfer.v1.Query/DenomTrace": &ibctransfertypes.QueryDenomTraceResponse{},
+
+		// TODO: after adding slinky or any other module, add the required queries here
 	}
 }
