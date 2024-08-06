@@ -1,6 +1,6 @@
 package types
 
-import wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+import wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 
 type BlockBeforeSendSudoMsg struct {
 	BlockBeforeSend BlockBeforeSendMsg `json:"block_before_send,omitempty"`

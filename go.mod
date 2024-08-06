@@ -1,6 +1,6 @@
 module github.com/quasar-finance/quasar
 
-go 1.22.3
+go 1.22.4
 
 require (
 	cosmossdk.io/api v0.7.5
@@ -12,8 +12,8 @@ require (
 	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/upgrade v0.1.4
-	github.com/CosmWasm/wasmd v0.50.0
-	github.com/CosmWasm/wasmvm v1.5.2
+	github.com/CosmWasm/wasmd v0.51.0
+	github.com/CosmWasm/wasmvm/v2 v2.0.1
 	github.com/cometbft/cometbft v0.38.9
 	github.com/cometbft/cometbft-db v0.11.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -332,8 +332,6 @@ require (
 	pgregory.net/rapid v1.1.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-require github.com/CosmWasm/wasmvm/v2 v2.0.1
 
 require (
 	cosmossdk.io/collections v0.4.0 // indirect
