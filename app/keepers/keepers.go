@@ -61,6 +61,7 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	appparams "github.com/quasar-finance/quasar/app/params"
+	"github.com/quasar-finance/quasar/wasmbindings"
 	epochsmodulekeeper "github.com/quasar-finance/quasar/x/epochs/keeper"
 	epochsmoduletypes "github.com/quasar-finance/quasar/x/epochs/types"
 	tfbindings "github.com/quasar-finance/quasar/x/tokenfactory/bindings"
@@ -437,6 +438,14 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	tmpBankBaseKeeper := appKeepers.BankKeeper.(bankkeeper.BaseKeeper)
 
 	wasmOpts = append(tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &appKeepers.TfKeeper), wasmOpts...)
+
+	queryPlugins := wasmkeeper.WithQueryPlugins(
+		&wasmkeeper.QueryPlugins{
+			Stargate: wasmkeeper.AcceptListStargateQuerier(wasmbindings.AcceptedStargateQueries(), bApp.GRPCQueryRouter(), appCodec),
+			Grpc:     wasmkeeper.AcceptListGrpcQuerier(wasmbindings.AcceptedStargateQueries(), bApp.GRPCQueryRouter(), appCodec),
+		})
+
+	wasmOpts = append(wasmOpts, queryPlugins)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
