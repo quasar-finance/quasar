@@ -436,7 +436,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	tmpBankBaseKeeper := appKeepers.BankKeeper.(bankkeeper.BaseKeeper)
 
-	// wasmOpts = append(owasm.RegisterCustomPlugins(appKeepers.QOracleKeeper, &tmpBankBaseKeeper, callback), wasmOpts...)
 	wasmOpts = append(tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &appKeepers.TfKeeper), wasmOpts...)
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
