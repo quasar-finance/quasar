@@ -8,8 +8,25 @@ import (
 	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	bindingstypes "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
+	tokenfactorykeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 )
+
+// QueryPlugin represents a plugin that provides query functionalities related
+// to banking and token factory modules.
+type QueryPlugin struct {
+	bankKeeper         *bankkeeper.BaseKeeper
+	tokenFactoryKeeper *tokenfactorykeeper.Keeper
+}
+
+// NewQueryPlugin returns a reference to a new QueryPlugin object.
+func NewQueryPlugin(b *bankkeeper.BaseKeeper, tfk *tokenfactorykeeper.Keeper) *QueryPlugin {
+	return &QueryPlugin{
+		bankKeeper:         b,
+		tokenFactoryKeeper: tfk,
+	}
+}
 
 // CustomQuerier dispatches custom CosmWasm bindings queries.
 func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
