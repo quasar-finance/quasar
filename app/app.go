@@ -10,6 +10,8 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -638,4 +640,24 @@ func minTxFeesChecker(ctx sdk.Context, tx sdk.Tx, feemarketKp feemarketkeeper.Ke
 	}
 
 	return feeTx.GetFee(), 0, nil
+}
+
+// AutoCliOpts returns the autocli options for the app.
+func (app *QuasarApp) AutoCliOpts() autocli.AppOptions {
+	modules := make(map[string]appmodule.AppModule, 0)
+	for _, m := range app.mm.Modules {
+		if moduleWithName, ok := m.(module.HasName); ok {
+			moduleName := moduleWithName.Name()
+			if appModule, ok := moduleWithName.(appmodule.AppModule); ok {
+				modules[moduleName] = appModule
+			}
+		}
+	}
+
+	return autocli.AppOptions{
+		Modules:               modules,
+		AddressCodec:          address.NewBech32Codec(appParams.Bech32PrefixAccAddr),
+		ValidatorAddressCodec: address.NewBech32Codec(appParams.Bech32PrefixValAddr),
+		ConsensusAddressCodec: address.NewBech32Codec(appParams.Bech32PrefixConsAddr),
+	}
 }
