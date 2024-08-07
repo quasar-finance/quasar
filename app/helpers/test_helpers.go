@@ -35,7 +35,7 @@ const (
 )
 
 // DefaultConsensusParams defines the default Tendermint consensus params used
-// in GaiaApp testing.
+// in quasarApp testing.
 var DefaultConsensusParams = &tmproto.ConsensusParams{
 	Block: &tmproto.BlockParams{
 		MaxBytes: 200000,
@@ -86,21 +86,21 @@ func Setup(t *testing.T) *app.QuasarApp {
 	return app
 }
 
-// SetupWithGenesisValSet initializes a new GaiaApp with a validator set and genesis accounts
+// SetupWithGenesisValSet initializes a new quasarApp with a validator set and genesis accounts
 // that also act as delegators. For simplicity, each validator is bonded with a delegation
-// of one consensus engine unit in the default token of the GaiaApp from first genesis
-// account. A Nop logger is set in GaiaApp.
+// of one consensus engine unit in the default token of the quasarApp from first genesis
+// account. A Nop logger is set in quasarApp.
 func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *app.QuasarApp {
 	t.Helper()
 
-	gaiaApp, genesisState := setup()
-	genesisState = genesisStateWithValSet(t, gaiaApp, genesisState, valSet, genAccs, balances...)
+	quasarApp, genesisState := setup()
+	genesisState = genesisStateWithValSet(t, quasarApp, genesisState, valSet, genAccs, balances...)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
 	require.NoError(t, err)
 
 	// init chain will set the validator set and initialize the genesis accounts
-	_, err = gaiaApp.InitChain(
+	_, err = quasarApp.InitChain(
 		&abci.RequestInitChain{
 			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: DefaultConsensusParams,
@@ -110,14 +110,14 @@ func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs 
 	require.NoError(t, err)
 
 	require.NoError(t, err)
-	_, err = gaiaApp.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height:             gaiaApp.LastBlockHeight() + 1,
-		Hash:               gaiaApp.LastCommitID().Hash,
+	_, err = quasarApp.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height:             quasarApp.LastBlockHeight() + 1,
+		Hash:               quasarApp.LastCommitID().Hash,
 		NextValidatorsHash: valSet.Hash(),
 	})
 	require.NoError(t, err)
 
-	return gaiaApp
+	return quasarApp
 }
 
 func setup() (*app.QuasarApp, app.GenesisState) {
@@ -132,7 +132,7 @@ func setup() (*app.QuasarApp, app.GenesisState) {
 
 	initAppOptions := viper.New()
 	initAppOptions.Set(flags.FlagHome, dir)
-	gaiaApp := app.New(
+	quasarApp := app.New(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
 		nil,
@@ -143,7 +143,7 @@ func setup() (*app.QuasarApp, app.GenesisState) {
 		initAppOptions,
 		app.EmptyWasmOpts,
 	)
-	return gaiaApp, gaiaApp.ModuleBasics.DefaultGenesis(gaiaApp.AppCodec())
+	return quasarApp, quasarApp.ModuleBasics.DefaultGenesis(quasarApp.AppCodec())
 }
 
 func genesisStateWithValSet(t *testing.T,
