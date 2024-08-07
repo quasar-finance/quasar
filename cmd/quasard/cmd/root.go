@@ -11,6 +11,8 @@ import (
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
+	confixcmd "cosmossdk.io/tools/confix/cmd"
+	rosettaCmd "cosmossdk.io/tools/rosetta/cmd"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -22,10 +24,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
+	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/snapshot"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -34,27 +41,49 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/quasar-finance/quasar/app"
-	appparams "github.com/quasar-finance/quasar/app/params"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/quasar-finance/quasar/app"
+	appparams "github.com/quasar-finance/quasar/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
-func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
-	encodingConfig := app.MakeEncodingConfig()
+func NewRootCmd() *cobra.Command {
+	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
+	initAppOptions := viper.New()
+	tempDir := tempDir()
+	initAppOptions.Set(flags.FlagHome, tempDir)
+	tempApplication := app.New(
+		log.NewNopLogger(),
+		dbm.NewMemDB(),
+		nil,
+		true,
+		map[int64]bool{},
+		tempDir,
+		cast.ToUint(initAppOptions.Get(server.FlagInvCheckPeriod)),
+		initAppOptions,
+		app.EmptyWasmOpts,
+	)
+	defer func() {
+		if err := tempApplication.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
 	initClientCtx := client.Context{}.
-		WithCodec(encodingConfig.Marshaler).
-		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
-		WithTxConfig(encodingConfig.TxConfig).
-		WithLegacyAmino(encodingConfig.Amino).
+		WithCodec(tempApplication.AppCodec()).
+		WithInterfaceRegistry(tempApplication.InterfaceRegistry()).
+		WithTxConfig(tempApplication.GetTxConfig()).
+		WithLegacyAmino(tempApplication.LegacyAmino()).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   app.Name + "d",
+		Use:   appparams.Name + "d",
 		Short: "Start Quasar QuasarApp",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
@@ -81,9 +110,9 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(rootCmd, tempApplication.ModuleBasics, tempApplication.AppCodec(), tempApplication.InterfaceRegistry(), tempApplication.GetTxConfig())
 
-	return rootCmd, encodingConfig
+	return rootCmd
 }
 
 // initTendermintConfig helps to override default Tendermint Config values.
@@ -97,42 +126,48 @@ func initTendermintConfig() *tmcfg.Config {
 
 func initRootCmd(
 	rootCmd *cobra.Command,
-	encodingConfig appparams.EncodingConfig,
+	basicManager module.BasicManager,
+	cdc codec.Codec,
+	interfaceRegistry codectypes.InterfaceRegistry,
+	txConfig client.TxConfig,
 ) {
-	// Set config
-	initSDKConfig()
+
+	ac := appCreator{}
+
+	debugCmd := debug.Cmd()
+	debugCmd.AddCommand(ConvertBech32Cmd())
+
 	gentxModule := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
+		tmcli.NewCompletionCmd(rootCmd, true),
+		// todo add testnet commands
+		confixcmd.ConfigCommand(),
+		pruning.Cmd(ac.newApp, app.DefaultNodeHome),
+		snapshot.Cmd(ac.newApp),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{},
 			app.DefaultNodeHome,
 			gentxModule.GenTxValidator,
-			encodingConfig.TxConfig.SigningContext().ValidatorAddressCodec()),
-		// genutilcli.MigrateGenesisCmd(), TODO - SDK 50. Genesis Map To be provided.
+			txConfig.SigningContext().ValidatorAddressCodec()),
 		genutilcli.GenTxCmd(
 			app.ModuleBasics,
-			encodingConfig.TxConfig,
+			txConfig,
 			banktypes.GenesisBalancesIterator{},
 			app.DefaultNodeHome,
-			encodingConfig.TxConfig.SigningContext().ValidatorAddressCodec(),
+			txConfig.SigningContext().ValidatorAddressCodec(),
 		),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
 		AddGenesisAccountCmd(app.DefaultNodeHome),
-		tmcli.NewCompletionCmd(rootCmd, true),
-		debug.Cmd(),
+		debugCmd,
 		// config.Cmd(),   TODO - SDK 50. Config support to be added.  https://github.com/neutron-org/neutron/blob/feat/sdk-50/cmd/neutrond/config.go
 	)
-
-	a := appCreator{
-		encodingConfig,
-	}
 
 	// add server commands
 	server.AddCommands(
 		rootCmd,
 		app.DefaultNodeHome,
-		a.newApp,
-		a.appExport,
+		ac.newApp,
+		ac.appExport,
 		addModuleInitFlags,
 	)
 
@@ -140,9 +175,12 @@ func initRootCmd(
 	rootCmd.AddCommand(
 		server.StatusCommand(),
 		queryCommand(),
-		txCommand(),
+		txCommand(basicManager),
 		keys.Commands(),
 	)
+
+	// add rosetta
+	rootCmd.AddCommand(rosettaCmd.RosettaCommand(interfaceRegistry, cdc))
 }
 
 // queryCommand returns the sub-command to send queries to the app
@@ -172,7 +210,7 @@ func queryCommand() *cobra.Command {
 }
 
 // txCommand returns the sub-command to send transactions to the app
-func txCommand() *cobra.Command {
+func txCommand(basicManager module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
@@ -192,7 +230,10 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 	)
 
-	app.ModuleBasics.AddTxCommands(cmd)
+	// NOTE: this must be registered for now so that submit-legacy-proposal
+	// message (e.g. consumer-addition proposal) can be routed to the its handler and processed correctly.
+	basicManager.AddTxCommands(cmd)
+
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -268,7 +309,6 @@ func (a appCreator) newApp(
 		skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		a.encodingConfig,
 		appOpts,
 		wasmOpts,
 		baseapp.SetChainID(chainID),
@@ -286,6 +326,7 @@ func (a appCreator) newApp(
 	)
 }
 
+// todo fix app export
 // appExport creates a new simapp (optionally at a given height)
 func (a appCreator) appExport(
 	logger log.Logger,
@@ -314,7 +355,6 @@ func (a appCreator) appExport(
 		map[int64]bool{},
 		homePath,
 		uint(1),
-		a.encodingConfig,
 		appOpts,
 		app.EmptyWasmOpts,
 	)
@@ -382,4 +422,14 @@ query_gas_limit = 300000
 lru_size = 0`
 
 	return customAppTemplate, customAppConfig
+}
+
+var tempDir = func() string {
+	dir, err := os.MkdirTemp("", ".quasarnode")
+	if err != nil {
+		dir = app.DefaultNodeHome
+	}
+	defer os.RemoveAll(dir)
+
+	return dir
 }
