@@ -1,8 +1,7 @@
 package keepers
 
 import (
-	"strings"
-
+	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	evidencetypes "cosmossdk.io/x/evidence/types"
@@ -17,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -68,6 +68,8 @@ import (
 	tfkeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 	tfmodulekeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
+	"os"
+	"strings"
 )
 
 const (
@@ -131,20 +133,27 @@ func (appKeepers *AppKeepers) InitSpecialKeepers(
 	invCheckPeriod uint,
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
+	logger log.Logger,
+	appOpts servertypes.AppOptions,
 ) {
 	appKeepers.GenerateKeys()
-	appKeepers.ParamsKeeper = appKeepers.initParamsKeeper(appCodec, cdc, appKeepers.keys[paramstypes.StoreKey], appKeepers.tkeys[paramstypes.TStoreKey])
 
 	/*
-		consensusParamsKeeper := consensusparamkeeper.NewKeeper(
-			appCodec,
-			appKeepers.keys[consensusparamtypes.StoreKey],
-			authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		)
+		configure state listening capabilities using AppOptions
+		we are doing nothing with the returned streamingServices and waitGroup in this case
 	*/
+	// load state streaming if enabled
+
+	if err := bApp.RegisterStreamingServices(appOpts, appKeepers.keys); err != nil {
+		logger.Error("failed to load state streaming", "err", err)
+		os.Exit(1)
+	}
+
+	appKeepers.ParamsKeeper = appKeepers.initParamsKeeper(appCodec, cdc, appKeepers.keys[paramstypes.StoreKey], appKeepers.tkeys[paramstypes.TStoreKey])
+
 	consensusParamsKeeper := consensusparamkeeper.NewKeeper(appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[consensusparamtypes.StoreKey]),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(), // TODO - govtypes.ModuleName to be checked.
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.EventService{})
 
 	appKeepers.ConsensusParamsKeeper = &consensusParamsKeeper
@@ -185,8 +194,8 @@ func (appKeepers *AppKeepers) InitSpecialKeepers(
 // InitNormalKeepers initializes all 'normal' keepers (account, app, bank, auth, staking, distribution, slashing, transfer, IBC router, governance, mint keepers).
 func (appKeepers *AppKeepers) InitNormalKeepers(
 	appCodec codec.Codec,
-	encodingConfig appparams.EncodingConfig,
 	bApp *baseapp.BaseApp,
+	legacyAmino *codec.LegacyAmino,
 	maccPerms map[string][]string,
 	dataDir string,
 	wasmDir string,
@@ -195,8 +204,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	blockedAddress map[string]bool,
 	ibcWasmConfig ibcwasmtypes.WasmConfig,
 ) {
-	legacyAmino := encodingConfig.Amino
-
 	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[authtypes.StoreKey]),
@@ -225,8 +232,8 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-		address.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		address.NewBech32Codec(appparams.Bech32PrefixValAddr),
+		address.NewBech32Codec(appparams.Bech32PrefixConsAddr),
 	)
 	appKeepers.StakingKeeper = stakingKeeper
 
@@ -284,7 +291,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.StakingKeeper,
 		appKeepers.UpgradeKeeper,
 		appKeepers.ScopedIBCKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(), // TODO - To be verified.
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	ibcWasmClientKeeper := ibcwasmkeeper.NewKeeperWithConfig(
@@ -308,7 +315,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.AccountKeeper,
 		appKeepers.BankKeeper,
 		appKeepers.ScopedTransferKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(), // TODO - To be verified.
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	appKeepers.TransferKeeper = transferKeeper
@@ -323,8 +330,9 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.IBCKeeper.PortKeeper,
 		appKeepers.ScopedICAControllerKeeper,
 		bApp.MsgServiceRouter(),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(), // TODO - To be verified.
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
 	icaHostKeeper := icahostkeeper.NewKeeper(
 		appCodec,
 		appKeepers.keys[icahosttypes.StoreKey],
@@ -335,8 +343,9 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		appKeepers.AccountKeeper,
 		appKeepers.ScopedICAHostKeeper,
 		bApp.MsgServiceRouter(),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(), // TODO - To be verified.
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+	icaHostKeeper.WithQueryRouter(bApp.GRPCQueryRouter())
 	appKeepers.ICAHostKeeper = &icaHostKeeper
 
 	evidenceKeeper := evidencekeeper.NewKeeper(

@@ -9,9 +9,12 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -85,7 +88,6 @@ var AppModuleBasics = []module.AppModuleBasic{
 		[]govclient.ProposalHandler{
 			paramsclient.ProposalHandler,
 			// upgradeclient.LegacyProposalHandler,
-			// upgradeclient.LegacyProposalHandler,
 			// ibcclientclient.UpdateClientProposalHandler,
 			// ibcclientclient.UpgradeProposalHandler,
 		},
@@ -109,17 +111,65 @@ var AppModuleBasics = []module.AppModuleBasic{
 	ibctm.AppModuleBasic{},
 }
 
+// ModuleBasics defines the module BasicManager that is in charge of setting up basic,
+// non-dependant module elements, such as codec registration
+// and genesis verification.
+func newBasicManagerFromManager(app *QuasarApp) module.BasicManager {
+	basicManager := module.NewBasicManagerFromManager(
+		app.mm,
+		map[string]module.AppModuleBasic{
+			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+			govtypes.ModuleName: gov.NewAppModuleBasic(
+				[]govclient.ProposalHandler{
+					paramsclient.ProposalHandler,
+				},
+			),
+		})
+	basicManager.RegisterLegacyAminoCodec(app.legacyAmino)
+	basicManager.RegisterInterfaces(app.interfaceRegistry)
+	return basicManager
+}
+
+// simulationModules returns modules for simulation manager
+// define the order of the modules for deterministic simulations
+func simulationModules(
+	app *QuasarApp,
+	appCodec codec.Codec,
+	_ bool,
+) []module.AppModuleSimulation {
+	return []module.AppModuleSimulation{
+		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
+		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
+		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
+		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
+		params.NewAppModule(app.ParamsKeeper),
+		evidence.NewAppModule(app.EvidenceKeeper),
+		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		ibc.NewAppModule(app.IBCKeeper),
+		wasm.NewAppModule(appCodec, app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		app.RawIcs20TransferAppModule,
+		ica.NewAppModule(&app.ICAControllerKeeper, app.ICAHostKeeper),
+
+		// quasar modules
+		// empty because no module implements simulation
+	}
+}
+
 func appModules(
 	app *QuasarApp,
-	encodingConfig appparams.EncodingConfig,
+	appCodec codec.Codec,
+	txConfig client.TxEncodingConfig,
 	skipGenesisInvariants bool,
 ) []module.AppModule {
-	appCodec := encodingConfig.Marshaler
-
 	return []module.AppModule{
 		genutil.NewAppModule(
 			app.AccountKeeper, app.StakingKeeper, app.BaseApp,
-			encodingConfig.TxConfig,
+			txConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
@@ -132,7 +182,7 @@ func appModules(
 			app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper, addresscodec.NewBech32Codec(appparams.AccountAddressPrefix)),
+		upgrade.NewAppModule(app.UpgradeKeeper, addresscodec.NewBech32Codec(appparams.Bech32PrefixAccAddr)),
 		ibcwasm.NewAppModule(*app.IBCWasmClientKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
@@ -146,15 +196,12 @@ func appModules(
 
 		// quasar modules
 		epochsmodule.NewAppModule(*app.EpochsKeeper),
-		// qoraclemodule.NewAppModule(appCodec, app.QOracleKeeper, app.QOsmosisKeeper),
 		tfmodule.NewAppModule(app.TfKeeper, app.AccountKeeper, app.BankKeeper),
-		// qvestingmodule.NewAppModule(appCodec, app.QVestingKeeper, app.AccountKeeper, app.BankKeeper), // TODO - TB BE REMOVED
 	}
 }
 
 func orderBeginBlockers() []string {
 	return []string{
-		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		epochsmoduletypes.ModuleName,
 		minttypes.ModuleName,

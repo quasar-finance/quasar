@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasar-finance/quasar/app"
 	bindings "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"

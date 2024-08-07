@@ -2,6 +2,10 @@ package app
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/testutil/testdata"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+
 	"io"
 	"net/http"
 	"os"
@@ -11,15 +15,13 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
-	// capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	"cosmossdk.io/x/tx/signing"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	// dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
-	// "github.com/cometbft/cometbft/libs/log"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
@@ -28,25 +30,33 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/cosmos/gogoproto/proto"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
+	"github.com/spf13/cast"
+
 	quasarante "github.com/quasar-finance/quasar/ante"
 	"github.com/quasar-finance/quasar/app/keepers"
 	"github.com/quasar-finance/quasar/app/openapiconsole"
@@ -55,13 +65,6 @@ import (
 	v2 "github.com/quasar-finance/quasar/app/upgrades/v2"
 	v3 "github.com/quasar-finance/quasar/app/upgrades/v3"
 	"github.com/quasar-finance/quasar/docs"
-	"github.com/spf13/cast"
-)
-
-const (
-	AccountAddressPrefix = "quasar"
-	Name                 = "quasar"
-	DirName              = "quasarnode"
 )
 
 var (
@@ -74,6 +77,7 @@ var (
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
+	// todo remove this before v50, keeping it here till we find a better way to handle it for test-setup
 	ModuleBasics = module.NewBasicManager(AppModuleBasics...)
 
 	// module account permissions
@@ -91,7 +95,10 @@ func overrideWasmVariables() {
 }
 
 var (
+	// todo
+	//_ runtime.AppI            = (*QuasarApp)(nil)
 	_ servertypes.Application = (*QuasarApp)(nil)
+	_ ibctesting.TestingApp   = (*QuasarApp)(nil)
 )
 
 func init() {
@@ -100,7 +107,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, "."+DirName)
+	DefaultNodeHome = filepath.Join(userHomeDir, "."+appParams.DirName)
 }
 
 // QuasarApp extends an ABCI application, but with most of its parameters exported.
@@ -110,13 +117,15 @@ type QuasarApp struct {
 	*baseapp.BaseApp
 	*keepers.AppKeepers
 
-	cdc               *codec.LegacyAmino
+	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
+	txConfig          client.TxConfig
 	interfaceRegistry types.InterfaceRegistry
 	invCheckPeriod    uint
 
 	// mm is the module manager
-	mm *module.Manager
+	mm           *module.Manager
+	ModuleBasics module.BasicManager
 
 	// sm is the simulation manager
 	sm *module.SimulationManager
@@ -133,31 +142,52 @@ func New(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig appParams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *QuasarApp {
 	overrideWasmVariables()
-	appCodec := encodingConfig.Marshaler
-	cdc := encodingConfig.Amino
-	interfaceRegistry := encodingConfig.InterfaceRegistry
+
+	// encoding config starts here
+	legacyAmino := codec.NewLegacyAmino()
+	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+			},
+			ValidatorAddressCodec: address.Bech32Codec{
+				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	appCodec := codec.NewProtoCodec(interfaceRegistry)
+	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+
+	std.RegisterLegacyAminoCodec(legacyAmino)
+	std.RegisterInterfaces(interfaceRegistry)
+	// encoding config ends here
 
 	bApp := baseapp.NewBaseApp(
-		Name,
+		appParams.Name,
 		logger,
 		db,
-		encodingConfig.TxConfig.TxDecoder(),
+		txConfig.TxDecoder(),
 		baseAppOptions...,
 	)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
+	bApp.SetTxEncoder(txConfig.TxEncoder())
 
 	app := &QuasarApp{
 		AppKeepers:        &keepers.AppKeepers{},
 		BaseApp:           bApp,
-		cdc:               cdc,
+		legacyAmino:       legacyAmino,
+		txConfig:          txConfig,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
 		invCheckPeriod:    invCheckPeriod,
@@ -181,13 +211,20 @@ func New(
 	// init special keepers
 	app.InitSpecialKeepers(
 		appCodec,
-		bApp, cdc, invCheckPeriod, skipUpgradeHeights, homePath)
+		bApp,
+		legacyAmino,
+		invCheckPeriod,
+		skipUpgradeHeights,
+		homePath,
+		logger,
+		appOpts,
+	)
 
 	// init normal keepers
 	app.InitNormalKeepers(
 		appCodec,
-		encodingConfig,
 		bApp,
+		legacyAmino,
 		maccPerms,
 		dataDir,
 		wasmDir,
@@ -202,8 +239,26 @@ func New(
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
-	app.mm = module.NewManager(appModules(app, encodingConfig, skipGenesisInvariants)...)
+	app.mm = module.NewManager(appModules(app, appCodec, txConfig, skipGenesisInvariants)...)
+	app.ModuleBasics = newBasicManagerFromManager(app)
 
+	enabledSignModes := append([]sigtypes.SignMode(nil), authtx.DefaultSignModes...)
+	enabledSignModes = append(enabledSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL)
+
+	txConfigOpts := authtx.ConfigOptions{
+		EnabledSignModes:           enabledSignModes,
+		TextualCoinMetadataQueryFn: txmodule.NewBankKeeperCoinMetadataQueryFn(app.BankKeeper),
+	}
+	txConfig, err = authtx.NewTxConfigWithOptions(
+		appCodec,
+		txConfigOpts,
+	)
+	if err != nil {
+		panic(err)
+	}
+	app.txConfig = txConfig
+
+	// NOTE: upgrade module is required to be prioritized
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
 	)
@@ -226,11 +281,11 @@ func New(
 	app.mm.SetOrderInitGenesis(orderInitBlockers()...)
 
 	app.mm.RegisterInvariants(app.CrisisKeeper)
-
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	app.mm.RegisterServices(app.configurator)
-
-	// REFLECTION - SDK47
+	err = app.mm.RegisterServices(app.configurator)
+	if err != nil {
+		panic(err)
+	}
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
@@ -240,33 +295,16 @@ func New(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
-	/* TODO - SDK50 keeping in pending for now.
-	// app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	// add test gRPC service for testing gRPC queries in isolation
+	testdata.RegisterQueryServer(app.GRPCQueryRouter(), testdata.QueryImpl{})
+
 	// create the simulation manager and define the order of the modules for deterministic simulations
-	app.sm = module.NewSimulationManager(
-		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
-		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
-		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		params.NewAppModule(app.ParamsKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
-		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		ibc.NewAppModule(app.IBCKeeper),
-		app.RawIcs20TransferAppModule,
-		epochsModule,
-		//qvestingModule, TODO fix or remove
-		// TODO fix qoracle testing for sim
-		// qoracleModule,
-		// TODO fix intergam genesis + testing first (right now, test code does not even compile...)
-		// intergammModule,
-	)
+	//
+	// NOTE: this is not required apps that don't use the simulator for fuzz testing
+	// transactions
+	app.sm = module.NewSimulationManager(simulationModules(app, appCodec, skipGenesisInvariants)...)
+
 	app.sm.RegisterStoreDecoders()
-	*/
 
 	// initialize stores
 	app.MountKVStores(app.GetKVStoreKey())
@@ -278,12 +316,15 @@ func New(
 			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
-				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				FeegrantKeeper:  app.FeeGrantKeeper,
+				SignModeHandler: txConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			Codec:     appCodec,
-			IBCkeeper: app.IBCKeeper,
+			Codec:                 appCodec,
+			IBCkeeper:             app.IBCKeeper,
+			StakingKeeper:         app.StakingKeeper,
+			WasmConfig:            &wasmConfig,
+			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
 		},
 	)
 	if err != nil {
@@ -291,8 +332,9 @@ func New(
 	}
 
 	app.SetAnteHandler(anteHandler)
-	app.SetPreBlocker(app.PreBlocker)
+
 	app.SetInitChainer(app.InitChainer)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
@@ -314,6 +356,19 @@ func New(
 		if err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
 		}
+	}
+
+	// At startup, after all modules have been registered, check that all prot
+	// annotations are correct.
+	protoFiles, err := proto.MergedRegistry()
+	if err != nil {
+		panic(err)
+	}
+	err = msgservice.ValidateProtoAnnotations(protoFiles)
+	if err != nil {
+		// Once we switch to using protoreflect-based antehandlers, we might
+		// want to panic here instead of logging a warning.
+		fmt.Fprintln(os.Stderr, err.Error())
 	}
 
 	if loadLatest {
@@ -423,8 +478,7 @@ func (app *QuasarApp) ModuleAccountAddrs() map[string]bool {
 // addresses.
 func (app *QuasarApp) BlockedModuleAccountAddrs() map[string]bool {
 	modAccAddrs := app.ModuleAccountAddrs()
-	// TODO: Investigate why gov module in removed from blocked list
-	// https://github.com/cosmos/gaia/blob/main/app/app.go#L280
+
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	return modAccAddrs
@@ -435,12 +489,12 @@ func (app *QuasarApp) RegisterNodeService(clientCtx client.Context, cfg config.C
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 
-// LegacyAmino returns SimApp's amino codec.
+// LegacyAmino returns SimApp's legacyAmino codec.
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
 func (app *QuasarApp) LegacyAmino() *codec.LegacyAmino {
-	return app.cdc
+	return app.legacyAmino
 }
 
 // AppCodec returns an app codec.
@@ -474,7 +528,7 @@ func (app *QuasarApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.API
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register legacy and grpc-gateway routes for all modules.
-	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	app.ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -521,7 +575,7 @@ func (app *QuasarApp) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 }
 
 func (app *QuasarApp) GetTxConfig() client.TxConfig {
-	return MakeEncodingConfig().TxConfig
+	return app.txConfig
 }
 
 func (app *QuasarApp) GetStakingKeeper() ibctestingtypes.StakingKeeper {

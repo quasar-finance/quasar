@@ -4,13 +4,18 @@ go 1.22.4
 
 require (
 	cosmossdk.io/api v0.7.5
+	cosmossdk.io/client/v2 v2.0.0-beta.3 // indirect
 	cosmossdk.io/core v0.11.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/store v1.1.0
+	cosmossdk.io/tools/confix v0.1.1
+	cosmossdk.io/tools/rosetta v0.2.1-0.20230613133644-0a778132a60f
+	cosmossdk.io/x/circuit v0.1.0
 	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/feegrant v0.1.1
+	cosmossdk.io/x/tx v0.13.3
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmWasm/wasmd v0.51.0
 	github.com/CosmWasm/wasmvm/v2 v2.0.1
@@ -44,9 +49,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/storage v1.38.0 // indirect
-	cosmossdk.io/client/v2 v2.0.0-beta.3 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
-	cosmossdk.io/x/tx v0.13.3 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/4meepo/tagalign v1.3.4 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -202,7 +205,6 @@ require (
 	github.com/ldez/tagliatelle v0.5.0 // indirect
 	github.com/leonklingele/grouper v1.1.2 // indirect
 	github.com/lib/pq v1.10.9 // indirect
-	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/macabu/inamedparam v0.1.3 // indirect
@@ -265,7 +267,7 @@ require (
 	github.com/sourcegraph/go-diff v0.7.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.19.0 // indirect
+	github.com/spf13/viper v1.19.0
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
@@ -334,8 +336,15 @@ require (
 )
 
 require (
+	github.com/coinbase/rosetta-sdk-go/types v1.0.0 // indirect
+	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
+	github.com/creachadair/atomicfile v0.3.1 // indirect
+	github.com/creachadair/tomledit v0.0.24 // indirect
+	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
+)
+
+require (
 	cosmossdk.io/collections v0.4.0 // indirect
-	// github.com/CosmWasm/wasmvm/v2 v2.0.1 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/bits-and-blooms/bitset v1.8.0 // indirect
 	github.com/cosmos/cosmos-db v1.0.2

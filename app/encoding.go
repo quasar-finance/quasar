@@ -8,7 +8,7 @@ import (
 	"github.com/quasar-finance/quasar/app/params"
 )
 
-// makeEncodingConfig creates an EncodingConfig for an amino based test configuration.
+// makeEncodingConfig creates an EncodingConfig for an legacyAmino based test configuration.
 func makeEncodingConfig() params.EncodingConfig {
 	amino := codec.NewLegacyAmino()
 	interfaceRegistry := types.NewInterfaceRegistry()
