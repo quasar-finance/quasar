@@ -1,6 +1,10 @@
 package keepers
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
@@ -68,8 +72,8 @@ import (
 	tfkeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 	tfmodulekeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
-	"os"
-	"strings"
+	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
+	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
 )
 
 const (
@@ -114,6 +118,7 @@ type AppKeepers struct {
 	AuthzKeeper         authzkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       *icahostkeeper.Keeper
+	FeeMarketKeeper     *feemarketkeeper.Keeper
 
 	// IBC modules
 	// transfer module
@@ -236,6 +241,14 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		address.NewBech32Codec(appparams.Bech32PrefixConsAddr),
 	)
 	appKeepers.StakingKeeper = stakingKeeper
+
+	appKeepers.FeeMarketKeeper = feemarketkeeper.NewKeeper(
+		appCodec,
+		appKeepers.keys[feemarkettypes.StoreKey],
+		appKeepers.AccountKeeper,
+		&DefaultFeemarketDenomResolver{},
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
 
 	mintKeeper := mintkeeper.NewKeeper(
 		appCodec,
@@ -401,17 +414,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 			appKeepers.AccountKeeper,
 		)
 	*/
-	// TODO - Qvesting to be removed
-	/*
-		appKeepers.QVestingKeeper = *qvestingmodulekeeper.NewKeeper(
-			appCodec,
-			appKeepers.keys[qvestingmoduletypes.StoreKey],
-			appKeepers.keys[qvestingmoduletypes.MemStoreKey],
-			appKeepers.GetSubspace(qvestingmoduletypes.ModuleName),
-			appKeepers.AccountKeeper,
-			appKeepers.BankKeeper,
-		)
-	*/
 
 	// Authz
 	appKeepers.AuthzKeeper = authzkeeper.NewKeeper(
@@ -549,5 +551,20 @@ func KVStoreKeys() []string {
 		authzkeeper.StoreKey,
 		consensusparamtypes.StoreKey,
 		crisistypes.StoreKey,
+		feemarkettypes.StoreKey,
 	}
+}
+
+type DefaultFeemarketDenomResolver struct{}
+
+func (r *DefaultFeemarketDenomResolver) ConvertToDenom(_ sdk.Context, coin sdk.DecCoin, denom string) (sdk.DecCoin, error) {
+	if coin.Denom == denom {
+		return coin, nil
+	}
+
+	return sdk.DecCoin{}, fmt.Errorf("error resolving denom")
+}
+
+func (r *DefaultFeemarketDenomResolver) ExtraDenoms(_ sdk.Context) ([]string, error) {
+	return []string{}, nil
 }
