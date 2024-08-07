@@ -137,9 +137,9 @@ func initRootCmd(
 	debugCmd := debug.Cmd()
 	debugCmd.AddCommand(ConvertBech32Cmd())
 
-	gentxModule := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
+	gentxModule := basicManager[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
+		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		// todo add testnet commands
 		confixcmd.ConfigCommand(),
@@ -150,13 +150,13 @@ func initRootCmd(
 			gentxModule.GenTxValidator,
 			txConfig.SigningContext().ValidatorAddressCodec()),
 		genutilcli.GenTxCmd(
-			app.ModuleBasics,
+			basicManager,
 			txConfig,
 			banktypes.GenesisBalancesIterator{},
 			app.DefaultNodeHome,
 			txConfig.SigningContext().ValidatorAddressCodec(),
 		),
-		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
+		genutilcli.ValidateGenesisCmd(basicManager),
 		AddGenesisAccountCmd(app.DefaultNodeHome),
 		debugCmd,
 		// config.Cmd(),   TODO - SDK 50. Config support to be added.  https://github.com/neutron-org/neutron/blob/feat/sdk-50/cmd/neutrond/config.go
@@ -174,7 +174,7 @@ func initRootCmd(
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		queryCommand(),
+		queryCommand(basicManager),
 		txCommand(basicManager),
 		keys.Commands(),
 	)
@@ -184,7 +184,7 @@ func initRootCmd(
 }
 
 // queryCommand returns the sub-command to send queries to the app
-func queryCommand() *cobra.Command {
+func queryCommand(basicManager module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "query",
 		Aliases:                    []string{"q"},
@@ -203,7 +203,7 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxsByEventsCmd(),
 	)
 
-	app.ModuleBasics.AddQueryCommands(cmd)
+	basicManager.AddQueryCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd

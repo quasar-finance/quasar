@@ -77,6 +77,7 @@ var (
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
+	// todo remove this before v50, keeping it here till we find a better way to handle it for test-setup
 	ModuleBasics = module.NewBasicManager(AppModuleBasics...)
 
 	// module account permissions
@@ -527,7 +528,7 @@ func (app *QuasarApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.API
 	cmtservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register legacy and grpc-gateway routes for all modules.
-	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	app.ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
