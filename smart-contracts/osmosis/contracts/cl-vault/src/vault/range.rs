@@ -252,14 +252,12 @@ pub fn do_swap_deposit_merge(
     }
 
     let (balance0, balance1) = (
-        tokens_provided.0.checked_multiply_ratio(
-            ratio_of_swappable_funds_to_use.numerator(),
-            ratio_of_swappable_funds_to_use.denominator(),
-        )?,
-        tokens_provided.1.checked_multiply_ratio(
-            ratio_of_swappable_funds_to_use.numerator(),
-            ratio_of_swappable_funds_to_use.denominator(),
-        )?,
+        tokens_provided
+            .0
+            .checked_mul_floor(ratio_of_swappable_funds_to_use)?,
+        tokens_provided
+            .1
+            .checked_mul_floor(ratio_of_swappable_funds_to_use)?,
     );
 
     let mut target_range_position_ids = vec![];
