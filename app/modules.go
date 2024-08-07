@@ -59,20 +59,24 @@ import (
 	epochsmoduletypes "github.com/quasar-finance/quasar/x/epochs/types"
 	tfmodule "github.com/quasar-finance/quasar/x/tokenfactory"
 	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
+	"github.com/skip-mev/feemarket/x/feemarket"
+	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
 )
 
 // moduleAccountPermissions defines module account permissions
 var ModuleAccountPermissions = map[string][]string{
-	authtypes.FeeCollectorName:     nil,
-	distrtypes.ModuleName:          nil,
-	icatypes.ModuleName:            nil,
-	minttypes.ModuleName:           {authtypes.Minter, authtypes.Burner},
-	stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-	stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-	govtypes.ModuleName:            {authtypes.Burner},
-	ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-	wasmtypes.ModuleName:           {authtypes.Burner},
-	tftypes.ModuleName:             {authtypes.Minter, authtypes.Burner},
+	authtypes.FeeCollectorName:      nil,
+	distrtypes.ModuleName:           nil,
+	icatypes.ModuleName:             nil,
+	minttypes.ModuleName:            {authtypes.Minter, authtypes.Burner},
+	stakingtypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
+	stakingtypes.NotBondedPoolName:  {authtypes.Burner, authtypes.Staking},
+	govtypes.ModuleName:             {authtypes.Burner},
+	ibctransfertypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
+	wasmtypes.ModuleName:            {authtypes.Burner},
+	tftypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
+	feemarkettypes.ModuleName:       nil,
+	feemarkettypes.FeeCollectorName: nil,
 }
 
 // AppModuleBasics returns ModuleBasics for the module BasicManager.
@@ -193,6 +197,7 @@ func appModules(
 		ica.NewAppModule(&app.ICAControllerKeeper, app.ICAHostKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		consensus.NewAppModule(appCodec, *app.ConsensusParamsKeeper),
+		feemarket.NewAppModule(appCodec, *app.FeeMarketKeeper),
 
 		// quasar modules
 		epochsmodule.NewAppModule(*app.EpochsKeeper),
@@ -222,6 +227,7 @@ func orderBeginBlockers() []string {
 		paramstypes.ModuleName,
 		ibchost.ModuleName,
 		vestingtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
@@ -242,6 +248,7 @@ func orderEndBlockers() []string {
 		slashingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		vestingtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		capabilitytypes.ModuleName,
 		upgradetypes.ModuleName,
 		paramstypes.ModuleName,
@@ -285,6 +292,14 @@ func orderInitBlockers() []string {
 		ibcexported.ModuleName,
 		icatypes.ModuleName,
 		vestingtypes.ModuleName,
+		// The feemarket module should ideally be initialized before the genutil module in theory:
+		// The feemarket antehandler performs checks in DeliverTx, which is called by gentx.
+		// When the fee > 0, gentx needs to pay the fee. However, this is not expected.
+		// To resolve this issue, we should initialize the feemarket module after genutil, ensuring that the
+		// min fee is empty when gentx is called.
+		// A similar issue existed for the 'globalfee' module, which was previously used instead of 'feemarket'.
+		// For more details, please refer to the following link: https://github.com/cosmos/gaia/issues/2489
+		feemarkettypes.ModuleName,
 		feegrant.ModuleName,
 		upgradetypes.ModuleName,
 		paramstypes.ModuleName,

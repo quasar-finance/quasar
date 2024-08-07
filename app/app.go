@@ -2,10 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
-
 	"io"
 	"net/http"
 	"os"
@@ -14,7 +10,9 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/tx/signing"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -32,13 +30,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
+	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -55,6 +57,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
+	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	"github.com/spf13/cast"
 
 	quasarante "github.com/quasar-finance/quasar/ante"
@@ -323,15 +326,31 @@ func New(
 			Codec:                 appCodec,
 			IBCkeeper:             app.IBCKeeper,
 			StakingKeeper:         app.StakingKeeper,
+			FeeMarketKeeper:       app.FeeMarketKeeper,
 			WasmConfig:            &wasmConfig,
 			TXCounterStoreService: runtime.NewKVStoreService(app.AppKeepers.GetKey(wasmtypes.StoreKey)),
+			TxFeeChecker: func(ctx sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
+				return minTxFeesChecker(ctx, tx, *app.FeeMarketKeeper)
+			},
 		},
 	)
 	if err != nil {
 		panic(fmt.Errorf("failed to create AnteHandler: %s", err))
 	}
 
+	postHandlerOptions := PostHandlerOptions{
+		AccountKeeper:   app.AccountKeeper,
+		BankKeeper:      app.BankKeeper,
+		FeeGrantKeeper:  app.FeeGrantKeeper,
+		FeeMarketKeeper: app.FeeMarketKeeper,
+	}
+	postHandler, err := NewPostHandler(postHandlerOptions)
+	if err != nil {
+		panic(err)
+	}
+
 	app.SetAnteHandler(anteHandler)
+	app.SetPostHandler(postHandler)
 
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
@@ -580,4 +599,43 @@ func (app *QuasarApp) GetTxConfig() client.TxConfig {
 
 func (app *QuasarApp) GetStakingKeeper() ibctestingtypes.StakingKeeper {
 	return app.StakingKeeper
+}
+
+// minTxFeesChecker will be executed only if the feemarket module is disabled.
+// In this case, the auth module's DeductFeeDecorator is executed, and
+// we use the minTxFeesChecker to enforce the minimum transaction fees.
+// Min tx fees are calculated as gas_limit * feemarket_min_base_gas_price
+func minTxFeesChecker(ctx sdk.Context, tx sdk.Tx, feemarketKp feemarketkeeper.Keeper) (sdk.Coins, int64, error) {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return nil, 0, errorsmod.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
+	}
+
+	// To keep the gentxs with zero fees, we need to skip the validation in the first block
+	if ctx.BlockHeight() == 0 {
+		return feeTx.GetFee(), 0, nil
+	}
+
+	feeMarketParams, err := feemarketKp.GetParams(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	feeRequired := sdk.NewCoins(
+		sdk.NewCoin(
+			feeMarketParams.FeeDenom,
+			feeMarketParams.MinBaseGasPrice.MulInt(math.NewIntFromUint64(feeTx.GetGas())).Ceil().RoundInt()))
+
+	feeCoins := feeTx.GetFee()
+	if len(feeCoins) != 1 {
+		return nil, 0, fmt.Errorf(
+			"expected exactly one fee coin; got %s, required: %s", feeCoins.String(), feeRequired.String())
+	}
+
+	if !feeCoins.IsAnyGTE(feeRequired) {
+		return nil, 0, fmt.Errorf(
+			"not enough fees provided; got %s, required: %s", feeCoins.String(), feeRequired.String())
+	}
+
+	return feeTx.GetFee(), 0, nil
 }
