@@ -84,14 +84,10 @@ pub fn execute_swap_non_vault_funds(
             .checked_div(Uint128::new(2))?;
 
         // TODO_FUTURE: We should be passing the max_slippage from outside as we do during ModifyRange
-        let token_out_min_amount_0 = part_0_amount.checked_multiply_ratio(
-            vault_config.swap_max_slippage.numerator(),
-            vault_config.swap_max_slippage.denominator(),
-        )?;
-        let token_out_min_amount_1 = part_1_amount.checked_multiply_ratio(
-            vault_config.swap_max_slippage.numerator(),
-            vault_config.swap_max_slippage.denominator(),
-        )?;
+        let token_out_min_amount_0 =
+            part_0_amount.checked_mul_floor(vault_config.swap_max_slippage)?;
+        let token_out_min_amount_1 =
+            part_1_amount.checked_mul_floor(vault_config.swap_max_slippage)?;
 
         swap_msgs.push(swap_msg(
             &deps,
@@ -141,19 +137,16 @@ pub fn calculate_swap_amount(
         SwapDirection::ZeroToOne => (
             &pool_config.token0,
             &pool_config.token1,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+            token_in_amount.checked_mul_floor(twap_price),
         ),
         SwapDirection::OneToZero => (
             &pool_config.token1,
             &pool_config.token0,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+            token_in_amount.checked_div_floor(twap_price),
         ),
     };
 
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
+    let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
 
     // generate a swap message with recommended path as the current
     // pool on which the vault is running
