@@ -13,8 +13,7 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
-    Uint128, Uint256,
+    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, QuerierWrapper, Storage, Uint128, Uint256,
 };
 
 use super::coinlist::CoinList;
@@ -38,8 +37,7 @@ pub fn get_asset0_value(
         .spot_price
         .parse()?;
 
-    let total = token0
-        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
+    let total = token0.checked_add(token1.checked_div_floor(spot_price)?)?;
 
     Ok(total)
 }
@@ -171,7 +169,7 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let denominator = Decimal256::one().checked_add(spot_price_over_pool_metadata_constant)?;
 
     let swap_amount: Uint128 = Uint256::from(token0_balance)
-        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .checked_div_floor(denominator)?
         .try_into()?;
 
     Ok(swap_amount)
@@ -202,7 +200,7 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
 
     let swap_amount: Uint128 = Uint256::from(token1_balance)
-        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .checked_div_floor(denominator)?
         .try_into()?;
 
     Ok(swap_amount)
@@ -218,38 +216,16 @@ pub fn get_unused_pair_balances(
     deps: &DepsMut,
     env: &Env,
     pool_config: &PoolConfig,
-) -> Result<(Uint128, Uint128), ContractError> {
+) -> Result<Vec<Coin>, ContractError> {
     // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
     // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
     let unused_balances = get_unused_balances(&deps.querier, env)?;
 
     // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
-    let amount0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
-    let amount1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
+    let base = unused_balances.find_coin(pool_config.token0.clone());
+    let quote = unused_balances.find_coin(pool_config.token1.clone());
 
-    Ok((amount0, amount1))
-}
-
-pub fn get_tokens_provided(
-    amount0: Uint128,
-    amount1: Uint128,
-    pool_config: &PoolConfig,
-) -> Result<Vec<Coin>, ContractError> {
-    let mut tokens_provided = vec![];
-    if !amount0.is_zero() {
-        tokens_provided.push(Coin {
-            denom: pool_config.token0.clone(),
-            amount: amount0,
-        })
-    }
-    if !amount1.is_zero() {
-        tokens_provided.push(Coin {
-            denom: pool_config.token1.clone(),
-            amount: amount1,
-        })
-    }
-
-    Ok(tokens_provided)
+    Ok(vec![base, quote])
 }
 
 #[cfg(test)]

@@ -3,8 +3,7 @@ use crate::{
         assert::assert_range_admin,
         getters::{
             get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_tokens_provided,
-            get_unused_pair_balances,
+            get_single_sided_deposit_1_to_0_swap_amount, get_unused_pair_balances,
         },
     },
     math::tick::price_to_tick,
@@ -22,8 +21,8 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
-    SubMsg, SubMsgResult, Uint128,
+    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
@@ -93,9 +92,6 @@ pub fn execute_update_range_ticks(
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
-    // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
-
-    // this will error if we dont have a position anyway
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown
         .position
@@ -109,11 +105,7 @@ pub fn execute_update_range_ticks(
             .to_string(),
     };
 
-    MODIFY_RANGE_STATE.save(
-        deps.storage,
-        // todo: should ModifyRangeState be an enum?
-        &Some(modify_range_config),
-    )?;
+    MODIFY_RANGE_STATE.save(deps.storage, &Some(modify_range_config))?;
 
     // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
     let position_state = POSITION.load(deps.storage)?;
@@ -144,21 +136,10 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
-    let tokens_provided =
-        get_tokens_provided(unused_pair_balances.0, unused_pair_balances.1, &pool_config)?;
 
-    // if only one token is being deposited, and we are moving into a position where any amount of the other token is needed,
-    // creating the position here will fail because liquidityNeeded is calculated as 0 on chain level
-    // we can fix this by going straight into a swap-deposit-merge before creating any positions
-
-    // 0 token0 and current_tick > lower_tick
-    // 0 token1 and current_tick < upper_tick
-    // if (lower < current < upper) && amount0 == 0  || amount1 == 0
-    // also onesided but wrong token
-    // bad complexity demon, grug no like
-    if (unused_pair_balances.0.is_zero()
+    if (unused_pair_balances[0].amount.is_zero()
         && pool_details.current_tick < modify_range_state.upper_tick)
-        || (unused_pair_balances.1.is_zero()
+        || (unused_pair_balances[1].amount.is_zero()
             && pool_details.current_tick > modify_range_state.lower_tick)
     {
         do_swap_deposit_merge(
@@ -166,7 +147,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            (unused_pair_balances.0, unused_pair_balances.1),
+            &unused_pair_balances,
             None, // we just withdrew our only position
             modify_range_state.ratio_of_swappable_funds_to_use,
             modify_range_state.twap_window_seconds,
@@ -179,7 +160,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            tokens_provided,
+            unused_pair_balances.clone(),
             Uint128::zero(),
             Uint128::zero(),
         )?;
@@ -193,14 +174,8 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             .add_attribute("action", "handle_withdraw_position")
             .add_attribute("lower_tick", modify_range_state.lower_tick.to_string())
             .add_attribute("upper_tick", modify_range_state.upper_tick.to_string())
-            .add_attribute(
-                "token0",
-                format!("{}{}", unused_pair_balances.0, pool_config.token0),
-            )
-            .add_attribute(
-                "token1",
-                format!("{}{}", unused_pair_balances.1, pool_config.token1),
-            ))
+            .add_attribute("token0", format!("{}", unused_pair_balances[0]))
+            .add_attribute("token1", format!("{}", unused_pair_balances[1])))
     }
 }
 
@@ -214,7 +189,6 @@ pub fn handle_initial_create_position_reply(
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    // target range for our imminent swap
     // taking from response message is important because they may differ from the ones in our request
     let target_lower_tick = create_position_message.lower_tick;
     let target_upper_tick = create_position_message.upper_tick;
@@ -226,7 +200,7 @@ pub fn handle_initial_create_position_reply(
         env,
         target_lower_tick,
         target_upper_tick,
-        (unused_pair_balances.0, unused_pair_balances.1),
+        &unused_pair_balances,
         Some(create_position_message.position_id),
         modify_range_state.ratio_of_swappable_funds_to_use,
         modify_range_state.twap_window_seconds,
@@ -242,7 +216,7 @@ pub fn do_swap_deposit_merge(
     env: Env,
     target_lower_tick: i64,
     target_upper_tick: i64,
-    tokens_provided: (Uint128, Uint128),
+    tokens_provided: &[Coin],
     position_id: Option<u64>,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
@@ -251,16 +225,11 @@ pub fn do_swap_deposit_merge(
         return Err(ContractError::SwapInProgress {});
     }
 
-    let (balance0, balance1) = (
-        tokens_provided.0.checked_multiply_ratio(
-            ratio_of_swappable_funds_to_use.numerator(),
-            ratio_of_swappable_funds_to_use.denominator(),
-        )?,
-        tokens_provided.1.checked_multiply_ratio(
-            ratio_of_swappable_funds_to_use.numerator(),
-            ratio_of_swappable_funds_to_use.denominator(),
-        )?,
-    );
+    let swap_amounts: Result<Vec<_>, _> = tokens_provided
+        .iter()
+        .map(|c| c.amount.checked_mul_floor(ratio_of_swappable_funds_to_use))
+        .collect();
+    let swap_amounts = swap_amounts?;
 
     let mut target_range_position_ids = vec![];
     if let Some(pos_id) = position_id {
@@ -282,7 +251,7 @@ pub fn do_swap_deposit_merge(
     let response = Response::new()
         .add_attribute("method", "reply")
         .add_attribute("action", "do_swap_deposit_merge");
-    if balance0.is_zero() && balance1.is_zero() {
+    if swap_amounts.iter().all(|amount| amount.is_zero()) {
         let position = POSITION.load(deps.storage)?;
 
         // if we have not tokens to swap, that means all tokens we correctly used in the create position
@@ -304,14 +273,14 @@ pub fn do_swap_deposit_merge(
 
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
-    let (token_in_amount, swap_direction) = if !balance0.is_zero() {
+    let (token_in_amount, swap_direction) = if !swap_amounts[0].is_zero() {
         (
             // range is above current tick
             if pool_details.current_tick > target_upper_tick {
-                balance0
+                swap_amounts[0]
             } else {
                 get_single_sided_deposit_0_to_1_swap_amount(
-                    balance0,
+                    swap_amounts[0],
                     target_lower_tick,
                     pool_details.current_tick,
                     target_upper_tick,
@@ -323,10 +292,10 @@ pub fn do_swap_deposit_merge(
         (
             // current tick is above range
             if pool_details.current_tick < target_lower_tick {
-                balance1
+                swap_amounts[1]
             } else {
                 get_single_sided_deposit_1_to_0_swap_amount(
-                    balance1,
+                    swap_amounts[1],
                     target_lower_tick,
                     pool_details.current_tick,
                     target_upper_tick,
@@ -381,15 +350,13 @@ pub fn handle_swap_reply(
 
             let pool_config = POOL_CONFIG.load(deps.storage)?;
             let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
-            let tokens_provided =
-                get_tokens_provided(unused_pair_balances.0, unused_pair_balances.1, &pool_config)?;
 
             let create_position_msg = create_position(
                 deps,
                 &env,
                 swap_deposit_merge_state.target_lower_tick,
                 swap_deposit_merge_state.target_upper_tick,
-                tokens_provided,
+                unused_pair_balances.clone(),
                 Uint128::zero(),
                 Uint128::zero(),
             )?;
@@ -411,11 +378,11 @@ pub fn handle_swap_reply(
                 )
                 .add_attribute(
                     "token0",
-                    format!("{:?}{:?}", unused_pair_balances.0, pool_config.token0),
+                    format!("{:?}{:?}", unused_pair_balances[0], pool_config.token0),
                 )
                 .add_attribute(
                     "token1",
-                    format!("{:?}{:?}", unused_pair_balances.1, pool_config.token1),
+                    format!("{:?}{:?}", unused_pair_balances[1], pool_config.token1),
                 ))
         }
         SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
