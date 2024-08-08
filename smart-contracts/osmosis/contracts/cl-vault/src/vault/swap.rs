@@ -14,7 +14,7 @@ pub enum SwapDirection {
     OneToZero,
 }
 
-/// SwapCalculationResult holds the result of a swap calculation
+#[derive(Debug)]
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
     pub offer: Coin,
