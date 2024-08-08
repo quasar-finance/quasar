@@ -347,10 +347,7 @@ pub fn handle_swap_reply(
 ) -> Result<Response, ContractError> {
     match data.clone() {
         SubMsgResult::Ok(_) => {
-            let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
-                Some(swap_deposit_merge) => swap_deposit_merge,
-                None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
-            };
+            let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
 
             let pool_config = POOL_CONFIG.load(deps.storage)?;
             let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
@@ -400,11 +397,7 @@ pub fn handle_iteration_create_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
-
-    let mut swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
-        Some(swap_deposit_merge) => swap_deposit_merge,
-        None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
-    };
+    let mut swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
 
     // add the position id to the ones we need to merge
     swap_deposit_merge_state
