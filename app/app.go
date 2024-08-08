@@ -100,8 +100,7 @@ func overrideWasmVariables() {
 }
 
 var (
-	// todo
-	//_ runtime.AppI            = (*QuasarApp)(nil)
+	_ runtime.AppI            = (*QuasarApp)(nil)
 	_ servertypes.Application = (*QuasarApp)(nil)
 	_ ibctesting.TestingApp   = (*QuasarApp)(nil)
 )
