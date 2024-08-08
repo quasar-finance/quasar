@@ -22,8 +22,8 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, Fraction, MessageInfo, Response,
-    SubMsg, SubMsgResult, Uint128,
+    attr, to_json_binary, Decimal, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
@@ -93,9 +93,6 @@ pub fn execute_update_range_ticks(
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
-    // todo: prevent re-entrancy by checking if we have anything in MODIFY_RANGE_STATE (redundant check but whatever)
-
-    // this will error if we dont have a position anyway
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown
         .position
@@ -109,11 +106,7 @@ pub fn execute_update_range_ticks(
             .to_string(),
     };
 
-    MODIFY_RANGE_STATE.save(
-        deps.storage,
-        // todo: should ModifyRangeState be an enum?
-        &Some(modify_range_config),
-    )?;
+    MODIFY_RANGE_STATE.save(deps.storage, &Some(modify_range_config))?;
 
     // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
     let position_state = POSITION.load(deps.storage)?;
