@@ -14,7 +14,7 @@ pub enum SwapDirection {
     OneToZero,
 }
 
-/// SwapCalculationResult holds the result of a swap calculation
+#[derive(Debug)]
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
     pub token_in_denom: String,
@@ -22,7 +22,6 @@ pub struct SwapCalculationResult {
     pub token_out_min_amount: Uint128,
 }
 
-/// SwapParams holds the parameters for a swap
 pub struct SwapParams {
     pub pool_id: u64, // the osmosis pool id in case of no cw_dex_router or no best/recommended route
     pub token_in_amount: Uint128,
@@ -38,7 +37,6 @@ pub fn execute_swap_non_vault_funds(
     info: MessageInfo,
     swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
-    // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_range_admin(deps.storage, &info.sender)?;
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -60,7 +58,6 @@ pub fn execute_swap_non_vault_funds(
             return Err(ContractError::InvalidSwapAssets {});
         }
 
-        // Throw an Error if contract balance for the wanted denom is 0
         let balance_in_contract = deps
             .querier
             .query_balance(
