@@ -37,7 +37,11 @@ pub fn create_position(
         sender,
         lower_tick: round_up_to_nearest_multiple(lower_tick, tick_spacing),
         upper_tick: round_up_to_nearest_multiple(upper_tick, tick_spacing),
-        tokens_provided: sorted_tokens.into_iter().map(|c| c.into()).collect(),
+        tokens_provided: sorted_tokens
+            .into_iter()
+            .filter(|c| !c.amount.is_zero())
+            .map(|c| c.into())
+            .collect(),
         // An sdk.Int in the Go code
         token_min_amount0: token_min_amount0.to_string(),
         // An sdk.Int in the Go code
@@ -79,7 +83,6 @@ pub fn get_cl_pool_info(querier: &QuerierWrapper, pool_id: u64) -> Result<Pool, 
     let pool = pm_querier.pool(pool_id)?;
 
     match pool.pool {
-        // Some(pool) => Some(Pool::decode(pool.value.as_slice())?),
         Some(pool) => {
             let decoded_pool = Message::decode(pool.value.as_ref())?;
             Ok(decoded_pool)
