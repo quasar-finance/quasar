@@ -1,8 +1,8 @@
-use cosmwasm_std::{CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{Addr, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    helpers::{assert::assert_range_admin, getters::get_twap_price, msgs::swap_msg},
+    helpers::{assert::assert_range_admin, msgs::swap_msg},
     msg::SwapOperation,
     state::{PoolConfig, DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
     ContractError,
@@ -122,16 +122,15 @@ pub fn execute_swap_non_vault_funds(
 
 #[allow(clippy::too_many_arguments)]
 pub fn calculate_swap_amount(
-    deps: DepsMut,
-    env: &Env,
+    contract_address: String,
     pool_config: PoolConfig,
     swap_direction: SwapDirection,
     token_in_amount: Uint128,
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
-    twap_window_seconds: u64,
+    twap_price: Decimal,
+    dex_router: Option<Addr>,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let twap_price = get_twap_price(deps.storage, &deps.querier, env, twap_window_seconds)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             &pool_config.token0,
@@ -146,9 +145,8 @@ pub fn calculate_swap_amount(
     };
 
     let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
     let swap_msg = swap_msg(
-        env.contract.address.to_string(),
+        contract_address,
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,

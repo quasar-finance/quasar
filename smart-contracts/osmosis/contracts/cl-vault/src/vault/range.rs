@@ -3,15 +3,15 @@ use crate::{
         assert::assert_range_admin,
         getters::{
             get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_unused_pair_balances,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_pair_balances,
         },
     },
     math::tick::price_to_tick,
     msg::{ExecuteMsg, MergePositionMsg},
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
-        POSITION, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, DEX_ROUTER, MODIFY_RANGE_STATE,
+        POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
     },
     vault::{
         concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
@@ -306,15 +306,18 @@ fn do_swap_deposit_merge(
             SwapDirection::OneToZero,
         )
     };
+
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     let swap_calc_result = calculate_swap_amount(
-        deps,
-        &env,
+        env.contract.address.to_string(),
         pool_config,
         swap_direction,
         token_in_amount,
         mrs.max_slippage,
         mrs.forced_swap_route,
-        twap_window_seconds,
+        twap_price,
+        dex_router,
     )?;
 
     Ok(Response::new()
