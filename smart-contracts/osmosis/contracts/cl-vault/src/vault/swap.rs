@@ -34,7 +34,7 @@ pub struct SwapParams {
 
 pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
-    env: Env,
+    contract_address: String,
     info: MessageInfo,
     swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
@@ -64,7 +64,7 @@ pub fn execute_swap_non_vault_funds(
         let balance_in_contract = deps
             .querier
             .query_balance(
-                env.clone().contract.address,
+                contract_address.clone(),
                 swap_operation.clone().token_in_denom,
             )?
             .amount;
@@ -93,7 +93,7 @@ pub fn execute_swap_non_vault_funds(
 
         swap_msgs.push(swap_msg(
             &deps,
-            &env,
+            contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_0,
                 token_in_amount: part_0_amount,
@@ -105,7 +105,7 @@ pub fn execute_swap_non_vault_funds(
         )?);
         swap_msgs.push(swap_msg(
             &deps,
-            &env,
+            contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_1,
                 token_in_amount: part_1_amount,
@@ -164,7 +164,7 @@ pub fn calculate_swap_amount(
     // pool on which the vault is running
     let swap_msg = swap_msg(
         &deps,
-        env,
+        env.contract.address.to_string(),
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
@@ -228,7 +228,8 @@ mod tests {
             forced_swap_route: None,
         };
 
-        let result = super::swap_msg(&deps_mut, &env, swap_params).unwrap();
+        let result =
+            super::swap_msg(&deps_mut, env.contract.address.to_string(), swap_params).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =
