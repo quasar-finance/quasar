@@ -1,6 +1,5 @@
 use cosmwasm_std::{
-    attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, Uint128,
-    WasmMsg,
+    attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, Env, Uint128, WasmMsg,
 };
 use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::{
@@ -11,11 +10,7 @@ use osmosis_std::types::{
     },
 };
 
-use crate::{
-    state::{DEX_ROUTER, POSITION},
-    vault::swap::SwapParams,
-    ContractError,
-};
+use crate::{state::POSITION, vault::swap::SwapParams, ContractError};
 
 // Bank
 
@@ -55,24 +50,16 @@ pub fn refund_bank_msg(
 }
 
 /// Swaps
-
-/// swap will always swap over the CL pool. In the future we may expand the
-/// feature such that it chooses best swaps over all routes
 pub fn swap_msg(
-    deps: &DepsMut,
     sender: String,
     params: SwapParams,
+    dex_router: Option<Addr>,
 ) -> Result<CosmosMsg, ContractError> {
-    // let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-
-    // we will only ever have a route length of one, this will likely change once we start selecting different routes
     let pool_route = SwapAmountInRoute {
         pool_id: params.pool_id,
         token_out_denom: params.token_out_denom.to_string(),
     };
 
-    // if we don't have a dex_router, we will always swap over the osmosis pool
     if dex_router.is_none() {
         return Ok(osmosis_swap_exact_amount_in_msg(
             sender,
@@ -83,9 +70,8 @@ pub fn swap_msg(
         ));
     }
 
-    // we know we have a dex_router, so we can unwrap it and execute the swap
     cw_dex_execute_swap_operations_msg(
-        dex_router.clone().unwrap(),
+        dex_router.unwrap().to_string(),
         params.forced_swap_route,
         params.token_in_denom.to_string(),
         params.token_in_amount,
@@ -114,7 +100,7 @@ fn osmosis_swap_exact_amount_in_msg(
 }
 
 fn cw_dex_execute_swap_operations_msg(
-    dex_router_address: Addr,
+    dex_router_address: String,
     path: Option<Vec<SwapAmountInRoute>>,
     token_in_denom: String,
     token_in_amount: Uint128,
@@ -122,7 +108,7 @@ fn cw_dex_execute_swap_operations_msg(
     token_out_min_amount: Uint128,
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
-        contract_addr: dex_router_address.to_string(),
+        contract_addr: dex_router_address,
         msg: to_json_binary(&DexRouterExecuteMsg::Swap {
             path,
             out_denom: token_out_denom,

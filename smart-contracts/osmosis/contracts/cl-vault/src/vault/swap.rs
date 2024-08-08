@@ -4,7 +4,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use crate::{
     helpers::{assert::assert_range_admin, getters::get_twap_price, msgs::swap_msg},
     msg::SwapOperation,
-    state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG},
+    state::{PoolConfig, DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
     ContractError,
 };
 
@@ -87,8 +87,8 @@ pub fn execute_swap_non_vault_funds(
         let token_out_min_amount_1 =
             part_1_amount.checked_mul_floor(vault_config.swap_max_slippage)?;
 
+        let dex_router = DEX_ROUTER.may_load(deps.storage)?;
         swap_msgs.push(swap_msg(
-            &deps,
             contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_0,
@@ -98,9 +98,9 @@ pub fn execute_swap_non_vault_funds(
                 token_out_denom: pool_token_0,
                 forced_swap_route: swap_operation.forced_swap_route_token_0,
             },
+            dex_router.clone(),
         )?);
         swap_msgs.push(swap_msg(
-            &deps,
             contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_1,
@@ -110,6 +110,7 @@ pub fn execute_swap_non_vault_funds(
                 token_out_denom: pool_token_1,
                 forced_swap_route: swap_operation.forced_swap_route_token_1,
             },
+            dex_router,
         )?);
     }
 
@@ -145,11 +146,8 @@ pub fn calculate_swap_amount(
     };
 
     let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
-
-    // generate a swap message with recommended path as the current
-    // pool on which the vault is running
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
     let swap_msg = swap_msg(
-        &deps,
         env.contract.address.to_string(),
         SwapParams {
             pool_id: pool_config.pool_id,
@@ -159,6 +157,7 @@ pub fn calculate_swap_amount(
             token_out_denom: token_out_denom.clone(),
             forced_swap_route,
         },
+        dex_router,
     )?;
 
     Ok(SwapCalculationResult {
@@ -214,8 +213,7 @@ mod tests {
             forced_swap_route: None,
         };
 
-        let result =
-            super::swap_msg(&deps_mut, env.contract.address.to_string(), swap_params).unwrap();
+        let result = super::swap_msg(env.contract.address.to_string(), swap_params, None).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =
