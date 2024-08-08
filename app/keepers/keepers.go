@@ -76,10 +76,6 @@ import (
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
 )
 
-const (
-	AccountAddressPrefix = "quasar"
-)
-
 type AppKeepers struct {
 	// Special keepers
 	ParamsKeeper          paramskeeper.Keeper
@@ -488,7 +484,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	ibcRouter := ibcporttypes.NewRouter()
 
 	// Register host and authentication routes
-	// TODO_IMPORTANT - addition of qtransfer module
 	ibcRouter.
 		AddRoute(wasmtypes.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper,
 			appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
