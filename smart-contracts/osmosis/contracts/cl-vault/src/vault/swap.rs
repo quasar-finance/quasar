@@ -155,13 +155,6 @@ pub fn calculate_swap_amount(
     let token_out_min_amount = token_out_ideal_amount?
         .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
 
-    if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0,
-            quote_token: pool_config.token1,
-        });
-    }
-
     // generate a swap message with recommended path as the current
     // pool on which the vault is running
     let swap_msg = swap_msg(
