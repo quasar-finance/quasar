@@ -27,7 +27,6 @@ pub fn execute_swap_non_vault_funds(
     info: MessageInfo,
     swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
-    // validate auto compound admin as the purpose of swaps are mainly around autocompound non-vault assets into assets that can be actually compounded.
     assert_range_admin(deps.storage, &info.sender)?;
 
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
@@ -49,7 +48,6 @@ pub fn execute_swap_non_vault_funds(
             return Err(ContractError::InvalidSwapAssets {});
         }
 
-        // Throw an Error if contract balance for the wanted denom is 0
         let balance_in_contract = deps
             .querier
             .query_balance(
@@ -126,7 +124,6 @@ pub fn calculate_swap_amount(
     };
 
     let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
-
     let swap_msg = swap_msg(
         contract_address,
         pool_config.pool_id,
