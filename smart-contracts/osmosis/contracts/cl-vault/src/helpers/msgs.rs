@@ -58,7 +58,11 @@ pub fn refund_bank_msg(
 
 /// swap will always swap over the CL pool. In the future we may expand the
 /// feature such that it chooses best swaps over all routes
-pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosMsg, ContractError> {
+pub fn swap_msg(
+    deps: &DepsMut,
+    sender: String,
+    params: SwapParams,
+) -> Result<CosmosMsg, ContractError> {
     // let pool_config = POOL_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
@@ -71,7 +75,7 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
     // if we don't have a dex_router, we will always swap over the osmosis pool
     if dex_router.is_none() {
         return Ok(osmosis_swap_exact_amount_in_msg(
-            env,
+            sender,
             pool_route,
             params.token_in_amount,
             &params.token_in_denom.to_string(),
@@ -91,14 +95,14 @@ pub fn swap_msg(deps: &DepsMut, env: &Env, params: SwapParams) -> Result<CosmosM
 }
 
 fn osmosis_swap_exact_amount_in_msg(
-    env: &Env,
+    sender: String,
     pool_route: SwapAmountInRoute,
     token_in_amount: Uint128,
     token_in_denom: &String,
     token_out_min_amount: Uint128,
 ) -> CosmosMsg {
     osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
-        sender: env.contract.address.to_string(),
+        sender,
         routes: vec![pool_route],
         token_in: Some(OsmoCoin {
             denom: token_in_denom.to_string(),

@@ -253,7 +253,7 @@ pub fn handle_initial_create_position_reply(
 ///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
 #[allow(clippy::too_many_arguments)]
-pub fn do_swap_deposit_merge(
+fn do_swap_deposit_merge(
     deps: DepsMut,
     env: Env,
     target_lower_tick: i64,
