@@ -15,7 +15,7 @@ use crate::reply::Replies;
 use crate::state::{MigrationStatus, MIGRATION_STATUS};
 use crate::vault::admin::execute_admin;
 use crate::vault::autocompound::{
-    execute_autocompound, execute_migration_step, handle_autocompound_reply,
+    execute_autocompound, execute_migration_step, handle_autocompound_reply, handle_merge_reply,
 };
 use crate::vault::deposit::{
     execute_any_deposit, execute_exact_deposit, handle_any_deposit_swap_reply,
@@ -28,9 +28,7 @@ use crate::vault::merge::{
     handle_merge_withdraw_position_reply,
 };
 use crate::vault::range::{
-    execute_update_range, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
-    handle_withdraw_position_reply,
+    execute_update_range, handle_create_position, handle_swap_reply, handle_withdraw_position_reply,
 };
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
@@ -200,12 +198,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CollectIncentives => handle_collect_incentives_reply(deps, env, msg.result),
         Replies::CollectSpreadRewards => handle_collect_spread_rewards_reply(deps, env, msg.result),
         Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env),
-        Replies::RangeInitialCreatePosition => {
-            handle_initial_create_position_reply(deps, env, msg.result)
-        }
-        Replies::RangeIterationCreatePosition => {
-            handle_iteration_create_position_reply(deps, env, msg.result)
-        }
         Replies::Swap => handle_swap_reply(deps, env),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
@@ -214,6 +206,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Autocompound => handle_autocompound_reply(deps, env, msg.result),
         Replies::AnyDepositSwap => handle_any_deposit_swap_reply(deps, env, msg.result),
+        Replies::RangeCreatePosition => handle_create_position(deps, env, msg.result),
         Replies::Unknown => unimplemented!(),
     }
 }

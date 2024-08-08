@@ -375,7 +375,6 @@
           "additionalProperties": false
         },
         {
-          "description": "provides a fungify callback interface for the contract to use",
           "type": "object",
           "required": [
             "merge"
