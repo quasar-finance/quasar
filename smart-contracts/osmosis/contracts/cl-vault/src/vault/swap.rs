@@ -8,12 +8,6 @@ use crate::{
     ContractError,
 };
 
-#[cosmwasm_schema::cw_serde]
-pub enum SwapDirection {
-    ZeroToOne,
-    OneToZero,
-}
-
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
@@ -103,31 +97,23 @@ pub fn execute_swap_non_vault_funds(
 pub fn calculate_swap_amount(
     contract_address: Addr,
     pool_config: PoolConfig,
-    swap_direction: SwapDirection,
     offer: Coin,
+    out_denom: String,
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
-    twap_price: Decimal,
+    price: Decimal,
     dex_router: Option<Addr>,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let (token_out_denom, token_out_ideal_amount) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            &pool_config.token1,
-            offer.amount.checked_mul_floor(twap_price),
-        ),
-        SwapDirection::OneToZero => (
-            &pool_config.token0,
-            offer.amount.checked_div_floor(twap_price),
-        ),
-    };
-
-    let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
+    let token_out_min_amount = offer
+        .amount
+        .checked_mul_floor(price)?
+        .checked_mul_floor(max_slippage)?;
 
     let swap_msg = swap_msg(
         contract_address,
         pool_config.pool_id,
         offer.clone(),
-        coin(token_out_min_amount.into(), token_out_denom.clone()),
+        coin(token_out_min_amount.into(), out_denom.clone()),
         forced_swap_route,
         dex_router,
     )?;

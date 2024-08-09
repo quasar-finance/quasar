@@ -16,13 +16,13 @@ use crate::{
     vault::{
         concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
         merge::MergeResponse,
-        swap::{calculate_swap_amount, SwapDirection},
+        swap::calculate_swap_amount,
     },
     ContractError,
 };
 use cosmwasm_std::{
     attr, coin, to_json_binary, CheckedMultiplyFractionError, Coin, Decimal, Decimal256, DepsMut,
-    Env, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+    Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
@@ -279,10 +279,10 @@ fn do_swap_deposit_merge(
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
-    let (token_in, swap_direction) = if !swap_tokens[0].amount.is_zero() {
+    let (token_in, out_denom, price) = if !swap_tokens[0].amount.is_zero() {
         (
             // range is above current tick
             if pool_details.current_tick > target_upper_tick {
@@ -299,7 +299,8 @@ fn do_swap_deposit_merge(
                     swap_tokens[0].denom.clone(),
                 )
             },
-            SwapDirection::ZeroToOne,
+            swap_tokens[1].denom.clone(),
+            twap_price,
         )
     } else {
         (
@@ -318,20 +319,20 @@ fn do_swap_deposit_merge(
                     swap_tokens[1].denom.clone(),
                 )
             },
-            SwapDirection::OneToZero,
+            swap_tokens[0].denom.clone(),
+            twap_price.inv().expect("Invalid price"),
         )
     };
 
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     let swap_calc_result = calculate_swap_amount(
         env.contract.address,
         pool_config,
-        swap_direction,
         token_in,
+        out_denom,
         mrs.max_slippage,
         mrs.forced_swap_route,
-        twap_price,
+        price,
         dex_router,
     )?;
 

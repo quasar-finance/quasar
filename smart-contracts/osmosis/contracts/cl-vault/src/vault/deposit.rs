@@ -11,13 +11,13 @@ use crate::{
     state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
-        swap::{calculate_swap_amount, SwapDirection},
+        swap::calculate_swap_amount,
     },
     ContractError,
 };
 use cosmwasm_std::{
-    attr, coin, Addr, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult,
-    Uint128, Uint256,
+    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::{
     poolmanager::v1beta1::MsgSwapExactAmountInResponse, tokenfactory::v1beta1::MsgMint,
@@ -31,7 +31,6 @@ pub(crate) fn execute_exact_deposit(
 ) -> Result<Response, ContractError> {
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    // get the amount of funds we can deposit from this ratio
     let deposit_info = get_depositable_tokens(&deps, &info.funds, &pool_config)?;
 
     execute_deposit(&mut deps, env, recipient, deposit_info)
@@ -57,7 +56,8 @@ pub(crate) fn execute_any_deposit(
         return execute_deposit(&mut deps, env, recipient, deposit_info);
     }
 
-    let (offer, swap_direction, remainder) = if !deposit_info.base_refund.amount.is_zero() {
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
+    let (offer, out_denom, remainder, price) = if !deposit_info.base_refund.amount.is_zero() {
         let offer_amount = if pool_details.current_tick > position.upper_tick {
             deposit_info.base_refund.amount
         } else {
@@ -77,7 +77,7 @@ pub(crate) fn execute_any_deposit(
                 .into(),
             pool_config.token0.clone(),
         );
-        (offer, SwapDirection::ZeroToOne, remainder)
+        (offer, pool_config.token1.clone(), remainder, twap_price)
     } else {
         let offer_amount = if pool_details.current_tick < position.lower_tick {
             deposit_info.quote_refund.amount
@@ -98,7 +98,12 @@ pub(crate) fn execute_any_deposit(
                 .into(),
             pool_config.token1.clone(),
         );
-        (offer, SwapDirection::OneToZero, remainder)
+        (
+            offer,
+            pool_config.token0.clone(),
+            remainder,
+            twap_price.inv().expect("Invalid price"),
+        )
     };
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
@@ -110,15 +115,14 @@ pub(crate) fn execute_any_deposit(
     )?;
 
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
     let swap_calc_result = calculate_swap_amount(
         env.contract.address,
         pool_config,
-        swap_direction,
         offer.clone(),
+        out_denom,
         max_slippage,
         None, // TODO: check this None
-        twap_price,
+        price,
         dex_router,
     )?;
 

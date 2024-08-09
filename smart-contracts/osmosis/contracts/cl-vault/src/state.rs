@@ -1,7 +1,4 @@
-use crate::{
-    helpers::coinlist::CoinList,
-    vault::{merge::CurrentMergeWithdraw, swap::SwapDirection},
-};
+use crate::{helpers::coinlist::CoinList, vault::merge::CurrentMergeWithdraw};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
