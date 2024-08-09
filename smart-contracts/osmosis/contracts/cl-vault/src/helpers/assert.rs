@@ -24,7 +24,7 @@ pub(crate) fn must_pay_one_or_two(
     Ok((token0, token1))
 }
 
-pub(crate) fn must_pay_one_or_two_from_balance(
+pub(crate) fn must_pay_two_from_balance(
     funds: Vec<Coin>,
     denoms: (String, String),
 ) -> Result<(Coin, Coin), ContractError> {

@@ -1,23 +1,20 @@
-use std::cmp::min;
-use std::str::FromStr;
-
-use osmosis_std::shim::Timestamp as OsmoTimestamp;
-use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
-use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
-
-use crate::vault::concentrated_liquidity::get_position;
 use crate::{
-    helpers::assert::must_pay_one_or_two,
+    helpers::{assert::must_pay_one_or_two, coinlist::CoinList},
     math::tick::tick_to_price,
     state::{PoolConfig, POOL_CONFIG, RANGE_ADMIN},
+    vault::concentrated_liquidity::get_position,
     ContractError,
 };
 use cosmwasm_std::{
     coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, QuerierWrapper, Storage, Uint128,
     Uint256,
 };
-
-use super::coinlist::CoinList;
+use osmosis_std::shim::Timestamp as OsmoTimestamp;
+use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
+use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
+use quasar_types::pool_pair::PoolPair;
+use std::cmp::min;
+use std::str::FromStr;
 
 pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
     Ok(RANGE_ADMIN.load(deps.storage)?)
@@ -221,7 +218,7 @@ pub fn get_unused_pair_balances(
     deps: &DepsMut,
     env: &Env,
     pool_config: &PoolConfig,
-) -> Result<Vec<Coin>, ContractError> {
+) -> Result<PoolPair<Coin>, ContractError> {
     // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
     // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
     let unused_balances = get_unused_balances(&deps.querier, env)?;
@@ -230,7 +227,7 @@ pub fn get_unused_pair_balances(
     let base = unused_balances.find_coin(pool_config.token0.clone());
     let quote = unused_balances.find_coin(pool_config.token1.clone());
 
-    Ok(vec![base, quote])
+    Ok(PoolPair::new(base, quote))
 }
 
 #[cfg(test)]

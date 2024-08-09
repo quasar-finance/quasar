@@ -5,6 +5,7 @@ pub mod error;
 pub mod ibc;
 pub mod ica;
 pub mod icq;
+pub mod pool_pair;
 pub mod query;
 pub mod queue;
 pub mod stride;

@@ -7,7 +7,7 @@ use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
-use crate::helpers::assert::must_pay_one_or_two_from_balance;
+use crate::helpers::assert::must_pay_two_from_balance;
 use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_unused_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
@@ -44,8 +44,7 @@ pub fn execute_autocompound(
     let balance = get_unused_balances(&deps.querier, env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
 
-    let (token0, token1) =
-        must_pay_one_or_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;
+    let (token0, token1) = must_pay_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;
 
     // Create coins_to_send with no zero amounts
     let mut coins_to_send = vec![];

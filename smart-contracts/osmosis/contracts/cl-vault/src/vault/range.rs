@@ -126,13 +126,13 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     let sqrt_pl = tick_to_price(modify_range_state.lower_tick)?.sqrt();
     let sqrt_p = tick_to_price(pool_details.current_tick)?.sqrt();
     let base_liquidity = get_liquidity_for_base_token(
-        unused_pair_balances[0].amount.into(),
+        unused_pair_balances.base.amount.into(),
         sqrt_p,
         sqrt_pl,
         sqrt_pu,
     )?;
     let quote_liquidity = get_liquidity_for_quote_token(
-        unused_pair_balances[1].amount.into(),
+        unused_pair_balances.quote.amount.into(),
         sqrt_p,
         sqrt_pl,
         sqrt_pu,
@@ -143,21 +143,21 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         .add_attribute("action", "handle_withdraw_position")
         .add_attribute("lower_tick", modify_range_state.lower_tick.to_string())
         .add_attribute("upper_tick", modify_range_state.upper_tick.to_string())
-        .add_attribute("token0", format!("{}", unused_pair_balances[0]))
-        .add_attribute("token1", format!("{}", unused_pair_balances[1]));
+        .add_attribute("token0", format!("{}", unused_pair_balances.base))
+        .add_attribute("token1", format!("{}", unused_pair_balances.quote));
     if requires_swap(
         sqrt_p,
         sqrt_pl,
         sqrt_pu,
-        unused_pair_balances[0].amount,
-        unused_pair_balances[1].amount,
+        unused_pair_balances.base.amount,
+        unused_pair_balances.quote.amount,
         base_liquidity,
         quote_liquidity,
     ) {
         let swap_tokens = if sqrt_p <= sqrt_pl {
-            vec![Coin::default(), unused_pair_balances[1].clone()]
+            vec![Coin::default(), unused_pair_balances.quote.clone()]
         } else if sqrt_p >= sqrt_pu {
-            vec![unused_pair_balances[0].clone(), Coin::default()]
+            vec![unused_pair_balances.base.clone(), Coin::default()]
         } else if base_liquidity > quote_liquidity {
             let residual_liquidity = base_liquidity - quote_liquidity;
             let residual_amount: Uint128 = get_amount_from_liquidity_for_base_token(
@@ -170,7 +170,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             vec![
                 coin(
                     residual_amount.into(),
-                    unused_pair_balances[0].denom.clone(),
+                    unused_pair_balances.base.denom.clone(),
                 ),
                 Coin::default(),
             ]
@@ -187,7 +187,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
                 Coin::default(),
                 coin(
                     residual_amount.into(),
-                    unused_pair_balances[1].denom.clone(),
+                    unused_pair_balances.quote.denom.clone(),
                 ),
             ]
         };
@@ -222,7 +222,10 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            unused_pair_balances.clone(),
+            vec![
+                unused_pair_balances.base.clone(),
+                unused_pair_balances.quote.clone(),
+            ],
             Uint128::zero(),
             Uint128::zero(),
         )?;
@@ -310,7 +313,10 @@ pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractEr
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,
-        unused_pair_balances.clone(),
+        vec![
+            unused_pair_balances.base.clone(),
+            unused_pair_balances.quote.clone(),
+        ],
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -330,14 +336,8 @@ pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractEr
             "upper_tick",
             swap_deposit_merge_state.target_upper_tick.to_string(),
         )
-        .add_attribute(
-            "token0",
-            format!("{:?}{:?}", unused_pair_balances[0], pool_config.token0),
-        )
-        .add_attribute(
-            "token1",
-            format!("{:?}{:?}", unused_pair_balances[1], pool_config.token1),
-        ))
+        .add_attribute("token0", format!("{:?}", unused_pair_balances.base))
+        .add_attribute("token1", format!("{:?}", unused_pair_balances.quote)))
 }
 
 pub fn handle_create_position(
