@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128};
+use cosmwasm_std::{Coin, Decimal256, DepsMut, Env, QuerierWrapper, Storage, Uint128, Uint256};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::{
     ConcentratedliquidityQuerier, FullPositionBreakdown, MsgCreatePosition, MsgWithdrawPosition,
     Pool,
@@ -11,6 +11,57 @@ use crate::{
     state::{POOL_CONFIG, POSITION},
     ContractError,
 };
+
+// see https://uniswap.org/whitepaper-v3.pdf for below formulas (eq 6.29 & 6.30)
+pub fn get_liquidity_for_base_token(
+    amount: Uint256,
+    sqrt_p: Decimal256,
+    sqrt_pl: Decimal256,
+    sqrt_pu: Decimal256,
+) -> Result<Uint256, ContractError> {
+    let sqrt_p = std::cmp::max(sqrt_p, sqrt_pl);
+    if sqrt_p >= sqrt_pu {
+        return Ok(Uint256::MAX);
+    }
+    let delta_p = sqrt_pu - sqrt_p;
+    Ok(amount.checked_mul_floor(sqrt_pu.checked_mul(sqrt_p)?.checked_div(delta_p)?)?)
+}
+
+pub fn get_liquidity_for_quote_token(
+    amount: Uint256,
+    sqrt_p: Decimal256,
+    sqrt_pl: Decimal256,
+    sqrt_pu: Decimal256,
+) -> Result<Uint256, ContractError> {
+    let sqrt_p = std::cmp::min(sqrt_p, sqrt_pu);
+    if sqrt_p <= sqrt_pl {
+        return Ok(Uint256::MAX);
+    }
+    let delta_p = sqrt_p - sqrt_pl;
+    Ok(amount.checked_div_floor(delta_p)?)
+}
+
+pub fn get_amount_from_liquidity_for_base_token(
+    liq: Uint256,
+    sqrt_p: Decimal256,
+    sqrt_pl: Decimal256,
+    sqrt_pu: Decimal256,
+) -> Result<Uint256, ContractError> {
+    let sqrt_p = std::cmp::max(sqrt_p, sqrt_pl);
+    let delta_p = sqrt_pu.checked_sub(sqrt_p).unwrap_or_default();
+    Ok(liq.checked_mul_floor(delta_p.checked_div(sqrt_pu.checked_mul(sqrt_p)?)?)?)
+}
+
+pub fn get_amount_from_liquidity_for_quote_token(
+    liq: Uint256,
+    sqrt_p: Decimal256,
+    sqrt_pl: Decimal256,
+    sqrt_pu: Decimal256,
+) -> Result<Uint256, ContractError> {
+    let sqrt_p = std::cmp::min(sqrt_p, sqrt_pu);
+    let delta_p = sqrt_p.checked_sub(sqrt_pl).unwrap_or_default();
+    Ok(liq.checked_mul_floor(delta_p)?)
+}
 
 pub fn create_position(
     deps: DepsMut,
@@ -224,5 +275,143 @@ mod tests {
                 liquidity_amount: liquidity_amount.atomics().to_string()
             }
         );
+    }
+
+    #[test]
+    fn test_get_amount_from_liquidity_for_base_token_if_price_above_range() {
+        let liq = Uint256::from(50u64);
+        let sqrt_pl = Decimal256::percent(50);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(200);
+        let amount =
+            get_amount_from_liquidity_for_base_token(liq, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_amount = Uint256::zero();
+        assert_eq!(amount, expected_amount);
+    }
+
+    #[test]
+    fn test_get_amount_from_liquidity_for_base_token_if_price_in_range() {
+        let liq = Uint256::from(50u64);
+        let sqrt_pl = Decimal256::percent(25);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(50);
+        let amount =
+            get_amount_from_liquidity_for_base_token(liq, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_amount = liq;
+        assert_eq!(amount, expected_amount);
+    }
+
+    #[test]
+    fn test_get_amount_from_liquidity_for_base_token_if_price_below_range() {
+        let liq = Uint256::from(50u64);
+        let sqrt_pl = Decimal256::percent(50);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(25);
+        let amount =
+            get_amount_from_liquidity_for_base_token(liq, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_amount = liq;
+        assert_eq!(amount, expected_amount);
+    }
+
+    #[test]
+    fn test_get_amount_from_liquidity_for_quote_token_if_price_below_range() {
+        let liq = Uint256::from(50u64);
+        let sqrt_pl = Decimal256::percent(50);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(25);
+        let amount =
+            get_amount_from_liquidity_for_quote_token(liq, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_amount = Uint256::zero();
+        assert_eq!(amount, expected_amount);
+    }
+
+    #[test]
+    fn test_get_amount_from_liquidity_for_quote_token_if_price_in_range() {
+        let liq = Uint256::from(50u64);
+        let sqrt_pl = Decimal256::percent(25);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(75);
+        let amount =
+            get_amount_from_liquidity_for_quote_token(liq, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_amount = Uint256::from(25u64);
+        assert_eq!(amount, expected_amount);
+    }
+
+    #[test]
+    fn test_get_amount_from_liquidity_for_quote_token_if_price_above_range() {
+        let liq = Uint256::from(50u64);
+        let sqrt_pl = Decimal256::percent(50);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(200);
+        let amount =
+            get_amount_from_liquidity_for_quote_token(liq, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_amount = Uint256::from(25u64);
+        assert_eq!(amount, expected_amount);
+    }
+
+    #[test]
+    fn test_get_liquidity_from_amount_for_base_token_if_price_above_range() {
+        let amount = Uint256::from(150u64);
+        let sqrt_pl = Decimal256::percent(10);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(200);
+        let liq = get_liquidity_for_base_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::MAX;
+        assert_eq!(liq, expected_liq);
+    }
+
+    #[test]
+    fn test_get_liquidity_from_amount_for_base_token_if_price_in_range() {
+        let amount = Uint256::from(150u64);
+        let sqrt_pl = Decimal256::percent(10);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(25);
+        let liq = get_liquidity_for_base_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::from(49u64);
+        assert_eq!(liq, expected_liq);
+    }
+
+    #[test]
+    fn test_get_liquidity_from_amount_for_base_token_if_price_below_range() {
+        let amount = Uint256::from(150u64);
+        let sqrt_pl = Decimal256::percent(25);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(10);
+        let liq = get_liquidity_for_base_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::from(49u64);
+        assert_eq!(liq, expected_liq);
+    }
+
+    #[test]
+    fn test_get_liquidity_from_amount_for_quote_token_if_price_below_range() {
+        let amount = Uint256::from(150u64);
+        let sqrt_pl = Decimal256::percent(25);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(10);
+        let liq = get_liquidity_for_quote_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::MAX;
+        assert_eq!(liq, expected_liq);
+    }
+
+    #[test]
+    fn test_get_liquidity_from_amount_for_quote_token_if_price_in_range() {
+        let amount = Uint256::from(150u64);
+        let sqrt_pl = Decimal256::percent(10);
+        let sqrt_pu = Decimal256::percent(100);
+        let sqrt_p = Decimal256::percent(60);
+        let liq = get_liquidity_for_quote_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::from(300u64);
+        assert_eq!(liq, expected_liq);
+    }
+
+    #[test]
+    fn test_get_liquidity_from_amount_for_quote_token_if_price_above_range() {
+        let amount = Uint256::from(150u64);
+        let sqrt_pl = Decimal256::percent(10);
+        let sqrt_pu = Decimal256::percent(60);
+        let sqrt_p = Decimal256::percent(100);
+        let liq = get_liquidity_for_quote_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::from(300u64);
+        assert_eq!(liq, expected_liq);
     }
 }
