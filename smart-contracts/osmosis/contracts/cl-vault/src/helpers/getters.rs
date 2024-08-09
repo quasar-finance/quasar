@@ -63,17 +63,6 @@ pub fn get_twap_price(
     Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
 }
 
-struct PoolAssets {
-    pub base: Coin,
-    pub quote: Coin,
-}
-
-impl PoolAssets {
-    pub fn new(base: Coin, quote: Coin) -> Self {
-        Self { base, quote }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct DepositInfo {
     pub base_deposit: Uint128,
@@ -89,7 +78,7 @@ pub fn get_depositable_tokens(
 ) -> Result<DepositInfo, ContractError> {
     let funds = get_pool_funds_or_zero(&CoinList::from_coins(funds), pool_config);
     let position = get_position(deps.storage, &deps.querier)?;
-    let assets = PoolAssets::new(
+    let assets = PoolPair::<Coin>::new(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
@@ -97,7 +86,7 @@ pub fn get_depositable_tokens(
 }
 
 fn compute_deposit_and_refund_tokens(
-    assets: &PoolAssets,
+    assets: &PoolPair<Coin>,
     provided: &PoolPair<Coin>,
 ) -> Result<DepositInfo, ContractError> {
     let provided_base_amount: Uint256 = provided.base.amount.into();
@@ -361,10 +350,7 @@ mod tests {
             amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
         };
 
-        let assets = PoolAssets {
-            base: token0.clone(),
-            quote: token1.clone(),
-        };
+        let assets = PoolPair::new(token0.clone(), token1.clone());
         let result = compute_deposit_and_refund_tokens(
             &assets,
             &PoolPair::new(token0.clone(), token1.clone()),
@@ -392,13 +378,13 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let assets = PoolAssets {
-            base: Coin {
+        let assets = PoolPair::new(
+            Coin {
                 denom: "token0".to_string(),
                 amount: Uint128::zero(),
             },
-            quote: token1.clone(),
-        };
+            token1.clone(),
+        );
         let result = compute_deposit_and_refund_tokens(
             &assets,
             &PoolPair::new(token0.clone(), token1.clone()),
@@ -426,13 +412,13 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let assets = PoolAssets {
-            quote: Coin {
+        let assets = PoolPair::new(
+            token0.clone(),
+            Coin {
                 denom: "token1".to_string(),
                 amount: Uint128::zero(),
             },
-            base: token0.clone(),
-        };
+        );
         let result = compute_deposit_and_refund_tokens(
             &assets,
             &PoolPair::new(token0.clone(), token1.clone()),
@@ -460,10 +446,7 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let assets = PoolAssets {
-            base: token0.clone(),
-            quote: token1.clone(),
-        };
+        let assets = PoolPair::new(token0.clone(), token1.clone());
         let result = compute_deposit_and_refund_tokens(
             &assets,
             &PoolPair::new(coin(2000, "token0"), coin(5000, "token1")),
@@ -491,10 +474,7 @@ mod tests {
             amount: Uint128::new(100),
         };
 
-        let assets = PoolAssets {
-            base: token0.clone(),
-            quote: token1.clone(),
-        };
+        let assets = PoolPair::new(token0.clone(), token1.clone());
         let result = compute_deposit_and_refund_tokens(
             &assets,
             &PoolPair::new(coin(2000, "token0"), coin(3000, "token1")),
