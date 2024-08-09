@@ -142,13 +142,21 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         || (unused_pair_balances[1].amount.is_zero()
             && pool_details.current_tick > modify_range_state.lower_tick)
     {
+        SWAP_DEPOSIT_MERGE_STATE.save(
+            deps.storage,
+            &SwapDepositMergeState {
+                target_lower_tick: modify_range_state.lower_tick,
+                target_upper_tick: modify_range_state.upper_tick,
+                target_range_position_ids: vec![],
+            },
+        )?;
+
         do_swap_deposit_merge(
             deps,
             env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
             &unused_pair_balances,
-            None, // we just withdrew our only position
             modify_range_state.ratio_of_swappable_funds_to_use,
             modify_range_state.twap_window_seconds,
         )
@@ -195,13 +203,47 @@ pub fn handle_initial_create_position_reply(
 
     let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
 
+    if unused_pair_balances
+        .iter()
+        .all(|coin: &Coin| coin.amount.is_zero())
+    {
+        let position = POSITION.load(deps.storage)?;
+
+        // if we have not tokens to swap, that means all tokens we correctly used in the create position
+        // this means we can save the position id of the first create_position
+        POSITION.save(
+            deps.storage,
+            &Position {
+                position_id: create_position_message.position_id,
+                join_time: position.join_time,
+                claim_after: position.claim_after,
+            },
+        )?;
+
+        return Ok(Response::new()
+            .add_attribute("method", "reply")
+            .add_attribute("action", "handle_initial_create_position_reply")
+            .add_attribute(
+                "new_position",
+                create_position_message.position_id.to_string(),
+            ));
+    }
+
+    SWAP_DEPOSIT_MERGE_STATE.save(
+        deps.storage,
+        &SwapDepositMergeState {
+            target_lower_tick,
+            target_upper_tick,
+            target_range_position_ids: vec![create_position_message.position_id],
+        },
+    )?;
+
     do_swap_deposit_merge(
         deps,
         env,
         target_lower_tick,
         target_upper_tick,
         &unused_pair_balances,
-        Some(create_position_message.position_id),
         modify_range_state.ratio_of_swappable_funds_to_use,
         modify_range_state.twap_window_seconds,
     )
@@ -217,57 +259,17 @@ pub fn do_swap_deposit_merge(
     target_lower_tick: i64,
     target_upper_tick: i64,
     tokens_provided: &[Coin],
-    position_id: Option<u64>,
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
-    if SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)?.is_some() {
-        return Err(ContractError::SwapInProgress {});
-    }
-
     let swap_amounts: Result<Vec<_>, _> = tokens_provided
         .iter()
         .map(|c| c.amount.checked_mul_floor(ratio_of_swappable_funds_to_use))
         .collect();
     let swap_amounts = swap_amounts?;
 
-    let mut target_range_position_ids = vec![];
-    if let Some(pos_id) = position_id {
-        target_range_position_ids.push(pos_id);
-    }
-
-    SWAP_DEPOSIT_MERGE_STATE.save(
-        deps.storage,
-        &SwapDepositMergeState {
-            target_lower_tick,
-            target_upper_tick,
-            target_range_position_ids,
-        },
-    )?;
-
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
-
-    let response = Response::new()
-        .add_attribute("method", "reply")
-        .add_attribute("action", "do_swap_deposit_merge");
-    if swap_amounts.iter().all(|amount| amount.is_zero()) {
-        let position = POSITION.load(deps.storage)?;
-
-        // if we have not tokens to swap, that means all tokens we correctly used in the create position
-        // this means we can save the position id of the first create_position
-        POSITION.save(
-            deps.storage,
-            &Position {
-                position_id: position_id.expect("position id should be set if no swap is needed"),
-                join_time: position.join_time,
-                claim_after: position.claim_after,
-            },
-        )?;
-
-        SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
-        return Ok(response.add_attribute("new_position", position_id.unwrap().to_string()));
-    }
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
 
@@ -315,7 +317,9 @@ pub fn do_swap_deposit_merge(
         twap_window_seconds,
     )?;
 
-    Ok(response
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "do_swap_deposit_merge")
         .add_submessage(SubMsg::reply_on_success(
             swap_calc_result.swap_msg,
             Replies::Swap.into(),
@@ -343,10 +347,7 @@ pub fn handle_swap_reply(
 ) -> Result<Response, ContractError> {
     match data.clone() {
         SubMsgResult::Ok(_) => {
-            let swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
-                Some(swap_deposit_merge) => swap_deposit_merge,
-                None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
-            };
+            let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
 
             let pool_config = POOL_CONFIG.load(deps.storage)?;
             let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
@@ -396,11 +397,7 @@ pub fn handle_iteration_create_position_reply(
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
     let create_position_message: MsgCreatePositionResponse = data.try_into()?;
-
-    let mut swap_deposit_merge_state = match SWAP_DEPOSIT_MERGE_STATE.may_load(deps.storage)? {
-        Some(swap_deposit_merge) => swap_deposit_merge,
-        None => return Err(ContractError::SwapDepositMergeStateNotFound {}),
-    };
+    let mut swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
 
     // add the position id to the ones we need to merge
     swap_deposit_merge_state
