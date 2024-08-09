@@ -220,7 +220,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::RangeIterationCreatePosition => {
             handle_iteration_create_position_reply(deps, env, msg.result)
         }
-        Replies::Swap => handle_swap_reply(deps, env, msg.result),
+        Replies::Swap => handle_swap_reply(deps, env),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),
         Replies::WithdrawUser => handle_withdraw_user_reply(deps, msg.result),

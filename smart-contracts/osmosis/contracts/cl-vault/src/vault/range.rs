@@ -343,54 +343,45 @@ fn do_swap_deposit_merge(
 }
 
 // do deposit
-pub fn handle_swap_reply(
-    deps: DepsMut,
-    env: Env,
-    data: SubMsgResult,
-) -> Result<Response, ContractError> {
-    match data.clone() {
-        SubMsgResult::Ok(_) => {
-            let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
+pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
+    let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
 
-            let pool_config = POOL_CONFIG.load(deps.storage)?;
-            let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
 
-            let create_position_msg = create_position(
-                deps,
-                &env,
-                swap_deposit_merge_state.target_lower_tick,
-                swap_deposit_merge_state.target_upper_tick,
-                unused_pair_balances.clone(),
-                Uint128::zero(),
-                Uint128::zero(),
-            )?;
+    let create_position_msg = create_position(
+        deps,
+        &env,
+        swap_deposit_merge_state.target_lower_tick,
+        swap_deposit_merge_state.target_upper_tick,
+        unused_pair_balances.clone(),
+        Uint128::zero(),
+        Uint128::zero(),
+    )?;
 
-            Ok(Response::new()
-                .add_submessage(SubMsg::reply_on_success(
-                    create_position_msg,
-                    Replies::RangeIterationCreatePosition.into(),
-                ))
-                .add_attribute("method", "reply")
-                .add_attribute("action", "handle_swap_success")
-                .add_attribute(
-                    "lower_tick",
-                    swap_deposit_merge_state.target_lower_tick.to_string(),
-                )
-                .add_attribute(
-                    "upper_tick",
-                    swap_deposit_merge_state.target_upper_tick.to_string(),
-                )
-                .add_attribute(
-                    "token0",
-                    format!("{:?}{:?}", unused_pair_balances[0], pool_config.token0),
-                )
-                .add_attribute(
-                    "token1",
-                    format!("{:?}{:?}", unused_pair_balances[1], pool_config.token1),
-                ))
-        }
-        SubMsgResult::Err(msg) => Err(ContractError::SwapFailed { message: msg }),
-    }
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_on_success(
+            create_position_msg,
+            Replies::RangeIterationCreatePosition.into(),
+        ))
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_swap_success")
+        .add_attribute(
+            "lower_tick",
+            swap_deposit_merge_state.target_lower_tick.to_string(),
+        )
+        .add_attribute(
+            "upper_tick",
+            swap_deposit_merge_state.target_upper_tick.to_string(),
+        )
+        .add_attribute(
+            "token0",
+            format!("{:?}{:?}", unused_pair_balances[0], pool_config.token0),
+        )
+        .add_attribute(
+            "token1",
+            format!("{:?}{:?}", unused_pair_balances[1], pool_config.token1),
+        ))
 }
 
 // do merge position & exit
