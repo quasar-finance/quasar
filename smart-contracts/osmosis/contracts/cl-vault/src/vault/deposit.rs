@@ -2,7 +2,7 @@ use crate::{
     helpers::{
         getters::{
             get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, DepositInfo,
         },
         msgs::refund_bank_msg,
     },
@@ -34,16 +34,7 @@ pub(crate) fn execute_exact_deposit(
     // get the amount of funds we can deposit from this ratio
     let deposit_info = get_depositable_tokens(&deps, &info.funds, &pool_config)?;
 
-    execute_deposit(
-        &mut deps,
-        env,
-        recipient,
-        (deposit_info.base_deposit, deposit_info.quote_deposit),
-        (
-            coin(deposit_info.base_refund.into(), pool_config.token0),
-            coin(deposit_info.quote_refund.into(), pool_config.token1),
-        ),
-    )
+    execute_deposit(&mut deps, env, recipient, deposit_info)
 }
 
 pub(crate) fn execute_any_deposit(
@@ -61,54 +52,40 @@ pub(crate) fn execute_any_deposit(
         .position
         .ok_or(ContractError::MissingPosition {})?;
 
-    // get the amount of funds we can deposit from this ratio
-    // let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
     let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
 
-    if deposit_info.base_refund.is_zero() && deposit_info.quote_refund.is_zero() {
-        return execute_deposit(
-            &mut deps,
-            env,
-            recipient,
-            (deposit_info.base_deposit, deposit_info.quote_deposit),
-            (
-                coin(0u128, pool_config.token0),
-                coin(0u128, pool_config.token1),
-            ),
-        );
+    if deposit_info.base_refund.amount.is_zero() && deposit_info.quote_refund.amount.is_zero() {
+        return execute_deposit(&mut deps, env, recipient, deposit_info);
     }
 
-    // Swap logic
-    // TODO_FUTURE: Optimize this if conditions
-    let (swap_amount, swap_direction, left_over_amount) = if !deposit_info.base_refund.is_zero() {
-        // range is above current tick
-        let swap_amount = if pool_details.current_tick > position.upper_tick {
-            deposit_info.base_refund
+    let (swap_amount, swap_direction, left_over_amount) =
+        if !deposit_info.base_refund.amount.is_zero() {
+            let swap_amount = if pool_details.current_tick > position.upper_tick {
+                deposit_info.base_refund.amount
+            } else {
+                get_single_sided_deposit_0_to_1_swap_amount(
+                    deposit_info.base_refund.amount,
+                    position.lower_tick,
+                    pool_details.current_tick,
+                    position.upper_tick,
+                )?
+            };
+            let left_over_amount = deposit_info.base_refund.amount.checked_sub(swap_amount)?;
+            (swap_amount, SwapDirection::ZeroToOne, left_over_amount)
         } else {
-            get_single_sided_deposit_0_to_1_swap_amount(
-                deposit_info.base_refund,
-                position.lower_tick,
-                pool_details.current_tick,
-                position.upper_tick,
-            )?
+            let swap_amount = if pool_details.current_tick < position.lower_tick {
+                deposit_info.quote_refund.amount
+            } else {
+                get_single_sided_deposit_1_to_0_swap_amount(
+                    deposit_info.quote_refund.amount,
+                    position.lower_tick,
+                    pool_details.current_tick,
+                    position.upper_tick,
+                )?
+            };
+            let left_over_amount = deposit_info.quote_refund.amount.checked_sub(swap_amount)?;
+            (swap_amount, SwapDirection::OneToZero, left_over_amount)
         };
-        let left_over_amount = deposit_info.base_refund.checked_sub(swap_amount)?;
-        (swap_amount, SwapDirection::ZeroToOne, left_over_amount)
-    } else {
-        // current tick is above range
-        let swap_amount = if pool_details.current_tick < position.lower_tick {
-            deposit_info.quote_refund
-        } else {
-            get_single_sided_deposit_1_to_0_swap_amount(
-                deposit_info.quote_refund,
-                position.lower_tick,
-                pool_details.current_tick,
-                position.upper_tick,
-            )?
-        };
-        let left_over_amount = deposit_info.quote_refund.checked_sub(swap_amount)?;
-        (swap_amount, SwapDirection::OneToZero, left_over_amount)
-    };
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
         &(
@@ -192,11 +169,12 @@ pub fn handle_any_deposit_swap_reply(
         &mut deps,
         env,
         recipient,
-        (coins_to_mint_for.0.amount, coins_to_mint_for.1.amount),
-        (
-            coin(0u128, pool_config.token0),
-            coin(0u128, pool_config.token1),
-        ),
+        DepositInfo {
+            base_deposit: coins_to_mint_for.0.amount,
+            quote_deposit: coins_to_mint_for.1.amount,
+            base_refund: coin(0u128, pool_config.token0),
+            quote_refund: coin(0u128, pool_config.token1),
+        },
     )
 }
 
@@ -206,18 +184,24 @@ fn execute_deposit(
     deps: &mut DepsMut,
     env: Env,
     recipient: Addr,
-    deposit: (Uint128, Uint128),
-    refund: (Coin, Coin),
+    deposit_info: DepositInfo,
+    // deposit: (Uint128, Uint128),
+    // refund: (Coin, Coin),
 ) -> Result<Response, ContractError> {
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
-    let user_value = get_asset0_value(deps.storage, &deps.querier, deposit.0, deposit.1)?;
+    let user_value = get_asset0_value(
+        deps.storage,
+        &deps.querier,
+        deposit_info.base_deposit,
+        deposit_info.quote_deposit,
+    )?;
     let refund_value = get_asset0_value(
         deps.storage,
         &deps.querier,
-        refund.0.amount,
-        refund.1.amount,
+        deposit_info.base_refund.amount,
+        deposit_info.quote_refund.amount,
     )?;
 
     // calculate the amount of shares we can mint for this
@@ -271,14 +255,17 @@ fn execute_deposit(
     let mut resp = Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "deposit")
-        .add_attribute("amount0", deposit.0)
-        .add_attribute("amount1", deposit.1)
+        .add_attribute("amount0", deposit_info.base_deposit)
+        .add_attribute("amount1", deposit_info.quote_deposit)
         .add_message(mint_msg)
         .add_attribute("mint_shares_amount", user_shares)
         .add_attribute("receiver", recipient.as_str());
 
-    if let Some((bank_msg, bank_attr)) = refund_bank_msg(recipient, Some(refund.0), Some(refund.1))?
-    {
+    if let Some((bank_msg, bank_attr)) = refund_bank_msg(
+        recipient,
+        Some(deposit_info.base_refund),
+        Some(deposit_info.quote_refund),
+    )? {
         resp = resp.add_message(bank_msg).add_attributes(bank_attr);
     }
 
