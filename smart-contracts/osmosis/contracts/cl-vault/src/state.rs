@@ -145,22 +145,16 @@ pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 #[cw_serde]
 pub struct ModifyRangeState {
-    // pre-withdraw state items
     pub lower_tick: i64,
     pub upper_tick: i64,
-    // the max slippage for modifying the range
     pub max_slippage: Decimal,
-    // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
-    // the percent of funds to try for the next swap
     pub ratio_of_swappable_funds_to_use: Decimal,
-    // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
-    // the recommended path to take for the swap
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
-pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
+pub const MODIFY_RANGE_STATE: Item<ModifyRangeState> = Item::new("modify_range_state");
 
 #[cw_serde]
 pub struct SwapDepositMergeState {

@@ -20,6 +20,7 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
+use crate::state::ModifyRangeState;
 #[allow(deprecated)]
 use crate::state::CURRENT_BALANCE;
 #[allow(deprecated)]
@@ -287,6 +288,10 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     CURRENT_BALANCE.remove(deps.storage);
     #[allow(deprecated)]
     CURRENT_SWAP.remove(deps.storage);
+
+    use cw_storage_plus::Item;
+    let modify_range_state: Item<ModifyRangeState> = Item::new("modify_range_state");
+    modify_range_state.remove(deps.storage);
 
     Ok(response)
 }
