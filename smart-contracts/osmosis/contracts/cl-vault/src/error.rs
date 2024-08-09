@@ -185,3 +185,10 @@ pub fn assert_ratio(ratio: Decimal) -> Result<(), ContractError> {
     }
     Ok(())
 }
+
+pub fn assert_deposit_funds(funds: &[Coin]) -> Result<(), ContractError> {
+    if funds.len() != 2 && funds.len() != 1 {
+        return Err(ContractError::IncorrectAmountFunds);
+    }
+    Ok(())
+}

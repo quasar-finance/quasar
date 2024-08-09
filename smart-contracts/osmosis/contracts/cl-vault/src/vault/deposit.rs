@@ -1,4 +1,5 @@
 use crate::{
+    error::assert_deposit_funds,
     helpers::{
         getters::{
             get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
@@ -29,6 +30,7 @@ pub(crate) fn execute_exact_deposit(
     info: MessageInfo,
     recipient: Option<String>,
 ) -> Result<Response, ContractError> {
+    assert_deposit_funds(&info.funds)?;
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     // get the amount of funds we can deposit from this ratio
@@ -44,6 +46,7 @@ pub(crate) fn execute_any_deposit(
     recipient: Option<String>,
     max_slippage: Decimal,
 ) -> Result<Response, ContractError> {
+    assert_deposit_funds(&info.funds)?;
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;

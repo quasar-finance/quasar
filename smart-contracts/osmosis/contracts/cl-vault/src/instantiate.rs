@@ -11,6 +11,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
+use crate::error::assert_deposit_funds;
 use crate::helpers::assert::must_pay_one_or_two;
 use crate::helpers::getters::get_asset0_value;
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
@@ -29,6 +30,7 @@ pub fn handle_instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    assert_deposit_funds(&info.funds)?;
     // a performance fee of more than 1 means that the performance fee is more than 100%
     if msg.config.performance_fee > Decimal::one() {
         return Err(ContractError::Std(StdError::generic_err(

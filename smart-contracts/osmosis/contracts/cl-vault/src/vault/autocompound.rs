@@ -7,9 +7,8 @@ use osmosis_std::types::cosmos::bank::v1beta1::{Input, MsgMultiSend, Output};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
-use crate::helpers::assert::must_pay_two_from_balance;
 use crate::helpers::coinlist::CoinList;
-use crate::helpers::getters::get_unused_balances;
+use crate::helpers::getters::get_unused_pair_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 #[allow(deprecated)]
@@ -41,18 +40,15 @@ pub fn execute_autocompound(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let balance = get_unused_balances(&deps.querier, env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
+    let balance = get_unused_pair_balances(&deps, env, &pool)?;
 
-    let (token0, token1) = must_pay_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;
-
-    // Create coins_to_send with no zero amounts
     let mut coins_to_send = vec![];
-    if !token0.amount.is_zero() {
-        coins_to_send.push(token0.clone());
+    if !balance.base.amount.is_zero() {
+        coins_to_send.push(balance.base.clone());
     }
-    if !token1.amount.is_zero() {
-        coins_to_send.push(token1.clone());
+    if !balance.quote.amount.is_zero() {
+        coins_to_send.push(balance.quote.clone());
     }
 
     let create_position_msg = create_position(
@@ -74,8 +70,8 @@ pub fn execute_autocompound(
         .add_attribute("action", "autocompound")
         .add_attribute("lower_tick", format!("{:?}", position.lower_tick))
         .add_attribute("upper_tick", format!("{:?}", position.upper_tick))
-        .add_attribute("token0", format!("{:?}", token0.clone()))
-        .add_attribute("token1", format!("{:?}", token1.clone())))
+        .add_attribute("token0", format!("{:?}", balance.base))
+        .add_attribute("token1", format!("{:?}", balance.quote)))
 }
 
 pub fn handle_autocompound_reply(
