@@ -1,13 +1,10 @@
 use crate::ContractError;
-use cosmwasm_std::{Coin, Decimal, Fraction, Uint128};
+use cosmwasm_std::{Coin, Decimal, Uint128};
 
 pub fn with_slippage(amount: Uint128, slippage: Decimal) -> Result<Uint128, ContractError> {
     let slippage_multiplier = Decimal::one().checked_sub(slippage)?;
 
-    let adjusted_amount = amount.checked_multiply_ratio(
-        slippage_multiplier.numerator(),
-        slippage_multiplier.denominator(),
-    )?;
+    let adjusted_amount = amount.checked_mul_floor(slippage_multiplier)?;
 
     Ok(adjusted_amount)
 }
