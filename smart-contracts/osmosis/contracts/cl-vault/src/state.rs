@@ -1,9 +1,6 @@
-use crate::{
-    helpers::coinlist::CoinList,
-    vault::{merge::CurrentMergeWithdraw, swap::SwapDirection},
-};
+use crate::{helpers::coinlist::CoinList, vault::merge::CurrentMergeWithdraw};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
@@ -23,9 +20,6 @@ pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
 #[deprecated]
 pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
-
-#[deprecated]
-pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
 
 /// metadata useful for display purposes
 #[cw_serde]
@@ -137,7 +131,7 @@ pub enum RewardsStatus {
 }
 
 /// Swap helper states
-pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
+pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(Coin, Addr, (Uint128, Uint128))> =
     Item::new("current_swap_any_deposit");
 
 /// DEX_ROUTER: The address of the dex router contract

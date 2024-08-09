@@ -11,13 +11,13 @@ use crate::{
     state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
-        swap::{calculate_swap_amount, SwapDirection},
+        swap::calculate_swap_amount,
     },
     ContractError,
 };
 use cosmwasm_std::{
-    attr, coin, Addr, Coin, Decimal, DepsMut, Env, MessageInfo, Response, SubMsg, SubMsgResult,
-    Uint128, Uint256,
+    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
+    SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::{
     poolmanager::v1beta1::MsgSwapExactAmountInResponse, tokenfactory::v1beta1::MsgMint,
@@ -31,7 +31,6 @@ pub(crate) fn execute_exact_deposit(
 ) -> Result<Response, ContractError> {
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    // get the amount of funds we can deposit from this ratio
     let deposit_info = get_depositable_tokens(&deps, &info.funds, &pool_config)?;
 
     execute_deposit(
@@ -61,8 +60,6 @@ pub(crate) fn execute_any_deposit(
         .position
         .ok_or(ContractError::MissingPosition {})?;
 
-    // get the amount of funds we can deposit from this ratio
-    // let (deposit_amount_in_ratio, swappable_amount): ((Uint128, Uint128), (Uint128, Uint128)) =
     let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
 
     if deposit_info.base_refund.is_zero() && deposit_info.quote_refund.is_zero() {
@@ -78,57 +75,70 @@ pub(crate) fn execute_any_deposit(
         );
     }
 
-    // Swap logic
-    // TODO_FUTURE: Optimize this if conditions
-    let (swap_amount, swap_direction, left_over_amount) = if !deposit_info.base_refund.is_zero() {
-        // range is above current tick
-        let swap_amount = if pool_details.current_tick > position.upper_tick {
-            deposit_info.base_refund
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
+    let (offer, out_denom, remainder, price) = if !deposit_info.base_refund.is_zero() {
+        let offer = if pool_details.current_tick > position.upper_tick {
+            coin(deposit_info.base_refund.into(), pool_config.token0.clone())
         } else {
-            get_single_sided_deposit_0_to_1_swap_amount(
-                deposit_info.base_refund,
-                position.lower_tick,
-                pool_details.current_tick,
-                position.upper_tick,
-            )?
+            coin(
+                get_single_sided_deposit_0_to_1_swap_amount(
+                    deposit_info.base_refund,
+                    position.lower_tick,
+                    pool_details.current_tick,
+                    position.upper_tick,
+                )?
+                .into(),
+                pool_config.token0.clone(),
+            )
         };
-        let left_over_amount = deposit_info.base_refund.checked_sub(swap_amount)?;
-        (swap_amount, SwapDirection::ZeroToOne, left_over_amount)
+        let left_over_amount = deposit_info.base_refund.checked_sub(offer.amount)?;
+        (
+            offer,
+            pool_config.token1.clone(),
+            coin(left_over_amount.into(), pool_config.token0.clone()),
+            twap_price,
+        )
     } else {
-        // current tick is above range
-        let swap_amount = if pool_details.current_tick < position.lower_tick {
-            deposit_info.quote_refund
+        let offer = if pool_details.current_tick < position.lower_tick {
+            coin(deposit_info.quote_refund.into(), pool_config.token1.clone())
         } else {
-            get_single_sided_deposit_1_to_0_swap_amount(
-                deposit_info.quote_refund,
-                position.lower_tick,
-                pool_details.current_tick,
-                position.upper_tick,
-            )?
+            coin(
+                get_single_sided_deposit_1_to_0_swap_amount(
+                    deposit_info.quote_refund,
+                    position.lower_tick,
+                    pool_details.current_tick,
+                    position.upper_tick,
+                )?
+                .into(),
+                pool_config.token1.clone(),
+            )
         };
-        let left_over_amount = deposit_info.quote_refund.checked_sub(swap_amount)?;
-        (swap_amount, SwapDirection::OneToZero, left_over_amount)
+        let left_over_amount = deposit_info.quote_refund.checked_sub(offer.amount)?;
+        (
+            offer,
+            pool_config.token0.clone(),
+            coin(left_over_amount.into(), pool_config.token1.clone()),
+            twap_price.inv().expect("Invalid price"),
+        )
     };
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
         &(
-            swap_direction.clone(),
-            left_over_amount,
+            remainder,
             recipient.clone(),
             (deposit_info.base_deposit, deposit_info.quote_deposit),
         ),
     )?;
 
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
     let swap_calc_result = calculate_swap_amount(
         env.contract.address,
         pool_config,
-        swap_direction,
-        swap_amount,
+        offer.clone(),
+        out_denom,
         max_slippage,
         None, // TODO: check this None
-        twap_price,
+        price,
         dex_router,
     )?;
 
@@ -141,10 +151,7 @@ pub(crate) fn execute_any_deposit(
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
-            attr(
-                "token_in",
-                format!("{}{}", swap_amount, swap_calc_result.offer.denom),
-            ),
+            attr("token_in", format!("{:?}", offer)),
             attr(
                 "token_out_min",
                 format!("{}", swap_calc_result.token_out_min_amount),
@@ -160,23 +167,23 @@ pub fn handle_any_deposit_swap_reply(
     // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
     let resp: MsgSwapExactAmountInResponse = data.try_into()?;
 
-    let (swap_direction, left_over_amount, recipient, deposit_amount_in_ratio) =
+    let (remainder, recipient, deposit_amount_in_ratio) =
         CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
     CURRENT_SWAP_ANY_DEPOSIT.remove(deps.storage);
 
-    // get post swap balances to create positions with
-    let (balance0, balance1): (Uint128, Uint128) = match swap_direction {
-        SwapDirection::ZeroToOne => (
-            left_over_amount,
+    let pool_config = POOL_CONFIG.load(deps.storage)?;
+    let (balance0, balance1): (Uint128, Uint128) = if remainder.denom == pool_config.token0 {
+        (
+            remainder.amount,
             Uint128::new(resp.token_out_amount.parse()?),
-        ),
-        SwapDirection::OneToZero => (
+        )
+    } else {
+        (
             Uint128::new(resp.token_out_amount.parse()?),
-            left_over_amount,
-        ),
+            remainder.amount,
+        )
     };
 
-    let pool_config = POOL_CONFIG.load(deps.storage)?;
     let coins_to_mint_for = (
         Coin {
             denom: pool_config.token0.clone(),
