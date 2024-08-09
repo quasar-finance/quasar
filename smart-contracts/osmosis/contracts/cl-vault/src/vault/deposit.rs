@@ -2,13 +2,13 @@ use crate::{
     helpers::{
         getters::{
             get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price,
         },
         msgs::refund_bank_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
     reply::Replies,
-    state::{CURRENT_SWAP_ANY_DEPOSIT, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
         swap::{calculate_swap_amount, SwapDirection},
@@ -118,15 +118,18 @@ pub(crate) fn execute_any_deposit(
             (deposit_info.base_deposit, deposit_info.quote_deposit),
         ),
     )?;
+
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
     let swap_calc_result = calculate_swap_amount(
-        deps,
-        &env,
+        env.contract.address,
         pool_config,
         swap_direction,
         swap_amount,
         max_slippage,
         None, // TODO: check this None
-        24u64,
+        twap_price,
+        dex_router,
     )?;
 
     // rest minting logic remains same
