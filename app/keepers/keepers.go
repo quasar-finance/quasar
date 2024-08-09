@@ -3,7 +3,6 @@ package keepers
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -70,6 +69,7 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
@@ -131,13 +131,12 @@ type AppKeepers struct {
 
 	// IBC modules
 	// transfer module
-	RawIcs20TransferAppModule transfer.AppModule
-	RateLimitModule           ratelimit.AppModule
-	TransferStack             *ibchooks.IBCMiddleware
-	TransferModule            transfer.AppModule
-	Ics20WasmHooks            *ibchooks.WasmHooks
-	HooksICS4Wrapper          ibchooks.ICS4Middleware
-	PFMRouterModule           pfmrouter.AppModule
+	RateLimitModule  ratelimit.AppModule
+	TransferStack    *ibchooks.IBCMiddleware
+	TransferModule   transfer.AppModule
+	Ics20WasmHooks   *ibchooks.WasmHooks
+	HooksICS4Wrapper ibchooks.ICS4Middleware
+	PFMRouterModule  pfmrouter.AppModule
 
 	// keys to access the substores
 	keys    map[string]*storetypes.KVStoreKey
@@ -322,7 +321,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
-	appKeepers.keys[ibchookstypes.StoreKey] = storetypes.NewKVStoreKey(ibchookstypes.StoreKey)
 	// Configure the hooks keeper
 	hooksKeeper := ibchookskeeper.NewKeeper(
 		appKeepers.keys[ibchookstypes.StoreKey],
@@ -332,7 +330,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	wasmHooks := ibchooks.NewWasmHooks(appKeepers.IBCHooksKeeper, nil, appparams.Bech32PrefixAccAddr)
 	appKeepers.Ics20WasmHooks = &wasmHooks
 
-	appKeepers.keys[ratelimittypes.StoreKey] = storetypes.NewKVStoreKey(ratelimittypes.StoreKey)
 	// Configure the rate limit keeper
 	rateLimitKeeper := *ratelimitkeeper.NewKeeper(
 		appCodec,
@@ -385,8 +382,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	appKeepers.TransferKeeper = transferKeeper
 	// Must be called on PFMRouter AFTER TransferKeeper initialized
 	appKeepers.PFMRouterKeeper.SetTransferKeeper(appKeepers.TransferKeeper)
-
-	appKeepers.RawIcs20TransferAppModule = transfer.NewAppModule(appKeepers.TransferKeeper)
 
 	appKeepers.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, appKeepers.keys[icacontrollertypes.StoreKey],
@@ -451,7 +446,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	govKeeper.SetLegacyRouter(govRouter)
 	appKeepers.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -469,7 +464,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	// Set epoch hooks
 	appKeepers.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-		// appKeepers.QOsmosisKeeper.EpochHooks(),
+			// appKeepers.QOsmosisKeeper.EpochHooks(),
 		),
 	)
 
@@ -500,13 +495,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		})
 
 	wasmOpts = append(wasmOpts, queryPlugins)
-
-	// The last arguments can contain custom message handlers, and custom query handlers,
-	// if we want to allow any custom callbacks
-	// TODO: add support for cosmwasm_2_0
-	supportedFeatures := "cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_4,iterator,staking,stargate"
-	supportedFeaturesSlice := strings.Split(supportedFeatures, ",")
-
+	
 	wasmKeeper := wasmkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
@@ -523,10 +512,11 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		bApp.GRPCQueryRouter(),
 		wasmDir,
 		wasmConfig,
-		supportedFeaturesSlice,
+		wasmkeeper.BuiltInCapabilities(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		wasmOpts...,
 	)
+
 	appKeepers.WasmKeeper = &wasmKeeper
 
 	//IBC hooks
@@ -583,7 +573,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 // initParamsKeeper init params keeper and its subspaces
 func (appKeepers *AppKeepers) initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
-
+	keyTable := ibcclienttypes.ParamKeyTable()
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
@@ -592,17 +582,17 @@ func (appKeepers *AppKeepers) initParamsKeeper(appCodec codec.BinaryCodec, legac
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName)
 	paramsKeeper.Subspace(crisistypes.ModuleName)
-	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(ibctransfertypes.ModuleName).WithKeyTable(ibctransfertypes.ParamKeyTable())
+	paramsKeeper.Subspace(ibchost.ModuleName).WithKeyTable(keyTable)
 	paramsKeeper.Subspace(epochsmoduletypes.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName).WithKeyTable(icacontrollertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icqtypes.ModuleName)
-	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	paramsKeeper.Subspace(icahosttypes.SubModuleName).WithKeyTable(icahosttypes.ParamKeyTable())
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
 	paramsKeeper.Subspace(tftypes.ModuleName)
 	paramsKeeper.Subspace(authztypes.ModuleName)
-	paramsKeeper.Subspace(ratelimittypes.ModuleName)
-	paramsKeeper.Subspace(pfmtypes.ModuleName)
+	paramsKeeper.Subspace(ratelimittypes.ModuleName).WithKeyTable(ratelimittypes.ParamKeyTable())
+	paramsKeeper.Subspace(pfmtypes.ModuleName).WithKeyTable(pfmtypes.ParamKeyTable())
 	paramsKeeper.Subspace(ibchookstypes.ModuleName)
 
 	return paramsKeeper

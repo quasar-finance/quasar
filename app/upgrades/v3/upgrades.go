@@ -8,7 +8,10 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	pfmtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
 	"github.com/quasar-finance/quasar/app/keepers"
+	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
 )
 
 func CreateUpgradeHandler(
@@ -40,6 +43,21 @@ func CreateUpgradeHandler(
 				prefixStore.Delete(iterator.Key())
 			}
 		}
+
+		// Set rate-limit params
+		keepers.RatelimitKeeper.SetParams(ctx, ratelimittypes.DefaultParams())
+		// Set pfm params
+		err := keepers.PFMRouterKeeper.SetParams(ctx, pfmtypes.DefaultParams())
+		if err != nil {
+			panic(err)
+		}
+		// fee market params
+		// TODO: change values from default after discussion
+		err = keepers.FeeMarketKeeper.SetParams(ctx, feemarkettypes.DefaultParams())
+		if err != nil {
+			panic(err)
+		}
+
 		return mm.RunMigrations(ctx, configurator, fromVM)
 	}
 }
