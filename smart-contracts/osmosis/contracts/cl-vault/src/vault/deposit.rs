@@ -57,8 +57,8 @@ pub(crate) fn execute_any_deposit(
         return execute_deposit(&mut deps, env, recipient, deposit_info);
     }
 
-    let (swap_amount, swap_direction, remainder) = if !deposit_info.base_refund.amount.is_zero() {
-        let swap_amount = if pool_details.current_tick > position.upper_tick {
+    let (offer, swap_direction, remainder) = if !deposit_info.base_refund.amount.is_zero() {
+        let offer_amount = if pool_details.current_tick > position.upper_tick {
             deposit_info.base_refund.amount
         } else {
             get_single_sided_deposit_0_to_1_swap_amount(
@@ -68,14 +68,18 @@ pub(crate) fn execute_any_deposit(
                 position.upper_tick,
             )?
         };
-        let left_over_amount = deposit_info.base_refund.amount.checked_sub(swap_amount)?;
-        (
-            swap_amount,
-            SwapDirection::ZeroToOne,
-            coin(left_over_amount.into(), pool_config.token0.clone()),
-        )
+        let offer = coin(offer_amount.into(), pool_config.token0.clone());
+        let remainder = coin(
+            deposit_info
+                .base_refund
+                .amount
+                .checked_sub(offer.amount)?
+                .into(),
+            pool_config.token0.clone(),
+        );
+        (offer, SwapDirection::ZeroToOne, remainder)
     } else {
-        let swap_amount = if pool_details.current_tick < position.lower_tick {
+        let offer_amount = if pool_details.current_tick < position.lower_tick {
             deposit_info.quote_refund.amount
         } else {
             get_single_sided_deposit_1_to_0_swap_amount(
@@ -85,12 +89,16 @@ pub(crate) fn execute_any_deposit(
                 position.upper_tick,
             )?
         };
-        let left_over_amount = deposit_info.quote_refund.amount.checked_sub(swap_amount)?;
-        (
-            swap_amount,
-            SwapDirection::OneToZero,
-            coin(left_over_amount.into(), pool_config.token1.clone()),
-        )
+        let offer = coin(offer_amount.into(), pool_config.token1.clone());
+        let remainder = coin(
+            deposit_info
+                .quote_refund
+                .amount
+                .checked_sub(offer.amount)?
+                .into(),
+            pool_config.token1.clone(),
+        );
+        (offer, SwapDirection::OneToZero, remainder)
     };
     CURRENT_SWAP_ANY_DEPOSIT.save(
         deps.storage,
@@ -107,7 +115,7 @@ pub(crate) fn execute_any_deposit(
         env.contract.address,
         pool_config,
         swap_direction,
-        swap_amount,
+        offer.clone(),
         max_slippage,
         None, // TODO: check this None
         twap_price,
@@ -123,12 +131,9 @@ pub(crate) fn execute_any_deposit(
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
+            attr("offer", format!("{:?}", offer)),
             attr(
-                "token_in",
-                format!("{}{}", swap_amount, swap_calc_result.offer.denom),
-            ),
-            attr(
-                "token_out_min",
+                "min_receive",
                 format!("{}", swap_calc_result.token_out_min_amount),
             ),
         ]))

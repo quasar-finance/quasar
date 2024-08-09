@@ -104,22 +104,20 @@ pub fn calculate_swap_amount(
     contract_address: Addr,
     pool_config: PoolConfig,
     swap_direction: SwapDirection,
-    token_in_amount: Uint128,
+    offer: Coin,
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_price: Decimal,
     dex_router: Option<Addr>,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
+    let (token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
-            &pool_config.token0,
             &pool_config.token1,
-            token_in_amount.checked_mul_floor(twap_price),
+            offer.amount.checked_mul_floor(twap_price),
         ),
         SwapDirection::OneToZero => (
-            &pool_config.token1,
             &pool_config.token0,
-            token_in_amount.checked_div_floor(twap_price),
+            offer.amount.checked_div_floor(twap_price),
         ),
     };
 
@@ -128,7 +126,7 @@ pub fn calculate_swap_amount(
     let swap_msg = swap_msg(
         contract_address,
         pool_config.pool_id,
-        coin(token_in_amount.into(), token_in_denom.clone()),
+        offer.clone(),
         coin(token_out_min_amount.into(), token_out_denom.clone()),
         forced_swap_route,
         dex_router,
@@ -136,7 +134,7 @@ pub fn calculate_swap_amount(
 
     Ok(SwapCalculationResult {
         swap_msg,
-        offer: coin(token_in_amount.into(), token_in_denom.clone()),
+        offer,
         token_out_min_amount,
     })
 }
