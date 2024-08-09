@@ -60,24 +60,24 @@ pub fn swap_msg(
         token_out_denom: params.token_out_denom.to_string(),
     };
 
-    if dex_router.is_none() {
-        return Ok(osmosis_swap_exact_amount_in_msg(
+    if let Some(dex_router) = dex_router {
+        cw_dex_execute_swap_operations_msg(
+            dex_router,
+            params.forced_swap_route,
+            params.token_in_denom.to_string(),
+            params.token_in_amount,
+            params.token_out_denom.to_string(),
+            params.token_out_min_amount,
+        )
+    } else {
+        Ok(osmosis_swap_exact_amount_in_msg(
             sender,
             pool_route,
             params.token_in_amount,
             &params.token_in_denom.to_string(),
             params.token_out_min_amount,
-        ));
+        ))
     }
-
-    cw_dex_execute_swap_operations_msg(
-        dex_router.clone().unwrap(),
-        params.forced_swap_route,
-        params.token_in_denom.to_string(),
-        params.token_in_amount,
-        params.token_out_denom.to_string(),
-        params.token_out_min_amount,
-    )
 }
 
 fn osmosis_swap_exact_amount_in_msg(
