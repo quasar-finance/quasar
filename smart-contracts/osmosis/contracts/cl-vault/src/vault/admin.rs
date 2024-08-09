@@ -1,4 +1,4 @@
-use crate::helpers::assert::assert_admin;
+use crate::error::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
 use crate::state::{
     Metadata, VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, METADATA, RANGE_ADMIN, VAULT_CONFIG,
@@ -43,8 +43,9 @@ pub fn execute_update_admin(
     address: String,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
+    assert_admin(deps.storage, &info.sender)?;
 
-    let previous_admin = assert_admin(deps.as_ref(), &info.sender)?;
+    let previous_admin = ADMIN_ADDRESS.load(deps.storage)?;
     let new_admin = deps.api.addr_validate(&address)?;
     ADMIN_ADDRESS.save(deps.storage, &new_admin)?;
 
@@ -66,7 +67,7 @@ pub fn execute_update_range_admin(
     address: String,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.as_ref(), &info.sender)?;
+    assert_admin(deps.storage, &info.sender)?;
 
     let previous_admin = RANGE_ADMIN.load(deps.storage)?;
     let new_admin = deps.api.addr_validate(&address)?;
@@ -86,7 +87,7 @@ pub fn execute_update_dex_router(
     address: Option<String>,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.as_ref(), &info.sender)?;
+    assert_admin(deps.storage, &info.sender)?;
 
     match address.clone() {
         Some(address) => {
@@ -115,7 +116,7 @@ pub fn execute_update_config(
     updates: VaultConfig,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.as_ref(), &info.sender)?;
+    assert_admin(deps.storage, &info.sender)?;
 
     deps.api.addr_validate(updates.dex_router.as_str())?;
     deps.api.addr_validate(updates.treasury.as_str())?;
@@ -140,7 +141,7 @@ pub fn execute_update_metadata(
     updates: Metadata,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.as_ref(), &info.sender)?;
+    assert_admin(deps.storage, &info.sender)?;
 
     METADATA.save(deps.storage, &updates)?;
 
@@ -156,7 +157,7 @@ pub fn execute_build_tick_exp_cache(
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
     nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.as_ref(), &info.sender)?;
+    assert_admin(deps.storage, &info.sender)?;
 
     build_tick_exp_cache(deps.storage)?;
 
@@ -525,7 +526,7 @@ mod tests {
         let not_admin = Addr::unchecked("not_admin");
 
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
-        assert!(assert_admin(deps.as_ref(), &admin).is_ok());
-        assert!(assert_admin(deps.as_ref(), &not_admin).is_err());
+        assert!(assert_admin(deps.as_ref().storage, &admin).is_ok());
+        assert!(assert_admin(deps.as_ref().storage, &not_admin).is_err());
     }
 }

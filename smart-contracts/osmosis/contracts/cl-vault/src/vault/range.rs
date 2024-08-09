@@ -1,10 +1,8 @@
 use crate::{
-    helpers::{
-        assert::assert_range_admin,
-        getters::{
-            get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_pair_balances,
-        },
+    error::assert_range_admin,
+    helpers::getters::{
+        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+        get_twap_price, get_unused_pair_balances,
     },
     math::tick::{price_to_tick, tick_to_price},
     reply::Replies,
@@ -32,11 +30,6 @@ use osmosis_std::types::osmosis::{
 };
 use std::str::FromStr;
 
-/// This function is the entrypoint into the dsm routine that will go through the following steps
-/// * how much liq do we have in current range
-/// * so how much of each asset given liq would we have at current price
-/// * how much of each asset do we need to move to get to new range
-/// * deposit up to max liq we can right now, then swap remaining over and deposit again
 #[allow(clippy::too_many_arguments)]
 pub fn execute_update_range(
     deps: DepsMut,
@@ -52,14 +45,9 @@ pub fn execute_update_range(
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
 
-    let lower_tick: i64 = price_to_tick(deps.storage, Decimal256::from(lower_price))?
-        .try_into()
-        .expect("Overflow when converting lower price to tick");
-    let upper_tick: i64 = price_to_tick(deps.storage, Decimal256::from(upper_price))?
-        .try_into()
-        .expect("Overflow when converting upper price to tick");
+    let lower_tick: i64 = price_to_tick(deps.storage, lower_price.into())?.try_into()?;
+    let upper_tick: i64 = price_to_tick(deps.storage, upper_price.into())?.try_into()?;
 
-    // validate ratio of swappable funds to use
     if ratio_of_swappable_funds_to_use > Decimal::one()
         || ratio_of_swappable_funds_to_use <= Decimal::zero()
     {

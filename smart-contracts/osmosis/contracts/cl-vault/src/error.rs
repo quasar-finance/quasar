@@ -1,7 +1,8 @@
+use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
+    Addr, CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
     CoinFromStrError, ConversionOverflowError, Decimal256, Decimal256RangeExceeded,
-    DivideByZeroError, OverflowError, StdError, Uint128,
+    DivideByZeroError, OverflowError, StdError, Storage, Uint128,
 };
 use cw_utils::PaymentError;
 use prost::DecodeError;
@@ -83,6 +84,9 @@ pub enum ContractError {
     #[error("Mismatch in old and new pool tokens")]
     PoolTokenMismatch {},
 
+    /// This function compares the address of the message sender (caller) with the current admin
+    /// address stored in the state. This provides a convenient way to verify if the caller
+    /// is the admin in a single line.
     #[error("Cannot force a recommended route if recommended route is passed in as None")]
     TryForceRouteWithoutRecommendedSwapRoute {},
 
@@ -158,4 +162,19 @@ pub enum ContractError {
 
     #[error("{0}")]
     TryFromIntError(#[from] TryFromIntError),
+}
+
+pub fn assert_admin(storage: &dyn Storage, caller: &Addr) -> Result<(), ContractError> {
+    if ADMIN_ADDRESS.load(storage)? != caller {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
+}
+
+pub fn assert_range_admin(storage: &dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    let admin = RANGE_ADMIN.load(storage)?;
+    if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
 }
