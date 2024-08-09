@@ -231,42 +231,4 @@ mod tests {
             panic!("Unexpected message type: {:?}", result);
         }
     }
-
-    // TODO: Move this test logic into any invoker of swap_msg tests as now its their concern to
-    // validate the token_in_denom based on the context we swap (either non vault funds or during a rerange / anydeposit)
-    // #[test]
-    // fn test_bad_denom_swap() {
-    //     let mut deps = mock_dependencies_with_balance(&[Coin {
-    //         denom: "token0".to_string(),
-    //         amount: Uint128::new(1000),
-    //     }]);
-    //     let deps_mut = deps.as_mut();
-
-    //     let env = mock_env();
-
-    //     let token_in_amount = Uint128::new(100);
-    //     let token_in_denom = "token3".to_string();
-    //     let token_out_min_amount = Uint128::new(100);
-    //     let token_out_denom = "token1".to_string();
-
-    //     let swap_params = SwapParams {
-    //         token_in_amount,
-    //         token_out_min_amount,
-    //         token_in_denom,
-    //         token_out_denom,
-    //         recommended_swap_route: None,
-    //         force_swap_route: false,
-    //     };
-
-    //     POOL_CONFIG
-    //         .save(deps_mut.storage, &mock_pool_config())
-    //         .unwrap();
-
-    //     let err = super::swap_msg(&deps_mut, &env, swap_params).unwrap_err();
-
-    //     assert_eq!(
-    //         err.to_string(),
-    //         "Bad token out requested for swap, must be one of: \"token0\", \"token1\"".to_string()
-    //     );
-    // }
 }

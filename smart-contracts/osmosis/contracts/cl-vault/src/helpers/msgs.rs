@@ -1,3 +1,4 @@
+use crate::{state::POSITION, vault::swap::SwapParams, ContractError};
 use cosmwasm_std::{
     attr, to_json_binary, Addr, Attribute, BankMsg, Coin, CosmosMsg, Deps, Env, Uint128, WasmMsg,
 };
@@ -10,11 +11,6 @@ use osmosis_std::types::{
     },
 };
 
-use crate::{state::POSITION, vault::swap::SwapParams, ContractError};
-
-// Bank
-
-/// Generate a bank message and attributes for refunding tokens to a recipient.
 pub fn refund_bank_msg(
     receiver: Addr,
     refund0: Option<Coin>,
@@ -55,26 +51,25 @@ pub fn swap_msg(
     params: SwapParams,
     dex_router: Option<Addr>,
 ) -> Result<CosmosMsg, ContractError> {
-    let pool_route = SwapAmountInRoute {
-        pool_id: params.pool_id,
-        token_out_denom: params.token_out_denom.to_string(),
-    };
-
     if let Some(dex_router) = dex_router {
         cw_dex_execute_swap_operations_msg(
             dex_router,
             params.forced_swap_route,
-            params.token_in_denom.to_string(),
+            params.token_in_denom,
             params.token_in_amount,
-            params.token_out_denom.to_string(),
+            params.token_out_denom,
             params.token_out_min_amount,
         )
     } else {
+        let pool_route = SwapAmountInRoute {
+            pool_id: params.pool_id,
+            token_out_denom: params.token_out_denom,
+        };
         Ok(osmosis_swap_exact_amount_in_msg(
             sender,
             pool_route,
             params.token_in_amount,
-            &params.token_in_denom.to_string(),
+            params.token_in_denom,
             params.token_out_min_amount,
         ))
     }
@@ -84,14 +79,14 @@ fn osmosis_swap_exact_amount_in_msg(
     sender: Addr,
     pool_route: SwapAmountInRoute,
     token_in_amount: Uint128,
-    token_in_denom: &String,
+    token_in_denom: String,
     token_out_min_amount: Uint128,
 ) -> CosmosMsg {
     osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
         sender: sender.to_string(),
         routes: vec![pool_route],
         token_in: Some(OsmoCoin {
-            denom: token_in_denom.to_string(),
+            denom: token_in_denom,
             amount: token_in_amount.to_string(),
         }),
         token_out_min_amount: token_out_min_amount.to_string(),
@@ -123,8 +118,6 @@ fn cw_dex_execute_swap_operations_msg(
 
     Ok(swap_msg)
 }
-
-/// Collect Incentives
 
 pub fn collect_incentives_msg(deps: Deps, env: Env) -> Result<MsgCollectIncentives, ContractError> {
     let position = POSITION.load(deps.storage)?;
