@@ -60,7 +60,7 @@ pub fn refund_bank_msg(
 /// feature such that it chooses best swaps over all routes
 pub fn swap_msg(
     deps: &DepsMut,
-    sender: String,
+    sender: Addr,
     params: SwapParams,
 ) -> Result<CosmosMsg, ContractError> {
     // let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -95,14 +95,14 @@ pub fn swap_msg(
 }
 
 fn osmosis_swap_exact_amount_in_msg(
-    sender: String,
+    sender: Addr,
     pool_route: SwapAmountInRoute,
     token_in_amount: Uint128,
     token_in_denom: &String,
     token_out_min_amount: Uint128,
 ) -> CosmosMsg {
     osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
-        sender,
+        sender: sender.to_string(),
         routes: vec![pool_route],
         token_in: Some(OsmoCoin {
             denom: token_in_denom.to_string(),

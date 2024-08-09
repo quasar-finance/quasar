@@ -1,4 +1,6 @@
-use cosmwasm_std::{CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Uint128};
+use cosmwasm_std::{
+    Addr, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Uint128,
+};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
@@ -34,7 +36,7 @@ pub struct SwapParams {
 
 pub fn execute_swap_non_vault_funds(
     deps: DepsMut,
-    contract_address: String,
+    contract_address: Addr,
     info: MessageInfo,
     swap_operations: Vec<SwapOperation>,
 ) -> Result<Response, ContractError> {
@@ -164,7 +166,7 @@ pub fn calculate_swap_amount(
     // pool on which the vault is running
     let swap_msg = swap_msg(
         &deps,
-        env.contract.address.to_string(),
+        env.contract.address.clone(),
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
@@ -228,8 +230,7 @@ mod tests {
             forced_swap_route: None,
         };
 
-        let result =
-            super::swap_msg(&deps_mut, env.contract.address.to_string(), swap_params).unwrap();
+        let result = super::swap_msg(&deps_mut, env.contract.address.clone(), swap_params).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =
