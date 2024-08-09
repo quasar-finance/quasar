@@ -42,6 +42,11 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	pfmtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	ibchooks "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8"
+	ibchookstypes "github.com/cosmos/ibc-apps/modules/ibc-hooks/v8/types"
+	ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v8"
+	ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm"
@@ -113,6 +118,8 @@ var AppModuleBasics = []module.AppModuleBasic{
 	authzmodule.AppModuleBasic{},
 	consensus.AppModuleBasic{},
 	ibctm.AppModuleBasic{},
+	ibchooks.AppModuleBasic{},
+	ratelimit.AppModuleBasic{},
 }
 
 // ModuleBasics defines the module BasicManager that is in charge of setting up basic,
@@ -198,6 +205,10 @@ func appModules(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		consensus.NewAppModule(appCodec, *app.ConsensusParamsKeeper),
 		feemarket.NewAppModule(appCodec, *app.FeeMarketKeeper),
+		ibchooks.NewAppModule(app.AccountKeeper),
+		app.TransferModule,
+		app.PFMRouterModule,
+		app.RateLimitModule,
 
 		// quasar modules
 		epochsmodule.NewAppModule(*app.EpochsKeeper),
@@ -221,6 +232,7 @@ func orderBeginBlockers() []string {
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
+		ratelimittypes.ModuleName,
 		genutiltypes.ModuleName,
 		authztypes.ModuleName,
 		feegrant.ModuleName,
@@ -229,6 +241,8 @@ func orderBeginBlockers() []string {
 		vestingtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		pfmtypes.ModuleName,
+		ibchookstypes.ModuleName,
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
 		tftypes.ModuleName,
@@ -256,8 +270,11 @@ func orderEndBlockers() []string {
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		icatypes.ModuleName,
+		ratelimittypes.ModuleName,
 		genutiltypes.ModuleName,
 		epochsmoduletypes.ModuleName,
+		pfmtypes.ModuleName,
+		ibchookstypes.ModuleName,
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
 		tftypes.ModuleName,
@@ -291,6 +308,7 @@ func orderInitBlockers() []string {
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
 		icatypes.ModuleName,
+		ratelimittypes.ModuleName,
 		vestingtypes.ModuleName,
 		// The feemarket module should ideally be initialized before the genutil module in theory:
 		// The feemarket antehandler performs checks in DeliverTx, which is called by gentx.
@@ -304,6 +322,8 @@ func orderInitBlockers() []string {
 		upgradetypes.ModuleName,
 		paramstypes.ModuleName,
 		epochsmoduletypes.ModuleName,
+		pfmtypes.ModuleName,
+		ibchookstypes.ModuleName,
 		// wasm after ibc transfer
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
