@@ -143,7 +143,7 @@ pub(crate) fn execute_any_deposit(
             attr("action", "any_deposit"),
             attr(
                 "token_in",
-                format!("{}{}", swap_amount, swap_calc_result.token_in_denom),
+                format!("{}{}", swap_amount, swap_calc_result.offer.denom),
             ),
             attr(
                 "token_out_min",

@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, Uint128};
+use cosmwasm_std::{coin, Addr, Coin, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
@@ -17,19 +17,8 @@ pub enum SwapDirection {
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
-    pub token_in_denom: String,
-    pub token_in_amount: Uint128,
+    pub offer: Coin,
     pub token_out_min_amount: Uint128,
-}
-
-/// SwapParams holds the parameters for a swap
-pub struct SwapParams {
-    pub pool_id: u64, // the osmosis pool id in case of no cw_dex_router or no best/recommended route
-    pub token_in_amount: Uint128,
-    pub token_in_denom: String,
-    pub token_out_min_amount: Uint128,
-    pub token_out_denom: String,
-    pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
 pub fn execute_swap_non_vault_funds(
@@ -90,26 +79,18 @@ pub fn execute_swap_non_vault_funds(
         let dex_router = DEX_ROUTER.may_load(deps.storage)?;
         swap_msgs.push(swap_msg(
             contract_address.clone(),
-            SwapParams {
-                pool_id: swap_operation.pool_id_0,
-                token_in_amount: part_0_amount,
-                token_in_denom: token_in_denom.clone(),
-                token_out_min_amount: token_out_min_amount_0,
-                token_out_denom: pool_token_0,
-                forced_swap_route: swap_operation.forced_swap_route_token_0,
-            },
+            swap_operation.pool_id_0,
+            coin(part_0_amount.into(), token_in_denom.clone()),
+            coin(token_out_min_amount_0.into(), pool_token_0),
+            swap_operation.forced_swap_route_token_0,
             dex_router.clone(),
         )?);
         swap_msgs.push(swap_msg(
             contract_address.clone(),
-            SwapParams {
-                pool_id: swap_operation.pool_id_1,
-                token_in_amount: part_1_amount,
-                token_in_denom: token_in_denom.clone(),
-                token_out_min_amount: token_out_min_amount_1,
-                token_out_denom: pool_token_1,
-                forced_swap_route: swap_operation.forced_swap_route_token_1,
-            },
+            swap_operation.pool_id_1,
+            coin(part_1_amount.into(), token_in_denom.clone()),
+            coin(token_out_min_amount_1.into(), pool_token_1),
+            swap_operation.forced_swap_route_token_1,
             dex_router,
         )?);
     }
@@ -145,90 +126,19 @@ pub fn calculate_swap_amount(
     };
 
     let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
+
     let swap_msg = swap_msg(
         contract_address,
-        SwapParams {
-            pool_id: pool_config.pool_id,
-            token_in_amount,
-            token_out_min_amount,
-            token_in_denom: token_in_denom.clone(),
-            token_out_denom: token_out_denom.clone(),
-            forced_swap_route,
-        },
+        pool_config.pool_id,
+        coin(token_in_amount.into(), token_in_denom.clone()),
+        coin(token_out_min_amount.into(), token_out_denom.clone()),
+        forced_swap_route,
         dex_router,
     )?;
 
     Ok(SwapCalculationResult {
         swap_msg,
-        token_in_denom: token_in_denom.to_string(),
+        offer: coin(token_in_amount.into(), token_in_denom.clone()),
         token_out_min_amount,
-        token_in_amount,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::vault::swap::SwapParams;
-    use cosmwasm_std::{
-        testing::{mock_dependencies_with_balance, mock_env},
-        Coin, CosmosMsg, Uint128,
-    };
-
-    use crate::state::{PoolConfig, POOL_CONFIG};
-
-    fn mock_pool_config() -> PoolConfig {
-        PoolConfig {
-            pool_id: 1,
-            token0: "token0".to_string(),
-            token1: "token1".to_string(),
-        }
-    }
-
-    #[test]
-    fn test_proper_swap() {
-        let mut deps = mock_dependencies_with_balance(&[Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(1000),
-        }]);
-        let deps_mut = deps.as_mut();
-
-        let env = mock_env();
-
-        let token_in_amount = Uint128::new(100);
-        let token_in_denom = "token0".to_string();
-        let token_out_min_amount = Uint128::new(100);
-        let token_out_denom = "token1".to_string();
-
-        POOL_CONFIG
-            .save(deps_mut.storage, &mock_pool_config())
-            .unwrap();
-        let swap_params = SwapParams {
-            pool_id: 1,
-            token_in_amount,
-            token_out_min_amount,
-            token_in_denom,
-            token_out_denom,
-            forced_swap_route: None,
-        };
-
-        let result = super::swap_msg(env.contract.address.clone(), swap_params, None).unwrap();
-
-        if let CosmosMsg::Stargate { type_url: _, value } = result {
-            let msg_swap =
-                osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn::try_from(
-                    value,
-                )
-                .unwrap();
-
-            assert!(msg_swap.sender == env.contract.address);
-            assert!(msg_swap.routes.len() == 1);
-            assert!(msg_swap.routes[0].pool_id == 1);
-            assert!(msg_swap.routes[0].token_out_denom == *"token1");
-            assert!(msg_swap.token_in.clone().unwrap().denom == *"token0");
-            assert!(msg_swap.token_in.unwrap().amount == *"100");
-            assert!(token_out_min_amount.to_string() == *"100");
-        } else {
-            panic!("Unexpected message type: {:?}", result);
-        }
-    }
 }
