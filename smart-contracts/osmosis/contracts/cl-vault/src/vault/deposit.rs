@@ -34,7 +34,7 @@ pub(crate) fn execute_exact_deposit(
     assert_deposits(&info.funds, &pool_config)?;
     let recipient = recipient.map_or(Ok(info.sender.clone()), |x| deps.api.addr_validate(&x))?;
     // get the amount of funds we can deposit from this ratio
-    let deposit_info = get_depositable_tokens(&deps, &info.funds, &pool_config)?;
+    let deposit_info = get_depositable_tokens(&deps, info.funds, &pool_config)?;
 
     execute_deposit(&mut deps, env, recipient, deposit_info)
 }
@@ -54,7 +54,7 @@ pub(crate) fn execute_any_deposit(
         .position
         .ok_or(ContractError::MissingPosition {})?;
 
-    let deposit_info = get_depositable_tokens(&deps.branch(), &info.funds, &pool_config)?;
+    let deposit_info = get_depositable_tokens(&deps.branch(), info.funds, &pool_config)?;
 
     if deposit_info.base_refund.amount.is_zero() && deposit_info.quote_refund.amount.is_zero() {
         return execute_deposit(&mut deps, env, recipient, deposit_info);
