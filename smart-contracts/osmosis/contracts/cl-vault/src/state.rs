@@ -85,8 +85,8 @@ pub struct PoolConfig {
 }
 
 impl PoolConfig {
-    pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        [&self.token0, &self.token1].contains(&&token.into())
+    pub fn pool_contains_token(&self, token: &str) -> bool {
+        self.token0 == token || self.token1 == token
     }
 }
 
