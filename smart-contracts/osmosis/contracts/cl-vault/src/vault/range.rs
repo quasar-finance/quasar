@@ -1,5 +1,5 @@
 use crate::{
-    error::assert_range_admin,
+    error::{assert_range_admin, assert_ratio},
     helpers::getters::{
         get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
         get_twap_price, get_unused_pair_balances,
@@ -42,15 +42,10 @@ pub fn execute_update_range(
     claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
+    assert_ratio(ratio_of_swappable_funds_to_use)?;
 
     let lower_tick: i64 = price_to_tick(deps.storage, lower_price.into())?.try_into()?;
     let upper_tick: i64 = price_to_tick(deps.storage, upper_price.into())?.try_into()?;
-
-    if ratio_of_swappable_funds_to_use > Decimal::one()
-        || ratio_of_swappable_funds_to_use <= Decimal::zero()
-    {
-        return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
-    }
 
     let modify_range_config = ModifyRangeState {
         lower_tick,

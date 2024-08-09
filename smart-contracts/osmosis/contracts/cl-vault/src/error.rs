@@ -1,7 +1,7 @@
 use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use cosmwasm_std::{
     Addr, CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
-    CoinFromStrError, ConversionOverflowError, Decimal256, Decimal256RangeExceeded,
+    CoinFromStrError, ConversionOverflowError, Decimal, Decimal256, Decimal256RangeExceeded,
     DivideByZeroError, OverflowError, StdError, Storage, Uint128,
 };
 use cw_utils::PaymentError;
@@ -181,6 +181,13 @@ pub fn assert_range_admin(storage: &dyn Storage, sender: &Addr) -> Result<(), Co
     let admin = RANGE_ADMIN.load(storage)?;
     if admin != sender {
         return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
+}
+
+pub fn assert_ratio(ratio: Decimal) -> Result<(), ContractError> {
+    if ratio > Decimal::one() || ratio <= Decimal::zero() {
+        return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
     }
     Ok(())
 }
