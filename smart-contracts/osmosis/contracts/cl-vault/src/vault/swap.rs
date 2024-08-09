@@ -2,7 +2,8 @@ use cosmwasm_std::{coin, Addr, Coin, CosmosMsg, Decimal, DepsMut, MessageInfo, R
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    helpers::{assert::assert_range_admin, msgs::swap_msg},
+    error::assert_range_admin,
+    helpers::msgs::swap_msg,
     msg::SwapOperation,
     state::{PoolConfig, DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
     ContractError,

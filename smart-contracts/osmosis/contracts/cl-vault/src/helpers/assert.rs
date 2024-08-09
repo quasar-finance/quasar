@@ -1,30 +1,6 @@
-use cosmwasm_std::{coin, Addr, Coin, Deps, Storage};
+use crate::ContractError;
+use cosmwasm_std::{coin, Coin};
 
-use crate::{
-    state::{ADMIN_ADDRESS, RANGE_ADMIN},
-    ContractError,
-};
-
-/// This function compares the address of the message sender (caller) with the current admin
-/// address stored in the state. This provides a convenient way to verify if the caller
-/// is the admin in a single line.
-pub fn assert_admin(deps: Deps, caller: &Addr) -> Result<Addr, ContractError> {
-    if ADMIN_ADDRESS.load(deps.storage)? != caller {
-        Err(ContractError::Unauthorized {})
-    } else {
-        Ok(caller.clone())
-    }
-}
-
-pub fn assert_range_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
-    let admin = RANGE_ADMIN.load(storage)?;
-    if admin != sender {
-        return Err(ContractError::Unauthorized {});
-    }
-    Ok(())
-}
-
-/// Returns the Coin of the needed denoms in the order given in denoms
 pub(crate) fn must_pay_one_or_two(
     funds: &[Coin],
     denoms: (String, String),
