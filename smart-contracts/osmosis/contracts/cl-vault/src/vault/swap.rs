@@ -1,12 +1,10 @@
-use cosmwasm_std::{
-    Addr, CosmosMsg, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, Uint128,
-};
+use cosmwasm_std::{Addr, CosmosMsg, Decimal, DepsMut, MessageInfo, Response, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    helpers::{assert::assert_range_admin, getters::get_twap_price, msgs::swap_msg},
+    helpers::{assert::assert_range_admin, msgs::swap_msg},
     msg::SwapOperation,
-    state::{PoolConfig, POOL_CONFIG, VAULT_CONFIG},
+    state::{PoolConfig, DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
     ContractError,
 };
 
@@ -84,17 +82,13 @@ pub fn execute_swap_non_vault_funds(
             .checked_div(Uint128::new(2))?;
 
         // TODO_FUTURE: We should be passing the max_slippage from outside as we do during ModifyRange
-        let token_out_min_amount_0 = part_0_amount.checked_multiply_ratio(
-            vault_config.swap_max_slippage.numerator(),
-            vault_config.swap_max_slippage.denominator(),
-        )?;
-        let token_out_min_amount_1 = part_1_amount.checked_multiply_ratio(
-            vault_config.swap_max_slippage.numerator(),
-            vault_config.swap_max_slippage.denominator(),
-        )?;
+        let token_out_min_amount_0 =
+            part_0_amount.checked_mul_floor(vault_config.swap_max_slippage)?;
+        let token_out_min_amount_1 =
+            part_1_amount.checked_mul_floor(vault_config.swap_max_slippage)?;
 
+        let dex_router = DEX_ROUTER.may_load(deps.storage)?;
         swap_msgs.push(swap_msg(
-            &deps,
             contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_0,
@@ -104,9 +98,9 @@ pub fn execute_swap_non_vault_funds(
                 token_out_denom: pool_token_0,
                 forced_swap_route: swap_operation.forced_swap_route_token_0,
             },
+            dex_router.clone(),
         )?);
         swap_msgs.push(swap_msg(
-            &deps,
             contract_address.clone(),
             SwapParams {
                 pool_id: swap_operation.pool_id_1,
@@ -116,6 +110,7 @@ pub fn execute_swap_non_vault_funds(
                 token_out_denom: pool_token_1,
                 forced_swap_route: swap_operation.forced_swap_route_token_1,
             },
+            dex_router,
         )?);
     }
 
@@ -127,46 +122,31 @@ pub fn execute_swap_non_vault_funds(
 
 #[allow(clippy::too_many_arguments)]
 pub fn calculate_swap_amount(
-    deps: DepsMut,
-    env: &Env,
+    contract_address: Addr,
     pool_config: PoolConfig,
     swap_direction: SwapDirection,
     token_in_amount: Uint128,
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
-    twap_window_seconds: u64,
+    twap_price: Decimal,
+    dex_router: Option<Addr>,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let twap_price = get_twap_price(deps.storage, &deps.querier, env, twap_window_seconds)?;
     let (token_in_denom, token_out_denom, token_out_ideal_amount) = match swap_direction {
         SwapDirection::ZeroToOne => (
             &pool_config.token0,
             &pool_config.token1,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.numerator(), twap_price.denominator()),
+            token_in_amount.checked_mul_floor(twap_price),
         ),
         SwapDirection::OneToZero => (
             &pool_config.token1,
             &pool_config.token0,
-            token_in_amount
-                .checked_multiply_ratio(twap_price.denominator(), twap_price.numerator()),
+            token_in_amount.checked_div_floor(twap_price),
         ),
     };
 
-    let token_out_min_amount = token_out_ideal_amount?
-        .checked_multiply_ratio(max_slippage.numerator(), max_slippage.denominator())?;
-
-    if !pool_config.pool_contains_token(token_in_denom) {
-        return Err(ContractError::BadTokenForSwap {
-            base_token: pool_config.token0,
-            quote_token: pool_config.token1,
-        });
-    }
-
-    // generate a swap message with recommended path as the current
-    // pool on which the vault is running
+    let token_out_min_amount = token_out_ideal_amount?.checked_mul_floor(max_slippage)?;
     let swap_msg = swap_msg(
-        &deps,
-        env.contract.address.clone(),
+        contract_address,
         SwapParams {
             pool_id: pool_config.pool_id,
             token_in_amount,
@@ -175,6 +155,7 @@ pub fn calculate_swap_amount(
             token_out_denom: token_out_denom.clone(),
             forced_swap_route,
         },
+        dex_router,
     )?;
 
     Ok(SwapCalculationResult {
@@ -230,7 +211,7 @@ mod tests {
             forced_swap_route: None,
         };
 
-        let result = super::swap_msg(&deps_mut, env.contract.address.clone(), swap_params).unwrap();
+        let result = super::swap_msg(env.contract.address.clone(), swap_params, None).unwrap();
 
         if let CosmosMsg::Stargate { type_url: _, value } = result {
             let msg_swap =
