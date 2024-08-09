@@ -3,24 +3,26 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 type (
 	Keeper struct {
-		storeKey storetypes.StoreKey
+		storeKey  storetypes.StoreKey
+		permAddrs map[string]authtypes.PermissionsForAddress
 
 		paramSpace paramtypes.Subspace
 
-		accountKeeper       types.AccountKeeper
-		bankKeeper          types.BankKeeper
+		accountKeeper  types.AccountKeeper
+		bankKeeper     types.BankKeeper
+		contractKeeper types.ContractKeeper
+
 		communityPoolKeeper types.CommunityPoolKeeper
 	}
 )
@@ -29,6 +31,7 @@ type (
 func NewKeeper(
 	storeKey storetypes.StoreKey,
 	paramSpace paramtypes.Subspace,
+	maccPerms map[string][]string,
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	communityPoolKeeper types.CommunityPoolKeeper,
@@ -37,9 +40,15 @@ func NewKeeper(
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
+	permAddrs := make(map[string]authtypes.PermissionsForAddress)
+	for name, perms := range maccPerms {
+		permAddrs[name] = authtypes.NewPermissionsForAddress(name, perms)
+	}
+
 	return Keeper{
 		storeKey:   storeKey,
 		paramSpace: paramSpace,
+		permAddrs:  permAddrs,
 
 		accountKeeper:       accountKeeper,
 		bankKeeper:          bankKeeper,
@@ -53,21 +62,26 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // GetDenomPrefixStore returns the substore for a specific denom
-func (k Keeper) GetDenomPrefixStore(ctx sdk.Context, denom string) sdk.KVStore {
+func (k Keeper) GetDenomPrefixStore(ctx sdk.Context, denom string) storetypes.KVStore {
 	store := ctx.KVStore(k.storeKey)
 	return prefix.NewStore(store, types.GetDenomPrefixStore(denom))
 }
 
 // GetCreatorPrefixStore returns the substore for a specific creator address
-func (k Keeper) GetCreatorPrefixStore(ctx sdk.Context, creator string) sdk.KVStore {
+func (k Keeper) GetCreatorPrefixStore(ctx sdk.Context, creator string) storetypes.KVStore {
 	store := ctx.KVStore(k.storeKey)
 	return prefix.NewStore(store, types.GetCreatorPrefix(creator))
 }
 
 // GetCreatorsPrefixStore returns the substore that contains a list of creators
-func (k Keeper) GetCreatorsPrefixStore(ctx sdk.Context) sdk.KVStore {
+func (k Keeper) GetCreatorsPrefixStore(ctx sdk.Context) storetypes.KVStore {
 	store := ctx.KVStore(k.storeKey)
 	return prefix.NewStore(store, types.GetCreatorsPrefix())
+}
+
+// Set the wasm keeper.
+func (k *Keeper) SetContractKeeper(contractKeeper types.ContractKeeper) {
+	k.contractKeeper = contractKeeper
 }
 
 // CreateModuleAccount creates a module account with minting and burning capabilities
@@ -75,6 +89,5 @@ func (k Keeper) GetCreatorsPrefixStore(ctx sdk.Context) sdk.KVStore {
 // it purely mints and burns them on behalf of the admin of respective denoms,
 // and sends to the relevant address.
 func (k Keeper) CreateModuleAccount(ctx sdk.Context) {
-	moduleAcc := authtypes.NewEmptyModuleAccount(types.ModuleName, authtypes.Minter, authtypes.Burner)
-	k.accountKeeper.SetModuleAccount(ctx, moduleAcc)
+	k.accountKeeper.GetModuleAccount(ctx, types.ModuleName)
 }

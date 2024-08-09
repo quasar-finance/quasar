@@ -40,5 +40,5 @@ PWD=$(pwd)
 echo "PWD is - $PWD"
 
 # Copy the generated Go files to the desired location
-cp -r github.com/quasarlabs/quasarnode/* .
+cp -r github.com/quasar-finance/quasar/* .
 cp -r github.com github.com.bkp

@@ -5,8 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type msgServer struct {
@@ -119,6 +121,35 @@ func (server msgServer) Burn(goCtx context.Context, msg *types.MsgBurn) (*types.
 	return &types.MsgBurnResponse{}, nil
 }
 
+func (server msgServer) ForceTransfer(goCtx context.Context, msg *types.MsgForceTransfer) (*types.MsgForceTransferResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	govAccount := server.Keeper.accountKeeper.GetModuleAccount(ctx, govtypes.ModuleName)
+	if govAccount == nil {
+		return nil, status.Errorf(codes.NotFound, "account %s not found", govtypes.ModuleName)
+	}
+
+	if msg.Authority != govAccount.GetAddress().String() {
+		return nil, types.ErrUnauthorized
+	}
+
+	err := server.Keeper.forceTransfer(ctx, msg.Amount, msg.TransferFromAddress, msg.TransferToAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.TypeMsgForceTransfer,
+			sdk.NewAttribute(types.AttributeTransferFromAddress, msg.TransferFromAddress),
+			sdk.NewAttribute(types.AttributeTransferToAddress, msg.TransferToAddress),
+			sdk.NewAttribute(types.AttributeAmount, msg.Amount.String()),
+		),
+	})
+
+	return &types.MsgForceTransferResponse{}, nil
+}
+
 func (server msgServer) ChangeAdmin(goCtx context.Context, msg *types.MsgChangeAdmin) (*types.MsgChangeAdminResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -175,4 +206,32 @@ func (server msgServer) SetDenomMetadata(goCtx context.Context, msg *types.MsgSe
 	})
 
 	return &types.MsgSetDenomMetadataResponse{}, nil
+}
+
+func (server msgServer) SetBeforeSendHook(goCtx context.Context, msg *types.MsgSetBeforeSendHook) (*types.MsgSetBeforeSendHookResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	authorityMetadata, err := server.Keeper.GetAuthorityMetadata(ctx, msg.Denom)
+	if err != nil {
+		return nil, err
+	}
+
+	if msg.Sender != authorityMetadata.GetAdmin() {
+		return nil, types.ErrUnauthorized
+	}
+
+	err = server.Keeper.setBeforeSendHook(ctx, msg.Denom, msg.CosmwasmAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.TypeMsgSetBeforeSendHook,
+			sdk.NewAttribute(types.AttributeDenom, msg.GetDenom()),
+			sdk.NewAttribute(types.AttributeBeforeSendHookAddress, msg.GetCosmwasmAddress()),
+		),
+	})
+
+	return &types.MsgSetBeforeSendHookResponse{}, nil
 }

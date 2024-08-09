@@ -2,9 +2,8 @@ package epochs
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
+	"github.com/quasar-finance/quasar/x/epochs/keeper"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

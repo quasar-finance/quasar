@@ -45,7 +45,7 @@ DEBUG_BUILD_FLAGS:= $(subst $(REMOVE_STRING),,$(BUILD_FLAGS))
 DEBUG_LDFLAGS = $(subst $(REMOVE_STRING),,$(ldflags))
 
 build-dev-install: go.sum
-	GOWORK=off go install $(DEBUG_BUILD_FLAGS) $(GC_FLAGS) $(GO_MODULE)/cmd/quasarnoded
+	GOWORK=off go install $(DEBUG_BUILD_FLAGS) $(GC_FLAGS) $(GO_MODULE)/cmd/quasard
 
 build-dev-build:
 	mkdir -p $(BUILDDIR)/
@@ -67,12 +67,12 @@ build-reproducible-amd64: go.sum
         --build-arg GIT_VERSION=$(VERSION) \
         --build-arg GIT_COMMIT=$(COMMIT) \
         --platform linux/amd64 \
-        -t quasar:local-amd64 \
+        -t quasar-amd64 \
         --load \
         -f Dockerfile .
 	$(DOCKER) rm -f quasarbinary || true
-	$(DOCKER) create -ti --name quasarbinary quasar:local-amd64
-	$(DOCKER) cp quasarbinary:/bin/quasarnoded $(BUILDDIR)/quasarnoded-linux-amd64
+	$(DOCKER) create -ti --name quasarbinary quasar-amd64
+	$(DOCKER) cp quasarbinary:/bin/quasard $(BUILDDIR)/quasard-linux-amd64
 	$(DOCKER) rm -f quasarbinary
 
 build-reproducible-arm64: go.sum
@@ -90,7 +90,7 @@ build-reproducible-arm64: go.sum
 		-f Dockerfile .
 	$(DOCKER) rm -f quasarbinary || true
 	$(DOCKER) create -ti --name quasarbinary quasar-arm64
-	$(DOCKER) cp quasarbinary:/bin/quasarnoded $(BUILDDIR)/quasarnoded-linux-arm64
+	$(DOCKER) cp quasarbinary:/bin/quasard $(BUILDDIR)/quasard-linux-arm64
 	$(DOCKER) rm -f quasarbinary
 
 go.sum: go.mod

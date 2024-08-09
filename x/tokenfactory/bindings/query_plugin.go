@@ -1,16 +1,32 @@
 package bindings
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	"encoding/json"
 	"fmt"
 
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	errorsmod "cosmossdk.io/errors"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	bindingstypes "github.com/quasarlabs/quasarnode/x/tokenfactory/bindings/types"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	bindingstypes "github.com/quasar-finance/quasar/x/tokenfactory/bindings/types"
+	tokenfactorykeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 )
+
+// QueryPlugin represents a plugin that provides query functionalities related
+// to banking and token factory modules.
+type QueryPlugin struct {
+	bankKeeper         *bankkeeper.BaseKeeper
+	tokenFactoryKeeper *tokenfactorykeeper.Keeper
+}
+
+// NewQueryPlugin returns a reference to a new QueryPlugin object.
+func NewQueryPlugin(b *bankkeeper.BaseKeeper, tfk *tokenfactorykeeper.Keeper) *QueryPlugin {
+	return &QueryPlugin{
+		bankKeeper:         b,
+		tokenFactoryKeeper: tfk,
+	}
+}
 
 // CustomQuerier dispatches custom CosmWasm bindings queries.
 func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
@@ -104,8 +120,8 @@ func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessag
 }
 
 // ConvertSdkCoinsToWasmCoins converts sdk type coins to wasm vm type coins
-func ConvertSdkCoinsToWasmCoins(coins []sdk.Coin) wasmvmtypes.Coins {
-	var toSend wasmvmtypes.Coins
+func ConvertSdkCoinsToWasmCoins(coins []sdk.Coin) []wasmvmtypes.Coin {
+	var toSend []wasmvmtypes.Coin
 	for _, coin := range coins {
 		c := ConvertSdkCoinToWasmCoin(coin)
 		toSend = append(toSend, c)

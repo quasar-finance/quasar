@@ -4,7 +4,7 @@
 ## However it will need some manual modifications before you start the chain to incorporate the custom fields.
 
 # Configure variables
-BINARY=quasardv1
+BINARY=quasarnodedv1
 HOME_QSR=$HOME/.quasarnode
 CHAIN_ID=quasar
 MY_TREASURY="edge victory hurry slight dog exit company bike hill erupt shield aspect turkey retreat stairs summer sadness crush absorb draft viable orphan chuckle exhibit"

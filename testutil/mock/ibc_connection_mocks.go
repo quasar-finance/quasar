@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	types "github.com/cosmos/cosmos-sdk/types"
-	types0 "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
+	types0 "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	gomock "github.com/golang/mock/gomock"
 )
 

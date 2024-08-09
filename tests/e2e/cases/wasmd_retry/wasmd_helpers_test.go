@@ -3,10 +3,10 @@ package wasmd_deposit
 import (
 	"context"
 	"fmt"
-	testsuite "github.com/quasarlabs/quasarnode/tests/e2e/suite"
 	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	testsuite "github.com/quasar-finance/quasar/tests/e2e/suite"
 	"github.com/strangelove-ventures/interchaintest/v4/ibc"
 )
 

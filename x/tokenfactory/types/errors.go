@@ -3,8 +3,9 @@ package types
 // DONTCOVER
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	"fmt"
+
+	errorsmod "cosmossdk.io/errors"
 )
 
 // x/tokenfactory module sentinel errors
@@ -19,4 +20,5 @@ var (
 	ErrCreatorTooLong           = errorsmod.Register(ModuleName, 9, fmt.Sprintf("creator too long, max length is %d bytes", MaxCreatorLength))
 	ErrBurnFromModuleAccount    = errorsmod.Register(ModuleName, 10, "burning from Module Account is not allowed")
 	ErrDenomDoesNotExist        = errorsmod.Register(ModuleName, 11, "denom does not exist")
+	ErrBeforeSendHookOutOfGas   = errorsmod.Register(ModuleName, 12, "gas meter hit maximum limit")
 )

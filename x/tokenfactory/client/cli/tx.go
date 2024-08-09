@@ -7,9 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/spf13/cobra"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -29,6 +28,7 @@ func GetTxCmd() *cobra.Command {
 		NewMintToCmd(),
 		NewBurnFromCmd(),
 		NewChangeAdminCmd(),
+		NewSetBeforeSendHookCmd(),
 	)
 
 	return cmd
@@ -255,6 +255,37 @@ func NewBurnFromCmd() *cobra.Command {
 			)
 
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, fac, msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+func NewSetBeforeSendHookCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-beforesend-hook [denom] [cosmwasm-address] [flags]",
+		Short: "Set a cosmwasm contract to be the beforesend hook for a factory-created denom. Must have admin authority to do so.",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+			txf = txf.WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
+
+			msg := types.NewMsgSetBeforeSendHook(
+				clientCtx.GetFromAddress().String(),
+				args[0],
+				args[1],
+			)
+
+			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 		},
 	}
 

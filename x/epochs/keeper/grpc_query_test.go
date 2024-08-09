@@ -2,16 +2,14 @@ package keeper_test
 
 import (
 	"testing"
-
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasar-finance/quasar/testutil"
+	"github.com/quasar-finance/quasar/x/epochs"
+	"github.com/quasar-finance/quasar/x/epochs/keeper"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/testutil"
-	"github.com/quasarlabs/quasarnode/x/epochs"
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 func TestQueryEpochInfos(t *testing.T) {

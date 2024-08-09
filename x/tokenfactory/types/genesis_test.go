@@ -3,8 +3,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/quasarlabs/quasarnode/cmd/quasard/cmd"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
+	"github.com/quasar-finance/quasar/cmd/quasard/cmd"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
 )
 

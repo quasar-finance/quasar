@@ -3,9 +3,9 @@ package app
 import (
 	"fmt"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/quasarlabs/quasarnode/app/upgrades"
+	storetypes "cosmossdk.io/store/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/quasar-finance/quasar/app/upgrades"
 )
 
 func (app *QuasarApp) setUpgradeStoreLoaders() {
@@ -34,18 +34,5 @@ func (app *QuasarApp) setUpgradeStoreLoaders() {
 
 	if storeUpgrades != nil {
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
-	}
-}
-
-func (app *QuasarApp) setupUpgradeHandlers() {
-	for _, upgrade := range upgrades.Upgrades() {
-		app.UpgradeKeeper.SetUpgradeHandler(
-			upgrade.UpgradeName,
-			upgrade.CreateUpgradeHandler(
-				app.mm,
-				app.configurator,
-				app.AppKeepers,
-			),
-		)
 	}
 }

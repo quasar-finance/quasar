@@ -3,10 +3,9 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/quasar-finance/quasar/testutil"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/testutil"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 func TestGetParams(t *testing.T) {

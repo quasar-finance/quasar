@@ -21,20 +21,20 @@ execute() {
 
 # Upload Contract
 echo "1. Upload Contract"
-execute "quasardv1 tx wasm store $CONTRACT_WASM_PATH --from $SENDER --chain-id $CHAIN_ID --gas-prices $GAS_PRICES --keyring-backend $KEYRING_BACKEND --home $HOME_DIR -y --gas 2000000"
+execute "quasarnodedv1 tx wasm store $CONTRACT_WASM_PATH --from $SENDER --chain-id $CHAIN_ID --gas-prices $GAS_PRICES --keyring-backend $KEYRING_BACKEND --home $HOME_DIR -y --gas 2000000"
 sleep $SLEEP_DURATION
 
 # Get the code ID
-CODE_ID=$(quasardv1 query wasm list-code --node $NODE --output json | jq -r '.code_infos[-1].code_id')
+CODE_ID=$(quasarnodedv1 query wasm list-code --node $NODE --output json | jq -r '.code_infos[-1].code_id')
 echo "Contract Code ID: $CODE_ID"
 
 # Instantiate Contract
 echo "2. Instantiate Contract"
-execute "quasardv1 tx wasm instantiate $CODE_ID '$CONTRACT_INIT_MSG' --from $SENDER --label '$CONTRACT_LABEL' --chain-id $CHAIN_ID --gas-prices $GAS_PRICES --keyring-backend $KEYRING_BACKEND --home $HOME_DIR -y --admin $SENDER_ADDRESS"
+execute "quasarnodedv1 tx wasm instantiate $CODE_ID '$CONTRACT_INIT_MSG' --from $SENDER --label '$CONTRACT_LABEL' --chain-id $CHAIN_ID --gas-prices $GAS_PRICES --keyring-backend $KEYRING_BACKEND --home $HOME_DIR -y --admin $SENDER_ADDRESS"
 sleep $SLEEP_DURATION
 
 # Get the contract address
-CONTRACT_ADDRESS=$(quasardv1 query wasm list-contract-by-code $CODE_ID --node $NODE --output json | jq -r '.contracts[-1]')
+CONTRACT_ADDRESS=$(quasarnodedv1 query wasm list-contract-by-code $CODE_ID --node $NODE --output json | jq -r '.contracts[-1]')
 echo "Contract Address: $CONTRACT_ADDRESS"
 
 # IBC testing post upgrade
@@ -70,11 +70,11 @@ do
   sleep $SLEEP_DURATION
   rly transact flush
   sleep $SLEEP_DURATION
-  quasardv1 query bank balances $OSMOSIS_RECEIVER
+  quasarnodedv1 query bank balances $OSMOSIS_RECEIVER
 
   # Quasar to Osmosis transfer
   echo "Transferring from Quasar to Osmosis"
-  quasardv1 tx ibc-transfer transfer transfer $QUASAR_CHANNEL $QUASAR_RECEIVER ${QUASAR_AMOUNT}${QUASAR_DENOM} --from $QUASAR_SENDER --keyring-backend test --home $QUASAR_HOME --chain-id $QUASAR_CHAIN_ID -y --gas-prices 1$QUASAR_DENOM --node $QUASAR_NODE
+  quasarnodedv1 tx ibc-transfer transfer transfer $QUASAR_CHANNEL $QUASAR_RECEIVER ${QUASAR_AMOUNT}${QUASAR_DENOM} --from $QUASAR_SENDER --keyring-backend test --home $QUASAR_HOME --chain-id $QUASAR_CHAIN_ID -y --gas-prices 1$QUASAR_DENOM --node $QUASAR_NODE
   sleep $SLEEP_DURATION
   rly transact flush
   sleep $SLEEP_DURATION

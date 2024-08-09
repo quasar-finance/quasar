@@ -5,10 +5,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/quasarlabs/quasarnode/testutil"
+	"github.com/quasar-finance/quasar/testutil"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 func TestMsgCreateDenom(t *testing.T) {

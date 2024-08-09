@@ -5,10 +5,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/quasar-finance/quasar/testutil"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/testutil"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
 )
 
 func TestGenesis(t *testing.T) {

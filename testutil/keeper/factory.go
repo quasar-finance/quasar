@@ -1,18 +1,17 @@
 package keeper
 
 import (
-	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cosmos/cosmos-sdk/store"
+	"cosmossdk.io/store"
+	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-
-	"github.com/quasarlabs/quasarnode/app"
-	"github.com/quasarlabs/quasarnode/app/params"
+	"github.com/quasar-finance/quasar/app"
+	"github.com/quasar-finance/quasar/app/params"
 )
 
 // KeeperFactory Structure holding storage context for initializing test keepers.
 type KeeperFactory struct {
-	DB             *tmdb.MemDB
+	DB             *dbm.MemDB
 	StateStore     store.CommitMultiStore
 	Ctx            sdk.Context
 	EncodingConfig params.EncodingConfig
@@ -20,7 +19,7 @@ type KeeperFactory struct {
 
 // NewKeeperFactory Creates with in memory database and default codecs.
 func NewKeeperFactory(
-	db *tmdb.MemDB,
+	db *dbm.MemDB,
 	stateStore store.CommitMultiStore,
 	ctx sdk.Context,
 	encodingConfig params.EncodingConfig,
@@ -35,8 +34,7 @@ func NewKeeperFactory(
 
 // TestModuleAccountPerms returns module account permissions for testing.
 func (kf KeeperFactory) TestModuleAccountPerms() map[string][]string {
-	moduleAccPerms := app.GetMaccPerms()
-	// moduleAccPerms[oriontypes.CreateOrionRewardGloablMaccName()] = []string{authtypes.Minter, authtypes.Burner, authtypes.Staking}
+	moduleAccPerms := app.ModuleAccountPermissions
 	return moduleAccPerms
 }
 
