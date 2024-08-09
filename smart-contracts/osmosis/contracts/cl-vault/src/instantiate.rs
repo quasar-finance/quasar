@@ -12,8 +12,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 };
 
 use crate::error::assert_deposits;
-use crate::helpers::assert::must_pay_one_or_two;
-use crate::helpers::getters::get_asset0_value;
+use crate::helpers::getters::{get_asset0_value, get_unused_pair_balances};
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
@@ -80,14 +79,14 @@ pub fn handle_instantiate(
     .into();
 
     // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
-    let (initial0, initial1) = must_pay_one_or_two(&info.funds, (pool.token0, pool.token1))?;
+    let deposits = get_unused_pair_balances(&deps, &env, &pool_config)?;
 
     let create_position_msg = create_position(
         deps,
         &env,
         msg.initial_lower_tick,
         msg.initial_upper_tick,
-        vec![initial0, initial1],
+        vec![deposits.base, deposits.quote],
         Uint128::zero(),
         Uint128::zero(),
     )?;
