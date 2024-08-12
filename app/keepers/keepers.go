@@ -2,6 +2,7 @@ package keepers
 
 import (
 	"fmt"
+	"github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller"
 	"os"
 
 	"cosmossdk.io/log"
@@ -446,7 +447,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	govKeeper.SetLegacyRouter(govRouter)
 	appKeepers.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			// register the governance hooks
+		// register the governance hooks
 		),
 	)
 
@@ -464,7 +465,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	// Set epoch hooks
 	appKeepers.EpochsKeeper.SetHooks(
 		epochsmoduletypes.NewMultiEpochHooks(
-			// appKeepers.QOsmosisKeeper.EpochHooks(),
+		// appKeepers.QOsmosisKeeper.EpochHooks(),
 		),
 	)
 
@@ -495,7 +496,7 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		})
 
 	wasmOpts = append(wasmOpts, queryPlugins)
-	
+
 	wasmKeeper := wasmkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(appKeepers.keys[wasmtypes.StoreKey]),
@@ -565,7 +566,8 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 		AddRoute(icahosttypes.SubModuleName, icahost.NewIBCModule(*appKeepers.ICAHostKeeper)).
 		AddRoute(ibctransfertypes.ModuleName, appKeepers.TransferStack).
 		AddRoute(wasmtypes.ModuleName, wasm.NewIBCHandler(appKeepers.WasmKeeper,
-			appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper))
+			appKeepers.IBCKeeper.ChannelKeeper, appKeepers.IBCKeeper.ChannelKeeper)).
+		AddRoute(icacontrollertypes.SubModuleName, controller.NewIBCMiddleware(nil, appKeepers.ICAControllerKeeper))
 
 	appKeepers.IBCKeeper.SetRouter(ibcRouter)
 }
