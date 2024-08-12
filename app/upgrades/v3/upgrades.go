@@ -53,6 +53,7 @@ func CreateUpgradeHandler(
 		}
 		// fee market params
 		// TODO: change values from default after discussion
+		// TODO : do not do default as it will take stake as default fee denom
 		err = keepers.FeeMarketKeeper.SetParams(ctx, feemarkettypes.DefaultParams())
 		if err != nil {
 			panic(err)
