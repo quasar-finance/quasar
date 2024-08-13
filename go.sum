@@ -428,8 +428,7 @@ github.com/cosmos/cosmos-db v1.0.2 h1:hwMjozuY1OlJs/uh6vddqnk9j7VamLv+0DBlbEXbAK
 github.com/cosmos/cosmos-db v1.0.2/go.mod h1:Z8IXcFJ9PqKK6BIsVOB3QXtkKoqUOp1vRvPT39kOXEA=
 github.com/cosmos/cosmos-proto v1.0.0-beta.5 h1:eNcayDLpip+zVLRLYafhzLvQlSmyab+RC5W7ZfmxJLA=
 github.com/cosmos/cosmos-proto v1.0.0-beta.5/go.mod h1:hQGLpiIUloJBMdQMMWb/4wRApmI9hjHH05nefC0Ojec=
-github.com/cosmos/cosmos-sdk v0.50.8 h1:2UJHssUaGHTl4/dFp8xyREKAnfiRU6VVfqtKG9n8w5g=
-github.com/cosmos/cosmos-sdk v0.50.8/go.mod h1:Zb+DgHtiByNwgj71IlJBXwOq6dLhtyAq3AgqpXm/jHo=
+github.com/cosmos/cosmos-sdk v0.50.9 h1:gt2usjz0H0qW6KwAxWw7ZJ3XU8uDwmhN+hYG3nTLeSg=
 github.com/cosmos/cosmos-sdk v0.50.9/go.mod h1:TMH6wpoYBcg7Cp5BEg8fneLr+8XloNQkf2MRNF9V6JE=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=
@@ -444,9 +443,8 @@ github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.0.2 h1:dyL
 github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.0.2/go.mod h1:82hPO/tRawbuFad2gPwChvpZ0JEIoNi91LwVneAYCeM=
 github.com/cosmos/ibc-apps/modules/async-icq/v8 v8.0.0 h1:nKP2+Rzlz2iyvTosY5mvP+aEBPe06oaDl3G7xLGBpNI=
 github.com/cosmos/ibc-apps/modules/async-icq/v8 v8.0.0/go.mod h1:D3Q380FpWRFtmUQWLosPxachi6w24Og2t5u/Tww5wtY=
+github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 v8.0.0-20240806223953-bfecb68c04c1 h1:/EFk6eBaZlXi79l4qTtIkPWGOVqxQqftg1OJpW3UMkg=
 github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 v8.0.0-20240806223953-bfecb68c04c1/go.mod h1:9+Z14xz3Y+5uEn5i1CvLcDN1aTthEhYUdI7pphySkY8=
-github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 v8.0.0-20240808203856-57803750a140 h1:yqadjjAAhzmcpROM8BvV0EKK20ALH9rKhFgDgSn4LfA=
-github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 v8.0.0-20240808203856-57803750a140/go.mod h1:9+Z14xz3Y+5uEn5i1CvLcDN1aTthEhYUdI7pphySkY8=
 github.com/cosmos/ibc-apps/modules/rate-limiting/v8 v8.0.0 h1:AQO9NIAP3RFqvBCj7IqM/V1LCxmuvcvGUdu0RIEz/c0=
 github.com/cosmos/ibc-apps/modules/rate-limiting/v8 v8.0.0/go.mod h1:/ZpKJSW/SKPkFS7jTqkPVn7kOHUUfRNzu+8aS7YOL8o=
 github.com/cosmos/ibc-go/modules/capability v1.0.1 h1:ibwhrpJ3SftEEZRxCRkH0fQZ9svjthrX2+oXdZvzgGI=
