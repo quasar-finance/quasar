@@ -18,7 +18,7 @@ require (
 	cosmossdk.io/x/tx v0.13.4
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmWasm/wasmd v0.51.0
-	github.com/CosmWasm/wasmvm/v2 v2.0.1
+	github.com/CosmWasm/wasmvm/v2 v2.1.0
 	github.com/cometbft/cometbft v0.38.10
 	github.com/cometbft/cometbft-db v0.11.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -28,9 +28,9 @@ require (
 	github.com/cosmos/ibc-apps/modules/async-icq/v8 v8.0.0
 	github.com/cosmos/ibc-apps/modules/ibc-hooks/v8 v8.0.0-20240806223953-bfecb68c04c1
 	github.com/cosmos/ibc-apps/modules/rate-limiting/v8 v8.0.0
-	github.com/cosmos/ibc-go/modules/capability v1.0.0
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.2.1-0.20240523101951-4b45d1822fb6
-	github.com/cosmos/ibc-go/v8 v8.3.0
+	github.com/cosmos/ibc-go/modules/capability v1.0.1
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.4.2-0.20240730185033-ccd4dc278e72
+	github.com/cosmos/ibc-go/v8 v8.4.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/golangci/golangci-lint v1.59.1
@@ -341,10 +341,12 @@ require (
 	cloud.google.com/go/auth v0.5.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0 // indirect
+	// indirect
 	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
 	github.com/creachadair/atomicfile v0.3.3 // indirect
 	github.com/creachadair/tomledit v0.0.26 // indirect
 	github.com/iancoleman/orderedmap v0.3.0 // indirect
+	github.com/shamaton/msgpack/v2 v2.2.0 // indirect
 )
 
 require (

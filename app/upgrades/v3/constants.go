@@ -18,7 +18,7 @@ var Upgrade = upgrades.Upgrade{
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{
-			circuittypes.ModuleName, feemarkettypes.ModuleName, ibchookstypes.ModuleName, pfmtypes.ModuleName, ratelimittypes.ModuleName,
+			circuittypes.ModuleName, feemarkettypes.ModuleName, ibchookstypes.StoreKey, pfmtypes.ModuleName, ratelimittypes.ModuleName,
 		},
 		Deleted: []string{},
 	},

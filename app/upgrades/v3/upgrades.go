@@ -3,6 +3,7 @@ package v3
 import (
 	"context"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -53,8 +54,11 @@ func CreateUpgradeHandler(
 		}
 		// fee market params
 		// TODO: change values from default after discussion
-		// TODO : do not do default as it will take stake as default fee denom
-		err = keepers.FeeMarketKeeper.SetParams(ctx, feemarkettypes.DefaultParams())
+		feemarketParams := feemarkettypes.DefaultParams()
+		feemarketParams.MinBaseGasPrice = math.LegacyMustNewDecFromStr("0.10000000000000000")
+		feemarketParams.MaxBlockUtilization = uint64(120000000)
+		feemarketParams.FeeDenom = "uqsr"
+		err = keepers.FeeMarketKeeper.SetParams(ctx, feemarketParams)
 		if err != nil {
 			panic(err)
 		}

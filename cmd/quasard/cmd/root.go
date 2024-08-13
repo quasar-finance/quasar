@@ -314,11 +314,11 @@ func (a appCreator) newApp(
 	if err != nil {
 		panic(err)
 	}
-	// SDK 47 - Set chain id
+
 	homeDir := cast.ToString(appOpts.Get(flags.FlagHome))
 	chainID := cast.ToString(appOpts.Get(flags.FlagChainID))
 	if chainID == "" {
-		// fallback to genesis chain-ida.
+		// fallback to genesis chain-id
 		appGenesis, err := genutiltypes.AppGenesisFromFile(filepath.Join(homeDir, "config", "genesis.json"))
 		if err != nil {
 			panic(err)
@@ -327,7 +327,7 @@ func (a appCreator) newApp(
 		chainID = appGenesis.ChainID
 	}
 
-	snapshotDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
+	snapshotDir := filepath.Join(homeDir, "data", "snapshots")
 	snapshotDB, err := dbm.NewDB("metadata", server.GetAppDBBackend(appOpts), snapshotDir)
 	if err != nil {
 		panic(err)
