@@ -450,13 +450,7 @@ func (app *QuasarApp) Name() string { return app.BaseApp.Name() }
 func (app *QuasarApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
 
 func (app *QuasarApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	rsp, err := app.mm.PreBlock(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// _, err = app.oraclePreBlockHandler.PreBlocker()(ctx, req)
-	return rsp, err
+	return app.mm.PreBlock(ctx)
 }
 
 // BeginBlocker application updates every begin block
@@ -475,8 +469,16 @@ func (app *QuasarApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (
 	if err := tmjson.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()); err != nil {
+		panic(err)
+	}
+
+	response, err := app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	if err != nil {
+		panic(err)
+	}
+
+	return response, nil
 }
 
 // LoadHeight loads a particular height
