@@ -11,7 +11,7 @@ use crate::{
 /// SwapCalculationResult holds the result of a swap calculation
 pub struct SwapCalculationResult {
     pub swap_msg: CosmosMsg,
-    pub offer: Coin,
+    pub token_in: Coin,
     pub token_out_min_amount: Uint128,
 }
 
@@ -97,14 +97,14 @@ pub fn execute_swap_non_vault_funds(
 pub fn calculate_swap_amount(
     contract_address: Addr,
     pool_config: PoolConfig,
-    offer: Coin,
+    token_in: Coin,
     out_denom: String,
     max_slippage: Decimal,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     price: Decimal,
     dex_router: Option<Addr>,
 ) -> Result<SwapCalculationResult, ContractError> {
-    let token_out_min_amount = offer
+    let token_out_min_amount = token_in
         .amount
         .checked_mul_floor(price)?
         .checked_mul_floor(max_slippage)?;
@@ -112,7 +112,7 @@ pub fn calculate_swap_amount(
     let swap_msg = swap_msg(
         contract_address,
         pool_config.pool_id,
-        offer.clone(),
+        token_in.clone(),
         coin(token_out_min_amount.into(), out_denom.clone()),
         forced_swap_route,
         dex_router,
@@ -120,7 +120,7 @@ pub fn calculate_swap_amount(
 
     Ok(SwapCalculationResult {
         swap_msg,
-        offer,
+        token_in,
         token_out_min_amount,
     })
 }

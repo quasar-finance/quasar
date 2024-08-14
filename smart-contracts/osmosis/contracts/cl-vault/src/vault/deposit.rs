@@ -57,8 +57,8 @@ pub(crate) fn execute_any_deposit(
     }
 
     let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
-    let (offer, out_denom, remainder, price) = if !deposit_info.base_refund.amount.is_zero() {
-        let offer_amount = if pool_details.current_tick > position.upper_tick {
+    let (token_in, out_denom, remainder, price) = if !deposit_info.base_refund.amount.is_zero() {
+        let token_in_amount = if pool_details.current_tick > position.upper_tick {
             deposit_info.base_refund.amount
         } else {
             get_single_sided_deposit_0_to_1_swap_amount(
@@ -68,18 +68,18 @@ pub(crate) fn execute_any_deposit(
                 position.upper_tick,
             )?
         };
-        let offer = coin(offer_amount.into(), pool_config.token0.clone());
+        let token_in = coin(token_in_amount.into(), pool_config.token0.clone());
         let remainder = coin(
             deposit_info
                 .base_refund
                 .amount
-                .checked_sub(offer.amount)?
+                .checked_sub(token_in.amount)?
                 .into(),
             pool_config.token0.clone(),
         );
-        (offer, pool_config.token1.clone(), remainder, twap_price)
+        (token_in, pool_config.token1.clone(), remainder, twap_price)
     } else {
-        let offer_amount = if pool_details.current_tick < position.lower_tick {
+        let token_in_amount = if pool_details.current_tick < position.lower_tick {
             deposit_info.quote_refund.amount
         } else {
             get_single_sided_deposit_1_to_0_swap_amount(
@@ -89,17 +89,17 @@ pub(crate) fn execute_any_deposit(
                 position.upper_tick,
             )?
         };
-        let offer = coin(offer_amount.into(), pool_config.token1.clone());
+        let token_in = coin(token_in_amount.into(), pool_config.token1.clone());
         let remainder = coin(
             deposit_info
                 .quote_refund
                 .amount
-                .checked_sub(offer.amount)?
+                .checked_sub(token_in.amount)?
                 .into(),
             pool_config.token1.clone(),
         );
         (
-            offer,
+            token_in,
             pool_config.token0.clone(),
             remainder,
             twap_price.inv().expect("Invalid price"),
@@ -118,7 +118,7 @@ pub(crate) fn execute_any_deposit(
     let swap_calc_result = calculate_swap_amount(
         env.contract.address,
         pool_config,
-        offer.clone(),
+        token_in.clone(),
         out_denom,
         max_slippage,
         None, // TODO: check this None
@@ -135,7 +135,7 @@ pub(crate) fn execute_any_deposit(
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
-            attr("offer", format!("{:?}", offer)),
+            attr("token_in", format!("{:?}", token_in)),
             attr(
                 "min_receive",
                 format!("{}", swap_calc_result.token_out_min_amount),

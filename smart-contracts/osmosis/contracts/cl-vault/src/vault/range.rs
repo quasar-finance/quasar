@@ -344,7 +344,7 @@ fn do_swap_deposit_merge(
             Replies::Swap.into(),
         ))
         .add_attributes(vec![
-            attr("token_in", format!("{:?}", swap_calc_result.offer)),
+            attr("token_in", format!("{:?}", swap_calc_result.token_in)),
             attr(
                 "token_out_min",
                 swap_calc_result.token_out_min_amount.to_string(),
