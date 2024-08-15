@@ -1,13 +1,4 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
-use cw2::set_contract_version;
-use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
-
 use crate::error::ContractError;
-use crate::helpers::generic::sort_tokens;
 use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
@@ -21,16 +12,7 @@ use crate::query::{
 };
 use crate::reply::Replies;
 #[allow(deprecated)]
-use crate::state::CURRENT_BALANCE;
-#[allow(deprecated)]
-use crate::state::CURRENT_SWAP;
-#[allow(deprecated)]
-use crate::state::{
-    MigrationStatus, VaultConfig, MIGRATION_STATUS, OLD_VAULT_CONFIG, STRATEGIST_REWARDS,
-    VAULT_CONFIG,
-};
-#[allow(deprecated)]
-use crate::state::{Position, OLD_POSITION, POSITION};
+use crate::state::{MigrationStatus, MIGRATION_STATUS};
 use crate::vault::admin::execute_admin;
 use crate::vault::autocompound::{
     execute_autocompound, execute_migration_step, handle_autocompound_reply,
@@ -52,6 +34,10 @@ use crate::vault::range::{
 };
 use crate::vault::swap::execute_swap_non_vault_funds;
 use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
+#[cfg(not(feature = "library"))]
+use cosmwasm_std::entry_point;
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cw2::set_contract_version;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -233,67 +219,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    #[allow(deprecated)]
-    let old_vault_config = OLD_VAULT_CONFIG.load(deps.storage)?;
-    let new_vault_config = VaultConfig {
-        performance_fee: old_vault_config.performance_fee,
-        treasury: old_vault_config.treasury,
-        swap_max_slippage: old_vault_config.swap_max_slippage,
-        dex_router: deps.api.addr_validate(msg.dex_router.as_str())?,
-    };
-
-    #[allow(deprecated)]
-    OLD_VAULT_CONFIG.remove(deps.storage);
-    VAULT_CONFIG.save(deps.storage, &new_vault_config)?;
-
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
 
-    // Declare response object as mut
-    let mut response = Response::new().add_attribute("migrate", "successful");
-
-    // Conditionally add a bank send message if the strategist rewards state is not empty
-    #[allow(deprecated)]
-    let strategist_rewards = STRATEGIST_REWARDS.load(deps.storage)?;
-    if !strategist_rewards.is_empty() {
-        let bank_send_msg = BankMsg::Send {
-            to_address: new_vault_config.treasury.to_string(),
-            amount: sort_tokens(strategist_rewards.coins()),
-        };
-        response = response.add_message(bank_send_msg);
-    }
-    // Remove the state
-    #[allow(deprecated)]
-    STRATEGIST_REWARDS.remove(deps.storage);
-
-    //POSITION state migration
-    #[allow(deprecated)]
-    let old_position = OLD_POSITION.load(deps.storage)?;
-
-    let cl_querier = ConcentratedliquidityQuerier::new(&deps.querier);
-    let pos_response = cl_querier.position_by_id(old_position.position_id)?;
-
-    let new_position: Position = Position {
-        position_id: old_position.position_id,
-        join_time: pos_response
-            .position
-            .unwrap()
-            .position
-            .unwrap()
-            .join_time
-            .unwrap()
-            .seconds
-            .unsigned_abs(),
-        claim_after: None,
-    };
-
-    POSITION.save(deps.storage, &new_position)?;
-    #[allow(deprecated)]
-    OLD_POSITION.remove(deps.storage);
-    #[allow(deprecated)]
-    CURRENT_BALANCE.remove(deps.storage);
-    #[allow(deprecated)]
-    CURRENT_SWAP.remove(deps.storage);
-
+    let response = Response::new().add_attribute("migrate", "successful");
     Ok(response)
 }
