@@ -135,9 +135,9 @@ pub(crate) fn execute_any_deposit(
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
-            attr("token_in", format!("{:?}", token_in)),
+            attr("token_in", format!("{}", token_in)),
             attr(
-                "min_receive",
+                "token_out_min",
                 format!("{}", swap_calc_result.token_out_min_amount),
             ),
         ]))
