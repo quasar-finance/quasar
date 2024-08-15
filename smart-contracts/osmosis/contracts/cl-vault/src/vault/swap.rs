@@ -58,9 +58,7 @@ pub fn execute_swap_non_vault_funds(
             )?
             .amount;
 
-        // TODO_FUTURE: This could be a <= condition against a threshold value mayube in dollars to avoid dust swaps
         if balance_in_contract == Uint128::zero() {
-            // TODO: Use InsufficientFundsForSwap instead, this has been removed after STRATEGIST_REWARDS state eval removal
             return Err(ContractError::InsufficientFunds {});
         }
 
