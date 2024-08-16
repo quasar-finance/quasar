@@ -64,34 +64,6 @@ pub fn execute_update_range(
         return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
     }
 
-    let modify_range_config = ModifyRangeState {
-        lower_tick,
-        upper_tick,
-        max_slippage,
-        new_range_position_ids: vec![],
-        ratio_of_swappable_funds_to_use,
-        twap_window_seconds,
-        forced_swap_route,
-    };
-
-    execute_update_range_ticks(deps, env, info, modify_range_config, claim_after)
-}
-
-/// This function is the entrypoint into the dsm routine that will go through the following steps
-/// * how much liq do we have in current range
-/// * so how much of each asset given liq would we have at current price
-/// * how much of each asset do we need to move to get to new range
-/// * deposit up to max liq we can right now, then swap remaining over and deposit again
-#[allow(clippy::too_many_arguments)]
-pub fn execute_update_range_ticks(
-    deps: DepsMut,
-    env: &Env,
-    info: MessageInfo,
-    modify_range_config: ModifyRangeState,
-    claim_after: Option<u64>,
-) -> Result<Response, ContractError> {
-    assert_range_admin(deps.storage, &info.sender)?;
-
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown
         .position
@@ -105,7 +77,18 @@ pub fn execute_update_range_ticks(
             .to_string(),
     };
 
-    MODIFY_RANGE_STATE.save(deps.storage, &Some(modify_range_config))?;
+    MODIFY_RANGE_STATE.save(
+        deps.storage,
+        &Some(ModifyRangeState {
+            lower_tick,
+            upper_tick,
+            max_slippage,
+            new_range_position_ids: vec![],
+            ratio_of_swappable_funds_to_use,
+            twap_window_seconds,
+            forced_swap_route,
+        }),
+    )?;
 
     // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
     let position_state = POSITION.load(deps.storage)?;
