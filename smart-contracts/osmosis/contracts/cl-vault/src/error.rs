@@ -196,3 +196,21 @@ pub fn assert_deposits(deposits: &[Coin], pool_config: &PoolConfig) -> Result<()
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::RANGE_ADMIN;
+    use cosmwasm_std::{testing::mock_dependencies, Addr};
+
+    #[test]
+    fn test_assert_range_admin() {
+        let mut deps = mock_dependencies();
+        let range_admin = Addr::unchecked("addr0000");
+        let no_range_admin = Addr::unchecked("no_admin");
+
+        assert!(RANGE_ADMIN.save(&mut deps.storage, &range_admin).is_ok());
+        assert!(assert_range_admin(&deps.storage, &range_admin).is_ok());
+        assert!(assert_range_admin(&deps.storage, &no_range_admin).is_err());
+    }
+}

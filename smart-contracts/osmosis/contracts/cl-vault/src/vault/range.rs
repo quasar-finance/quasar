@@ -378,19 +378,12 @@ mod tests {
     #[test]
     fn test_assert_range_admin() {
         let mut deps = mock_dependencies();
-        let info = mock_info("addr0000", &[]);
+        let range_admin = Addr::unchecked("addr0000");
+        let no_range_admin = Addr::unchecked("no_admin");
 
-        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
-
-        super::assert_range_admin(&deps.storage, &info.sender).unwrap();
-
-        let info = mock_info("addr0001", &[]);
-        super::assert_range_admin(&deps.storage, &info.sender).unwrap_err();
-
-        let info = mock_info("addr0000", &[]);
-        RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
-
-        super::assert_range_admin(&deps.storage, &Addr::unchecked("someoneelse")).unwrap_err();
+        assert!(RANGE_ADMIN.save(&mut deps.storage, &range_admin).is_ok());
+        assert!(super::assert_range_admin(&deps.storage, &range_admin).is_ok());
+        assert!(super::assert_range_admin(&deps.storage, &no_range_admin).is_err());
     }
 
     #[test]
