@@ -1,10 +1,8 @@
 use crate::{
-    helpers::{
-        assert::assert_range_admin,
-        getters::{
-            get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_pair_balances,
-        },
+    error::{assert_range_admin, assert_ratio},
+    helpers::getters::{
+        get_single_sided_deposit_0_to_1_swap_amount, get_single_sided_deposit_1_to_0_swap_amount,
+        get_twap_price, get_unused_pair_balances,
     },
     math::tick::{price_to_tick, tick_to_price},
     reply::Replies,
@@ -32,11 +30,6 @@ use osmosis_std::types::osmosis::{
 };
 use std::str::FromStr;
 
-/// This function is the entrypoint into the dsm routine that will go through the following steps
-/// * how much liq do we have in current range
-/// * so how much of each asset given liq would we have at current price
-/// * how much of each asset do we need to move to get to new range
-/// * deposit up to max liq we can right now, then swap remaining over and deposit again
 #[allow(clippy::too_many_arguments)]
 pub fn execute_update_range(
     deps: DepsMut,
@@ -51,43 +44,7 @@ pub fn execute_update_range(
     claim_after: Option<u64>,
 ) -> Result<Response, ContractError> {
     assert_range_admin(deps.storage, &info.sender)?;
-
-    let lower_tick: i64 = price_to_tick(deps.storage, Decimal256::from(lower_price))?
-        .try_into()
-        .expect("Overflow when converting lower price to tick");
-    let upper_tick: i64 = price_to_tick(deps.storage, Decimal256::from(upper_price))?
-        .try_into()
-        .expect("Overflow when converting upper price to tick");
-
-    // validate ratio of swappable funds to use
-    if ratio_of_swappable_funds_to_use > Decimal::one()
-        || ratio_of_swappable_funds_to_use <= Decimal::zero()
-    {
-        return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
-    }
-
-    let modify_range_config = ModifyRangeState {
-        lower_tick,
-        upper_tick,
-        max_slippage,
-        new_range_position_ids: vec![],
-        ratio_of_swappable_funds_to_use,
-        twap_window_seconds,
-        forced_swap_route,
-    };
-
-    execute_update_range_ticks(deps, env, info, modify_range_config, claim_after)
-}
-
-#[allow(clippy::too_many_arguments)]
-pub fn execute_update_range_ticks(
-    deps: DepsMut,
-    env: &Env,
-    info: MessageInfo,
-    modify_range_config: ModifyRangeState,
-    claim_after: Option<u64>,
-) -> Result<Response, ContractError> {
-    assert_range_admin(deps.storage, &info.sender)?;
+    assert_ratio(ratio_of_swappable_funds_to_use)?;
 
     let position_breakdown = get_position(deps.storage, &deps.querier)?;
     let position = position_breakdown
@@ -102,7 +59,20 @@ pub fn execute_update_range_ticks(
             .to_string(),
     };
 
-    MODIFY_RANGE_STATE.save(deps.storage, &Some(modify_range_config))?;
+    let lower_tick: i64 = price_to_tick(deps.storage, lower_price.into())?.try_into()?;
+    let upper_tick: i64 = price_to_tick(deps.storage, upper_price.into())?.try_into()?;
+    MODIFY_RANGE_STATE.save(
+        deps.storage,
+        &ModifyRangeState {
+            lower_tick,
+            upper_tick,
+            max_slippage,
+            new_range_position_ids: vec![],
+            ratio_of_swappable_funds_to_use,
+            twap_window_seconds,
+            forced_swap_route,
+        },
+    )?;
 
     // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
     let position_state = POSITION.load(deps.storage)?;
@@ -146,7 +116,8 @@ fn requires_swap(
 }
 
 pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
-    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
+    let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?;
+    MODIFY_RANGE_STATE.remove(deps.storage);
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
     let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
@@ -155,13 +126,13 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     let sqrt_pl = tick_to_price(modify_range_state.lower_tick)?.sqrt();
     let sqrt_p = tick_to_price(pool_details.current_tick)?.sqrt();
     let base_liquidity = get_liquidity_for_base_token(
-        unused_pair_balances[0].amount.into(),
+        unused_pair_balances.base.amount.into(),
         sqrt_p,
         sqrt_pl,
         sqrt_pu,
     )?;
     let quote_liquidity = get_liquidity_for_quote_token(
-        unused_pair_balances[1].amount.into(),
+        unused_pair_balances.quote.amount.into(),
         sqrt_p,
         sqrt_pl,
         sqrt_pu,
@@ -172,21 +143,21 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         .add_attribute("action", "handle_withdraw_position")
         .add_attribute("lower_tick", modify_range_state.lower_tick.to_string())
         .add_attribute("upper_tick", modify_range_state.upper_tick.to_string())
-        .add_attribute("token0", format!("{}", unused_pair_balances[0]))
-        .add_attribute("token1", format!("{}", unused_pair_balances[1]));
+        .add_attribute("token0", format!("{}", unused_pair_balances.base))
+        .add_attribute("token1", format!("{}", unused_pair_balances.quote));
     if requires_swap(
         sqrt_p,
         sqrt_pl,
         sqrt_pu,
-        unused_pair_balances[0].amount,
-        unused_pair_balances[1].amount,
+        unused_pair_balances.base.amount,
+        unused_pair_balances.quote.amount,
         base_liquidity,
         quote_liquidity,
     ) {
         let swap_tokens = if sqrt_p <= sqrt_pl {
-            vec![Coin::default(), unused_pair_balances[1].clone()]
+            vec![Coin::default(), unused_pair_balances.quote.clone()]
         } else if sqrt_p >= sqrt_pu {
-            vec![unused_pair_balances[0].clone(), Coin::default()]
+            vec![unused_pair_balances.base.clone(), Coin::default()]
         } else if base_liquidity > quote_liquidity {
             let residual_liquidity = base_liquidity - quote_liquidity;
             let residual_amount: Uint128 = get_amount_from_liquidity_for_base_token(
@@ -199,7 +170,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             vec![
                 coin(
                     residual_amount.into(),
-                    unused_pair_balances[0].denom.clone(),
+                    unused_pair_balances.base.denom.clone(),
                 ),
                 Coin::default(),
             ]
@@ -216,7 +187,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
                 Coin::default(),
                 coin(
                     residual_amount.into(),
-                    unused_pair_balances[1].denom.clone(),
+                    unused_pair_balances.quote.denom.clone(),
                 ),
             ]
         };
@@ -230,15 +201,8 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             },
         )?;
 
-        let swap_calculation_result = get_swap_calculation_result(
-            deps,
-            env,
-            modify_range_state.lower_tick,
-            modify_range_state.upper_tick,
-            &swap_tokens,
-            modify_range_state.ratio_of_swappable_funds_to_use,
-            modify_range_state.twap_window_seconds,
-        )?;
+        let swap_calculation_result =
+            get_swap_calculation_result(deps, env, &swap_tokens, modify_range_state)?;
 
         Ok(response
             .add_submessage(SubMsg::reply_on_success(
@@ -258,7 +222,10 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
             &env,
             modify_range_state.lower_tick,
             modify_range_state.upper_tick,
-            unused_pair_balances.clone(),
+            vec![
+                unused_pair_balances.base.clone(),
+                unused_pair_balances.quote.clone(),
+            ],
             Uint128::zero(),
             Uint128::zero(),
         )?;
@@ -270,68 +237,57 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     }
 }
 
-/// this function assumes that we are swapping and depositing into a valid range
-///
 /// It also calculates the exact amount we should be swapping based on current balances and the new range
-#[allow(clippy::too_many_arguments)]
-pub fn get_swap_calculation_result(
+fn get_swap_calculation_result(
     deps: DepsMut,
     env: Env,
-    target_lower_tick: i64,
-    target_upper_tick: i64,
     tokens_provided: &[Coin],
-    ratio_of_swappable_funds_to_use: Decimal,
-    twap_window_seconds: u64,
+    mrs: ModifyRangeState,
 ) -> Result<SwapCalculationResult, ContractError> {
     let swap_amounts: Result<Vec<_>, _> = tokens_provided
         .iter()
-        .map(|c| c.amount.checked_mul_floor(ratio_of_swappable_funds_to_use))
+        .map(|c| {
+            c.amount
+                .checked_mul_floor(mrs.ratio_of_swappable_funds_to_use)
+        })
         .collect();
     let swap_amounts = swap_amounts?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
-    let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
     let (token_in_amount, swap_direction) = if !swap_amounts[0].is_zero() {
-        (
-            // range is above current tick
-            if pool_details.current_tick > target_upper_tick {
-                swap_amounts[0]
-            } else if pool_details.current_tick < target_lower_tick {
-                Uint128::zero()
-            } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    swap_amounts[0],
-                    target_lower_tick,
-                    pool_details.current_tick,
-                    target_upper_tick,
-                )?
-            },
-            SwapDirection::ZeroToOne,
-        )
+        let token_in_amount = if pool_details.current_tick > mrs.upper_tick {
+            swap_amounts[0]
+        } else if pool_details.current_tick < mrs.lower_tick {
+            Uint128::zero()
+        } else {
+            get_single_sided_deposit_0_to_1_swap_amount(
+                swap_amounts[0],
+                mrs.lower_tick,
+                pool_details.current_tick,
+                mrs.upper_tick,
+            )?
+        };
+        (token_in_amount, SwapDirection::ZeroToOne)
     } else {
-        (
-            // current tick is above range
-            if pool_details.current_tick < target_lower_tick {
-                swap_amounts[1]
-            } else if pool_details.current_tick > target_upper_tick {
-                Uint128::zero()
-            } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    swap_amounts[1],
-                    target_lower_tick,
-                    pool_details.current_tick,
-                    target_upper_tick,
-                )?
-            },
-            SwapDirection::OneToZero,
-        )
+        let token_in_amount = if pool_details.current_tick < mrs.lower_tick {
+            swap_amounts[1]
+        } else if pool_details.current_tick > mrs.upper_tick {
+            Uint128::zero()
+        } else {
+            get_single_sided_deposit_1_to_0_swap_amount(
+                swap_amounts[1],
+                mrs.lower_tick,
+                pool_details.current_tick,
+                mrs.upper_tick,
+            )?
+        };
+        (token_in_amount, SwapDirection::OneToZero)
     };
 
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, mrs.twap_window_seconds)?;
     let swap_calc_result = calculate_swap_amount(
         env.contract.address,
         pool_config,
@@ -346,7 +302,6 @@ pub fn get_swap_calculation_result(
     Ok(swap_calc_result)
 }
 
-// do deposit
 pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
@@ -358,7 +313,10 @@ pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractEr
         &env,
         swap_deposit_merge_state.target_lower_tick,
         swap_deposit_merge_state.target_upper_tick,
-        unused_pair_balances.clone(),
+        vec![
+            unused_pair_balances.base.clone(),
+            unused_pair_balances.quote.clone(),
+        ],
         Uint128::zero(),
         Uint128::zero(),
     )?;
@@ -378,14 +336,8 @@ pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractEr
             "upper_tick",
             swap_deposit_merge_state.target_upper_tick.to_string(),
         )
-        .add_attribute(
-            "token0",
-            format!("{:?}{:?}", unused_pair_balances[0], pool_config.token0),
-        )
-        .add_attribute(
-            "token1",
-            format!("{:?}{:?}", unused_pair_balances[1], pool_config.token1),
-        ))
+        .add_attribute("token0", format!("{:?}", unused_pair_balances.base))
+        .add_attribute("token1", format!("{:?}", unused_pair_balances.quote)))
 }
 
 pub fn handle_create_position(
@@ -430,15 +382,15 @@ mod tests {
 
         RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap();
+        super::assert_range_admin(&deps.storage, &info.sender).unwrap();
 
         let info = mock_info("addr0001", &[]);
-        super::assert_range_admin(&mut deps.storage, &info.sender).unwrap_err();
+        super::assert_range_admin(&deps.storage, &info.sender).unwrap_err();
 
         let info = mock_info("addr0000", &[]);
         RANGE_ADMIN.save(&mut deps.storage, &info.sender).unwrap();
 
-        super::assert_range_admin(&mut deps.storage, &Addr::unchecked("someoneelse")).unwrap_err();
+        super::assert_range_admin(&deps.storage, &Addr::unchecked("someoneelse")).unwrap_err();
     }
 
     #[test]
@@ -499,7 +451,7 @@ mod tests {
         MODIFY_RANGE_STATE
             .save(
                 deps.as_mut().storage,
-                &Some(crate::state::ModifyRangeState {
+                &crate::state::ModifyRangeState {
                     lower_tick: 100,
                     upper_tick: 1000, // since both times we are moving into range and in the quasarquerier we configured the current_tick as 500, this would mean we are trying to move into range
                     new_range_position_ids: vec![],
@@ -507,7 +459,7 @@ mod tests {
                     ratio_of_swappable_funds_to_use: Decimal::one(),
                     twap_window_seconds: 45,
                     forced_swap_route: None,
-                }),
+                },
             )
             .unwrap();
 

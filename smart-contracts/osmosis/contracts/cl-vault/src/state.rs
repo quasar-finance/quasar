@@ -48,8 +48,8 @@ pub struct PoolConfig {
 }
 
 impl PoolConfig {
-    pub fn pool_contains_token(&self, token: impl Into<String>) -> bool {
-        [&self.token0, &self.token1].contains(&&token.into())
+    pub fn pool_contains_token(&self, token: &str) -> bool {
+        self.token0 == token || self.token1 == token
     }
 }
 
@@ -99,7 +99,7 @@ pub struct ModifyRangeState {
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 
-pub const MODIFY_RANGE_STATE: Item<Option<ModifyRangeState>> = Item::new("modify_range_state");
+pub const MODIFY_RANGE_STATE: Item<ModifyRangeState> = Item::new("modify_range_state");
 
 #[cw_serde]
 pub struct SwapDepositMergeState {
