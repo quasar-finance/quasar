@@ -46,13 +46,13 @@ pub fn refund_bank_msg(
 pub fn swap_msg(
     sender: Addr,
     pool_id: u64,
-    offer: Coin,
+    token_in: Coin,
     min_receive: Coin,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     dex_router: Option<Addr>,
 ) -> Result<CosmosMsg, ContractError> {
     if let Some(dex_router) = dex_router {
-        cw_dex_execute_swap_operations_msg(dex_router, forced_swap_route, offer, min_receive)
+        cw_dex_execute_swap_operations_msg(dex_router, forced_swap_route, token_in, min_receive)
     } else {
         let pool_route = SwapAmountInRoute {
             pool_id,
@@ -61,7 +61,7 @@ pub fn swap_msg(
         Ok(osmosis_swap_exact_amount_in_msg(
             sender,
             pool_route,
-            offer,
+            token_in,
             min_receive.amount,
         ))
     }
@@ -70,13 +70,13 @@ pub fn swap_msg(
 fn osmosis_swap_exact_amount_in_msg(
     sender: Addr,
     pool_route: SwapAmountInRoute,
-    offer: Coin,
+    token_in: Coin,
     token_out_min_amount: Uint128,
 ) -> CosmosMsg {
     osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
         sender: sender.to_string(),
         routes: vec![pool_route],
-        token_in: Some(offer.into()),
+        token_in: Some(token_in.into()),
         token_out_min_amount: token_out_min_amount.to_string(),
     }
     .into()
@@ -85,7 +85,7 @@ fn osmosis_swap_exact_amount_in_msg(
 fn cw_dex_execute_swap_operations_msg(
     dex_router_address: Addr,
     path: Option<Vec<SwapAmountInRoute>>,
-    offer: Coin,
+    token_in: Coin,
     min_receive: Coin,
 ) -> Result<CosmosMsg, ContractError> {
     let swap_msg: CosmosMsg = WasmMsg::Execute {
@@ -95,7 +95,7 @@ fn cw_dex_execute_swap_operations_msg(
             out_denom: min_receive.denom,
             minimum_receive: Some(min_receive.amount),
         })?,
-        funds: vec![offer],
+        funds: vec![token_in],
     }
     .into();
 

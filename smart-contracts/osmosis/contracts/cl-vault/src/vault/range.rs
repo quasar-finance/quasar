@@ -16,13 +16,13 @@ use crate::{
     vault::{
         concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
         merge::MergeResponse,
-        swap::{calculate_swap_amount, SwapDirection},
+        swap::calculate_swap_amount,
     },
     ContractError,
 };
 use cosmwasm_std::{
-    attr, to_json_binary, Coin, Decimal, Decimal256, DepsMut, Env, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128,
+    attr, coin, to_json_binary, CheckedMultiplyFractionError, Coin, Decimal, Decimal256, DepsMut,
+    Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
@@ -262,61 +262,77 @@ fn do_swap_deposit_merge(
     ratio_of_swappable_funds_to_use: Decimal,
     twap_window_seconds: u64,
 ) -> Result<Response, ContractError> {
-    let swap_amounts: Result<Vec<_>, _> = tokens_provided
+    let swap_tokens: Result<Vec<_>, _> = tokens_provided
         .iter()
-        .map(|c| c.amount.checked_mul_floor(ratio_of_swappable_funds_to_use))
+        .map(|c| -> Result<Coin, CheckedMultiplyFractionError> {
+            Ok(coin(
+                c.amount
+                    .checked_mul_floor(ratio_of_swappable_funds_to_use)?
+                    .into(),
+                c.denom.clone(),
+            ))
+        })
         .collect();
-    let swap_amounts = swap_amounts?;
+    let swap_tokens = swap_tokens?;
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
     let mrs = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
-
+    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     //TODO: further optimizations can be made by increasing the swap amount by half of our expected slippage,
     // to reduce the total number of non-deposited tokens that we will then need to refund
-    let (token_in_amount, swap_direction) = if !swap_amounts[0].is_zero() {
+    let (token_in, out_denom, price) = if !swap_tokens[0].amount.is_zero() {
         (
             // range is above current tick
             if pool_details.current_tick > target_upper_tick {
-                swap_amounts[0]
+                swap_tokens[0].clone()
             } else {
-                get_single_sided_deposit_0_to_1_swap_amount(
-                    swap_amounts[0],
-                    target_lower_tick,
-                    pool_details.current_tick,
-                    target_upper_tick,
-                )?
+                coin(
+                    get_single_sided_deposit_0_to_1_swap_amount(
+                        swap_tokens[0].amount,
+                        target_lower_tick,
+                        pool_details.current_tick,
+                        target_upper_tick,
+                    )?
+                    .into(),
+                    swap_tokens[0].denom.clone(),
+                )
             },
-            SwapDirection::ZeroToOne,
+            swap_tokens[1].denom.clone(),
+            twap_price,
         )
     } else {
         (
             // current tick is above range
             if pool_details.current_tick < target_lower_tick {
-                swap_amounts[1]
+                swap_tokens[1].clone()
             } else {
-                get_single_sided_deposit_1_to_0_swap_amount(
-                    swap_amounts[1],
-                    target_lower_tick,
-                    pool_details.current_tick,
-                    target_upper_tick,
-                )?
+                coin(
+                    get_single_sided_deposit_1_to_0_swap_amount(
+                        swap_tokens[1].amount,
+                        target_lower_tick,
+                        pool_details.current_tick,
+                        target_upper_tick,
+                    )?
+                    .into(),
+                    swap_tokens[1].denom.clone(),
+                )
             },
-            SwapDirection::OneToZero,
+            swap_tokens[0].denom.clone(),
+            twap_price.inv().expect("Invalid price"),
         )
     };
 
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, twap_window_seconds)?;
     let swap_calc_result = calculate_swap_amount(
         env.contract.address,
         pool_config,
-        swap_direction,
-        token_in_amount,
+        token_in,
+        out_denom,
         mrs.max_slippage,
         mrs.forced_swap_route,
-        twap_price,
+        price,
         dex_router,
     )?;
 
@@ -328,7 +344,7 @@ fn do_swap_deposit_merge(
             Replies::Swap.into(),
         ))
         .add_attributes(vec![
-            attr("token_in", format!("{:?}", swap_calc_result.offer)),
+            attr("token_in", format!("{}", swap_calc_result.token_in)),
             attr(
                 "token_out_min",
                 swap_calc_result.token_out_min_amount.to_string(),
@@ -368,14 +384,8 @@ pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractEr
             "upper_tick",
             swap_deposit_merge_state.target_upper_tick.to_string(),
         )
-        .add_attribute(
-            "token0",
-            format!("{:?}{:?}", unused_pair_balances[0], pool_config.token0),
-        )
-        .add_attribute(
-            "token1",
-            format!("{:?}{:?}", unused_pair_balances[1], pool_config.token1),
-        ))
+        .add_attribute("token0", format!("{}", unused_pair_balances[0]))
+        .add_attribute("token1", format!("{}", unused_pair_balances[1])))
 }
 
 // do merge position & exit
