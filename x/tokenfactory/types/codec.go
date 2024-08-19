@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	amino     = codec.NewLegacyAmino()
 	ModuleCdc = codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
 )
 
@@ -36,18 +35,3 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
-
-/*
-func init() {
-	RegisterCodec(amino)
-	// Register all Amino interfaces and concrete types on the authz Amino codec so that this can later be
-	// used to properly serialize MsgGrant and MsgExec instances
-	// Note: these 3 are inlines from authz/codec in 0.46 so we can be compatible with 0.45
-	sdk.RegisterLegacyAminoCodec(amino)
-	// cryptocodec.RegisterCrypto(amino)
-	RegisterCodec(authzcodec.Amino)
-	// codec.RegisterEvidences(amino)
-
-	amino.Seal()
-}
-*/
