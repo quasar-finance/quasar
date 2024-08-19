@@ -1,27 +1,24 @@
 package ante_test
 
 import (
-	"github.com/quasar-finance/quasar/ante"
-	"github.com/quasar-finance/quasar/app/helpers"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"cosmossdk.io/math"
-
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/quasar-finance/quasar/ante"
+	"github.com/quasar-finance/quasar/testutil"
+	"github.com/stretchr/testify/require"
 )
 
 // Test that the GovVoteDecorator rejects v1beta1 vote messages from accounts with less than 1 atom staked
 // Submitting v1beta1.VoteMsg should not be possible through the CLI, but it's still possible to craft a transaction
 func TestVoteSpamDecoratorGovV1Beta1(t *testing.T) {
-	quasarApp := helpers.Setup(t)
+	quasarApp := testutil.Setup(t)
 	ctx := quasarApp.NewUncachedContext(true, tmproto.Header{})
 	decorator := ante.NewGovVoteDecorator(quasarApp.AppCodec(), quasarApp.StakingKeeper)
 	stakingKeeper := quasarApp.StakingKeeper
@@ -147,7 +144,7 @@ func TestVoteSpamDecoratorGovV1Beta1(t *testing.T) {
 // Test that the GovVoteDecorator rejects v1 vote messages from accounts with less than 1 atom staked
 // Usually, only v1.VoteMsg can be submitted using the CLI.
 func TestVoteSpamDecoratorGovV1(t *testing.T) {
-	quasarApp := helpers.Setup(t)
+	quasarApp := testutil.Setup(t)
 	ctx := quasarApp.NewUncachedContext(true, tmproto.Header{})
 	decorator := ante.NewGovVoteDecorator(quasarApp.AppCodec(), quasarApp.StakingKeeper)
 	stakingKeeper := quasarApp.StakingKeeper
