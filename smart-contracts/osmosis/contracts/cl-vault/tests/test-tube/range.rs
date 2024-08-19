@@ -99,7 +99,6 @@ fn move_range_cw_dex_works() {
                 max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                 ratio_of_swappable_funds_to_use: Decimal::one(),
                 twap_window_seconds: 45,
-                // forced_swap_route: Some(vec![path1]),
                 forced_swap_route: None,
                 claim_after: None,
             })),
@@ -118,7 +117,6 @@ fn move_range_cw_dex_works() {
         .unwrap();
 }
 
-// TODO: further enhance this forced swap test logic
 #[test]
 fn move_range_cw_dex_works_forced_swap_route() {
     let (
