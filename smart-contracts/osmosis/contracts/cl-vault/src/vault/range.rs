@@ -14,7 +14,7 @@ use crate::{
     vault::{
         concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
         merge::MergeResponse,
-        swap::calculate_swap_amount,
+        swap::{estimate_swap_min_out_amount, swap_msg},
     },
     ContractError,
 };
@@ -290,31 +290,26 @@ fn do_swap_deposit_merge(
         )
     };
 
+    let token_out_min_amount =
+        estimate_swap_min_out_amount(token_in.amount, price, mrs.max_slippage)?;
+
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let swap_calc_result = calculate_swap_amount(
+    let swap_msg = swap_msg(
         env.contract.address,
-        pool_config,
-        token_in,
-        out_denom,
-        mrs.max_slippage,
+        pool_config.pool_id,
+        token_in.clone(),
+        coin(token_out_min_amount.into(), out_denom.clone()),
         mrs.forced_swap_route,
-        price,
         dex_router,
     )?;
 
     Ok(Response::new()
         .add_attribute("method", "reply")
         .add_attribute("action", "do_swap_deposit_merge")
-        .add_submessage(SubMsg::reply_on_success(
-            swap_calc_result.swap_msg,
-            Replies::Swap.into(),
-        ))
+        .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))
         .add_attributes(vec![
-            attr("token_in", format!("{}", swap_calc_result.token_in)),
-            attr(
-                "token_out_min",
-                swap_calc_result.token_out_min_amount.to_string(),
-            ),
+            attr("token_in", format!("{}", token_in)),
+            attr("token_out_min", token_out_min_amount.to_string()),
         ]))
 }
 

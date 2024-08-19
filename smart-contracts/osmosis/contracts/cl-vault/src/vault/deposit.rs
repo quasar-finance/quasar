@@ -11,7 +11,7 @@ use crate::{
     state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
-        swap::calculate_swap_amount,
+        swap::{estimate_swap_min_out_amount, swap_msg},
     },
     ContractError,
 };
@@ -114,32 +114,28 @@ pub(crate) fn execute_any_deposit(
         ),
     )?;
 
+    let token_out_min_amount = estimate_swap_min_out_amount(token_in.amount, price, max_slippage)?;
+
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
-    let swap_calc_result = calculate_swap_amount(
+    let swap_msg = swap_msg(
         env.contract.address,
-        pool_config,
+        pool_config.pool_id,
         token_in.clone(),
-        out_denom,
-        max_slippage,
+        coin(token_out_min_amount.into(), out_denom.clone()),
         None, // TODO: check this None
-        price,
         dex_router,
     )?;
 
-    // rest minting logic remains same
     Ok(Response::new()
         .add_submessage(SubMsg::reply_on_success(
-            swap_calc_result.swap_msg,
+            swap_msg,
             Replies::AnyDepositSwap.into(),
         ))
         .add_attributes(vec![
             attr("method", "execute"),
             attr("action", "any_deposit"),
             attr("token_in", format!("{}", token_in)),
-            attr(
-                "token_out_min",
-                format!("{}", swap_calc_result.token_out_min_amount),
-            ),
+            attr("token_out_min", format!("{}", token_out_min_amount)),
         ]))
 }
 
