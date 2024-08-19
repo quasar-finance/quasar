@@ -6,11 +6,13 @@ import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/bank/v1beta1/bank.proto";
+import "cosmos/msg/v1/msg.proto";
 
 option go_package = "github.com/quasar-finance/quasar/x/tokenfactory/types";
 
 // Msg defines the tokefactory module's gRPC message service.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
   rpc CreateDenom(MsgCreateDenom) returns (MsgCreateDenomResponse);
   rpc Mint(MsgMint) returns (MsgMintResponse);
   rpc Burn(MsgBurn) returns (MsgBurnResponse);
