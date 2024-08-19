@@ -87,6 +87,13 @@ import (
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
 )
 
+// Deprecated modules
+const (
+	QTransferModuleKey = "qtransfer"
+	QOracleModuleKey   = "qoracle"
+	QVestingModuleKey  = "qvesting"
+)
+
 type AppKeepers struct {
 	// Special keepers
 	ParamsKeeper          paramskeeper.Keeper
@@ -421,13 +428,10 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 
 	appKeepers.EvidenceKeeper = *evidenceKeeper
 
-	// TODO - SDK 50
 	govRouter := govv1beta1.NewRouter()
 	govRouter.
 		AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(appKeepers.ParamsKeeper)).
-		// AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(appKeepers.UpgradeKeeper)).
-		// AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(appKeepers.IBCKeeper.ClientKeeper))
 
 	govConfig := govtypes.DefaultConfig()
@@ -634,6 +638,10 @@ func KVStoreKeys() []string {
 		ibchookstypes.StoreKey,
 		ratelimittypes.StoreKey,
 		pfmtypes.StoreKey,
+		//deprecated modules
+		QTransferModuleKey,
+		QOracleModuleKey,
+		QVestingModuleKey,
 	}
 }
 

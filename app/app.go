@@ -59,9 +59,6 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
-	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
-	"github.com/spf13/cast"
-
 	quasarante "github.com/quasar-finance/quasar/ante"
 	"github.com/quasar-finance/quasar/app/keepers"
 	"github.com/quasar-finance/quasar/app/openapiconsole"
@@ -70,6 +67,8 @@ import (
 	v2 "github.com/quasar-finance/quasar/app/upgrades/v2"
 	v3 "github.com/quasar-finance/quasar/app/upgrades/v3"
 	"github.com/quasar-finance/quasar/docs"
+	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
+	"github.com/spf13/cast"
 )
 
 var (
@@ -448,6 +447,17 @@ func (app *QuasarApp) Name() string { return app.BaseApp.Name() }
 
 // GetBaseApp returns the base app of the application
 func (app *QuasarApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
+
+// EmptyAppOptions is a stub implementing AppOptions
+type EmptyAppOptions struct{}
+
+// EmptyWasmOptions is a stub implementing Wasmkeeper Option
+var EmptyWasmOptions []wasmkeeper.Option
+
+// Get implements AppOptions
+func (ao EmptyAppOptions) Get(_ string) interface{} {
+	return nil
+}
 
 func (app *QuasarApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	return app.mm.PreBlock(ctx)

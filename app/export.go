@@ -1,8 +1,9 @@
 package app
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"encoding/json"
+
+	storetypes "cosmossdk.io/store/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -269,4 +270,12 @@ func (app *QuasarApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (app *QuasarApp) ExportState(ctx sdk.Context) map[string]json.RawMessage {
+	export, err := app.mm.ExportGenesis(ctx, app.AppCodec())
+	if err != nil {
+		panic(err)
+	}
+	return export
 }
