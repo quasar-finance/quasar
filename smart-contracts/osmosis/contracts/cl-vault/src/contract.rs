@@ -13,27 +13,27 @@ use crate::query::{
 use crate::reply::Replies;
 #[allow(deprecated)]
 use crate::state::{MigrationStatus, MIGRATION_STATUS};
-use crate::vault::admin::execute_admin;
-use crate::vault::autocompound::{
-    execute_autocompound, execute_migration_step, handle_autocompound_reply,
+use crate::vault::{
+    admin::execute_admin,
+    autocompound::{
+        execute_autocompound, execute_migration_step, handle_autocompound_reply, handle_merge_reply,
+    },
+    deposit::{execute_any_deposit, execute_exact_deposit, handle_any_deposit_swap_reply},
+    distribution::{
+        execute_collect_rewards, handle_collect_incentives_reply,
+        handle_collect_spread_rewards_reply,
+    },
+    merge::{
+        execute_merge_position, handle_merge_create_position_reply,
+        handle_merge_withdraw_position_reply,
+    },
+    range::{
+        execute_update_range, handle_initial_create_position_reply,
+        handle_iteration_create_position_reply, handle_swap_reply, handle_withdraw_position_reply,
+    },
+    swap::execute_swap_non_vault_funds,
+    withdraw::{execute_withdraw, handle_withdraw_user_reply},
 };
-use crate::vault::deposit::{
-    execute_any_deposit, execute_exact_deposit, handle_any_deposit_swap_reply,
-};
-use crate::vault::distribution::{
-    execute_collect_rewards, handle_collect_incentives_reply, handle_collect_spread_rewards_reply,
-};
-use crate::vault::merge::{
-    execute_merge_position, handle_merge_create_position_reply,
-    handle_merge_withdraw_position_reply,
-};
-use crate::vault::range::{
-    execute_update_range, handle_initial_create_position_reply,
-    handle_iteration_create_position_reply, handle_merge_reply, handle_swap_reply,
-    handle_withdraw_position_reply,
-};
-use crate::vault::swap::execute_swap_non_vault_funds;
-use crate::vault::withdraw::{execute_withdraw, handle_withdraw_user_reply};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
