@@ -17,15 +17,15 @@ fi
 update_schemas() {
   local workspace=$1
   local contract=$2
-  if [[ $CHANGES == *${workspace}/contracts/${contract}/src/msg.rs* ]]
+  if [[ $CHANGES == *${workspace}/contracts/${contract}/* ]]
   then
     echo "Changes in ${contract} contract"
     cd ${REPO_ROOT}/smart-contracts/${workspace}/contracts/${contract}
 
     # generate schemas
     cargo schema
-    NEW_CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
-    if [[ $NEW_CHANGES == *schema/* ]]
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=$DIFF_FILTER)
+    if [[ $NEW_CHANGES == *${workspace}/contracts/${contract}/schema* ]]
     then
       git add schema
     else
