@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"cosmossdk.io/math"
-	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -27,12 +26,11 @@ func CreateUpgradeHandler(
 		for _, moduleName := range modulesToRemove {
 			storeKey := keepers.GetKey(moduleName)
 
-			// Create a prefix store using the store key
+			// Access the store directly using the store key
 			store := ctx.KVStore(storeKey)
-			prefixStore := prefix.NewStore(store, []byte{})
 
 			// Iterate over all key-value pairs in the store and delete them
-			iterator := prefixStore.Iterator(nil, nil)
+			iterator := store.Iterator(nil, nil)
 			defer func(iterator storetypes.Iterator) {
 				err := iterator.Close()
 				if err != nil {
@@ -41,7 +39,7 @@ func CreateUpgradeHandler(
 			}(iterator)
 
 			for ; iterator.Valid(); iterator.Next() {
-				prefixStore.Delete(iterator.Key())
+				store.Delete(iterator.Key())
 			}
 		}
 

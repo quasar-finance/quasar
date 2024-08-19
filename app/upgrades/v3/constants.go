@@ -11,7 +11,9 @@ import (
 )
 
 // UpgradeName defines the on-chain upgrade name for the Quasar chain v2.0.0 upgrade.
-const UpgradeName = "v3"
+const (
+	UpgradeName = "v3"
+)
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
