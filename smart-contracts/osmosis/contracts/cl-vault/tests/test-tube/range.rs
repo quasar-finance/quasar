@@ -9,7 +9,7 @@ use osmosis_std::types::{
     osmosis::{
         concentratedliquidity::{
             poolmodel::concentrated::v1beta1::MsgCreateConcentratedPool,
-            v1beta1::{MsgCreatePosition, Pool, PoolsRequest},
+            v1beta1::{MsgCreatePosition, Pool, PoolsRequest, PositionByIdRequest},
         },
         poolmanager::v1beta1::SwapAmountInRoute,
     },
@@ -57,7 +57,7 @@ fn move_range_works() {
         )
         .unwrap();
 
-    let _after_position: PositionResponse = wasm
+    let response: PositionResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
@@ -65,6 +65,20 @@ fn move_range_works() {
             )),
         )
         .unwrap();
+    assert_eq!(response.position_ids.len(), 1);
+    let position_id = response.position_ids[0];
+    assert_eq!(position_id, 5u64);
+
+    let cl = ConcentratedLiquidity::new(&app);
+    let pos = cl
+        .query_position_by_id(&PositionByIdRequest { position_id })
+        .unwrap()
+        .position
+        .unwrap();
+    let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
+    let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
+    assert_eq!(pos_base, coin(762163u128, DENOM_BASE));
+    assert_eq!(pos_quote, coin(1201277u128, DENOM_QUOTE));
 }
 
 #[test]
