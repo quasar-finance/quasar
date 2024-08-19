@@ -13,8 +13,8 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, Fraction, QuerierWrapper, Storage,
-    Timestamp, Uint128, Uint256,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, QuerierWrapper, Storage, Timestamp,
+    Uint128, Uint256,
 };
 
 use super::coinlist::CoinList;
@@ -38,8 +38,7 @@ pub fn get_asset0_value(
         .spot_price
         .parse()?;
 
-    let total = token0
-        .checked_add(token1.multiply_ratio(spot_price.denominator(), spot_price.numerator()))?;
+    let total = token0.checked_add(token1.checked_div_floor(spot_price)?)?;
 
     Ok(total)
 }
@@ -105,8 +104,8 @@ impl PoolAssets {
 pub struct DepositInfo {
     pub base_deposit: Uint128,
     pub quote_deposit: Uint128,
-    pub base_refund: Uint128,
-    pub quote_refund: Uint128,
+    pub base_refund: Coin,
+    pub quote_refund: Coin,
 }
 
 pub fn get_depositable_tokens(
@@ -124,16 +123,16 @@ pub fn get_depositable_tokens(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
-    compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount)
+    get_deposit_info(&assets, token0, token1)
 }
 
-fn compute_deposit_and_refund_tokens(
+fn get_deposit_info(
     assets: &PoolAssets,
-    provided_base: Uint128,
-    provided_quote: Uint128,
+    provided_base: Coin,
+    provided_quote: Coin,
 ) -> Result<DepositInfo, ContractError> {
-    let provided_base_amount: Uint256 = provided_base.into();
-    let provided_quote_amount: Uint256 = provided_quote.into();
+    let provided_base_amount: Uint256 = provided_base.amount.into();
+    let provided_quote_amount: Uint256 = provided_quote.amount.into();
 
     let base_deposit = if assets.quote.amount.is_zero() {
         provided_base_amount
@@ -161,10 +160,14 @@ fn compute_deposit_and_refund_tokens(
     Ok(DepositInfo {
         base_deposit: base_deposit.try_into()?,
         quote_deposit: quote_deposit.try_into()?,
-        base_refund: provided_base_amount.checked_sub(base_deposit)?.try_into()?,
-        quote_refund: provided_quote_amount
-            .checked_sub(quote_deposit)?
-            .try_into()?,
+        base_refund: coin(
+            TryInto::<Uint128>::try_into(provided_base_amount.checked_sub(base_deposit)?)?.into(),
+            assets.base.denom.clone(),
+        ),
+        quote_refund: coin(
+            TryInto::<Uint128>::try_into(provided_quote_amount.checked_sub(quote_deposit)?)?.into(),
+            assets.quote.denom.clone(),
+        ),
     })
 }
 
@@ -194,7 +197,7 @@ pub fn get_single_sided_deposit_0_to_1_swap_amount(
     let denominator = Decimal256::one().checked_add(spot_price_over_pool_metadata_constant)?;
 
     let swap_amount: Uint128 = Uint256::from(token0_balance)
-        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .checked_div_floor(denominator)?
         .try_into()?;
 
     Ok(swap_amount)
@@ -225,7 +228,7 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     let denominator = Decimal256::one().checked_add(pool_metadata_constant_over_spot_price)?;
 
     let swap_amount: Uint128 = Uint256::from(token1_balance)
-        .multiply_ratio(denominator.denominator(), denominator.numerator())
+        .checked_div_floor(denominator)?
         .try_into()?;
 
     Ok(swap_amount)
@@ -241,38 +244,16 @@ pub fn get_unused_pair_balances(
     deps: &DepsMut,
     env: &Env,
     pool_config: &PoolConfig,
-) -> Result<(Uint128, Uint128), ContractError> {
+) -> Result<Vec<Coin>, ContractError> {
     // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
     // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
     let unused_balances = get_unused_balances(&deps.querier, env)?;
 
     // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
-    let amount0 = unused_balances.find_coin(pool_config.token0.clone()).amount;
-    let amount1 = unused_balances.find_coin(pool_config.token1.clone()).amount;
+    let base = unused_balances.find_coin(pool_config.token0.clone());
+    let quote = unused_balances.find_coin(pool_config.token1.clone());
 
-    Ok((amount0, amount1))
-}
-
-pub fn get_tokens_provided(
-    amount0: Uint128,
-    amount1: Uint128,
-    pool_config: &PoolConfig,
-) -> Result<Vec<Coin>, ContractError> {
-    let mut tokens_provided = vec![];
-    if !amount0.is_zero() {
-        tokens_provided.push(Coin {
-            denom: pool_config.token0.clone(),
-            amount: amount0,
-        })
-    }
-    if !amount1.is_zero() {
-        tokens_provided.push(Coin {
-            denom: pool_config.token1.clone(),
-            amount: amount1,
-        })
-    }
-
-    Ok(tokens_provided)
+    Ok(vec![base, quote])
 }
 
 #[cfg(test)]
@@ -416,15 +397,14 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result =
-            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
+        let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::zero(),
                 quote_deposit: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
-                base_refund: Uint128::new(1_000_000_000u128),
-                quote_refund: Uint128::zero(),
+                base_refund: coin(1_000_000_000u128, token0.denom),
+                quote_refund: coin(0u128, token1.denom),
             }
         );
     }
@@ -447,15 +427,14 @@ mod tests {
             },
             quote: token1.clone(),
         };
-        let result =
-            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
+        let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::zero(),
                 quote_deposit: Uint128::new(100),
-                base_refund: Uint128::new(50),
-                quote_refund: Uint128::zero(),
+                base_refund: coin(50u128, token0.denom),
+                quote_refund: coin(0u128, token1.denom),
             }
         );
     }
@@ -478,15 +457,14 @@ mod tests {
             },
             base: token0.clone(),
         };
-        let result =
-            compute_deposit_and_refund_tokens(&assets, token0.amount, token1.amount).unwrap();
+        let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::new(50),
                 quote_deposit: Uint128::zero(),
-                base_refund: Uint128::zero(),
-                quote_refund: Uint128::new(100),
+                base_refund: coin(0u128, token0.denom),
+                quote_refund: coin(100u128, token1.denom),
             }
         );
     }
@@ -506,19 +484,14 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result = compute_deposit_and_refund_tokens(
-            &assets,
-            coin(2000, "token0").amount,
-            coin(5000, "token1").amount,
-        )
-        .unwrap();
+        let result = get_deposit_info(&assets, coin(2000, "token0"), coin(5000, "token1")).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::new(2000),
                 quote_deposit: Uint128::new(4000),
-                base_refund: Uint128::zero(),
-                quote_refund: Uint128::new(1000),
+                base_refund: coin(0u128, token0.denom),
+                quote_refund: coin(1000u128, token1.denom),
             }
         );
     }
@@ -538,19 +511,14 @@ mod tests {
             base: token0.clone(),
             quote: token1.clone(),
         };
-        let result = compute_deposit_and_refund_tokens(
-            &assets,
-            coin(2000, "token0").amount,
-            coin(3000, "token1").amount,
-        )
-        .unwrap();
+        let result = get_deposit_info(&assets, coin(2000, "token0"), coin(3000, "token1")).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::new(1500),
                 quote_deposit: Uint128::new(3000),
-                base_refund: Uint128::new(500),
-                quote_refund: Uint128::zero(),
+                base_refund: coin(500u128, token0.denom),
+                quote_refund: coin(0u128, token1.denom),
             }
         );
     }

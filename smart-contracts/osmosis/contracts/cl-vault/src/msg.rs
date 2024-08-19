@@ -8,10 +8,7 @@ use crate::query::{
     AssetsBalanceResponse, PoolResponse, PositionResponse, RangeAdminResponse,
     UserSharesBalanceResponse, VerifyTickCacheResponse,
 };
-use crate::{
-    state::{Metadata, VaultConfig},
-    vault::swap::SwapOperation,
-};
+use crate::state::{Metadata, VaultConfig};
 
 /// Extension execute messages for an apollo autocompounding vault
 #[cw_serde]
@@ -100,6 +97,16 @@ pub struct ModifyRangeMsg {
 #[cw_serde]
 pub struct MergePositionMsg {
     pub position_ids: Vec<u64>,
+}
+
+// struct used by swap.rs on swap non vault funds
+#[cw_serde]
+pub struct SwapOperation {
+    pub token_in_denom: String,
+    pub pool_id_base: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_quote: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_base: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_quote: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// Extension query messages for an apollo autocompounding vault

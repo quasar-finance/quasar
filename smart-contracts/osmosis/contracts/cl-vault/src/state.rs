@@ -1,38 +1,16 @@
-use crate::{
-    helpers::coinlist::CoinList,
-    vault::{merge::CurrentMergeWithdraw, swap::SwapDirection},
-};
+use crate::{helpers::coinlist::CoinList, vault::merge::CurrentMergeWithdraw};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Decimal256, Uint128};
+use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 #[deprecated]
-pub const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config");
-
-#[deprecated]
-pub const OLD_POSITION: Item<OldPosition> = Item::new("position");
-
-/// REWARDS: Current rewards are the rewards being gathered, these can be both spread rewards as well as incentives
-#[deprecated]
-pub const STRATEGIST_REWARDS: Item<CoinList> = Item::new("strategist_rewards");
-
-/// Shared collection+distribution states
-#[deprecated]
 pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
-#[deprecated]
-pub const CURRENT_BALANCE: Item<(Uint128, Uint128)> = Item::new("current_balance"); // CURRENT_BALANCE is intended as CURRENT_SWAP_BALANCE
-
-#[deprecated]
-pub const CURRENT_SWAP: Item<(SwapDirection, Uint128)> = Item::new("current_swap");
-
-/// metadata useful for display purposes
 #[cw_serde]
 pub struct Metadata {
     /// the underlying thesis of the vault's positions, eg aggresive
     pub thesis: String,
-    /// the name of the vault
     pub name: String,
 }
 
@@ -41,34 +19,17 @@ pub const METADATA: Item<Metadata> = Item::new("metadata");
 pub const ADMIN_ADDRESS: Item<Addr> = Item::new("admin_address");
 pub const RANGE_ADMIN: Item<Addr> = Item::new("range_admin");
 
-/// VAULT_CONFIG: Base config struct for the contract.
 #[cw_serde]
 pub struct VaultConfig {
-    /// Percentage of profit to be charged as performance fee
     pub performance_fee: Decimal,
-    /// Account to receive fee payments
     pub treasury: Addr,
-    /// swap max slippage
     pub swap_max_slippage: Decimal,
-    /// Dex router address
     pub dex_router: Addr,
-}
-
-/// OLD_VAULT_CONFIG: Base config struct for the contract (pre-autocompound implementation).
-#[cw_serde]
-pub struct OldVaultConfig {
-    /// Percentage of profit to be charged as performance fee
-    pub performance_fee: Decimal,
-    /// Account to receive fee payments
-    pub treasury: Addr,
-    /// swap max slippage
-    pub swap_max_slippage: Decimal,
 }
 
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config_v2");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
-/// MIGRATION_STATUS: Is a temporary state we need to paginate the migration process for the auto-compounding upgrade // TODO: Deprecate!
 #[cw_serde]
 pub enum MigrationStatus {
     Open,
@@ -76,7 +37,6 @@ pub enum MigrationStatus {
 }
 pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
 
-/// POOL_CONFIG
 #[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
@@ -92,12 +52,6 @@ impl PoolConfig {
 
 pub const POOL_CONFIG: Item<PoolConfig> = Item::new("pool_config");
 
-/// POSITION
-#[cw_serde]
-pub struct OldPosition {
-    pub position_id: u64,
-}
-
 #[cw_serde]
 pub struct Position {
     pub position_id: u64,
@@ -109,7 +63,6 @@ pub const POSITION: Item<Position> = Item::new("position_v2");
 
 pub const SHARES: Map<Addr, Uint128> = Map::new("shares");
 
-/// The merge of positions currently being executed
 pub const CURRENT_MERGE: Deque<CurrentMergeWithdraw> = Deque::new("current_merge");
 
 #[cw_serde]
@@ -127,36 +80,19 @@ pub struct CurrentDeposit {
     pub sender: Addr,
 }
 
-pub const CURRENT_DEPOSIT: Item<CurrentDeposit> = Item::new("current_deposit");
-
-#[cw_serde]
-pub enum RewardsStatus {
-    Ready,
-    Collecting,
-    Distributing,
-}
-
-/// Swap helper states
-pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(SwapDirection, Uint128, Addr, (Uint128, Uint128))> =
+pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(Coin, Addr, (Uint128, Uint128))> =
     Item::new("current_swap_any_deposit");
 
-/// DEX_ROUTER: The address of the dex router contract
 pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 
 #[cw_serde]
 pub struct ModifyRangeState {
-    // pre-withdraw state items
     pub lower_tick: i64,
     pub upper_tick: i64,
-    // the max slippage for modifying the range
     pub max_slippage: Decimal,
-    // pre-deposit state items
     pub new_range_position_ids: Vec<u64>,
-    // the percent of funds to try for the next swap
     pub ratio_of_swappable_funds_to_use: Decimal,
-    // the twap window to use for the swap in seconds
     pub twap_window_seconds: u64,
-    // the recommended path to take for the swap
     pub forced_swap_route: Option<Vec<SwapAmountInRoute>>,
 }
 

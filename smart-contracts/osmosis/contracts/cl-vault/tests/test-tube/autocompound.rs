@@ -11,13 +11,12 @@ use std::ops::Sub;
 use std::str::FromStr;
 
 use cl_vault::msg::{
-    ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg,
+    ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, QueryMsg, SwapOperation,
     UserBalanceQueryMsg::UserSharesBalance,
 };
 use cl_vault::query::{
     AssetsBalanceResponse, TotalVaultTokenSupplyResponse, UserSharesBalanceResponse,
 };
-use cl_vault::vault::swap::SwapOperation;
 use cosmwasm_std::assert_approx_eq;
 use cosmwasm_std::{Coin, Uint128};
 use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
@@ -55,7 +54,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         )
         .unwrap();
 
-    // Assert that this is equal to the burnt amount of the initial position.
     let initial_total_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
             contract_address.as_str(),
@@ -67,8 +65,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         initial_total_vault_token_supply.total.u128()
     );
 
-    // Get the initial worth of tokens of the initial vault total token supply
-    // Assert that the underlying assets are the same amount we burnt during the first position creation in instantiation
     let shares_underlying_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),

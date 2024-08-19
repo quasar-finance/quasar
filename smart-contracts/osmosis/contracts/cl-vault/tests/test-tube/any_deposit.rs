@@ -24,7 +24,7 @@ fn test_any_deposit() {
         (Uint128::new(1000), Uint128::new(500)),
     ];
 
-    for tokens_provided in test_cases {
+    for (amount_base, amount_quote) in test_cases {
         let (app, contract_address, _dex_router_addr, vault_pool_id, _pools_ids, admin, _, _) =
             fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 
@@ -33,7 +33,8 @@ fn test_any_deposit() {
             contract_address.clone(),
             vault_pool_id,
             admin,
-            tokens_provided,
+            amount_base,
+            amount_quote,
             Decimal::bps(MAX_SLIPPAGE_HIGH),
         );
     }
@@ -44,11 +45,18 @@ fn do_and_verify_any_deposit(
     contract_address: Addr,
     vault_pool_id: u64,
     _admin: SigningAccount,
-    tokens_provided: (Uint128, Uint128),
+    amount_base: Uint128,
+    amount_quote: Uint128,
     max_slippage: Decimal,
 ) {
-    let (initial_balance, deposit_coins) =
-        do_any_deposit(&app, &contract_address, tokens_provided, max_slippage).unwrap();
+    let (initial_balance, deposit_coins) = do_any_deposit(
+        &app,
+        &contract_address,
+        amount_base,
+        amount_quote,
+        max_slippage,
+    )
+    .unwrap();
     let bm = Bank::new(&app);
     let pm = PoolManager::new(&app);
 
@@ -109,8 +117,8 @@ fn do_and_verify_any_deposit(
 
         let final_total_in_base = final_base + final_quote_in_base;
 
-        let deposit_base_in_base = tokens_provided.0;
-        let deposit_quote_in_base = tokens_provided.1 * spot_price_quote_to_base;
+        let deposit_base_in_base = amount_base;
+        let deposit_quote_in_base = amount_quote * spot_price_quote_to_base;
 
         let deposit_in_base = deposit_base_in_base + deposit_quote_in_base;
 
@@ -132,7 +140,8 @@ fn do_and_verify_any_deposit(
 fn do_any_deposit(
     app: &OsmosisTestApp,
     contract_address: &Addr,
-    tokens_provided: (Uint128, Uint128),
+    amount_base: Uint128,
+    amount_quote: Uint128,
     max_slippage: Decimal,
 ) -> Result<(QueryAllBalancesResponse, Vec<Coin>), RunnerError> {
     let bm = Bank::new(app);
@@ -159,17 +168,17 @@ fn do_any_deposit(
 
     // Simulate a deposit
     let mut deposit_coins = vec![];
-    if tokens_provided.0 > Uint128::zero() {
-        deposit_coins.push(Coin::new(tokens_provided.0.u128(), DENOM_BASE));
+    if amount_base > Uint128::zero() {
+        deposit_coins.push(Coin::new(amount_base.u128(), DENOM_BASE));
     }
-    if tokens_provided.1 > Uint128::zero() {
-        deposit_coins.push(Coin::new(tokens_provided.1.u128(), DENOM_QUOTE));
+    if amount_quote > Uint128::zero() {
+        deposit_coins.push(Coin::new(amount_quote.u128(), DENOM_QUOTE));
     }
 
     let _ = wasm.execute(
         contract_address.clone().as_str(),
         &ExecuteMsg::AnyDeposit {
-            amount: tokens_provided.0,
+            amount: amount_base,
             asset: DENOM_BASE.to_string(),
             recipient: Some(accounts[0].address()),
             max_slippage,
@@ -190,10 +199,17 @@ fn test_any_deposit_slippage_fails() {
         (Uint128::new(1000), Uint128::new(500)),
     ];
 
-    for tokens_provided in test_cases {
+    for (amount_base, amount_quote) in test_cases {
         let (app, contract_address, _dex_router_addr, _vault_pool_id, _pools_ids, _admin, _, _) =
             fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 
-        do_any_deposit(&app, &contract_address, tokens_provided, Decimal::zero()).unwrap_err();
+        do_any_deposit(
+            &app,
+            &contract_address,
+            amount_base,
+            amount_quote,
+            Decimal::zero(),
+        )
+        .unwrap_err();
     }
 }

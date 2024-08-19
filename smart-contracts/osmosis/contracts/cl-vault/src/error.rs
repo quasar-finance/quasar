@@ -1,7 +1,8 @@
+use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
-    CoinFromStrError, ConversionOverflowError, Decimal256, Decimal256RangeExceeded,
-    DivideByZeroError, OverflowError, StdError, Uint128,
+    Addr, CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
+    CoinFromStrError, ConversionOverflowError, Decimal, Decimal256, Decimal256RangeExceeded,
+    DivideByZeroError, OverflowError, StdError, Storage, Uint128,
 };
 use cw_utils::PaymentError;
 use prost::DecodeError;
@@ -24,9 +25,6 @@ pub enum ContractError {
     #[error("Position Not Found")]
     PositionNotFound,
 
-    #[error("Pool Id not provided")]
-    PoolIdNotProvided {},
-
     #[error("Sent the wrong amount of denoms")]
     IncorrectAmountFunds,
 
@@ -36,17 +34,11 @@ pub enum ContractError {
     #[error("ratio_of_swappable_funds_to_use should be >0 and <=1")]
     InvalidRatioOfSwappableFundsToUse,
 
-    #[error("Invalid swap direction")]
-    InvalidSwapDirection,
-
     #[error("Cannot do two swaps at the same time")]
     SwapInProgress,
 
     #[error("Swap deposit merge state item not found")]
     SwapDepositMergeStateNotFound,
-
-    #[error("Swap failed: {message}")]
-    SwapFailed { message: String },
 
     #[error("Vault shares sent in does not equal amount requested")]
     IncorrectShares,
@@ -63,12 +55,6 @@ pub enum ContractError {
     UnexpectedFunds {
         expected: Vec<Coin>,
         actual: Vec<Coin>,
-    },
-
-    #[error("Bad token out requested for swap, must be one of: {base_token:?}, {quote_token:?}")]
-    BadTokenForSwap {
-        base_token: String,
-        quote_token: String,
     },
 
     #[error("Insufficient funds for swap. Have: {balance}, Need: {needed}")]
@@ -101,6 +87,9 @@ pub enum ContractError {
     #[error("Mismatch in old and new pool tokens")]
     PoolTokenMismatch {},
 
+    /// This function compares the address of the message sender (caller) with the current admin
+    /// address stored in the state. This provides a convenient way to verify if the caller
+    /// is the admin in a single line.
     #[error("Cannot force a recommended route if recommended route is passed in as None")]
     TryForceRouteWithoutRecommendedSwapRoute {},
 
@@ -179,4 +168,26 @@ pub enum ContractError {
 
     #[error("{0}")]
     TryFromIntError(#[from] TryFromIntError),
+}
+
+pub fn assert_admin(storage: &dyn Storage, caller: &Addr) -> Result<(), ContractError> {
+    if ADMIN_ADDRESS.load(storage)? != caller {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
+}
+
+pub fn assert_range_admin(storage: &dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    let admin = RANGE_ADMIN.load(storage)?;
+    if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
+}
+
+pub fn assert_ratio(ratio: Decimal) -> Result<(), ContractError> {
+    if ratio > Decimal::one() || ratio <= Decimal::zero() {
+        return Err(ContractError::InvalidRatioOfSwappableFundsToUse {});
+    }
+    Ok(())
 }
