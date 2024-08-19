@@ -14,8 +14,8 @@ use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 #[allow(deprecated)]
 use crate::state::USER_REWARDS;
-use crate::state::{MigrationStatus, MIGRATION_STATUS, POOL_CONFIG, POSITION};
-use crate::vault::concentrated_liquidity::create_position;
+use crate::state::{MigrationStatus, Position, MIGRATION_STATUS, POOL_CONFIG, POSITION};
+use crate::vault::{concentrated_liquidity::create_position, merge::MergeResponse};
 use crate::ContractError;
 
 pub fn execute_autocompound(
@@ -107,6 +107,30 @@ pub fn handle_autocompound_reply(
             "position_ids",
             format!("{:?}", vec![create_position_message.position_id]),
         ))
+}
+
+pub fn handle_merge_reply(
+    deps: DepsMut,
+    env: Env,
+    data: SubMsgResult,
+) -> Result<Response, ContractError> {
+    let merge_response: MergeResponse = data.try_into()?;
+
+    let position = POSITION.load(deps.storage)?;
+    POSITION.save(
+        deps.storage,
+        &Position {
+            position_id: merge_response.new_position_id,
+            join_time: env.block.time.seconds(),
+            claim_after: position.claim_after,
+        },
+    )?;
+
+    Ok(Response::new()
+        .add_attribute("method", "reply")
+        .add_attribute("action", "handle_merge_reply")
+        .add_attribute("swap_deposit_merge_status", "success")
+        .add_attribute("status", "success"))
 }
 
 // Migration is a to-depreacate entrypoint useful to migrate from Distribute to Accumulate after Autocompound implementation
