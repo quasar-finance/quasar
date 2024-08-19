@@ -24,6 +24,7 @@ import (
 	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
 	"github.com/quasar-finance/quasar/app"
+	appparams "github.com/quasar-finance/quasar/app/params"
 	"github.com/quasar-finance/quasar/testutil/keeper"
 	"github.com/quasar-finance/quasar/testutil/mock"
 	epochskeeper "github.com/quasar-finance/quasar/x/epochs/keeper"
@@ -33,15 +34,15 @@ import (
 
 func init() {
 	// Set prefixes
-	accountPubKeyPrefix := app.AccountAddressPrefix + "pub"
-	validatorAddressPrefix := app.AccountAddressPrefix + "valoper"
-	validatorPubKeyPrefix := app.AccountAddressPrefix + "valoperpub"
-	consNodeAddressPrefix := app.AccountAddressPrefix + "valcons"
-	consNodePubKeyPrefix := app.AccountAddressPrefix + "valconspub"
+	accountPubKeyPrefix := appparams.Bech32PrefixAccAddr + "pub"
+	validatorAddressPrefix := appparams.Bech32PrefixAccAddr + "valoper"
+	validatorPubKeyPrefix := appparams.Bech32PrefixAccAddr + "valoperpub"
+	consNodeAddressPrefix := appparams.Bech32PrefixAccAddr + "valcons"
+	consNodePubKeyPrefix := appparams.Bech32PrefixAccAddr + "valconspub"
 
 	// Set and seal config
 	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount(app.AccountAddressPrefix, accountPubKeyPrefix)
+	config.SetBech32PrefixForAccount(appparams.Bech32PrefixAccAddr, accountPubKeyPrefix)
 	config.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	config.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
 	config.Seal()

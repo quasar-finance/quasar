@@ -2,7 +2,6 @@ package keeper
 
 import (
 	storetypes "cosmossdk.io/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -16,14 +15,15 @@ func (kf KeeperFactory) TfKeeper(paramsKeeper paramskeeper.Keeper,
 	bankKeeper bankkeeper.Keeper,
 	communityPoolKeeper distrkeeper.Keeper,
 ) keeper.Keeper {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
-
+	
 	paramsSubspace := paramsKeeper.Subspace(types.ModuleName)
 	tfKeeper := keeper.NewKeeper(
 		storeKey,
 		paramsSubspace,
+		nil,
 		accountKeeper,
 		bankKeeper,
 		communityPoolKeeper)

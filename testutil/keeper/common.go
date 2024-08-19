@@ -5,7 +5,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -63,14 +62,14 @@ func (kf KeeperFactory) BankKeeper(paramsKeeper paramskeeper.Keeper, accountKeep
 		accountKeeper,
 		blockedMaccAddresses,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		log.Logger(),
+		log.NewNopLogger(),
 	)
 
 	return bankKeeper
 }
 
 func (kf KeeperFactory) CapabilityKeeper() capabilitykeeper.Keeper {
-	storeKey := sdk.NewKVStoreKey(capabilitytypes.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(capabilitytypes.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(capabilitytypes.MemStoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
 	kf.StateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
@@ -86,15 +85,19 @@ func (kf KeeperFactory) StakingKeeper(
 	accountKeeper authkeeper.AccountKeeper,
 	bankKeeper bankkeeper.Keeper,
 ) stakingkeeper.Keeper {
-	storeKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
+
+	storeService := runtime.NewKVStoreService(storeKey)
 
 	stakingKeeper := stakingkeeper.NewKeeper(
 		kf.EncodingConfig.Marshaler,
-		storeKey,
+		storeService,
 		accountKeeper,
 		bankKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		address.NewBech32Codec("cosmosvaloper"),
+		address.NewBech32Codec("cosmosvalcons"),
 	)
 
 	return *stakingKeeper
@@ -107,12 +110,12 @@ func (kf KeeperFactory) DistributionKeeper(
 	feeCollectorName string,
 ) distrkeeper.Keeper {
 
-	storeKey := sdk.NewKVStoreKey(distrtypes.StoreKey)
+	storeKey := storetypes.NewKVStoreKey(distrtypes.StoreKey)
 	kf.StateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, kf.DB)
 
 	disrKeeper := distrkeeper.NewKeeper(
 		kf.EncodingConfig.Marshaler,
-		storeKey,
+		runtime.NewKVStoreService(storeKey),
 		accountKeeper,
 		bankKeeper,
 		stakingKeeper,
