@@ -24,7 +24,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 }
 
 /// Calculate the total value of two assets in asset0.
-pub fn get_asset0_value(
+pub fn get_value_wrt_asset0(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     token0: Uint128,
@@ -51,17 +51,15 @@ pub fn get_asset_ratios(
     let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
     let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
 
-    // Handle cases where either asset amount is zero
     if asset0_amount.is_zero() && asset1_amount.is_zero() {
         return Ok((Decimal::zero(), Decimal::zero()));
     }
 
-    // Get the total amount of the vault's position in asset0 denom
-    let asset_0_value = get_asset0_value(storage, querier, asset0_amount, asset1_amount)?;
+    let total_value_wrt_asset_0 =
+        get_value_wrt_asset0(storage, querier, asset0_amount, asset1_amount)?;
 
-    // Calculate the ratio of the vault's position in asset0 and asset1 using Decimal for safe division
-    let asset_0_ratio = Decimal::from_ratio(asset0_amount, asset_0_value);
-    let asset_1_ratio = Decimal::from_ratio(asset1_amount, asset_0_value);
+    let asset_0_ratio = Decimal::from_ratio(asset0_amount, total_value_wrt_asset_0);
+    let asset_1_ratio = Decimal::from_ratio(asset1_amount, total_value_wrt_asset_0);
 
     Ok((asset_0_ratio, asset_1_ratio))
 }
