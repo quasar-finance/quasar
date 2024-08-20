@@ -13,7 +13,6 @@ use crate::{
     },
     vault::{
         concentrated_liquidity::{create_position, get_cl_pool_info, get_position},
-        merge::MergeResponse,
         swap::{estimate_swap_min_out_amount, swap_msg},
     },
     ContractError,
@@ -397,33 +396,6 @@ pub fn handle_iteration_create_position_reply(
             "position_ids",
             format!("{:?}", swap_deposit_merge_state.target_range_position_ids),
         ))
-}
-
-// store new position id and exit
-pub fn handle_merge_reply(
-    deps: DepsMut,
-    env: Env,
-    data: SubMsgResult,
-) -> Result<Response, ContractError> {
-    let merge_response: MergeResponse = data.try_into()?;
-
-    // Load the current Position to extract join_time and claim_after which is unchangeable in this context
-    let position = POSITION.load(deps.storage)?;
-
-    POSITION.save(
-        deps.storage,
-        &Position {
-            position_id: merge_response.new_position_id,
-            join_time: env.block.time.seconds(),
-            claim_after: position.claim_after,
-        },
-    )?;
-
-    Ok(Response::new()
-        .add_attribute("method", "reply")
-        .add_attribute("action", "handle_merge_reply")
-        .add_attribute("swap_deposit_merge_status", "success")
-        .add_attribute("status", "success"))
 }
 
 #[cfg(test)]
