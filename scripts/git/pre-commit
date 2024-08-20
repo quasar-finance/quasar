@@ -3,8 +3,9 @@
 set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
+DIFF_FILTER=ACMR
 
-CHANGES=$(git diff --name-only origin/main)
+CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
 
 
 if [ -z "$CHANGES" ]
@@ -16,14 +17,14 @@ fi
 update_schemas() {
   local workspace=$1
   local contract=$2
-  if [[ $CHANGES == *${workspace}/contracts/${contract}* ]]
+  if [[ $CHANGES == *${workspace}/contracts/${contract}/src/msg.rs* ]]
   then
     echo "Changes in ${contract} contract"
     cd ${REPO_ROOT}/smart-contracts/${workspace}/contracts/${contract}
 
     # generate schemas
     cargo schema
-    NEW_CHANGES=$(git diff --name-only origin/main..HEAD)
+    NEW_CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
     if [[ $NEW_CHANGES == *schema/* ]]
     then
       git add schema
@@ -33,18 +34,43 @@ update_schemas() {
   fi
 }
 
+check_lint() {
+  if [[ $CHANGES == *smart-contracts/osmosis* ]]
+  then
+    cd ${REPO_ROOT}/smart-contracts/osmosis
+    cargo clippy --workspace -- -D warnings
+    cd -
+  fi
+  if [[ $CHANGES == *smart-contracts/quasar* ]]
+  then
+    cd ${REPO_ROOT}/smart-contracts/quasar
+    cargo clippy --workspace -- -D warnings
+    cd -
+  fi
+}
+
 fix_formatting() {
   local target=$1
   if [[ $CHANGES == *${target}* ]]
   then
     echo "Changes in ${target}"
     cd ${REPO_ROOT}/smart-contracts/${target}
-
     # fix formatting
     cargo fmt --all
     cd ${REPO_ROOT}
-    NEW_CHANGES=$(git diff --name-only origin/main..HEAD --diff-filter=AMR)
+    NEW_CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
     git add $NEW_CHANGES
+  fi
+}
+
+check_lint() {
+  local target=$1
+  if [[ $CHANGES == *${target}* ]]
+  then
+    echo "Changes in ${target}"
+    cd ${REPO_ROOT}/smart-contracts/${target}
+    cargo clippy -- -D warnings
+    cd -
   fi
 }
 
@@ -62,3 +88,11 @@ fix_formatting osmosis/contracts/merkle-incentives
 fix_formatting osmosis/contracts/range-middleware
 fix_formatting osmosis/packages/quasar-types
 fix_formatting quasar/proto-build
+check_lint osmosis/contracts/lst-dex-adapter-osmosis
+check_lint osmosis/contracts/dex-router-osmosis
+check_lint osmosis/contracts/token-burner
+check_lint osmosis/contracts/cl-vault
+check_lint osmosis/contracts/merkle-incentives
+check_lint osmosis/contracts/range-middleware
+check_lint osmosis/packages/quasar-types
+check_lint quasar/proto-build

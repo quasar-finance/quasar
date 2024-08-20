@@ -1,24 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = [
-  # "contracts/icq",
-  # "contracts/ibc-transfer",
-  # "contracts/intergamm-bindings-test",
-  # "contracts/airdrop",
-  # "contracts/lp-strategy",
-  # "contracts/basic-vault",
-  # "contracts/vault-rewards",
-  # "contracts/multihop-router",
-  "contracts/token-burner",
-  "contracts/cl-vault",
-  "contracts/merkle-incentives",
-  "contracts/range-middleware",
-  "contracts/dex-router-osmosis",
-  "contracts/lst-dex-adapter-osmosis",
-  "contracts/lst-adapter-osmosis",
-  "packages/quasar-types",
-]
+members = ["contracts/*", "packages/*"]
 
 [workspace.dependencies]
 # CosmWasm

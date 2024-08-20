@@ -19,6 +19,7 @@ vue/
 **/**/target
 **/**/test-tube-build
 local_testnet_run-*nodes/
+**/Cargo.lock
 
 containers_homes/
 
