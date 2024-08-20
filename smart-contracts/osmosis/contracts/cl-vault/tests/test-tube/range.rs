@@ -25,6 +25,11 @@ use cl_vault::{
     query::PositionResponse,
 };
 
+const DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET: usize = 1;
+const DO_SWAP_DEPOSIT_MIN_OUT_OFFSET: usize = 2;
+const SWAP_SUCCESS_BASE_BALANCE_OFFSET: usize = 3;
+const SWAP_SUCCESS_QUOTE_BALANCE_OFFSET: usize = 4;
+
 #[test]
 fn move_range_works() {
     let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
@@ -40,7 +45,7 @@ fn move_range_works() {
         )
         .unwrap();
 
-    let _result = wasm
+    let response = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
@@ -56,6 +61,38 @@ fn move_range_works() {
             &admin,
         )
         .unwrap();
+
+    for event in &response.events {
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "do_swap_deposit_merge");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
+                "223645uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
+                "201280"
+            );
+        }
+
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "handle_swap_success");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
+                "141894uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
+                "201280ubtc"
+            );
+        }
+    }
 
     let response: PositionResponse = wasm
         .query(
@@ -104,7 +141,7 @@ fn move_range_cw_dex_works() {
         )
         .unwrap();
 
-    let _result = wasm
+    let response = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
@@ -120,8 +157,39 @@ fn move_range_cw_dex_works() {
             &admin,
         )
         .unwrap();
+    for event in &response.events {
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "do_swap_deposit_merge");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
+                "999999ubtc"
+            );
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
+                "899999"
+            );
+        }
 
-    let _after_position: PositionResponse = wasm
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "handle_swap_success");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
+                "899999uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
+                "0ubtc"
+            );
+        }
+    }
+
+    let response: PositionResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
@@ -129,6 +197,20 @@ fn move_range_cw_dex_works() {
             )),
         )
         .unwrap();
+    assert_eq!(response.position_ids.len(), 1);
+    let position_id = response.position_ids[0];
+    assert_eq!(position_id, 5u64);
+
+    let cl = ConcentratedLiquidity::new(&app);
+    let pos = cl
+        .query_position_by_id(&PositionByIdRequest { position_id })
+        .unwrap()
+        .position
+        .unwrap();
+    let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
+    let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
+    assert_eq!(pos_base, coin(1899996u128, DENOM_BASE));
+    assert_eq!(pos_quote, coin(0u128, DENOM_QUOTE));
 }
 
 #[test]
@@ -161,7 +243,7 @@ fn move_range_cw_dex_works_forced_swap_route() {
         token_out_denom: DENOM_BASE.to_string(),
     };
 
-    let _result = wasm
+    let response = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
@@ -178,7 +260,38 @@ fn move_range_cw_dex_works_forced_swap_route() {
         )
         .unwrap();
 
-    let _after_position: PositionResponse = wasm
+    for event in &response.events {
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "do_swap_deposit_merge");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
+                "999999ubtc"
+            );
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
+                "899999"
+            );
+        }
+
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "handle_swap_success");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
+                "899999uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
+                "0ubtc"
+            );
+        }
+    }
+    let response: PositionResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
@@ -186,6 +299,20 @@ fn move_range_cw_dex_works_forced_swap_route() {
             )),
         )
         .unwrap();
+    assert_eq!(response.position_ids.len(), 1);
+    let position_id = response.position_ids[0];
+    assert_eq!(position_id, 5u64);
+
+    let cl = ConcentratedLiquidity::new(&app);
+    let pos = cl
+        .query_position_by_id(&PositionByIdRequest { position_id })
+        .unwrap()
+        .position
+        .unwrap();
+    let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
+    let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
+    assert_eq!(pos_base, coin(1899996u128, DENOM_BASE));
+    assert_eq!(pos_quote, coin(0u128, DENOM_QUOTE));
 }
 
 #[test]
@@ -194,7 +321,7 @@ fn move_range_single_side_works() {
         fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
-    let _result = wasm
+    let response = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
@@ -211,7 +338,39 @@ fn move_range_single_side_works() {
         )
         .unwrap();
 
-    let _result = wasm
+    for event in &response.events {
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "do_swap_deposit_merge");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
+                "999999ubtc"
+            );
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
+                "899999"
+            );
+        }
+
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "handle_swap_success");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
+                "899999uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
+                "0ubtc"
+            );
+        }
+    }
+
+    let response = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
@@ -227,6 +386,61 @@ fn move_range_single_side_works() {
             &admin,
         )
         .unwrap();
+
+    for event in &response.events {
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "do_swap_deposit_merge");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
+                "1899995uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
+                "1709995"
+            );
+        }
+
+        let pos = event
+            .attributes
+            .iter()
+            .position(|attr| attr.key == "action" && attr.value == "handle_swap_success");
+        if let Some(pos) = pos {
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
+                "0uatom"
+            );
+            assert_eq!(
+                event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
+                "1709995ubtc"
+            );
+        }
+    }
+
+    let response: PositionResponse = wasm
+        .query(
+            contract_address.as_str(),
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::ConcentratedLiquidity(
+                ClQueryMsg::Position {},
+            )),
+        )
+        .unwrap();
+    assert_eq!(response.position_ids.len(), 1);
+    let position_id = response.position_ids[0];
+    assert_eq!(position_id, 7u64);
+
+    let cl = ConcentratedLiquidity::new(&app);
+    let pos = cl
+        .query_position_by_id(&PositionByIdRequest { position_id })
+        .unwrap()
+        .position
+        .unwrap();
+    let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
+    let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
+    assert_eq!(pos_base, coin(0u128, DENOM_BASE));
+    assert_eq!(pos_quote, coin(1709994u128, DENOM_QUOTE));
 }
 
 /*
