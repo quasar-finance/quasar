@@ -28,8 +28,8 @@ use crate::vault::{
         handle_merge_withdraw_position_reply,
     },
     range::{
-        execute_update_range, handle_initial_create_position_reply,
-        handle_iteration_create_position_reply, handle_swap_reply, handle_withdraw_position_reply,
+        execute_update_range, handle_create_position, handle_swap_reply,
+        handle_withdraw_position_reply,
     },
     swap::execute_swap_non_vault_funds,
     withdraw::{execute_withdraw, handle_withdraw_user_reply},
@@ -200,12 +200,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CollectIncentives => handle_collect_incentives_reply(deps, env, msg.result),
         Replies::CollectSpreadRewards => handle_collect_spread_rewards_reply(deps, env, msg.result),
         Replies::WithdrawPosition => handle_withdraw_position_reply(deps, env),
-        Replies::RangeInitialCreatePosition => {
-            handle_initial_create_position_reply(deps, env, msg.result)
-        }
-        Replies::RangeIterationCreatePosition => {
-            handle_iteration_create_position_reply(deps, env, msg.result)
-        }
+        Replies::CreatePosition => handle_create_position(deps, env, msg.result),
         Replies::Swap => handle_swap_reply(deps, env),
         Replies::Merge => handle_merge_reply(deps, env, msg.result),
         Replies::CreateDenom => handle_create_denom_reply(deps, msg.result),

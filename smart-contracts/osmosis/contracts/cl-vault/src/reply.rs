@@ -12,10 +12,7 @@ pub enum Replies {
 
     // withdraw position
     WithdrawPosition,
-    // create position in the modify range inital step
-    RangeInitialCreatePosition,
-    // create position in the modify range iteration step
-    RangeIterationCreatePosition,
+    CreatePosition,
     // swap
     Swap,
     /// Merge positions, used to merge positions
