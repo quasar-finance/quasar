@@ -43,7 +43,7 @@ pub fn get_asset0_value(
     Ok(total)
 }
 
-pub fn get_position_balance(
+pub fn get_asset_ratios(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
 ) -> Result<(Decimal, Decimal), ContractError> {

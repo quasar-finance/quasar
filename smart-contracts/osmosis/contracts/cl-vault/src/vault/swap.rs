@@ -6,7 +6,7 @@ use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    helpers::getters::{get_position_balance, get_twap_price},
+    helpers::getters::{get_asset_ratios, get_twap_price},
     msg::SwapOperation,
     state::{DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
     ContractError,
@@ -34,26 +34,25 @@ pub fn execute_swap_non_vault_funds(
             return Err(ContractError::InvalidSwapAssets {});
         }
 
-        let balance_in_contract = deps
+        let token_in_balance = deps
             .querier
             .query_balance(env.clone().contract.address, token_in_denom.clone())?
             .amount;
-        if balance_in_contract.is_zero() {
+        if token_in_balance.is_zero() {
             return Err(ContractError::InsufficientFundsForSwap {
-                balance: balance_in_contract,
+                balance: token_in_balance,
                 needed: Uint128::new(1),
             });
         }
 
-        // Get the current position balance ratio to compute the amount of external funds we want to swap into either token0 or token1 from the vault's pool
-        let position_balance = get_position_balance(deps.storage, &deps.querier)?;
+        let (base_ratio, quote_ratio) = get_asset_ratios(deps.storage, &deps.querier)?;
         let to_token0_amount = Uint128::from(
-            (balance_in_contract.u128() as f64
-                * position_balance.0.to_string().parse::<f64>().unwrap()) as u128,
+            (token_in_balance.u128() as f64
+                * base_ratio.to_string().parse::<f64>().unwrap()) as u128,
         );
         let to_token1_amount = Uint128::from(
-            (balance_in_contract.u128() as f64
-                * position_balance.1.to_string().parse::<f64>().unwrap()) as u128,
+            (token_in_balance.u128() as f64
+                * quote_ratio.to_string().parse::<f64>().unwrap()) as u128,
         );
 
         let dex_router = DEX_ROUTER.may_load(deps.storage)?;
