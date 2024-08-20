@@ -4,33 +4,26 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	simulation2 "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
-	"github.com/quasar-finance/quasar/app"
+	app2 "github.com/quasar-finance/quasar/app"
+	"github.com/quasar-finance/quasar/app/sim"
 	"github.com/stretchr/testify/require"
 )
 
-// AppChainID hardcoded chainID for simulation
-const AppChainID = "quasar-app"
+// Profile with:
+// /usr/local/go/bin/go test -benchmem -run=^$ github.com/cosmos/cosmos-sdk/GaiaApp -bench ^BenchmarkFullAppSimulation$ -Commit=true -cpuprofile cpu.out
+func BenchmarkFullAppSimulation(b *testing.B) {
+	b.ReportAllocs()
 
-func init() {
-	simcli.GetSimulatorFlags()
-}
-
-// BenchmarkSimulation run the chain simulation
-// Running using starport command:
-// `starport chain simulate -v --numBlocks 200 --blockSize 50`
-// Running as go benchmark test:
-// `go test -benchmem -run=^$ -bench ^BenchmarkSimulation ./app -NumBlocks=200 -BlockSize 50 -Commit=true -Verbose=true -Enabled=true`
-func BenchmarkSimulation(b *testing.B) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = AppChainID
 
 	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "goleveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
-
 	if err != nil {
 		b.Fatalf("simulation setup failed: %s", err.Error())
 	}
@@ -39,47 +32,53 @@ func BenchmarkSimulation(b *testing.B) {
 		b.Skip("skipping benchmark application simulation")
 	}
 
-	b.Cleanup(func() {
+	defer func() {
 		require.NoError(b, db.Close())
 		require.NoError(b, os.RemoveAll(dir))
-	})
+	}()
 
 	appOptions := make(simtestutil.AppOptionsMap, 0)
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
-	encoding := app.MakeEncodingConfig()
 
-	app := app.New(
+	app := app2.New(
 		logger,
 		db,
 		nil,
 		true,
 		map[int64]bool{},
-		app.DefaultNodeHome,
+		app2.DefaultNodeHome,
 		0,
-		encoding,
 		appOptions,
-		app.EmptyWasmOpts,
+		emptyWasmOption,
+		interBlockCacheOpt(),
+		baseapp.SetChainID(AppChainID),
 	)
 
-	// Run randomized simulations
+	defaultGenesisState := app.ModuleBasics.DefaultGenesis(app.AppCodec())
+
+	// Run randomized simulation:w
 	_, simParams, simErr := simulation.SimulateFromSeed(
 		b,
 		os.Stdout,
 		app.BaseApp,
-		simulation2.AppStateFn(app.AppCodec(), app.SimulationManager()),
-		simulationtypes.RandomAccounts,
-		simtestutil.SimulationOperations(app, app.AppCodec(), config),
+		sim.AppStateFn(app.AppCodec(), app.SimulationManager(), defaultGenesisState),
+		simulation2.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
+		sim.SimulationOperations(app, app.AppCodec(), config),
 		app.ModuleAccountAddrs(),
 		config,
 		app.AppCodec(),
 	)
 
 	// export state and simParams before the simulation error is checked
-	err = simapp.CheckExportSimulation(app, config, simParams)
-	require.NoError(b, err)
-	require.NoError(b, simErr)
+	if err = sim.CheckExportSimulation(app, config, simParams); err != nil {
+		b.Fatal(err)
+	}
+
+	if simErr != nil {
+		b.Fatal(simErr)
+	}
 
 	if config.Commit {
-		simapp.PrintStats(db)
+		sim.PrintStats(db)
 	}
 }

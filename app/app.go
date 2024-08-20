@@ -42,7 +42,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -59,9 +58,6 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
-	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
-	"github.com/spf13/cast"
-
 	quasarante "github.com/quasar-finance/quasar/ante"
 	"github.com/quasar-finance/quasar/app/keepers"
 	"github.com/quasar-finance/quasar/app/openapiconsole"
@@ -70,6 +66,8 @@ import (
 	v2 "github.com/quasar-finance/quasar/app/upgrades/v2"
 	v3 "github.com/quasar-finance/quasar/app/upgrades/v3"
 	"github.com/quasar-finance/quasar/docs"
+	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
+	"github.com/spf13/cast"
 )
 
 var (
@@ -378,19 +376,6 @@ func New(
 		}
 	}
 
-	// At startup, after all modules have been registered, check that all prot
-	// annotations are correct.
-	protoFiles, err := proto.MergedRegistry()
-	if err != nil {
-		panic(err)
-	}
-	err = msgservice.ValidateProtoAnnotations(protoFiles)
-	if err != nil {
-		// Once we switch to using protoreflect-based antehandlers, we might
-		// want to panic here instead of logging a warning.
-		fmt.Fprintln(os.Stderr, err.Error())
-	}
-
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(err.Error())
@@ -448,6 +433,17 @@ func (app *QuasarApp) Name() string { return app.BaseApp.Name() }
 
 // GetBaseApp returns the base app of the application
 func (app *QuasarApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
+
+// EmptyAppOptions is a stub implementing AppOptions
+type EmptyAppOptions struct{}
+
+// EmptyWasmOptions is a stub implementing Wasmkeeper Option
+var EmptyWasmOptions []wasmkeeper.Option
+
+// Get implements AppOptions
+func (ao EmptyAppOptions) Get(_ string) interface{} {
+	return nil
+}
 
 func (app *QuasarApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	return app.mm.PreBlock(ctx)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasar-finance/quasar/testutil"
 	"github.com/quasar-finance/quasar/x/tokenfactory/types"
@@ -13,7 +14,7 @@ import (
 func TestMsgCreateDenom(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	fundAccsAmount := sdk.NewCoins(sdk.NewCoin(types.DefaultParams().DenomCreationFee[0].Denom,
-		types.DefaultParams().DenomCreationFee[0].Amount.MulRaw(100)), sdk.NewCoin("uosmo", sdk.NewInt(10000000)))
+		types.DefaultParams().DenomCreationFee[0].Amount.MulRaw(100)), sdk.NewCoin("uosmo", math.NewInt(10000000)))
 	for _, acc := range setup.TestAccs {
 		setup.FundAcc(t, acc, fundAccsAmount)
 	}

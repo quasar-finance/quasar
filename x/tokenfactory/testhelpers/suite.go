@@ -15,7 +15,7 @@ import (
 
 var (
 	Amino          = codec.NewLegacyAmino()
-	AuthzModuleCdc = codec.NewAminoCodec(Amino)
+	AuthzModuleCdc = codec.NewLegacyAmino()
 )
 
 func init() {

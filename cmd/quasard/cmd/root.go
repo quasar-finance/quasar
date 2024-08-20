@@ -86,7 +86,6 @@ func NewRootCmd() *cobra.Command {
 		WithHomeDir(app.DefaultNodeHome).
 		WithViper("")
 
-	// todo v50 there is an issue with initial_height being set as an integer instead of string
 	rootCmd := &cobra.Command{
 		Use:   appparams.Name + "d",
 		Short: "Start Quasar QuasarApp",

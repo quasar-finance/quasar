@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/quasar-finance/quasar/testutil"
 	"github.com/quasar-finance/quasar/x/epochs"
 	"github.com/quasar-finance/quasar/x/epochs/keeper"
@@ -16,14 +15,13 @@ func TestQueryEpochInfos(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.EpochsKeeper
 	epochs.InitGenesis(ctx, k, *types.DefaultGenesis())
-	goCtx := sdk.WrapSDKContext(ctx)
 
 	chainStartTime := ctx.BlockTime()
 
-	querier := keeper.NewQuerier(k)
+	querier := keeper.NewQuerier(*k)
 
 	// Invalid param
-	epochInfosResponse, err := querier.EpochInfos(goCtx, &types.QueryEpochsInfoRequest{})
+	epochInfosResponse, err := querier.EpochInfos(ctx, &types.QueryEpochsInfoRequest{})
 	require.NoError(t, err)
 	require.Len(t, epochInfosResponse.Epochs, 4)
 

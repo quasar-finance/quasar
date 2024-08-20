@@ -19,6 +19,8 @@ vue/
 **/**/target
 **/**/test-tube-build
 local_testnet_run-*nodes/
+*.out
+coverage.txt
 
 containers_homes/
 

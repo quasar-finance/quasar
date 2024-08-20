@@ -1,8 +1,10 @@
 package testhelpers
 
-import sdk "github.com/cosmos/cosmos-sdk/types"
+import (
+	"cosmossdk.io/math"
+)
 
 var (
 	SecondaryDenom  = "uion"
-	SecondaryAmount = sdk.NewInt(100000000)
+	SecondaryAmount = math.NewInt(100000000)
 )

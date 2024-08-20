@@ -11,12 +11,12 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/quasar-finance/quasar/ante"
-	"github.com/quasar-finance/quasar/app/helpers"
+	"github.com/quasar-finance/quasar/testutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGovExpeditedProposalsDecorator(t *testing.T) {
-	quasarApp := helpers.Setup(t)
+	quasarApp := testutil.Setup(t)
 
 	testCases := []struct {
 		name      string

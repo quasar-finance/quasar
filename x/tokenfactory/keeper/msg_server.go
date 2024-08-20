@@ -4,11 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/quasar-finance/quasar/x/tokenfactory/types"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type msgServer struct {
@@ -99,7 +96,7 @@ func (server msgServer) Burn(goCtx context.Context, msg *types.MsgBurn) (*types.
 	}
 
 	accountI := server.Keeper.accountKeeper.GetAccount(ctx, sdk.AccAddress(msg.BurnFromAddress))
-	_, ok := accountI.(authtypes.ModuleAccountI)
+	_, ok := accountI.(sdk.ModuleAccountI)
 	if ok {
 		return nil, types.ErrBurnFromModuleAccount
 	}
@@ -124,13 +121,13 @@ func (server msgServer) Burn(goCtx context.Context, msg *types.MsgBurn) (*types.
 func (server msgServer) ForceTransfer(goCtx context.Context, msg *types.MsgForceTransfer) (*types.MsgForceTransferResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	govAccount := server.Keeper.accountKeeper.GetModuleAccount(ctx, govtypes.ModuleName)
-	if govAccount == nil {
-		return nil, status.Errorf(codes.NotFound, "account %s not found", govtypes.ModuleName)
-	}
-
-	if msg.Authority != govAccount.GetAddress().String() {
-		return nil, types.ErrUnauthorized
+	// checking msg authority is the gov module address
+	if server.Keeper.GetGovAuthority(ctx) != msg.Authority {
+		return nil,
+			govtypes.ErrInvalidSigner.Wrapf(
+				"invalid authority: expected %s, got %s",
+				server.Keeper.GetGovAuthority(ctx), msg.Authority,
+			)
 	}
 
 	err := server.Keeper.forceTransfer(ctx, msg.Amount, msg.TransferFromAddress, msg.TransferToAddress)
