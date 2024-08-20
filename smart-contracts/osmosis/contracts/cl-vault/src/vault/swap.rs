@@ -46,14 +46,12 @@ pub fn execute_swap_non_vault_funds(
         }
 
         let (base_ratio, quote_ratio) = get_asset_ratios(deps.storage, &deps.querier)?;
-        let to_token0_amount = Uint128::from(
-            (token_in_balance.u128() as f64 * base_ratio.to_string().parse::<f64>().unwrap())
-                as u128,
-        );
-        let to_token1_amount = Uint128::from(
-            (token_in_balance.u128() as f64 * quote_ratio.to_string().parse::<f64>().unwrap())
-                as u128,
-        );
+        let to_token0_amount = Decimal::from_ratio(token_in_balance, Uint128::one())
+            .checked_mul(base_ratio)?
+            .to_uint_floor();
+        let to_token1_amount = Decimal::from_ratio(token_in_balance, Uint128::one())
+            .checked_mul(quote_ratio)?
+            .to_uint_floor();
 
         let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
