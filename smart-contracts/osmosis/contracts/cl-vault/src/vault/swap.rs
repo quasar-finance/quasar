@@ -58,7 +58,6 @@ pub fn execute_swap_non_vault_funds(
 
         let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
-        // TODO: Validate that the swap_operation.pool_id_base is about token_in_denom and pool_config.token0 assets or throw error
         let twap_price_base = get_twap_price(
             &deps.querier,
             env.block.time,
@@ -81,7 +80,6 @@ pub fn execute_swap_non_vault_funds(
             dex_router.clone(),
         )?);
 
-        // TODO: Validate that the swap_operation.pool_id_quote is about token_in_denom and pool_config.token1 assets or throw error
         let twap_price_quote = get_twap_price(
             &deps.querier,
             env.block.time,
