@@ -174,7 +174,7 @@ mod tests {
         test_helpers::QuasarQuerier,
     };
     use cosmwasm_std::{
-        coin,
+        assert_approx_eq, coin,
         testing::{mock_dependencies, mock_env},
         Coin, Uint128,
     };
@@ -399,5 +399,59 @@ mod tests {
         let liq = get_liquidity_for_quote_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
         let expected_liq = Uint256::from(300u64);
         assert_eq!(liq, expected_liq);
+    }
+
+    // tests
+
+    #[test]
+    fn test_get_liquidity_for_base() {
+        let amount = Uint256::from(1_000_000u64);
+        let sqrt_pl = Decimal256::percent(65);
+        let sqrt_pu = Decimal256::percent(130);
+        let sqrt_p = Decimal256::one();
+        let liq = get_liquidity_for_base_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::from(4_333_333u64);
+        assert_eq!(liq, expected_liq);
+
+        let final_amount: Uint128 =
+            get_amount_from_liquidity_for_base_token(liq, sqrt_p, sqrt_pl, sqrt_pu)
+                .unwrap()
+                .try_into()
+                .unwrap();
+        assert_approx_eq!(final_amount, amount.try_into().unwrap(), "0.000001");
+
+        let used_liquidity = Uint256::from(2_857_142u64);
+        let residual_liquidity = Uint256::from(4_333_333u64) - used_liquidity;
+        let residual_amount: Uint128 =
+            get_amount_from_liquidity_for_base_token(residual_liquidity, sqrt_p, sqrt_pl, sqrt_pu)
+                .unwrap()
+                .try_into()
+                .unwrap();
+        let expected_residual_amount = Uint128::from(340659u64);
+        assert_eq!(residual_amount, expected_residual_amount);
+
+        let used_amount =
+            get_amount_from_liquidity_for_base_token(used_liquidity, sqrt_p, sqrt_pl, sqrt_pu)
+                .unwrap();
+        let residual_amount: Uint128 = (amount - used_amount).try_into().unwrap();
+        let expected_residual_amount = Uint128::from(340660u64);
+        assert_eq!(residual_amount, expected_residual_amount);
+    }
+    #[test]
+    fn test_get_liquidity_for_quote() {
+        let amount = Uint256::from(1_000_000u64);
+        let sqrt_pl = Decimal256::percent(65);
+        let sqrt_pu = Decimal256::percent(130);
+        let sqrt_p = Decimal256::one();
+        let liq = get_liquidity_for_quote_token(amount, sqrt_p, sqrt_pl, sqrt_pu).unwrap();
+        let expected_liq = Uint256::from(2_857_142u64);
+        assert_eq!(liq, expected_liq);
+
+        let final_amount: Uint128 =
+            get_amount_from_liquidity_for_quote_token(liq, sqrt_p, sqrt_pl, sqrt_pu)
+                .unwrap()
+                .try_into()
+                .unwrap();
+        assert_approx_eq!(final_amount, amount.try_into().unwrap(), "0.000001");
     }
 }
