@@ -160,6 +160,13 @@ pub enum ContractError {
     TryFromIntError(#[from] TryFromIntError),
 }
 
+pub fn assert_deposits(funds: &[Coin]) -> Result<(), ContractError> {
+    if funds.len() != 2 && funds.len() != 1 {
+        return Err(ContractError::IncorrectAmountFunds);
+    }
+    Ok(())
+}
+
 pub fn assert_admin(storage: &dyn Storage, caller: &Addr) -> Result<(), ContractError> {
     if ADMIN_ADDRESS.load(storage)? != caller {
         return Err(ContractError::Unauthorized {});

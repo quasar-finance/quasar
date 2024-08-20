@@ -4,8 +4,7 @@ use cosmwasm_std::{
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::ConcentratedliquidityQuerier;
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositionResponse;
 
-use crate::helpers::assert::must_pay_one_or_two_from_balance;
-use crate::helpers::getters::get_unused_balances;
+use crate::helpers::getters::get_unused_pair_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
 #[allow(deprecated)]
@@ -34,11 +33,11 @@ pub fn execute_autocompound(
         .position
         .ok_or(ContractError::PositionNotFound)?;
 
-    let balance = get_unused_balances(&deps.querier, env)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
+    let balance = get_unused_pair_balances(&deps, env, &pool)?;
 
-    let (token0, token1) =
-        must_pay_one_or_two_from_balance(balance.coins(), (pool.token0, pool.token1))?;
+    let token0 = balance[0].clone();
+    let token1 = balance[1].clone();
 
     // Create coins_to_send with no zero amounts
     let mut coins_to_send = vec![];
