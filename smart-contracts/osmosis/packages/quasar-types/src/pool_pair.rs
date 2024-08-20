@@ -41,11 +41,13 @@ mod tests {
         assert_eq!(base, pair.base);
         assert_eq!(quote, pair.quote);
 
+        let other = "other";
+        let other_str = "other".to_string();
         assert!(pair.contains(&base));
         assert!(pair.contains(&quote));
         assert!(pair.contains(base.as_str()));
-        assert!(!pair.contains(&"other".to_string()));
-        assert!(!pair.contains("other"));
+        assert!(!pair.contains(&other_str));
+        assert!(!pair.contains(other));
     }
 
     #[test]
@@ -56,10 +58,12 @@ mod tests {
         assert_eq!(base, pair.base);
         assert_eq!(quote, pair.quote);
 
+        let other = "other";
+        let other_str = "other".to_string();
         assert!(pair.contains(&base.denom));
         assert!(pair.contains(&quote.denom));
         assert!(pair.contains(base.denom.as_str()));
-        assert!(!pair.contains(&"other".to_string()));
-        assert!(!pair.contains("other"));
+        assert!(!pair.contains(&other_str));
+        assert!(!pair.contains(other));
     }
 }
