@@ -28,9 +28,6 @@ pub enum ContractError {
     #[error("Sent the wrong amount of denoms")]
     IncorrectAmountFunds,
 
-    #[error("Modify range state item not found")]
-    ModifyRangeStateNotFound,
-
     #[error("ratio_of_swappable_funds_to_use should be >0 and <=1")]
     InvalidRatioOfSwappableFundsToUse,
 
@@ -119,9 +116,6 @@ pub enum ContractError {
 
     #[error("Missing recommended swap route.")]
     MissingRecommendedSwapRoute {},
-
-    #[error("Missing best path for swap.")]
-    MissingBestPath {},
 
     #[error("Missing information for {asset}")]
     MissingAssetInfo { asset: String },
