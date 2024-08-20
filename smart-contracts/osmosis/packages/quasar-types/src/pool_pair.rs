@@ -28,6 +28,7 @@ impl Contains<&str> for PoolPair<Coin, Coin> {
     }
 }
 
+#[allow(clippy::unnecessary_to_owned)]
 #[cfg(test)]
 mod tests {
     use super::*;

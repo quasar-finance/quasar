@@ -482,7 +482,6 @@
       "additionalProperties": false
     },
     "Metadata": {
-      "description": "metadata useful for display purposes",
       "type": "object",
       "required": [
         "name",
@@ -490,7 +489,6 @@
       ],
       "properties": {
         "name": {
-          "description": "the name of the vault",
           "type": "string"
         },
         "thesis": {
@@ -634,7 +632,6 @@
       "type": "string"
     },
     "VaultConfig": {
-      "description": "VAULT_CONFIG: Base config struct for the contract.",
       "type": "object",
       "required": [
         "dex_router",
@@ -644,36 +641,16 @@
       ],
       "properties": {
         "dex_router": {
-          "description": "Dex router address",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Addr"
-            }
-          ]
+          "$ref": "#/definitions/Addr"
         },
         "performance_fee": {
-          "description": "Percentage of profit to be charged as performance fee",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Decimal"
-            }
-          ]
+          "$ref": "#/definitions/Decimal"
         },
         "swap_max_slippage": {
-          "description": "swap max slippage",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Decimal"
-            }
-          ]
+          "$ref": "#/definitions/Decimal"
         },
         "treasury": {
-          "description": "Account to receive fee payments",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Addr"
-            }
-          ]
+          "$ref": "#/definitions/Addr"
         }
       },
       "additionalProperties": false
