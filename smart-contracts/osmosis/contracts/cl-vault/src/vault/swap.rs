@@ -46,19 +46,14 @@ pub fn execute_swap_non_vault_funds(
         }
 
         let (base_ratio, quote_ratio) = get_asset_ratios(deps.storage, &deps.querier)?;
-        let to_token0_amount = Decimal::from_ratio(token_in_balance, Uint128::one())
-            .checked_mul(base_ratio)?
-            .to_uint_floor();
-        let to_token1_amount = Decimal::from_ratio(token_in_balance, Uint128::one())
-            .checked_mul(quote_ratio)?
-            .to_uint_floor();
-
+        let to_token0_amount = token_in_balance.checked_mul_floor(base_ratio)?;
+        let to_token1_amount = token_in_balance.checked_mul_floor(quote_ratio)?;
         let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
         let twap_price_base = get_twap_price(
             &deps.querier,
             env.block.time,
-            twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
+            twap_window_seconds.unwrap_or_default(),
             swap_operation.pool_id_base,
             token_in_denom.to_string(),
             pool_config.clone().token0,
@@ -80,7 +75,7 @@ pub fn execute_swap_non_vault_funds(
         let twap_price_quote = get_twap_price(
             &deps.querier,
             env.block.time,
-            twap_window_seconds.unwrap_or_default(), // default to 0 if not provided
+            twap_window_seconds.unwrap_or_default(),
             swap_operation.pool_id_quote,
             token_in_denom.to_string(),
             pool_config.clone().token1,

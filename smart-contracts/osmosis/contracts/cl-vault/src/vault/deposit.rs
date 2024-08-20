@@ -60,7 +60,7 @@ pub(crate) fn execute_any_deposit(
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
-        24u64, // TODO: Remove harcoded value by creating a new ValutConfig struct field
+        24u64,
         pool_config.pool_id,
         pool_config.clone().token0,
         pool_config.clone().token1,
