@@ -90,7 +90,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Keep track of the total minted shares from deposits
     let mut total_minted_shares_from_deposits = Uint128::zero();
 
-    // Get the balance of the contract before any user deposit
     // This will be useful after all deposits to assert the contract balance
     let initial_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
@@ -99,7 +98,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Execute exact_deposit for each account using the same amount of tokens for each asset and user
     for account in &accounts {
-        // Assert user starts with 0 shares
         let balance_user_shares_before: UserSharesBalanceResponse = wasm
             .query(
                 contract_address.as_str(),
@@ -108,9 +106,9 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                 })),
             )
             .unwrap();
+        // Assert user starts with 0 shares
         assert!(balance_user_shares_before.balance.is_zero());
 
-        // Make the deposit asserting the correct refund based on deposit ratio
         let exact_deposit = wasm
             .execute(
                 contract_address.as_str(),
@@ -123,7 +121,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
             )
             .unwrap();
 
-        // Expected refund amounts based on the deposit ratio
         let (expected_refund0, expected_refund1) =
             calculate_expected_refunds(DEPOSIT_AMOUNT, DEPOSIT_AMOUNT, deposit_ratio_base);
 
@@ -196,14 +193,13 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // AFTER DEPOSITS CHECKS
 
-    // Get total amount of vault token supply after the deposits of users
-    // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
     let after_deposit_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::TotalVaultTokenSupply {},
         )
         .unwrap();
+    // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
     assert_eq!(
         total_minted_shares_from_deposits
             .checked_add(initial_total_vault_token_supply.total)
@@ -211,8 +207,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         after_deposit_vault_token_supply.total
     );
 
-    // Get the worth of assets of the total current supply of vault tokens
-    // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
     let after_deposit_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
@@ -222,6 +216,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         )
         .unwrap();
     let users_total_deposit_per_asset = DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
+    // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
     assert_eq!(
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
@@ -298,7 +293,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     let rewards_swap_amount_quote =
         Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio_quote) as u128);
 
-    // Execute the swap non vault funds
     // We want to swap DENOM_REWARDS and pass the SwapOperation information to perform the swap using the dex-router
     wasm.execute(
         contract_address.as_str(),
@@ -341,7 +335,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         after_swap_rewards_balance
     );
 
-    // Get the contract balances for base and quote denoms after the swap of non vault funds
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
     let _after_swap_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
@@ -400,7 +393,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     )
     .unwrap();
 
-    // Get contract balances after the autocompound
     // Assert there are no funds left in the contract after autocompound
     let _after_autocompound_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
@@ -417,15 +409,14 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     //     &deposit_ratio_approx
     // );
 
-    // Get again the total vault token supply after autocompound
-    // Assert that total existing LP tokens didnt change after autocompound,
-    // so we ensure that we just increase the vlaue of underlying assets for the same existing number of shares
     let after_autocompound_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::TotalVaultTokenSupply {},
         )
         .unwrap();
+    // Assert that total existing LP tokens didnt change after autocompound,
+    // so we ensure that we just increase the vlaue of underlying assets for the same existing number of shares
     assert_eq!(
         after_deposit_vault_token_supply.total,
         after_autocompound_vault_token_supply.total
@@ -439,7 +430,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         after_autocompound_vault_token_supply.total
     );
 
-    // Query contract to convert all LP token supply into assets after autocompound
     let after_autocompound_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
@@ -451,7 +441,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // Redeem all shares for each user and assert things accordingly
     for account in &accounts {
-        // Get balances before for current account
         let before_withdraw_base_balance =
             get_balance_amount(&app, account.address().to_string(), DENOM_BASE.to_string());
         let before_withdraw_quote_balance =
@@ -467,9 +456,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
             )
             .unwrap();
 
-        // If the current account have some share to redeem
         if !shares_to_redeem.balance.is_zero() {
-            // Redeem all shares_to_redeem.balance
             wasm.execute(
                 contract_address.as_str(),
                 &ExecuteMsg::Redeem {
