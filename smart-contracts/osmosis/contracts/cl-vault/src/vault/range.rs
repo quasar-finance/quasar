@@ -72,16 +72,12 @@ pub fn execute_update_range(
         }),
     )?;
 
-    // Load the current Position to set new join_time and claim_after, leaving current position_id unchanged.
-    let position_state = POSITION.load(deps.storage)?;
-    POSITION.save(
-        deps.storage,
-        &Position {
-            position_id: position_state.position_id,
-            join_time: env.block.time.seconds(),
-            claim_after,
-        },
-    )?;
+    POSITION.update(deps.storage, |position| -> StdResult<Position> {
+        let mut position = position;
+        position.join_time = env.block.time.seconds();
+        position.claim_after = claim_after;
+        Ok(position)
+    })?;
 
     Ok(Response::default()
         .add_submessage(SubMsg::reply_on_success(
