@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"os"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -17,6 +18,16 @@ type EmptyAppOptions struct{}
 
 var emptyWasmOption []wasmkeeper.Option
 
+var tempDir = func() string {
+	dir, err := os.MkdirTemp("", ".quasarnode")
+	if err != nil {
+		dir = app.DefaultNodeHome
+	}
+	defer os.RemoveAll(dir)
+
+	return dir
+}
+
 func (ao EmptyAppOptions) Get(_ string) interface{} {
 	return nil
 }
@@ -28,7 +39,7 @@ func TestQuasarApp_BlockedModuleAccountAddrs(t *testing.T) {
 		nil,
 		true,
 		map[int64]bool{},
-		app.DefaultNodeHome,
+		tempDir(),
 		0,
 		EmptyAppOptions{},
 		emptyWasmOption,

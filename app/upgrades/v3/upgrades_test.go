@@ -95,6 +95,7 @@ func (s *UpgradeTestSuite) TestUpgrade() {
 	expectedFeeMarketParams.MinBaseGasPrice = math.LegacyMustNewDecFromStr("0.10000000000000000")
 	expectedFeeMarketParams.MaxBlockUtilization = uint64(120000000)
 	expectedFeeMarketParams.FeeDenom = "uqsr"
+	expectedFeeMarketParams.DistributeFees = true
 	s.Require().Equal(expectedFeeMarketParams, feemarketParams, "Fee market params do not match expected values after upgrade")
 }
 
