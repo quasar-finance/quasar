@@ -25,7 +25,7 @@ use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
-const DENOM_REWARD_AMOUNT: u128 = 100000000000;
+const DENOM_REWARD_AMOUNT: u128 = 100_000_000_000;
 
 #[test]
 fn test_autocompound_with_rewards_swap_non_vault_funds() {
@@ -334,29 +334,30 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
             .u128(),
         after_swap_rewards_balance
     );
+    assert_eq!(1u128, after_swap_rewards_balance);
 
-    // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
-    let _after_swap_base_balance =
+    let after_swap_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
-    // assert_approx_eq!(
-    //     after_deposit_base_balance
-    //         .checked_add(rewards_swap_amount_base.into())
-    //         .unwrap(),
-    //     after_swap_base_balance,
-    //     &deposit_ratio_approx
-    // );
-    let _after_swap_quote_balance =
+    // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
+    assert_approx_eq!(
+        after_deposit_base_balance
+            .checked_add(rewards_swap_amount_base.into())
+            .unwrap(),
+        after_swap_base_balance,
+        &deposit_ratio_approx
+    );
+    let after_swap_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
-    // assert_approx_eq!(
-    //     after_deposit_quote_balance
-    //         .checked_add(rewards_swap_amount_quote.into())
-    //         .unwrap(),
-    //     after_swap_quote_balance,
-    //     &deposit_ratio_approx
-    // );
+    assert_approx_eq!(
+        after_deposit_quote_balance
+            .checked_add(rewards_swap_amount_quote.into())
+            .unwrap(),
+        after_swap_quote_balance,
+        &deposit_ratio_approx
+    );
 
     // Query contract to convert the same amount of LP token supply into assets after swapping non vault funds
-    let _after_swap_total_assets: AssetsBalanceResponse = wasm
+    let after_swap_total_assets: AssetsBalanceResponse = wasm
         .query(
             contract_address.as_str(),
             &QueryMsg::ConvertToAssets {
@@ -366,22 +367,22 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         .unwrap();
 
     // Check shares value of underlying assets increased after swapping non vault funds
-    // assert_approx_eq!(
-    //     users_total_deposit_per_asset
-    //         .sub(refund0_amount_total.u128())
-    //         .add(INITIAL_POSITION_BURN)
-    //         .add(rewards_swap_amount_base.u128()),
-    //     after_swap_total_assets.balances[0].amount.u128(),
-    //     &deposit_ratio_approx
-    // );
-    // assert_approx_eq!(
-    //     users_total_deposit_per_asset
-    //         .sub(refund1_amount_total.u128())
-    //         .add(INITIAL_POSITION_BURN)
-    //         .add(rewards_swap_amount_quote.u128()),
-    //     after_swap_total_assets.balances[1].amount.u128(),
-    //     &deposit_ratio_approx
-    // );
+    assert_approx_eq!(
+        users_total_deposit_per_asset
+            .sub(refund0_amount_total.u128())
+            .add(INITIAL_POSITION_BURN)
+            .add(rewards_swap_amount_base.u128()),
+        after_swap_total_assets.balances[0].amount.u128(),
+        &deposit_ratio_approx
+    );
+    assert_approx_eq!(
+        users_total_deposit_per_asset
+            .sub(refund1_amount_total.u128())
+            .add(INITIAL_POSITION_BURN)
+            .add(rewards_swap_amount_quote.u128()),
+        after_swap_total_assets.balances[1].amount.u128(),
+        &deposit_ratio_approx
+    );
 
     // AUTOCOMPOUND CONTRACT BALANCE ASSETS INTO POSITION
 
@@ -393,21 +394,18 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     )
     .unwrap();
 
-    // Assert there are no funds left in the contract after autocompound
-    let _after_autocompound_base_balance =
+    let after_autocompound_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
-    let _after_autocompound_quote_balance =
+    let after_autocompound_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
-    // assert_approx_eq!(
-    //     after_autocompound_base_balance,
-    //     0u128,
-    //     &deposit_ratio_approx
-    // );
-    // assert_approx_eq!(
-    //     after_autocompound_quote_balance,
-    //     0u128,
-    //     &deposit_ratio_approx
-    // );
+    // Assert that either the base balance is 0, or the quote balance is 0, or both are 0.
+    assert!(
+    (after_autocompound_base_balance == 0u128 || after_autocompound_quote_balance == 0u128)
+        || (after_autocompound_base_balance == 0u128 && after_autocompound_quote_balance == 0u128),
+    "Either one of the balances must be 0, or both must be 0. Base balance: {}, Quote balance: {}",
+    after_autocompound_base_balance,
+    after_autocompound_quote_balance
+);
 
     let after_autocompound_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(
