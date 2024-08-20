@@ -329,7 +329,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     )
     .unwrap();
 
-    // Assert there is no balance for DENOM_REWARD anymore after we swapped
     let after_swap_rewards_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
     assert_eq!(
