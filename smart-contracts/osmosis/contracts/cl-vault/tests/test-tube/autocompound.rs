@@ -36,7 +36,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         _vault_pool_id,
         swap_pools_ids,
         admin,
-        deposit_ratio,
+        deposit_ratio_base,
         deposit_ratio_approx,
     ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let bm = Bank::new(&app);
@@ -125,7 +125,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
         // Expected refund amounts based on the deposit ratio
         let (expected_refund0, expected_refund1) =
-            calculate_expected_refunds(DEPOSIT_AMOUNT, DEPOSIT_AMOUNT, deposit_ratio);
+            calculate_expected_refunds(DEPOSIT_AMOUNT, DEPOSIT_AMOUNT, deposit_ratio_base);
 
         // Assert balance refunded is either the expected value or not empty for token0
         let refund0_amount =
@@ -282,20 +282,19 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-    // Calculate the numerator and denominator for the deposit_ratio obtained by the fixture
-    // This allows to know the current position balance so we can predict how many token should be swapped into base, and how much into quote
-    // Consider that here we are hardcoding a 0.01 fee which is the one Balancer pool appplies over the swap, no slippage taken in account by that tho.
-    let numerator = ((1.0 - 0.01) * 1_000_000.0) as u128;
+    // Calculate the total rewards swap amount using balanced_fee configs (0.01 is coming from osmosis as flat fee)
+    const BALANCER_FEE_RATE: f64 = 0.01;
+    const INITIAL_AMOUNT: f64 = 1_000_000.0;
+    let adjusted_numerator = ((1.0 - BALANCER_FEE_RATE) * INITIAL_AMOUNT) as u128;
     let denominator = 1_000_000u128;
-
     let total_rewards_swap_amount = Uint128::new(DENOM_REWARD_AMOUNT)
-        .checked_multiply_ratio(numerator, denominator)
+        .checked_multiply_ratio(adjusted_numerator, denominator)
         .expect("Multiplication overflow");
 
     // Split based on current position balance
-    let deposit_ratio_quote = 1.0 - deposit_ratio;
+    let deposit_ratio_quote = 1.0 - deposit_ratio_base;
     let rewards_swap_amount_base =
-        Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio) as u128);
+        Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio_base) as u128);
     let rewards_swap_amount_quote =
         Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio_quote) as u128);
 
