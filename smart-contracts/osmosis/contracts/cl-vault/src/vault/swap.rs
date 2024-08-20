@@ -74,7 +74,7 @@ pub fn execute_swap_non_vault_funds(
         )?;
         swap_msgs.push(swap_msg(
             env.clone().contract.address,
-            pool_config.clone().pool_id,
+            swap_operation.pool_id_base,
             coin(to_token0_amount.into(), token_in_denom.clone()),
             coin(token_out_min_amount_base.into(), pool_config.clone().token0),
             swap_operation.forced_swap_route_base,
@@ -97,7 +97,7 @@ pub fn execute_swap_non_vault_funds(
         )?;
         swap_msgs.push(swap_msg(
             env.clone().contract.address,
-            pool_config.clone().pool_id,
+            swap_operation.pool_id_quote,
             coin(to_token1_amount.into(), token_in_denom.clone()),
             coin(
                 token_out_min_amount_quote.into(),
