@@ -4,6 +4,7 @@ use std::str::FromStr;
 use osmosis_std::shim::Timestamp as OsmoTimestamp;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::PoolmanagerQuerier;
 use osmosis_std::types::osmosis::twap::v1beta1::TwapQuerier;
+use quasar_types::pool_pair::PoolPair;
 
 use crate::vault::concentrated_liquidity::get_position;
 use crate::{
@@ -66,17 +67,6 @@ pub fn get_twap_price(
     Ok(Decimal::from_str(&twap_price.arithmetic_twap)?)
 }
 
-struct PoolAssets {
-    pub base: Coin,
-    pub quote: Coin,
-}
-
-impl PoolAssets {
-    pub fn new(base: Coin, quote: Coin) -> Self {
-        Self { base, quote }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct DepositInfo {
     pub base_deposit: Uint128,
@@ -96,7 +86,7 @@ pub fn get_depositable_tokens(
     )?;
 
     let position = get_position(deps.storage, &deps.querier)?;
-    let assets = PoolAssets::new(
+    let assets = PoolPair::new(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
@@ -104,7 +94,7 @@ pub fn get_depositable_tokens(
 }
 
 fn get_deposit_info(
-    assets: &PoolAssets,
+    assets: &PoolPair<Coin, Coin>,
     provided_base: Coin,
     provided_quote: Coin,
 ) -> Result<DepositInfo, ContractError> {
@@ -238,9 +228,12 @@ mod tests {
     use super::*;
     use crate::math::tick::{build_tick_exp_cache, price_to_tick};
     use cosmwasm_std::testing::mock_dependencies;
-    use cosmwasm_std::{coin, Coin, Decimal256};
+    use cosmwasm_std::{coin, Decimal256};
     use std::collections::HashMap;
     use std::str::FromStr;
+
+    const TOKEN0: &str = "token0";
+    const TOKEN1: &str = "token1";
 
     #[test]
     fn test_0_to_1_swap() {
@@ -361,141 +354,92 @@ mod tests {
 
     #[test]
     fn test_position_in_both_asset() {
-        let token0 = Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(1_000_000_000u128),
-        };
-        let token1 = Coin {
-            denom: "token1".to_string(),
-            amount: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
-        };
+        let token0 = coin(1_000_000_000, TOKEN0);
+        let token1 = coin(100_000_000_000_000_000_000_000_000_000, TOKEN1);
 
-        let assets = PoolAssets {
-            base: token0.clone(),
-            quote: token1.clone(),
-        };
+        let assets = PoolPair::new(token0.clone(), token1.clone());
         let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::zero(),
-                quote_deposit: Uint128::new(100_000_000_000_000_000_000_000_000_000u128),
-                base_refund: coin(1_000_000_000u128, token0.denom),
-                quote_refund: coin(0u128, token1.denom),
+                quote_deposit: token1.amount,
+                base_refund: token0,
+                quote_refund: coin(0, token1.denom),
             }
         );
     }
 
     #[test]
     fn test_position_in_asset1_only() {
-        let token0 = Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(50),
-        };
-        let token1 = Coin {
-            denom: "token1".to_string(),
-            amount: Uint128::new(100),
-        };
+        let token0 = coin(50, TOKEN0);
+        let token1 = coin(100, TOKEN1);
 
-        let assets = PoolAssets {
-            base: Coin {
-                denom: "token0".to_string(),
-                amount: Uint128::zero(),
-            },
-            quote: token1.clone(),
-        };
+        let assets = PoolPair::new(coin(0, TOKEN0), token1.clone());
         let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::zero(),
-                quote_deposit: Uint128::new(100),
-                base_refund: coin(50u128, token0.denom),
-                quote_refund: coin(0u128, token1.denom),
+                quote_deposit: token1.amount,
+                base_refund: token0,
+                quote_refund: coin(0, token1.denom),
             }
         );
     }
 
     #[test]
     fn test_position_in_asset0_only() {
-        let token0 = Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(50),
-        };
-        let token1 = Coin {
-            denom: "token1".to_string(),
-            amount: Uint128::new(100),
-        };
+        let token0 = coin(50, TOKEN0);
+        let token1 = coin(100, TOKEN1);
 
-        let assets = PoolAssets {
-            quote: Coin {
-                denom: "token1".to_string(),
-                amount: Uint128::zero(),
-            },
-            base: token0.clone(),
-        };
+        let assets = PoolPair::new(token0.clone(), coin(0, TOKEN1));
         let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
-                base_deposit: Uint128::new(50),
+                base_deposit: token0.amount,
                 quote_deposit: Uint128::zero(),
-                base_refund: coin(0u128, token0.denom),
-                quote_refund: coin(100u128, token1.denom),
+                base_refund: coin(0, token0.denom),
+                quote_refund: token1,
             }
         );
     }
 
     #[test]
     fn test_both_assets_present_token0_limiting() {
-        let token0 = Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(50),
-        };
-        let token1 = Coin {
-            denom: "token1".to_string(),
-            amount: Uint128::new(100),
-        };
+        let token0 = coin(50, TOKEN0);
+        let token1 = coin(100, TOKEN1);
 
-        let assets = PoolAssets {
-            base: token0.clone(),
-            quote: token1.clone(),
-        };
-        let result = get_deposit_info(&assets, coin(2000, "token0"), coin(5000, "token1")).unwrap();
+        let assets = PoolPair::new(token0.clone(), token1.clone());
+        let base_deposit = coin(2000, TOKEN0);
+        let result = get_deposit_info(&assets, base_deposit.clone(), coin(5000, TOKEN1)).unwrap();
         assert_eq!(
             result,
             DepositInfo {
-                base_deposit: Uint128::new(2000),
+                base_deposit: base_deposit.amount,
                 quote_deposit: Uint128::new(4000),
-                base_refund: coin(0u128, token0.denom),
-                quote_refund: coin(1000u128, token1.denom),
+                base_refund: coin(0, token0.denom),
+                quote_refund: coin(1000, token1.denom),
             }
         );
     }
 
     #[test]
     fn test_both_assets_present_token1_limiting() {
-        let token0 = Coin {
-            denom: "token0".to_string(),
-            amount: Uint128::new(50),
-        };
-        let token1 = Coin {
-            denom: "token1".to_string(),
-            amount: Uint128::new(100),
-        };
+        let token0 = coin(50, TOKEN0);
+        let token1 = coin(100, TOKEN1);
 
-        let assets = PoolAssets {
-            base: token0.clone(),
-            quote: token1.clone(),
-        };
-        let result = get_deposit_info(&assets, coin(2000, "token0"), coin(3000, "token1")).unwrap();
+        let assets = PoolPair::new(token0.clone(), token1.clone());
+        let quote_deposit = coin(3000, TOKEN1);
+        let result = get_deposit_info(&assets, coin(2000, TOKEN0), quote_deposit.clone()).unwrap();
         assert_eq!(
             result,
             DepositInfo {
                 base_deposit: Uint128::new(1500),
-                quote_deposit: Uint128::new(3000),
-                base_refund: coin(500u128, token0.denom),
-                quote_refund: coin(0u128, token1.denom),
+                quote_deposit: quote_deposit.amount,
+                base_refund: coin(500, token0.denom),
+                quote_refund: coin(0, token1.denom),
             }
         );
     }
