@@ -19,7 +19,7 @@ use crate::{
 };
 use cosmwasm_std::{
     attr, coin, to_json_binary, CheckedMultiplyFractionError, Coin, Decimal, Decimal256, DepsMut,
-    Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult, Uint128,
+    SubMsgResult, Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::{
     concentratedliquidity::v1beta1::{MsgCreatePositionResponse, MsgWithdrawPosition},
@@ -94,7 +94,24 @@ pub fn execute_update_range(
         .add_attribute("liquidity_amount", position.liquidity))
 }
 
-// do create new position
+fn requires_swap(
+    sqrt_p: Decimal256,
+    sqrt_pl: Decimal256,
+    sqrt_pu: Decimal256,
+    base_amount: Uint128,
+    quote_amount: Uint128,
+    base_liquidity: Uint256,
+    quote_liquidity: Uint256,
+) -> bool {
+    if sqrt_p >= sqrt_pu {
+        return !base_amount.is_zero();
+    }
+    if sqrt_p <= sqrt_pl {
+        return !quote_amount.is_zero();
+    }
+    base_liquidity != quote_liquidity
+}
+
 pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Response, ContractError> {
     let modify_range_state = MODIFY_RANGE_STATE.load(deps.storage)?.unwrap();
     let pool_config = POOL_CONFIG.load(deps.storage)?;
@@ -491,5 +508,133 @@ mod tests {
                 .value,
             "11234token1"
         ); // 10000 withdrawn + 1234 local balance
+    }
+
+    #[test]
+    fn test_when_price_is_below_range_and_quote_amount_is_zero_then_no_swap_is_required() {
+        let sqrt_p = Decimal256::one();
+        let sqrt_pl = Decimal256::from_str("2.0").unwrap();
+        let sqrt_pu = Decimal256::from_str("3.0").unwrap();
+        let base_amount = Uint128::one();
+        let quote_amount = Uint128::zero();
+        let base_liquidity = Uint256::one();
+        let quote_liquidity = Uint256::one();
+
+        assert!(!requires_swap(
+            sqrt_p,
+            sqrt_pl,
+            sqrt_pu,
+            base_amount,
+            quote_amount,
+            base_liquidity,
+            quote_liquidity
+        ));
+    }
+
+    #[test]
+    fn test_when_price_is_below_range_and_quote_amount_is_not_zero_then_swap_is_required() {
+        let sqrt_p = Decimal256::one();
+        let sqrt_pl = Decimal256::from_str("2.0").unwrap();
+        let sqrt_pu = Decimal256::from_str("3.0").unwrap();
+        let base_amount = Uint128::one();
+        let quote_amount = Uint128::one();
+        let base_liquidity = Uint256::one();
+        let quote_liquidity = Uint256::one();
+
+        assert!(requires_swap(
+            sqrt_p,
+            sqrt_pl,
+            sqrt_pu,
+            base_amount,
+            quote_amount,
+            base_liquidity,
+            quote_liquidity
+        ));
+    }
+
+    #[test]
+    fn test_when_price_is_above_range_and_base_amount_is_zero_then_no_swap_is_required() {
+        let sqrt_p = Decimal256::from_str("4.0").unwrap();
+        let sqrt_pl = Decimal256::from_str("2.0").unwrap();
+        let sqrt_pu = Decimal256::from_str("3.0").unwrap();
+        let base_amount = Uint128::zero();
+        let quote_amount = Uint128::one();
+        let base_liquidity = Uint256::one();
+        let quote_liquidity = Uint256::one();
+
+        assert!(!requires_swap(
+            sqrt_p,
+            sqrt_pl,
+            sqrt_pu,
+            base_amount,
+            quote_amount,
+            base_liquidity,
+            quote_liquidity
+        ));
+    }
+
+    #[test]
+    fn test_when_price_is_above_range_and_base_amount_is_not_zero_then_swap_is_required() {
+        let sqrt_p = Decimal256::from_str("4.0").unwrap();
+        let sqrt_pl = Decimal256::from_str("2.0").unwrap();
+        let sqrt_pu = Decimal256::from_str("3.0").unwrap();
+        let base_amount = Uint128::one();
+        let quote_amount = Uint128::one();
+        let base_liquidity = Uint256::one();
+        let quote_liquidity = Uint256::one();
+
+        assert!(requires_swap(
+            sqrt_p,
+            sqrt_pl,
+            sqrt_pu,
+            base_amount,
+            quote_amount,
+            base_liquidity,
+            quote_liquidity
+        ));
+    }
+
+    #[test]
+    fn test_when_price_is_in_range_and_base_liquidity_differs_from_quote_liquidity_then_swap_is_required(
+    ) {
+        let sqrt_p = Decimal256::from_str("2.5").unwrap();
+        let sqrt_pl = Decimal256::from_str("2.0").unwrap();
+        let sqrt_pu = Decimal256::from_str("3.0").unwrap();
+        let base_amount = Uint128::one();
+        let quote_amount = Uint128::one();
+        let base_liquidity = Uint256::one();
+        let quote_liquidity = Uint256::from(2u32);
+
+        assert!(requires_swap(
+            sqrt_p,
+            sqrt_pl,
+            sqrt_pu,
+            base_amount,
+            quote_amount,
+            base_liquidity,
+            quote_liquidity
+        ));
+    }
+
+    #[test]
+    fn test_when_price_is_in_range_and_base_liquidity_equals_quote_liquidity_then_no_swap_is_required(
+    ) {
+        let sqrt_p = Decimal256::from_str("2.5").unwrap();
+        let sqrt_pl = Decimal256::from_str("2.0").unwrap();
+        let sqrt_pu = Decimal256::from_str("3.0").unwrap();
+        let base_amount = Uint128::one();
+        let quote_amount = Uint128::one();
+        let base_liquidity = Uint256::one();
+        let quote_liquidity = Uint256::one();
+
+        assert!(!requires_swap(
+            sqrt_p,
+            sqrt_pl,
+            sqrt_pu,
+            base_amount,
+            quote_amount,
+            base_liquidity,
+            quote_liquidity
+        ));
     }
 }
