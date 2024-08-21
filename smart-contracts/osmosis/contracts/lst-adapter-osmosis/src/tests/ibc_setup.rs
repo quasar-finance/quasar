@@ -11,6 +11,7 @@ use abstract_std::objects::UncheckedChannelEntry;
 use abstract_std::objects::{account::AccountTrace, chain_name::ChainName, AccountId};
 use abstract_std::ICS20;
 use cosmwasm_std::Decimal;
+use cw_orch::environment::Environment;
 use cw_orch::mock::cw_multi_test::MockApiBech32;
 use cw_orch::mock::MockBase;
 use cw_orch::{anyhow, prelude::*};
@@ -57,8 +58,8 @@ pub fn create_test_remote_account<Chain: IbcQueryHandler, IBC: InterchainEnv<Cha
         abstract_std::objects::gov_type::GovernanceDetails::Monarchy {
             monarch: abstr_origin
                 .version_control
-                .get_chain()
-                .sender()
+                .environment()
+                .sender_addr()
                 .to_string(),
         },
         funds.as_deref(),
@@ -90,10 +91,10 @@ pub fn abstract_ibc_connection_with<Chain: IbcQueryHandler, IBC: InterchainEnv<C
     polytone_src: &Polytone<Chain>,
 ) -> Result<(), InterchainError> {
     // First we register client and host respectively
-    let chain1_id = abstr.ibc.client.get_chain().chain_id();
+    let chain1_id = abstr.ibc.client.environment().chain_id();
     let chain1_name = ChainName::from_chain_id(&chain1_id);
 
-    let chain2_id = dest.ibc.client.get_chain().chain_id();
+    let chain2_id = dest.ibc.client.environment().chain_id();
     let chain2_name = ChainName::from_chain_id(&chain2_id);
 
     // First, we register the host with the client.
@@ -163,9 +164,9 @@ pub fn ibc_abstract_setup<Chain: IbcQueryHandler, IBC: InterchainEnv<Chain>>(
 
     // Deploying abstract and the IBC abstract logic
     let abstr_origin =
-        Abstract::deploy_on(origin_chain.clone(), origin_chain.sender().to_string())?;
+        Abstract::deploy_on(origin_chain.clone(), origin_chain.sender_addr().to_string())?;
     let abstr_remote =
-        Abstract::deploy_on(remote_chain.clone(), remote_chain.sender().to_string())?;
+        Abstract::deploy_on(remote_chain.clone(), remote_chain.sender_addr().to_string())?;
 
     // Deploying polytone on both chains
     Polytone::deploy_on(origin_chain.clone(), None)?;
@@ -201,18 +202,18 @@ pub fn create_app(sender_balance: Vec<Coin>, vault: Option<String>) -> anyhow::R
     let vault = if let Some(vault) = vault {
         mock.chain(OSMOSIS)?.addr_make(vault)
     } else {
-        mock.chain(OSMOSIS)?.sender()
+        mock.chain(OSMOSIS)?.sender_addr()
     };
-    let owner = mock.chain(OSMOSIS)?.sender();
+    let owner = mock.chain(OSMOSIS)?.sender_addr();
 
     if !sender_balance.is_empty() {
         mock.chain(OSMOSIS)?
-            .set_balance(&mock.chain(OSMOSIS)?.sender(), sender_balance)?;
+            .set_balance(&mock.chain(OSMOSIS)?.sender_addr(), sender_balance)?;
     }
 
     let app = LstAdapterInterface::new(
         LST_ADAPTER_OSMOSIS_ID,
-        abstr_origin.version_control.get_chain().clone(),
+        abstr_origin.version_control.environment().clone(),
     );
 
     abstr_origin.version_control.claim_namespace(
