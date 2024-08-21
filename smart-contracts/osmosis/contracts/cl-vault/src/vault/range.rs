@@ -135,6 +135,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         .add_attribute("upper_tick", modify_range_state.upper_tick.to_string())
         .add_attribute("token0", format!("{}", base_coin))
         .add_attribute("token1", format!("{}", quote_coin));
+
     if requires_swap(
         sqrt_p,
         sqrt_pl,

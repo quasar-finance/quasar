@@ -115,10 +115,6 @@ pub fn get_liquidity_for_base_token(
     sqrt_pl: Decimal256,
     sqrt_pu: Decimal256,
 ) -> Result<Uint256, ContractError> {
-    debug_assert!(
-        sqrt_p < sqrt_pu,
-        "can't compute liquidity if sqrt_p >= sqrt_pu"
-    );
     if sqrt_p >= sqrt_pu {
         return Ok(Uint256::MAX);
     }
@@ -133,10 +129,6 @@ pub fn get_liquidity_for_quote_token(
     sqrt_pl: Decimal256,
     sqrt_pu: Decimal256,
 ) -> Result<Uint256, ContractError> {
-    debug_assert!(
-        sqrt_p > sqrt_pl,
-        "can't compute liquidity if sqrt_p <= sqrt_pl"
-    );
     if sqrt_p <= sqrt_pl {
         return Ok(Uint256::MAX);
     }
