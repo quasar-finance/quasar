@@ -62,7 +62,11 @@ x/qtransfer, x/epochs and x/tokenfactory module are utilised from the osmosis x/
 In order to run test-tube the following dependencies are required:
 * `sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev curl clang libclang-dev`
 * go1.21 ([see here](https://go.dev/doc/install))
-* libwasmvm ([see here](https://github.com/CosmWasm/wasmvm) -- !Instructions don't cover installation, copy the files to your desired install location or add the subfolder `wasmvm/internal/api` to your library paths) 
+* libwasmvm ([see here](https://github.com/CosmWasm/wasmvm) -- !Instructions don't cover installation, copy the files to your desired install location or add the subfolder `wasmvm/internal/api` to your library paths)
+
+In order to speed up compilation times you can try to out [cachepot](https://github.com/paritytech/cachepot):
+* install: `cargo install --git https://github.com/paritytech/cachepot`
+* use: `export RUSTC_WRAPPER="cachepot"`
 
 ## Git hooks
 To automatically use both the pre-commit hook and the post-merge hook, you can adjust the hook path of git: `git config core.hooksPath ${PWD}/scripts/git`.
