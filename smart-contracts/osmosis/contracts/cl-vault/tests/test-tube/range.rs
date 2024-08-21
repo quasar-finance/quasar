@@ -51,7 +51,7 @@ fn move_range_works() {
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                 lower_price: Decimal::from_str("0.65").unwrap(),
                 upper_price: Decimal::from_str("1.3").unwrap(),
-                max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
+                max_slippage: Decimal::percent(89),
                 ratio_of_swappable_funds_to_use: Decimal::one(),
                 twap_window_seconds: 45,
                 forced_swap_route: None,
@@ -74,7 +74,7 @@ fn move_range_works() {
             );
             assert_eq!(
                 event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
-                "201280"
+                "199044"
             );
         }
 
@@ -85,11 +85,11 @@ fn move_range_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "141894uatom"
+                "776354uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
-                "201280ubtc"
+                "1201279ubtc"
             );
         }
     }
@@ -104,7 +104,7 @@ fn move_range_works() {
         .unwrap();
     assert_eq!(response.position_ids.len(), 1);
     let position_id = response.position_ids[0];
-    assert_eq!(position_id, 5u64);
+    assert_eq!(position_id, 3u64);
 
     let cl = ConcentratedLiquidity::new(&app);
     let pos = cl
@@ -114,8 +114,8 @@ fn move_range_works() {
         .unwrap();
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
-    assert_eq!(pos_base, coin(762163u128, DENOM_BASE));
-    assert_eq!(pos_quote, coin(1201277u128, DENOM_QUOTE));
+    assert_eq!(pos_base, coin(762164u128, DENOM_BASE));
+    assert_eq!(pos_quote, coin(1201279u128, DENOM_QUOTE));
 }
 
 #[test]
@@ -180,7 +180,7 @@ fn move_range_cw_dex_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "899999uatom"
+                "1899998uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
@@ -199,7 +199,7 @@ fn move_range_cw_dex_works() {
         .unwrap();
     assert_eq!(response.position_ids.len(), 1);
     let position_id = response.position_ids[0];
-    assert_eq!(position_id, 5u64);
+    assert_eq!(position_id, 3u64);
 
     let cl = ConcentratedLiquidity::new(&app);
     let pos = cl
@@ -209,7 +209,7 @@ fn move_range_cw_dex_works() {
         .unwrap();
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
-    assert_eq!(pos_base, coin(1899996u128, DENOM_BASE));
+    assert_eq!(pos_base, coin(1899998u128, DENOM_BASE));
     assert_eq!(pos_quote, coin(0u128, DENOM_QUOTE));
 }
 
@@ -283,7 +283,7 @@ fn move_range_cw_dex_works_forced_swap_route() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "899999uatom"
+                "1899998uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
@@ -301,7 +301,7 @@ fn move_range_cw_dex_works_forced_swap_route() {
         .unwrap();
     assert_eq!(response.position_ids.len(), 1);
     let position_id = response.position_ids[0];
-    assert_eq!(position_id, 5u64);
+    assert_eq!(position_id, 3u64);
 
     let cl = ConcentratedLiquidity::new(&app);
     let pos = cl
@@ -311,7 +311,7 @@ fn move_range_cw_dex_works_forced_swap_route() {
         .unwrap();
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
-    assert_eq!(pos_base, coin(1899996u128, DENOM_BASE));
+    assert_eq!(pos_base, coin(1899998u128, DENOM_BASE));
     assert_eq!(pos_quote, coin(0u128, DENOM_QUOTE));
 }
 
@@ -361,7 +361,7 @@ fn move_range_single_side_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "899999uatom"
+                "1899998uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
@@ -395,11 +395,11 @@ fn move_range_single_side_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
-                "1899995uatom"
+                "1899997uatom"
             );
             assert_eq!(
                 event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
-                "1709995"
+                "1709997"
             );
         }
 
@@ -414,7 +414,7 @@ fn move_range_single_side_works() {
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
-                "1709995ubtc"
+                "1709997ubtc"
             );
         }
     }
@@ -429,7 +429,7 @@ fn move_range_single_side_works() {
         .unwrap();
     assert_eq!(response.position_ids.len(), 1);
     let position_id = response.position_ids[0];
-    assert_eq!(position_id, 7u64);
+    assert_eq!(position_id, 4u64);
 
     let cl = ConcentratedLiquidity::new(&app);
     let pos = cl
@@ -440,7 +440,7 @@ fn move_range_single_side_works() {
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
     assert_eq!(pos_base, coin(0u128, DENOM_BASE));
-    assert_eq!(pos_quote, coin(1709994u128, DENOM_QUOTE));
+    assert_eq!(pos_quote, coin(1709997u128, DENOM_QUOTE));
 }
 
 /*

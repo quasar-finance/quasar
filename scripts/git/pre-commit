@@ -17,15 +17,15 @@ fi
 update_schemas() {
   local workspace=$1
   local contract=$2
-  if [[ $CHANGES == *${workspace}/contracts/${contract}/src/msg.rs* ]]
+  if [[ $CHANGES == *${workspace}/contracts/${contract}/* ]]
   then
     echo "Changes in ${contract} contract"
     cd ${REPO_ROOT}/smart-contracts/${workspace}/contracts/${contract}
 
     # generate schemas
     cargo schema
-    NEW_CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
-    if [[ $NEW_CHANGES == *schema/* ]]
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=$DIFF_FILTER)
+    if [[ $NEW_CHANGES == *${workspace}/contracts/${contract}/schema* ]]
     then
       git add schema
     else
@@ -75,12 +75,14 @@ check_lint() {
 }
 
 update_schemas osmosis lst-dex-adapter-osmosis
+update_schemas osmosis lst-adapter-osmosis
 update_schemas osmosis dex-router-osmosis
 update_schemas osmosis token-burner
 update_schemas osmosis cl-vault
 update_schemas osmosis merkle-incentives
 update_schemas osmosis range-middleware
 fix_formatting osmosis/contracts/lst-dex-adapter-osmosis
+fix_formatting osmosis/contracts/lst-adapter-osmosis
 fix_formatting osmosis/contracts/dex-router-osmosis
 fix_formatting osmosis/contracts/token-burner
 fix_formatting osmosis/contracts/cl-vault
@@ -89,6 +91,7 @@ fix_formatting osmosis/contracts/range-middleware
 fix_formatting osmosis/packages/quasar-types
 fix_formatting quasar/proto-build
 check_lint osmosis/contracts/lst-dex-adapter-osmosis
+check_lint osmosis/contracts/lst-adapter-osmosis
 check_lint osmosis/contracts/dex-router-osmosis
 check_lint osmosis/contracts/token-burner
 check_lint osmosis/contracts/cl-vault

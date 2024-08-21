@@ -269,7 +269,7 @@ fn test_claim_multiple_deposits_and_random_donation() -> anyhow::Result<()> {
     assert_eq!(app.balance_in_underlying()?, expected_contract_balance);
 
     assert!(app.claim().is_ok());
-    let claimed = osmosis.query_balance(&osmosis.sender(), DENOM)?;
+    let claimed = osmosis.query_balance(&osmosis.sender_addr(), DENOM)?;
     assert_eq!(claimed, redeemable0 + donation);
 
     assert_eq!(app.balance_in_underlying()?, redeemable1);
@@ -303,7 +303,7 @@ fn test_claim_works_unbond_is_finished_and_funds_are_available() -> anyhow::Resu
     assert_eq!(app.balance_in_underlying()?, total_redeem_amount);
 
     assert!(app.claim().is_ok());
-    let balance = osmosis.query_balance(&osmosis.sender(), DENOM)?;
+    let balance = osmosis.query_balance(&osmosis.sender_addr(), DENOM)?;
     assert_eq!(balance, underlying_balance);
 
     let expected_contract_balance = Uint128::zero();
