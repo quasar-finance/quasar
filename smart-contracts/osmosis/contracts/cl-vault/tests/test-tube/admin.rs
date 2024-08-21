@@ -11,8 +11,7 @@ use osmosis_test_tube::{Module, Wasm};
 
 #[test]
 fn admin_build_tick_cache_works() {
-    let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let build_resp = wasm

@@ -335,7 +335,7 @@ proptest! {
         percentages in get_percentage_list(),
         account_indexes in get_account_index_list()
     ) {
-        let (app, contract_address, _cl_pool_id, admin_account, _deposit_ratio, _deposit_ratio_approx) = init_test_contract(
+        let (app, contract_address, _cl_pool_id, admin_account, _) = init_test_contract(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
             &[
                 Coin::new(340282366920938463463374607431768211455, "uosmo"),

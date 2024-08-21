@@ -25,7 +25,7 @@ fn test_any_deposit() {
     ];
 
     for (amount_base, amount_quote) in test_cases {
-        let (app, contract_address, _dex_router_addr, vault_pool_id, _pools_ids, admin, _, _) =
+        let (app, contract_address, _dex_router_addr, vault_pool_id, _pools_ids, admin, _) =
             fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 
         do_and_verify_any_deposit(
@@ -200,7 +200,7 @@ fn test_any_deposit_slippage_fails() {
     ];
 
     for (amount_base, amount_quote) in test_cases {
-        let (app, contract_address, _dex_router_addr, _vault_pool_id, _pools_ids, _admin, _, _) =
+        let (app, contract_address, _dex_router_addr, _vault_pool_id, _pools_ids, _admin, _) =
             fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 
         do_any_deposit(

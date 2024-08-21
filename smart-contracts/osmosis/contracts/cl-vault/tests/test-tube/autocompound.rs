@@ -26,6 +26,7 @@ use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
 const DENOM_REWARD_AMOUNT: u128 = 100_000_000_000;
+const APPROX_EQ_FACTOR: &str = "0.00005";
 
 #[test]
 fn test_autocompound_with_rewards_swap_non_vault_funds() {
@@ -37,7 +38,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         swap_pools_ids,
         admin,
         deposit_ratio_base,
-        deposit_ratio_approx,
     ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let bm = Bank::new(&app);
     let wasm = Wasm::new(&app);
@@ -130,7 +130,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                     .unwrap()
                     .u128(),
                 expected_refund0,
-                &deposit_ratio_approx
+                APPROX_EQ_FACTOR
             );
             refund0_amount_parsed = refund0_amount[0].value.parse::<u128>().unwrap();
             refund0_amount_total = refund0_amount_total
@@ -145,12 +145,11 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
             get_event_attributes_by_ty_and_key(&exact_deposit, "wasm", vec!["refund1"]);
         let mut refund1_amount_parsed: u128 = 0;
         if expected_refund1 > 0 {
-            assert_approx_eq!(
+            assert_eq!(
                 Uint128::from_str(refund1_amount[0].value.as_str())
                     .unwrap()
                     .u128(),
-                expected_refund1,
-                &deposit_ratio_approx
+                expected_refund1
             );
             refund1_amount_parsed = refund1_amount[0].value.parse::<u128>().unwrap();
             refund1_amount_total = refund1_amount_total
@@ -321,21 +320,19 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     let after_swap_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
-    assert_approx_eq!(
+    assert_eq!(
         after_deposit_base_balance
             .checked_add(swap_token_in_amount.into())
             .unwrap(),
-        after_swap_base_balance,
-        &deposit_ratio_approx
+        after_swap_base_balance
     );
     let after_swap_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
-    assert_approx_eq!(
+    assert_eq!(
         after_deposit_quote_balance
             .checked_add(swap_token_in_amount.into())
             .unwrap(),
-        after_swap_quote_balance,
-        &deposit_ratio_approx
+        after_swap_quote_balance
     );
 
     // Query contract to convert the same amount of LP token supply into assets after swapping non vault funds
@@ -349,21 +346,19 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         .unwrap();
 
     // Check shares value of underlying assets increased after swapping non vault funds
-    assert_approx_eq!(
+    assert_eq!(
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
             .add(swap_token_in_amount.u128()),
         after_swap_total_assets.balances[0].amount.u128(),
-        &deposit_ratio_approx
     );
-    assert_approx_eq!(
+    assert_eq!(
         users_total_deposit_per_asset
             .sub(refund1_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
             .add(swap_token_in_amount.u128()),
         after_swap_total_assets.balances[1].amount.u128(),
-        &deposit_ratio_approx
     );
 
     // AUTOCOMPOUND CONTRACT BALANCE ASSETS INTO POSITION
@@ -458,7 +453,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                     .amount
                     .u128()
                     .div(ACCOUNTS_NUM as u128),
-                &deposit_ratio_approx
+                APPROX_EQ_FACTOR
             );
             let after_withdraw_quote_balance =
                 get_balance_amount(&app, account.address().to_string(), DENOM_QUOTE.to_string());
@@ -470,7 +465,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                     .amount
                     .u128()
                     .div(ACCOUNTS_NUM as u128),
-                &deposit_ratio_approx
+                APPROX_EQ_FACTOR
             );
         } else {
             panic!("User has no shares to redeem")

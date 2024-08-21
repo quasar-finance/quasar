@@ -12,8 +12,7 @@ use osmosis_test_tube::{Account, Module, Wasm};
 
 #[test]
 fn single_deposit_withdraw_works() {
-    let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let alice = app
@@ -195,8 +194,7 @@ fn single_deposit_withdraw_works() {
 
 #[test]
 fn multiple_deposit_withdraw_works() {
-    let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     // Create Alice account
@@ -324,8 +322,7 @@ fn multiple_deposit_withdraw_works() {
 
 #[test]
 fn multiple_deposit_withdraw_unused_funds_works() {
-    let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     // Create 3 accounts

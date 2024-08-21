@@ -38,9 +38,7 @@ pub const DEPOSIT_AMOUNT: u128 = 5_000_000_000;
 
 pub const INITIAL_POSITION_BURN: u128 = 1_000_000;
 
-pub fn fixture_default(
-    performance_fee: u64,
-) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
+pub fn fixture_default(performance_fee: u64) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64) {
     init_test_contract(
         "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
         &[
@@ -86,7 +84,6 @@ pub fn fixture_dex_router(
     Vec<u64>,
     SigningAccount,
     f64,
-    String,
 ) {
     init_test_contract_with_dex_router_and_swap_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
@@ -137,7 +134,7 @@ pub fn init_test_contract(
     token_min_amount0: Uint128,
     token_min_amount1: Uint128,
     performance_fee: u64,
-) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64, String) {
+) -> (OsmosisTestApp, Addr, u64, SigningAccount, f64) {
     // Create new osmosis appchain instance
     let app = OsmosisTestApp::new();
     let pm = PoolManager::new(&app);
@@ -205,7 +202,7 @@ pub fn init_test_contract(
         .unwrap();
     assert_eq!(spot_price.spot_price, "1.000000000000000000");
 
-    let (deposit_ratio, deposit_ratio_approx) = calculate_deposit_ratio(
+    let deposit_ratio_base = calculate_deposit_ratio(
         spot_price.spot_price,
         tokens_provided,
         create_position.data.amount0,
@@ -254,8 +251,7 @@ pub fn init_test_contract(
         Addr::unchecked(contract.data.address),
         vault_pool.id,
         admin,
-        deposit_ratio,
-        deposit_ratio_approx,
+        deposit_ratio_base,
     )
 }
 
@@ -279,7 +275,6 @@ fn init_test_contract_with_dex_router_and_swap_pools(
     Vec<u64>,
     SigningAccount,
     f64,
-    String,
 ) {
     // Create new osmosis appchain instance
     let app = OsmosisTestApp::new();
@@ -401,7 +396,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
         .unwrap();
     assert_eq!(spot_price.spot_price, "1.000000000000000000");
 
-    let (deposit_ratio, deposit_ratio_approx) = calculate_deposit_ratio(
+    let deposit_ratio_base = calculate_deposit_ratio(
         spot_price.spot_price,
         tokens_provided,
         create_position.data.amount0,
@@ -473,8 +468,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
         vault_pool.id,
         lp_pools,
         admin,
-        deposit_ratio,
-        deposit_ratio_approx,
+        deposit_ratio_base,
     )
 }
 
@@ -547,7 +541,7 @@ pub fn calculate_deposit_ratio(
     amount1_deposit: String,
     denom_base: String,
     denom_quote: String,
-) -> (f64, String) {
+) -> f64 {
     // Parse the input amounts
     let amount0_deposit: u128 = amount0_deposit.parse().unwrap();
     let amount1_deposit: u128 = amount1_deposit.parse().unwrap();
@@ -586,26 +580,23 @@ pub fn calculate_deposit_ratio(
         2.0 * total_refunds_in_token0 / total_attempted_deposit_in_token0
     };
 
-    // TODO: Compute this based on tokens_provided size
-    let ratio_approx: String = "0.02".to_string();
-
-    (ratio, ratio_approx)
+    ratio
 }
 
 pub fn calculate_expected_refunds(
     initial_amount0: u128,
     initial_amount1: u128,
-    deposit_ratio: f64,
+    deposit_ratio_base: f64,
 ) -> (u128, u128) {
-    if deposit_ratio < 0.5 {
+    if deposit_ratio_base < 0.5 {
         // More token1 to be deposited, so token0 has a higher refund
-        let adjusted_amount0 = ((1.0 - deposit_ratio) * initial_amount0 as f64) as u128;
+        let adjusted_amount0 = ((1.0 - deposit_ratio_base) * initial_amount0 as f64) as u128;
         let expected_refund0 = initial_amount0 - adjusted_amount0;
         (expected_refund0, 0)
-    } else if deposit_ratio > 0.5 {
+    } else if deposit_ratio_base > 0.5 {
         // More token0 to be deposited, so token1 has a higher refund
         let adjusted_amount1 =
-            ((1.0 - (deposit_ratio - 0.5) * 2.0) * initial_amount1 as f64) as u128;
+            ((1.0 - (deposit_ratio_base - 0.5) * 2.0) * initial_amount1 as f64) as u128;
         let expected_refund1 = initial_amount1 - adjusted_amount1;
         (0, expected_refund1)
     } else {

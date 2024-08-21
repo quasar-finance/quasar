@@ -32,8 +32,7 @@ fn test_collect_rewards_with_rewards_full_works() {
 }
 
 fn collect_rewards_with_rewards(performance_fee: u64) {
-    let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(performance_fee);
+    let (app, contract_address, cl_pool_id, admin, _) = fixture_default(performance_fee);
 
     // Initialize accounts
     let utility_account = app
@@ -150,8 +149,7 @@ fn collect_rewards_with_rewards(performance_fee: u64) {
 
 #[test]
 fn test_collect_rewards_no_rewards_works() {
-    let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
 
     // Initialize accounts
     let accounts = app
