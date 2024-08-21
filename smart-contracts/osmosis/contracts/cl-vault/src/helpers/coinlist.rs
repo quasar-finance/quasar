@@ -153,9 +153,9 @@ impl CoinList {
 
     pub fn find_coin(&self, denom: String) -> Coin {
         self.0
-            .clone()
-            .into_iter()
+            .iter()
             .find(|c| c.denom == denom)
+            .cloned()
             .unwrap_or(Coin {
                 denom,
                 amount: 0u128.into(),
