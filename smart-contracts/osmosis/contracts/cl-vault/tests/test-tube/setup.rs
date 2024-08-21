@@ -574,13 +574,11 @@ pub fn calculate_deposit_ratio(
         provided_amount0 as f64 + (provided_amount1 as f64 / spot_price_value);
 
     // Calculate the ratio of total refunds in terms of token0 to total attempted deposits in terms of token0
-    let ratio = if total_attempted_deposit_in_token0 == 0.0 {
+    if total_attempted_deposit_in_token0 == 0.0 {
         0.5 // Balanced deposit
     } else {
         2.0 * total_refunds_in_token0 / total_attempted_deposit_in_token0
-    };
-
-    ratio
+    }
 }
 
 pub fn calculate_expected_refunds(
