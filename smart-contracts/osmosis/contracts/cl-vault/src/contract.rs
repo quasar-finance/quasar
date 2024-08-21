@@ -11,8 +11,7 @@ use crate::query::{
     query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-#[allow(deprecated)]
-use crate::state::{MigrationStatus, MIGRATION_STATUS};
+use crate::state::{VaultConfig, VAULT_CONFIG};
 use crate::vault::{
     admin::execute_admin,
     autocompound::{
@@ -34,10 +33,14 @@ use crate::vault::{
     swap::execute_swap_non_vault_funds,
     withdraw::{execute_withdraw, handle_withdraw_user_reply},
 };
+use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
+use cosmwasm_std::{
+    to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+};
 use cw2::set_contract_version;
+use cw_storage_plus::Item;
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -124,7 +127,7 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
                     swap_operations,
                     twap_window_seconds,
-                } => execute_swap_non_vault_funds(deps, env, swap_operations, twap_window_seconds),
+                } => execute_swap_non_vault_funds(deps, env, info, swap_operations, twap_window_seconds),
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
@@ -218,8 +221,27 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    MIGRATION_STATUS.save(deps.storage, &MigrationStatus::Open)?;
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    #[cw_serde]
+    struct OldVaultConfig {
+        pub performance_fee: Decimal,
+        pub treasury: Addr,
+        pub swap_max_slippage: Decimal,
+        pub dex_router: Addr,
+    }
+    const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
+    let old_vault_config: OldVaultConfig = OLD_VAULT_CONFIG.load(deps.storage)?;
+
+    VAULT_CONFIG.save(
+        deps.storage,
+        &VaultConfig {
+            performance_fee: old_vault_config.performance_fee,
+            treasury: old_vault_config.treasury,
+            swap_max_slippage: old_vault_config.swap_max_slippage,
+            dex_router: old_vault_config.dex_router,
+            swap_admin: msg.swap_admin,
+        },
+    )?;
 
     let response = Response::new().add_attribute("migrate", "successful");
     Ok(response)

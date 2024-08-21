@@ -224,6 +224,7 @@ pub fn mock_deps_with_querier_with_balance(
                 treasury: Addr::unchecked("treasure"),
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
                 dex_router: Addr::unchecked("dex_router"),
+                swap_admin: Addr::unchecked("swap_admin"),
             },
         )
         .unwrap();
@@ -318,6 +319,7 @@ pub fn mock_deps_with_querier(
                 treasury: Addr::unchecked("treasure"),
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
                 dex_router: Addr::unchecked("dex_router"),
+                swap_admin: Addr::unchecked("swap_admin"),
             },
         )
         .unwrap();

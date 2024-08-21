@@ -332,6 +332,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
+            swap_admin: Addr::unchecked("old_swap_admin"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -344,6 +345,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("new_dex_router"),
+            swap_admin: Addr::unchecked("new_swap_admin"),
         };
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
@@ -362,6 +364,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
+            swap_admin: Addr::unchecked("old_swap_admin"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -374,6 +377,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("new_dex_router"),
+            swap_admin: Addr::unchecked("new_swap_admin"),
         };
         let info_not_admin = mock_info("not_admin", &[]);
 
@@ -392,6 +396,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
+            swap_admin: Addr::unchecked("old_swap_admin"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -404,6 +409,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(200u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("new_dex_router"),
+            swap_admin: Addr::unchecked("new_swap_admin"),
         };
 
         let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
@@ -420,6 +426,7 @@ mod tests {
             performance_fee: Decimal::new(Uint128::from(100u128)),
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
+            swap_admin: Addr::unchecked("old_swap_admin"),
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();

@@ -228,7 +228,8 @@ pub fn init_test_contract(
                     performance_fee: Decimal::percent(performance_fee),
                     treasury: Addr::unchecked(admin.address()),
                     swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
-                    dex_router: Addr::unchecked(admin.address()), // Just to fulfill bech32 requirement
+                    dex_router: Addr::unchecked(admin.address()),
+                    swap_admin: Addr::unchecked(admin.address()),
                 },
                 vault_token_subdenom: "utestvault".to_string(),
                 range_admin: admin.address(),
@@ -445,6 +446,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
                     treasury: Addr::unchecked(admin.address()),
                     swap_max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                     dex_router: Addr::unchecked(contract_dex_router.clone().data.address),
+                    swap_admin: Addr::unchecked(admin.address()),
                 },
                 vault_token_subdenom: "utestvault".to_string(),
                 range_admin: admin.address(),

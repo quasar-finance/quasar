@@ -178,5 +178,5 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub dex_router: Addr,
+    pub swap_admin: Addr,
 }
