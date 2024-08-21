@@ -135,6 +135,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         .add_attribute("upper_tick", modify_range_state.upper_tick.to_string())
         .add_attribute("token0", format!("{}", base_coin))
         .add_attribute("token1", format!("{}", quote_coin));
+
     if requires_swap(
         sqrt_p,
         sqrt_pl,
@@ -145,10 +146,12 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         quote_liquidity,
     ) {
         let twap_price = get_twap_price(
-            deps.storage,
             &deps.querier,
-            &env,
+            env.block.time,
             modify_range_state.twap_window_seconds,
+            pool_config.pool_id,
+            pool_config.token0,
+            pool_config.token1,
         )?;
         let (token_in, out_denom, price) = if sqrt_p <= sqrt_pl {
             (

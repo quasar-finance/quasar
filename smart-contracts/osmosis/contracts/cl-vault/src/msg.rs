@@ -29,7 +29,10 @@ pub enum ExtensionExecuteMsg {
     /// MigrationStep
     MigrationStep { amount_of_users: Uint128 },
     /// SwapNonVaultFunds
-    SwapNonVaultFunds { swap_operations: Vec<SwapOperation> },
+    SwapNonVaultFunds {
+        swap_operations: Vec<SwapOperation>,
+        twap_window_seconds: Option<u64>,
+    },
 }
 
 /// Extension messages for Authz. This interface basically reexports certain vault functionality
@@ -100,10 +103,10 @@ pub struct MergePositionMsg {
 #[cw_serde]
 pub struct SwapOperation {
     pub token_in_denom: String,
-    pub pool_id_0: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub pool_id_1: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
-    pub forced_swap_route_token_0: Option<Vec<SwapAmountInRoute>>,
-    pub forced_swap_route_token_1: Option<Vec<SwapAmountInRoute>>,
+    pub pool_id_base: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub pool_id_quote: u64, // the osmosis pool_id as mandatory to have at least the chance to swap on CL pools
+    pub forced_swap_route_base: Option<Vec<SwapAmountInRoute>>,
+    pub forced_swap_route_quote: Option<Vec<SwapAmountInRoute>>,
 }
 
 /// Extension query messages for an apollo autocompounding vault
@@ -175,5 +178,5 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
-    pub dex_router: Addr,
+    pub swap_admin: Addr,
 }

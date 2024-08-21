@@ -17,14 +17,14 @@ use std::str::FromStr;
 #[test]
 fn test_any_deposit() {
     let test_cases = vec![
-        (DENOM_BASE, Uint128::new(10000), Uint128::zero()),
-        (DENOM_QUOTE, Uint128::new(5000), Uint128::zero()),
-        (DENOM_BASE, Uint128::new(2000), Uint128::zero()),
-        (DENOM_QUOTE, Uint128::new(1500), Uint128::zero()),
-        (DENOM_BASE, Uint128::new(1000), Uint128::new(500)),
+        (Uint128::new(10000), Uint128::zero()),
+        (Uint128::new(5000), Uint128::zero()),
+        (Uint128::new(2000), Uint128::zero()),
+        (Uint128::new(1500), Uint128::zero()),
+        (Uint128::new(1000), Uint128::new(500)),
     ];
 
-    for (_asset, amount_base, amount_quote) in test_cases {
+    for (amount_base, amount_quote) in test_cases {
         let (app, contract_address, _dex_router_addr, vault_pool_id, _pools_ids, admin, _, _) =
             fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 
@@ -192,14 +192,14 @@ fn do_any_deposit(
 #[test]
 fn test_any_deposit_slippage_fails() {
     let test_cases = vec![
-        (DENOM_BASE, Uint128::new(10000), Uint128::zero()),
-        (DENOM_QUOTE, Uint128::new(5000), Uint128::zero()),
-        (DENOM_BASE, Uint128::new(2000), Uint128::zero()),
-        (DENOM_QUOTE, Uint128::new(1500), Uint128::zero()),
-        (DENOM_BASE, Uint128::new(1000), Uint128::new(500)),
+        (Uint128::new(10000), Uint128::zero()),
+        (Uint128::new(5000), Uint128::zero()),
+        (Uint128::new(2000), Uint128::zero()),
+        (Uint128::new(1500), Uint128::zero()),
+        (Uint128::new(1000), Uint128::new(500)),
     ];
 
-    for (_asset, amount_base, amount_quote) in test_cases {
+    for (amount_base, amount_quote) in test_cases {
         let (app, contract_address, _dex_router_addr, _vault_pool_id, _pools_ids, _admin, _, _) =
             fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 

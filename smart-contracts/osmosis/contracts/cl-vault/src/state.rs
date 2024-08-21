@@ -25,9 +25,10 @@ pub struct VaultConfig {
     pub treasury: Addr,
     pub swap_max_slippage: Decimal,
     pub dex_router: Addr,
+    pub swap_admin: Addr,
 }
 
-pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config_v2");
+pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 #[cw_serde]

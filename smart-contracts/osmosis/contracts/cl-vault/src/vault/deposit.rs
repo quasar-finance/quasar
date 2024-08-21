@@ -1,8 +1,9 @@
 use crate::{
     helpers::{
         getters::{
-            get_asset0_value, get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, DepositInfo,
+            get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_value_wrt_asset0,
+            DepositInfo,
         },
         msgs::refund_bank_msg,
     },
@@ -56,7 +57,14 @@ pub(crate) fn execute_any_deposit(
         return execute_deposit(&mut deps, env, recipient, deposit_info);
     }
 
-    let twap_price = get_twap_price(deps.storage, &deps.querier, &env, 24u64)?;
+    let twap_price = get_twap_price(
+        &deps.querier,
+        env.block.time,
+        24u64,
+        pool_config.pool_id,
+        pool_config.clone().token0,
+        pool_config.clone().token1,
+    )?;
     let (token_in, out_denom, remainder, price) = if !deposit_info.base_refund.amount.is_zero() {
         let token_in_amount = if pool_details.current_tick > position.upper_tick {
             deposit_info.base_refund.amount
@@ -135,7 +143,7 @@ pub(crate) fn execute_any_deposit(
             attr("method", "execute"),
             attr("action", "any_deposit"),
             attr("token_in", format!("{}", token_in)),
-            attr("token_out_min", format!("{}", token_out_min_amount)),
+            attr("token_out_min_amount", format!("{}", token_out_min_amount)),
         ]))
 }
 
@@ -199,13 +207,13 @@ fn execute_deposit(
     let vault_denom = VAULT_DENOM.load(deps.storage)?;
     let total_vault_shares: Uint256 = query_total_vault_token_supply(deps.as_ref())?.total.into();
 
-    let user_value = get_asset0_value(
+    let user_value = get_value_wrt_asset0(
         deps.storage,
         &deps.querier,
         deposit_info.base_deposit,
         deposit_info.quote_deposit,
     )?;
-    let refund_value = get_asset0_value(
+    let refund_value = get_value_wrt_asset0(
         deps.storage,
         &deps.querier,
         deposit_info.base_refund.amount,
@@ -214,7 +222,7 @@ fn execute_deposit(
 
     // calculate the amount of shares we can mint for this
     let total_assets = query_total_assets(deps.as_ref(), env.clone())?;
-    let total_assets_value = get_asset0_value(
+    let total_assets_value = get_value_wrt_asset0(
         deps.storage,
         &deps.querier,
         total_assets.token0.amount,

@@ -12,7 +12,7 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
 };
 
 use crate::helpers::assert::must_pay_one_or_two;
-use crate::helpers::getters::get_asset0_value;
+use crate::helpers::getters::get_value_wrt_asset0;
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
@@ -150,7 +150,7 @@ pub fn handle_instantiate_create_position_reply(
         .querier
         .query_balance(&env.contract.address, assets[1].denom.clone())?;
 
-    let asset_value = get_asset0_value(
+    let asset_value = get_value_wrt_asset0(
         deps.storage,
         &deps.querier,
         assets[0].amount + free_asset0.amount,
