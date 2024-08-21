@@ -271,7 +271,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
-    // Calculate the total rewards swap amount using balanced_fee configs (0.01 is coming from osmosis as flat fee)
+    // Calculate the total rewards swap amount using 0.01 as swap_fee as osmosis_test_tube hardcodes it this way: https://github.com/osmosis-labs/test-tube/blob/main/packages/osmosis-test-tube/src/module/gamm.rs#L59
     const BALANCER_FEE_RATE: f64 = 0.01;
     const INITIAL_AMOUNT: f64 = 1_000_000.0;
     let adjusted_numerator = ((1.0 - BALANCER_FEE_RATE) * INITIAL_AMOUNT) as u128;
