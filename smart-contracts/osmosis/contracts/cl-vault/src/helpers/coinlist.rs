@@ -1,12 +1,12 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Attribute, BankMsg, Coin, CosmosMsg, Decimal, Fraction, Uint128};
+use cosmwasm_std::{
+    coin, Attribute, BankMsg, CheckedMultiplyFractionError, Coin, CosmosMsg, Decimal, Uint128,
+};
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 
 use crate::ContractError;
 
 use super::generic::sort_tokens;
-
-/// COIN LIST
 
 #[cw_serde]
 #[derive(Default)]
@@ -18,25 +18,23 @@ impl CoinList {
     }
 
     /// calculates the ratio of the current rewards
-    pub fn mul_ratio(&self, ratio: Decimal) -> CoinList {
+    pub fn mul_ratio(&self, ratio: Decimal) -> Result<CoinList, CheckedMultiplyFractionError> {
         if ratio == Decimal::zero() {
             // Return an empty list if the ratio is zero.
-            return CoinList::new();
+            return Ok(CoinList::new());
         }
 
-        CoinList(
-            self.0
-                .iter()
-                .map(|c| {
-                    coin(
-                        c.amount
-                            .multiply_ratio(ratio.numerator(), ratio.denominator())
-                            .u128(),
-                        c.denom.clone(),
-                    )
-                })
-                .collect(),
-        )
+        let coins: Result<Vec<_>, _> = self
+            .0
+            .iter()
+            .map(|c| -> Result<Coin, CheckedMultiplyFractionError> {
+                Ok(coin(
+                    c.amount.checked_mul_floor(ratio)?.u128(),
+                    c.denom.clone(),
+                ))
+            })
+            .collect();
+        Ok(CoinList(coins?))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -50,24 +48,10 @@ impl CoinList {
             .map(|c| Ok(coin(c.amount.parse()?, c.denom.clone())))
             .collect();
 
-        // Append and merge to
         self.merge(parsed_rewards?)?;
         Ok(())
     }
 
-    pub fn update_rewards_coin_list(&mut self, rewards: CoinList) -> Result<(), ContractError> {
-        let parsed_rewards: Result<Vec<Coin>, ContractError> = rewards
-            .coins()
-            .into_iter()
-            .map(|c| Ok(coin(c.amount.u128(), c.denom)))
-            .collect();
-
-        // Append and merge to
-        self.merge(parsed_rewards?)?;
-        Ok(())
-    }
-
-    /// add rewards to self and mutate self
     pub fn add(&mut self, rewards: CoinList) -> Result<(), ContractError> {
         self.merge(rewards.coins())?;
         Ok(())
@@ -85,20 +69,17 @@ impl CoinList {
         Ok(())
     }
 
-    /// Subtracts a percentage from self, mutate self and return the subtracted rewards,
-    /// excluding any coins with zero amounts.
+    /// Subtracts a percentage from self and return the subtracted rewards,
     pub fn sub_ratio(&mut self, ratio: Decimal) -> Result<CoinList, ContractError> {
-        let to_sub = self.mul_ratio(ratio);
-
-        // Actually subtract the funds
+        let to_sub = self.mul_ratio(ratio)?;
         self.sub(&to_sub)?;
 
-        // Return only coins with non-zero amounts, filtering out any zeros that might result from the subtraction.
         Ok(CoinList(
             to_sub
                 .0
-                .into_iter()
+                .iter()
                 .filter(|c| c.amount != Uint128::zero())
+                .cloned()
                 .collect(),
         ))
     }
@@ -141,10 +122,13 @@ impl CoinList {
     }
 
     pub fn coins(&self) -> Vec<Coin> {
-        sort_tokens(self.0.clone())
-            .into_iter()
-            .filter(|c| c.amount > Uint128::zero())
-            .collect()
+        sort_tokens(
+            self.0
+                .iter()
+                .filter(|c| c.amount > Uint128::zero())
+                .cloned()
+                .collect(),
+        )
     }
 
     pub fn from_coins(coins: Vec<Coin>) -> Self {
@@ -306,7 +290,9 @@ mod tests {
             ])
             .unwrap();
 
-        let ratio = rewards.mul_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)));
+        let ratio = rewards
+            .mul_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)))
+            .unwrap();
         assert_eq!(
             ratio,
             CoinList(vec![
@@ -319,23 +305,11 @@ mod tests {
 
     #[test]
     fn sub_percentage_works() {
-        let mut rewards = CoinList::new();
-        rewards
-            .update_rewards(&[
-                OsmoCoin {
-                    denom: "uosmo".into(),
-                    amount: "1000".into(),
-                },
-                OsmoCoin {
-                    denom: "uatom".into(),
-                    amount: "2000".into(),
-                },
-                OsmoCoin {
-                    denom: "uqsr".into(),
-                    amount: "3000".into(),
-                },
-            ])
-            .unwrap();
+        let mut rewards = CoinList::from_coins(vec![
+            coin(1000, "uosmo"),
+            coin(2000, "uatom"),
+            coin(3000, "uqsr"),
+        ]);
 
         let ratio = rewards
             .sub_ratio(Decimal::from_ratio(Uint128::new(10), Uint128::new(100)))
@@ -363,23 +337,12 @@ mod tests {
 
     #[test]
     fn add_works() {
-        let mut rewards = CoinList::new();
-        rewards
-            .update_rewards(&[
-                OsmoCoin {
-                    denom: "uosmo".into(),
-                    amount: "1000".into(),
-                },
-                OsmoCoin {
-                    denom: "uatom".into(),
-                    amount: "2000".into(),
-                },
-                OsmoCoin {
-                    denom: "uqsr".into(),
-                    amount: "3000".into(),
-                },
-            ])
-            .unwrap();
+        let mut rewards = CoinList::from_coins(vec![
+            coin(1000, "uosmo"),
+            coin(2000, "uatom"),
+            coin(3000, "uqsr"),
+        ]);
+
         rewards
             .add(CoinList::from_coins(vec![
                 coin(2000, "uosmo"),
@@ -397,53 +360,5 @@ mod tests {
                 coin(1234, "umars")
             ])
         )
-    }
-
-    #[test]
-    fn update_rewards_works() {
-        let mut rewards = CoinList::new();
-        rewards
-            .update_rewards(&[
-                OsmoCoin {
-                    denom: "uosmo".into(),
-                    amount: "1000".into(),
-                },
-                OsmoCoin {
-                    denom: "uatom".into(),
-                    amount: "2000".into(),
-                },
-                OsmoCoin {
-                    denom: "uqsr".into(),
-                    amount: "3000".into(),
-                },
-            ])
-            .unwrap();
-
-        rewards
-            .update_rewards(&[
-                OsmoCoin {
-                    denom: "uosmo".into(),
-                    amount: "1000".into(),
-                },
-                OsmoCoin {
-                    denom: "umars".into(),
-                    amount: "1234".into(),
-                },
-                OsmoCoin {
-                    denom: "uqsr".into(),
-                    amount: "3000".into(),
-                },
-            ])
-            .unwrap();
-
-        assert_eq!(
-            rewards,
-            CoinList::from_coins(vec![
-                coin(2000, "uosmo"),
-                coin(2000, "uatom"),
-                coin(6000, "uqsr"),
-                coin(1234, "umars")
-            ])
-        );
     }
 }

@@ -144,7 +144,7 @@ pub fn query_assets_from_shares(
 
     let vault_balance = CoinList::from_coins(vec![vault_assets.token0, vault_assets.token1]);
 
-    let assets_from_shares = vault_balance.mul_ratio(Decimal::from_ratio(shares, vault_supply));
+    let assets_from_shares = vault_balance.mul_ratio(Decimal::from_ratio(shares, vault_supply))?;
 
     Ok(AssetsBalanceResponse {
         balances: assets_from_shares.coins(),
