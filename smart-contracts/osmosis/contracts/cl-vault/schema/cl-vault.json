@@ -76,6 +76,7 @@
         "required": [
           "dex_router",
           "performance_fee",
+          "swap_admin",
           "swap_max_slippage",
           "treasury"
         ],
@@ -85,6 +86,9 @@
           },
           "performance_fee": {
             "$ref": "#/definitions/Decimal"
+          },
+          "swap_admin": {
+            "$ref": "#/definitions/Addr"
           },
           "swap_max_slippage": {
             "$ref": "#/definitions/Decimal"
@@ -743,6 +747,7 @@
         "required": [
           "dex_router",
           "performance_fee",
+          "swap_admin",
           "swap_max_slippage",
           "treasury"
         ],
@@ -752,6 +757,9 @@
           },
           "performance_fee": {
             "$ref": "#/definitions/Decimal"
+          },
+          "swap_admin": {
+            "$ref": "#/definitions/Addr"
           },
           "swap_max_slippage": {
             "$ref": "#/definitions/Decimal"
@@ -1136,10 +1144,10 @@
     "title": "MigrateMsg",
     "type": "object",
     "required": [
-      "dex_router"
+      "swap_admin"
     ],
     "properties": {
-      "dex_router": {
+      "swap_admin": {
         "$ref": "#/definitions/Addr"
       }
     },
