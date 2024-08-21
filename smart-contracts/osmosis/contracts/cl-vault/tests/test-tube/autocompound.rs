@@ -270,18 +270,19 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // SWAP NON VAULT ASSETS BEFORE AUTOCOMPOUND ASSETS
 
+    let swap_token_in_amount = Uint128::new(DENOM_REWARD_AMOUNT)
+        .checked_div(Uint128::new(2))
+        .unwrap();
+
     // Calculate the total rewards swap amount using 0.01 as swap_fee as osmosis_test_tube hardcodes it this way: https://github.com/osmosis-labs/test-tube/blob/main/packages/osmosis-test-tube/src/module/gamm.rs#L59
     const BALANCER_FEE_RATE: f64 = 0.01;
     const INITIAL_AMOUNT: f64 = 1_000_000.0;
     let adjusted_numerator = ((1.0 - BALANCER_FEE_RATE) * INITIAL_AMOUNT) as u128;
     let denominator = 1_000_000u128;
-
-    let total_rewards_swap_amount = Uint128::new(DENOM_REWARD_AMOUNT)
+    // we work with the assumption that the spot price is always 1.0 for both assets
+    let swap_token_out_amount = swap_token_in_amount
         .checked_multiply_ratio(adjusted_numerator, denominator)
         .expect("Multiplication overflow");
-    let swap_token_in_amount = total_rewards_swap_amount
-        .checked_div(Uint128::new(2))
-        .unwrap();
 
     // We want to swap DENOM_REWARDS and pass the SwapOperation information to perform the swap using the dex-router
     wasm.execute(
@@ -322,7 +323,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
     assert_eq!(
         after_deposit_base_balance
-            .checked_add(swap_token_in_amount.into())
+            .checked_add(swap_token_out_amount.into())
             .unwrap(),
         after_swap_base_balance
     );
@@ -330,7 +331,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     assert_eq!(
         after_deposit_quote_balance
-            .checked_add(swap_token_in_amount.into())
+            .checked_add(swap_token_out_amount.into())
             .unwrap(),
         after_swap_quote_balance
     );
@@ -350,14 +351,14 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
-            .add(swap_token_in_amount.u128()),
+            .add(swap_token_out_amount.u128()),
         after_swap_total_assets.balances[0].amount.u128(),
     );
     assert_eq!(
         users_total_deposit_per_asset
             .sub(refund1_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
-            .add(swap_token_in_amount.u128()),
+            .add(swap_token_out_amount.u128()),
         after_swap_total_assets.balances[1].amount.u128(),
     );
 
