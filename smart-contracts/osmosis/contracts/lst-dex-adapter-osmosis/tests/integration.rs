@@ -30,7 +30,7 @@ impl TestEnv<MockBech32> {
         mut funds: Vec<Coin>,
     ) -> anyhow::Result<TestEnv<MockBech32>> {
         let mock = MockBech32::new_with_chain_id("mock", "juno-1");
-        let sender = mock.sender();
+        let sender = mock.sender_addr();
         let namespace = Namespace::new(MY_NAMESPACE)?;
 
         let abs_client = AbstractClient::builder(mock.clone()).build()?;
