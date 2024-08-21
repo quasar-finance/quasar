@@ -42,7 +42,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     let bm = Bank::new(&app);
     let wasm = Wasm::new(&app);
 
-    // Initialize accounts as users
     let accounts = app
         .init_accounts(
             &[
@@ -84,13 +83,10 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     // BEFORE USERS DEPOSITS
 
-    // Keep track of the total refunded amount on token0 from user deposits
     let mut refund0_amount_total = Uint128::zero();
     let mut refund1_amount_total = Uint128::zero();
-    // Keep track of the total minted shares from deposits
     let mut total_minted_shares_from_deposits = Uint128::zero();
 
-    // This will be useful after all deposits to assert the contract balance
     let initial_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     let initial_quote_balance =
@@ -136,7 +132,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                 expected_refund0,
                 &deposit_ratio_approx
             );
-            // Increment the refund0 amount total count for future math assertions
             refund0_amount_parsed = refund0_amount[0].value.parse::<u128>().unwrap();
             refund0_amount_total = refund0_amount_total
                 .checked_add(Uint128::new(refund0_amount_parsed))
@@ -157,7 +152,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                 expected_refund1,
                 &deposit_ratio_approx
             );
-            // Increment the refund1 amount total count for future math assertions
             refund1_amount_parsed = refund1_amount[0].value.parse::<u128>().unwrap();
             refund1_amount_total = refund1_amount_total
                 .checked_add(Uint128::new(refund1_amount_parsed))
@@ -184,8 +178,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                     .sub(refund1_amount_parsed)
             )
         );
-
-        // Increment the total minted shares counter
         total_minted_shares_from_deposits = total_minted_shares_from_deposits
             .checked_add(balance_user_shares_after.balance)
             .unwrap();
@@ -199,7 +191,8 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
             &QueryMsg::TotalVaultTokenSupply {},
         )
         .unwrap();
-    // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
+
+        // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
     assert_eq!(
         total_minted_shares_from_deposits
             .checked_add(initial_total_vault_token_supply.total)
@@ -215,8 +208,10 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
             },
         )
         .unwrap();
-    let users_total_deposit_per_asset = DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
-    // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
+
+        let users_total_deposit_per_asset = DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
+
+        // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
     assert_eq!(
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
@@ -236,7 +231,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         .unwrap()
         .checked_sub(refund0_amount_total.u128())
         .unwrap();
-
     let after_deposit_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     assert_eq!(
@@ -282,11 +276,11 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     const INITIAL_AMOUNT: f64 = 1_000_000.0;
     let adjusted_numerator = ((1.0 - BALANCER_FEE_RATE) * INITIAL_AMOUNT) as u128;
     let denominator = 1_000_000u128;
+
     let total_rewards_swap_amount = Uint128::new(DENOM_REWARD_AMOUNT)
         .checked_multiply_ratio(adjusted_numerator, denominator)
         .expect("Multiplication overflow");
-
-    let rewards_swap_amount = total_rewards_swap_amount
+    let swap_token_in_amount = total_rewards_swap_amount
         .checked_div(Uint128::new(2))
         .unwrap();
 
@@ -330,7 +324,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
     assert_approx_eq!(
         after_deposit_base_balance
-            .checked_add(rewards_swap_amount.into())
+            .checked_add(swap_token_in_amount.into())
             .unwrap(),
         after_swap_base_balance,
         &deposit_ratio_approx
@@ -339,7 +333,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     assert_approx_eq!(
         after_deposit_quote_balance
-            .checked_add(rewards_swap_amount.into())
+            .checked_add(swap_token_in_amount.into())
             .unwrap(),
         after_swap_quote_balance,
         &deposit_ratio_approx
@@ -360,7 +354,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
-            .add(rewards_swap_amount.u128()),
+            .add(swap_token_in_amount.u128()),
         after_swap_total_assets.balances[0].amount.u128(),
         &deposit_ratio_approx
     );
@@ -368,7 +362,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         users_total_deposit_per_asset
             .sub(refund1_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
-            .add(rewards_swap_amount.u128()),
+            .add(swap_token_in_amount.u128()),
         after_swap_total_assets.balances[1].amount.u128(),
         &deposit_ratio_approx
     );
@@ -387,8 +381,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     let after_autocompound_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
-    // Assert that either the base balance is 0, or the quote balance is 0, or both are 0.
-    assert!(
+        assert!(
         after_autocompound_base_balance == 0u128 || after_autocompound_quote_balance == 0u128,
         "Either one of the balances must be 0, or both must be 0. Base balance: {}, Quote balance: {}",
         after_autocompound_base_balance,
