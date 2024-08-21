@@ -192,7 +192,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         )
         .unwrap();
 
-        // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
+    // Assert that the current vault token supply is equal to the initial plus each supply mint obtained from each deposit
     assert_eq!(
         total_minted_shares_from_deposits
             .checked_add(initial_total_vault_token_supply.total)
@@ -209,9 +209,9 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         )
         .unwrap();
 
-        let users_total_deposit_per_asset = DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
+    let users_total_deposit_per_asset = DEPOSIT_AMOUNT.checked_mul(ACCOUNTS_NUM as u128).unwrap();
 
-        // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
+    // Assert that the total vault shares are consistent with refunded amounts and initial burnt shares assets
     assert_eq!(
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
@@ -381,7 +381,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     let after_autocompound_quote_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
-        assert!(
+    assert!(
         after_autocompound_base_balance == 0u128 || after_autocompound_quote_balance == 0u128,
         "Either one of the balances must be 0, or both must be 0. Base balance: {}, Quote balance: {}",
         after_autocompound_base_balance,
