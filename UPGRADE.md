@@ -2,7 +2,7 @@
 
 This guide provides instructions for upgrading to specific versions of Quasar.
 
-## [v0.3.x](https://github.com/quasar-finance/quasar/releases/tag/v3.0.0)
+## [v3.x](https://github.com/quasar-finance/quasar/releases/tag/v3.0.0)
 
 ### `Binary Name Change`
 - This version contains binary name change from `quasarnoded` to `quasard` which requires changes in Cosmovisor settings.
