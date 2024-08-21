@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use cosmwasm_std::{Decimal, Decimal256, OverflowError, Storage, Uint128};
 
 use crate::{
@@ -7,8 +5,8 @@ use crate::{
     ContractError,
 };
 
-const MAX_SPOT_PRICE: &str = "100000000000000000000000000000000000000"; // 10^35
-const MIN_SPOT_PRICE: &str = "0.000000000001"; // 10^-12
+const MAX_SPOT_PRICE: u128 = 100_000_000_000_000_000_000_000_000_000_000_000_000u128; // 10^35
+const MIN_SPOT_PRICE_DENOMINATOR: u128 = 1_000_000_000_000u128;
 const EXPONENT_AT_PRICE_ONE: i64 = -6;
 const MIN_INITIALIZED_TICK: i64 = -108000000;
 const MAX_TICK: i128 = 342000000;
@@ -19,10 +17,11 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
         return Ok(Decimal256::one());
     }
 
-    let geometric_exponent_increment_distance_in_ticks = Decimal::from_str("9")?
+    let geometric_exponent_increment_distance_in_ticks: i64 = Decimal::from_ratio(9u128, 1u128)
         .checked_mul(_pow_ten_internal_dec(-EXPONENT_AT_PRICE_ONE)?)?
-        .to_string()
-        .parse::<i64>()?;
+        .to_uint_floor()
+        .u128()
+        .try_into()?;
 
     // Check that the tick index is between min and max value
     if tick_index < MIN_INITIALIZED_TICK {
@@ -56,24 +55,23 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
     // Finally, we can calculate the price
 
     let price: Decimal256 = if num_additive_ticks < 0 {
-        _pow_ten_internal_dec(geometric_exponent_delta)?
-            .checked_sub(
-                Decimal::from_str(&num_additive_ticks.abs().to_string())?.checked_mul(
-                    Decimal::from_str(&current_additive_increment_in_ticks.to_string())?,
-                )?,
-            )?
-            .into()
+        let num_additive_ticks: u128 = num_additive_ticks.abs().try_into()?;
+        pow_ten_internal_dec_256(geometric_exponent_delta)?.checked_sub(
+            Decimal256::checked_from_ratio(num_additive_ticks, 1u128)?
+                .checked_mul(current_additive_increment_in_ticks)?,
+        )?
     } else {
+        let num_additive_ticks: u128 = num_additive_ticks.try_into()?;
         pow_ten_internal_dec_256(geometric_exponent_delta)?.checked_add(
-            Decimal256::from_str(&num_additive_ticks.to_string())?
+            Decimal256::checked_from_ratio(num_additive_ticks, 1u128)?
                 .checked_mul(current_additive_increment_in_ticks)?,
         )?
     };
 
     // defense in depth, this logic would not be reached due to use having checked if given tick is in between
     // min tick and max tick.
-    if price > Decimal256::from_str(MAX_SPOT_PRICE)?
-        || price < Decimal256::from_str(MIN_SPOT_PRICE)?
+    if price > Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128)?
+        || price < Decimal256::checked_from_ratio(1u128, MIN_SPOT_PRICE_DENOMINATOR)?
     {
         return Err(ContractError::PriceBoundError { price });
     }
@@ -81,8 +79,8 @@ pub fn tick_to_price(tick_index: i64) -> Result<Decimal256, ContractError> {
 }
 
 pub fn price_to_tick(storage: &mut dyn Storage, price: Decimal256) -> Result<i128, ContractError> {
-    if price > Decimal256::from_str(MAX_SPOT_PRICE)?
-        || price < Decimal256::from_str(MIN_SPOT_PRICE)?
+    if price > Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128)?
+        || price < Decimal256::checked_from_ratio(1u128, MIN_SPOT_PRICE_DENOMINATOR)?
     {
         return Err(ContractError::PriceBoundError { price });
     }
@@ -159,8 +157,8 @@ fn _pow_ten_internal_dec(exponent: i64) -> Result<Decimal, ContractError> {
 
 // same as pow_ten_internal but returns a Decimal to work with negative exponents
 fn pow_ten_internal_dec_256(exponent: i64) -> Result<Decimal256, ContractError> {
-    let p = Decimal256::from_str("10")?.checked_pow(exponent.unsigned_abs() as u32)?;
-    // let p = 10_u128.pow(exponent as u32);
+    let p = Decimal256::checked_from_ratio(10u128, 1u128)?
+        .checked_pow(exponent.unsigned_abs() as u32)?;
     if exponent >= 0 {
         Ok(p)
     } else {
@@ -173,7 +171,7 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     let mut max_price = Decimal256::one();
     let mut cur_exp_index = 0i64;
 
-    while max_price < Decimal256::from_str(MAX_SPOT_PRICE)? {
+    while max_price < Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128)? {
         let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
         let max_price_temp = pow_ten_internal_dec_256(cur_exp_index + 1)?;
         let additive_increment_per_tick =
@@ -213,7 +211,7 @@ pub fn build_tick_exp_cache(storage: &mut dyn Storage) -> Result<(), ContractErr
     let mut min_price = Decimal256::one();
     cur_exp_index = -1;
 
-    while min_price > Decimal256::from_str(MIN_SPOT_PRICE)? {
+    while min_price > Decimal256::checked_from_ratio(1u128, MIN_SPOT_PRICE_DENOMINATOR)? {
         let initial_price = pow_ten_internal_dec_256(cur_exp_index)?;
         let max_price_temp = pow_ten_internal_dec_256(cur_exp_index + 1)?;
         let additive_increment_per_tick =
@@ -259,7 +257,7 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
     // until we reach MAX or MIN price, we should have a cache hit at each increasing or decreasing index
     let mut max_price = Decimal256::one();
     let mut positive_index = 0i64;
-    let max_spot_price = Decimal256::from_str(MAX_SPOT_PRICE)?;
+    let max_spot_price = Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128)?;
 
     // Verify positive indices
     while max_price < max_spot_price {
@@ -276,7 +274,7 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
     // Verify negative indices
     let mut min_price = Decimal256::one();
     let mut negative_index = 0;
-    let min_spot_price = Decimal256::from_str(MIN_SPOT_PRICE)?;
+    let min_spot_price = Decimal256::checked_from_ratio(1u128, MIN_SPOT_PRICE_DENOMINATOR)?;
 
     while min_price > min_spot_price {
         let tick_exp_index_data = TICK_EXP_CACHE.load(storage, negative_index).map_err(|_| {
@@ -295,6 +293,7 @@ pub fn verify_tick_exp_cache(storage: &dyn Storage) -> Result<(), ContractError>
 mod tests {
     use super::*;
     use cosmwasm_std::{testing::mock_dependencies, Order};
+    use std::str::FromStr;
 
     #[test]
     fn test_verify_tick_cache() {
@@ -419,7 +418,7 @@ mod tests {
 
         // example8
         let tick_index = MAX_TICK as i64;
-        let expected_price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
+        let expected_price = Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128).unwrap();
         let price = tick_to_price(tick_index).unwrap();
         assert_eq!(price, expected_price);
 
@@ -532,7 +531,7 @@ mod tests {
         assert_eq!(tick_index, expected_tick_index);
 
         // example8
-        price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap();
+        price = Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128).unwrap();
         expected_tick_index = MAX_TICK;
         tick_index = price_to_tick(deps.as_mut().storage, price).unwrap();
         assert_eq!(tick_index, expected_tick_index);
@@ -610,11 +609,12 @@ mod tests {
         assert_eq!(tick_index, expected_tick_index);
 
         // example19
-        price = Decimal256::from_str(MAX_SPOT_PRICE).unwrap() + Decimal256::one();
+        price = Decimal256::checked_from_ratio(MAX_SPOT_PRICE, 1u128).unwrap() + Decimal256::one();
         assert!(price_to_tick(deps.as_mut().storage, price).is_err());
 
         // example20
-        price = Decimal256::from_str(MIN_SPOT_PRICE).unwrap() / Decimal256::from_str("10").unwrap();
+        price = Decimal256::checked_from_ratio(1u128, MIN_SPOT_PRICE_DENOMINATOR).unwrap()
+            / Decimal256::from_str("10").unwrap();
         assert!(price_to_tick(deps.as_mut().storage, price).is_err());
     }
 }

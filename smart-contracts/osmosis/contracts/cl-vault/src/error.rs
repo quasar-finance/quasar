@@ -2,7 +2,7 @@ use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
 use cosmwasm_std::{
     Addr, CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
     CoinFromStrError, ConversionOverflowError, Decimal, Decimal256, Decimal256RangeExceeded,
-    DivideByZeroError, OverflowError, StdError, Storage, Uint128,
+    DecimalRangeExceeded, DivideByZeroError, OverflowError, StdError, Storage, Uint128,
 };
 use cw_utils::PaymentError;
 use prost::DecodeError;
@@ -144,6 +144,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     CheckedMultiplyFraction(#[from] CheckedMultiplyFractionError),
+
+    #[error("{0}")]
+    DecimalRange(#[from] DecimalRangeExceeded),
 
     #[error("{0}")]
     DecodeError(#[from] DecodeError),
