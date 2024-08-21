@@ -316,7 +316,6 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     let after_swap_rewards_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
-    assert_eq!(0u128, after_swap_rewards_balance,);
     assert_eq!(0u128, after_swap_rewards_balance);
 
     let after_swap_base_balance =
