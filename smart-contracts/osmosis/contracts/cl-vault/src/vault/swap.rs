@@ -20,6 +20,8 @@ pub fn execute_swap_non_vault_funds(
     swap_operations: Vec<SwapOperation>,
     twap_window_seconds: Option<u64>,
 ) -> Result<Response, ContractError> {
+    assert_swap_admin(deps.storage, &info.sender)?;
+
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     if swap_operations.is_empty() {
@@ -51,7 +53,6 @@ pub fn execute_swap_non_vault_funds(
         swap_msgs.push(prepare_swap_msg(
             &deps,
             &env,
-            &info.sender,
             coin(token_in_amount.into(), token_in_denom.clone()),
             pool_config.clone().token0,
             swap_operation.pool_id_base,
@@ -62,7 +63,6 @@ pub fn execute_swap_non_vault_funds(
         swap_msgs.push(prepare_swap_msg(
             &deps,
             &env,
-            &info.sender,
             coin(token_in_amount.into(), token_in_denom.clone()),
             pool_config.clone().token1,
             swap_operation.pool_id_quote,
@@ -80,15 +80,12 @@ pub fn execute_swap_non_vault_funds(
 fn prepare_swap_msg(
     deps: &DepsMut,
     env: &Env,
-    sender: &Addr,
     token_in: Coin,
     token_out_denom: String,
     pool_id: u64,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: Option<u64>,
 ) -> Result<CosmosMsg, ContractError> {
-    assert_swap_admin(deps.storage, sender)?;
-
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
