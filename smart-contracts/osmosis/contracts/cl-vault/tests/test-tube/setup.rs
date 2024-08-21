@@ -25,7 +25,7 @@ pub const ADMIN_BALANCE_AMOUNT: u128 = 100_000_000_000_000_000_000_000_000_000u1
 pub const PERFORMANCE_FEE_DEFAULT: u64 = 20;
 
 const TOKENS_PROVIDED_AMOUNT_HIGH: &str = "100000000000000000000";
-pub const SPREAD_FACTOR_HIGH: f64 = 0.1;
+pub const SPREAD_FACTOR_HIGH: &str = "0.1";
 pub const MAX_SLIPPAGE_HIGH: u64 = 9000;
 
 pub const DENOM_BASE: &str = "uatom";
@@ -53,7 +53,7 @@ pub fn fixture_default(
             denom0: DENOM_BASE.to_string(),
             denom1: DENOM_QUOTE.to_string(),
             tick_spacing: 100,
-            spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH.to_string().as_str())
+            spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
                 .unwrap()
                 .atomics()
                 .to_string(),
@@ -102,7 +102,7 @@ pub fn fixture_dex_router(
                 denom0: DENOM_BASE.to_string(),
                 denom1: DENOM_QUOTE.to_string(),
                 tick_spacing: 100,
-                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH.to_string().as_str())
+                spread_factor: Decimal::from_str(SPREAD_FACTOR_HIGH)
                     .unwrap()
                     .atomics()
                     .to_string(),
