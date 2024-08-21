@@ -43,27 +43,6 @@ pub fn get_value_wrt_asset0(
     Ok(total)
 }
 
-pub fn _get_asset_ratios(
-    storage: &dyn Storage,
-    querier: &QuerierWrapper,
-) -> Result<(Decimal, Decimal), ContractError> {
-    let position = get_position(storage, querier)?;
-    let asset0_amount = Uint128::from_str(&position.clone().asset0.unwrap_or_default().amount)?;
-    let asset1_amount = Uint128::from_str(&position.clone().asset1.unwrap_or_default().amount)?;
-
-    if asset0_amount.is_zero() && asset1_amount.is_zero() {
-        return Ok((Decimal::zero(), Decimal::zero()));
-    }
-
-    let total_value_wrt_asset_0 =
-        get_value_wrt_asset0(storage, querier, asset0_amount, asset1_amount)?;
-
-    let asset_0_ratio = Decimal::from_ratio(asset0_amount, total_value_wrt_asset_0);
-    let asset_1_ratio = Decimal::from_ratio(asset1_amount, total_value_wrt_asset_0);
-
-    Ok((asset_0_ratio, asset_1_ratio))
-}
-
 pub fn get_twap_price(
     querier: &QuerierWrapper,
     block_time: Timestamp,
