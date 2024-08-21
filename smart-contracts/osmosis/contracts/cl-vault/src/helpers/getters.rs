@@ -43,7 +43,7 @@ pub fn get_value_wrt_asset0(
     Ok(total)
 }
 
-pub fn get_asset_ratios(
+pub fn _get_asset_ratios(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
 ) -> Result<(Decimal, Decimal), ContractError> {

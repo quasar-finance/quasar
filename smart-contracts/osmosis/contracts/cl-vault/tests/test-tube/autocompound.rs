@@ -286,12 +286,9 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         .checked_multiply_ratio(adjusted_numerator, denominator)
         .expect("Multiplication overflow");
 
-    // Split based on current position balance
-    let deposit_ratio_quote = 1.0 - deposit_ratio_base;
-    let rewards_swap_amount_base =
-        Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio_base) as u128);
-    let rewards_swap_amount_quote =
-        Uint128::from((total_rewards_swap_amount.u128() as f64 * deposit_ratio_quote) as u128);
+    let rewards_swap_amount = total_rewards_swap_amount
+        .checked_div(Uint128::new(2))
+        .unwrap();
 
     // We want to swap DENOM_REWARDS and pass the SwapOperation information to perform the swap using the dex-router
     wasm.execute(
@@ -325,23 +322,15 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
 
     let after_swap_rewards_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_REWARD.to_string());
-    assert_eq!(
-        total_rewards_swap_amount
-            .checked_sub(rewards_swap_amount_base)
-            .unwrap()
-            .checked_sub(rewards_swap_amount_quote)
-            .unwrap()
-            .u128(),
-        after_swap_rewards_balance
-    );
-    assert_eq!(1u128, after_swap_rewards_balance);
+    assert_eq!(0u128, after_swap_rewards_balance,);
+    assert_eq!(0u128, after_swap_rewards_balance);
 
     let after_swap_base_balance =
         get_balance_amount(&app, contract_address.to_string(), DENOM_BASE.to_string());
     // Assert vault position tokens balances increased accordingly to the swapped funds from DENOM_REWARD to DENOM_BASE and DENOM_QUOTE
     assert_approx_eq!(
         after_deposit_base_balance
-            .checked_add(rewards_swap_amount_base.into())
+            .checked_add(rewards_swap_amount.into())
             .unwrap(),
         after_swap_base_balance,
         &deposit_ratio_approx
@@ -350,7 +339,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     assert_approx_eq!(
         after_deposit_quote_balance
-            .checked_add(rewards_swap_amount_quote.into())
+            .checked_add(rewards_swap_amount.into())
             .unwrap(),
         after_swap_quote_balance,
         &deposit_ratio_approx
@@ -371,7 +360,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         users_total_deposit_per_asset
             .sub(refund0_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
-            .add(rewards_swap_amount_base.u128()),
+            .add(rewards_swap_amount.u128()),
         after_swap_total_assets.balances[0].amount.u128(),
         &deposit_ratio_approx
     );
@@ -379,7 +368,7 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         users_total_deposit_per_asset
             .sub(refund1_amount_total.u128())
             .add(INITIAL_POSITION_BURN)
-            .add(rewards_swap_amount_quote.u128()),
+            .add(rewards_swap_amount.u128()),
         after_swap_total_assets.balances[1].amount.u128(),
         &deposit_ratio_approx
     );

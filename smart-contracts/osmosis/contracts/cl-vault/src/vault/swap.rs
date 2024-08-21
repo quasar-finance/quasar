@@ -6,7 +6,7 @@ use dex_router_osmosis::msg::ExecuteMsg as DexRouterExecuteMsg;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
 use crate::{
-    helpers::getters::{get_asset_ratios, get_twap_price},
+    helpers::getters::get_twap_price,
     msg::SwapOperation,
     state::{DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
     ContractError,
@@ -40,29 +40,29 @@ pub fn execute_swap_non_vault_funds(
         if token_in_balance.is_zero() {
             return Err(ContractError::InsufficientFundsForSwap {
                 balance: token_in_balance,
-                needed: Uint128::new(1),
+                needed: Uint128::new(2), // we need at least 2 udenom to be able swap into 2 denoms
             });
         }
 
-        let (base_ratio, quote_ratio) = get_asset_ratios(deps.storage, &deps.querier)?;
-        let to_token0_amount = token_in_balance.checked_mul_floor(base_ratio)?;
-        let to_token1_amount = token_in_balance.checked_mul_floor(quote_ratio)?;
+        let token_in_amount = token_in_balance.checked_div(Uint128::new(2))?;
 
         swap_msgs.push(prepare_swap_msg(
             &deps,
             &env,
-            coin(to_token0_amount.into(), token_in_denom.clone()),
+            coin(token_in_amount.into(), token_in_denom.clone()),
             pool_config.clone().token0,
-            &swap_operation,
+            swap_operation.pool_id_base,
+            swap_operation.forced_swap_route_base,
             twap_window_seconds,
         )?);
 
         swap_msgs.push(prepare_swap_msg(
             &deps,
             &env,
-            coin(to_token1_amount.into(), token_in_denom.clone()),
+            coin(token_in_amount.into(), token_in_denom.clone()),
             pool_config.clone().token1,
-            &swap_operation,
+            swap_operation.pool_id_quote,
+            swap_operation.forced_swap_route_quote,
             twap_window_seconds,
         )?);
     }
@@ -78,32 +78,31 @@ fn prepare_swap_msg(
     env: &Env,
     token_in: Coin,
     token_out_denom: String,
-    swap_operation: &SwapOperation,
+    pool_id: u64,
+    forced_swap_route: Option<Vec<SwapAmountInRoute>>,
     twap_window_seconds: Option<u64>,
 ) -> Result<CosmosMsg, ContractError> {
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
-    let twap_price_base = get_twap_price(
+    let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
         twap_window_seconds.unwrap_or_default(),
-        swap_operation.pool_id_base,
+        pool_id,
         token_in.denom.to_string(),
         token_out_denom.to_string(),
     )?;
-    let token_out_min_amount_base = estimate_swap_min_out_amount(
-        token_in.amount,
-        twap_price_base,
-        vault_config.swap_max_slippage,
-    )?;
+
+    let token_out_min_amount =
+        estimate_swap_min_out_amount(token_in.amount, twap_price, vault_config.swap_max_slippage)?;
 
     let swap_msg = swap_msg(
         env.clone().contract.address,
-        swap_operation.pool_id_base,
+        pool_id,
         token_in,
-        coin(token_out_min_amount_base.into(), token_out_denom),
-        swap_operation.clone().forced_swap_route_base,
+        coin(token_out_min_amount.into(), token_out_denom),
+        forced_swap_route,
         dex_router,
     )?;
 
