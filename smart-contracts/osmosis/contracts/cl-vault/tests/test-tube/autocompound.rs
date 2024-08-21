@@ -400,12 +400,11 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
         get_balance_amount(&app, contract_address.to_string(), DENOM_QUOTE.to_string());
     // Assert that either the base balance is 0, or the quote balance is 0, or both are 0.
     assert!(
-    (after_autocompound_base_balance == 0u128 || after_autocompound_quote_balance == 0u128)
-        || (after_autocompound_base_balance == 0u128 && after_autocompound_quote_balance == 0u128),
-    "Either one of the balances must be 0, or both must be 0. Base balance: {}, Quote balance: {}",
-    after_autocompound_base_balance,
-    after_autocompound_quote_balance
-);
+        after_autocompound_base_balance == 0u128 || after_autocompound_quote_balance == 0u128,
+        "Either one of the balances must be 0, or both must be 0. Base balance: {}, Quote balance: {}",
+        after_autocompound_base_balance,
+        after_autocompound_quote_balance
+    );
 
     let after_autocompound_vault_token_supply: TotalVaultTokenSupplyResponse = wasm
         .query(

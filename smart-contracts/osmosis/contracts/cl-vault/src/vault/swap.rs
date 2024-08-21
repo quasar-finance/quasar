@@ -18,7 +18,6 @@ pub fn execute_swap_non_vault_funds(
     swap_operations: Vec<SwapOperation>,
     twap_window_seconds: Option<u64>,
 ) -> Result<Response, ContractError> {
-    let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
     if swap_operations.is_empty() {
@@ -48,53 +47,23 @@ pub fn execute_swap_non_vault_funds(
         let (base_ratio, quote_ratio) = get_asset_ratios(deps.storage, &deps.querier)?;
         let to_token0_amount = token_in_balance.checked_mul_floor(base_ratio)?;
         let to_token1_amount = token_in_balance.checked_mul_floor(quote_ratio)?;
-        let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
-        let twap_price_base = get_twap_price(
-            &deps.querier,
-            env.block.time,
-            twap_window_seconds.unwrap_or_default(),
-            swap_operation.pool_id_base,
-            token_in_denom.to_string(),
-            pool_config.clone().token0,
-        )?;
-        let token_out_min_amount_base = estimate_swap_min_out_amount(
-            to_token0_amount,
-            twap_price_base,
-            vault_config.swap_max_slippage,
-        )?;
-        swap_msgs.push(swap_msg(
-            env.clone().contract.address,
-            swap_operation.pool_id_base,
+        swap_msgs.push(prepare_swap_msg(
+            &deps,
+            &env,
             coin(to_token0_amount.into(), token_in_denom.clone()),
-            coin(token_out_min_amount_base.into(), pool_config.clone().token0),
-            swap_operation.forced_swap_route_base,
-            dex_router.clone(),
+            pool_config.clone().token0,
+            &swap_operation,
+            twap_window_seconds,
         )?);
 
-        let twap_price_quote = get_twap_price(
-            &deps.querier,
-            env.block.time,
-            twap_window_seconds.unwrap_or_default(),
-            swap_operation.pool_id_quote,
-            token_in_denom.to_string(),
-            pool_config.clone().token1,
-        )?;
-        let token_out_min_amount_quote = estimate_swap_min_out_amount(
-            to_token1_amount,
-            twap_price_quote,
-            vault_config.swap_max_slippage,
-        )?;
-        swap_msgs.push(swap_msg(
-            env.clone().contract.address,
-            swap_operation.pool_id_quote,
+        swap_msgs.push(prepare_swap_msg(
+            &deps,
+            &env,
             coin(to_token1_amount.into(), token_in_denom.clone()),
-            coin(
-                token_out_min_amount_quote.into(),
-                pool_config.clone().token1,
-            ),
-            swap_operation.forced_swap_route_quote,
-            dex_router,
+            pool_config.clone().token1,
+            &swap_operation,
+            twap_window_seconds,
         )?);
     }
 
@@ -102,6 +71,43 @@ pub fn execute_swap_non_vault_funds(
         .add_messages(swap_msgs)
         .add_attribute("method", "execute")
         .add_attribute("action", "swap_non_vault_funds"))
+}
+
+fn prepare_swap_msg(
+    deps: &DepsMut,
+    env: &Env,
+    token_in: Coin,
+    token_out_denom: String,
+    swap_operation: &SwapOperation,
+    twap_window_seconds: Option<u64>,
+) -> Result<CosmosMsg, ContractError> {
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
+    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+
+    let twap_price_base = get_twap_price(
+        &deps.querier,
+        env.block.time,
+        twap_window_seconds.unwrap_or_default(),
+        swap_operation.pool_id_base,
+        token_in.denom.to_string(),
+        token_out_denom.to_string(),
+    )?;
+    let token_out_min_amount_base = estimate_swap_min_out_amount(
+        token_in.amount,
+        twap_price_base,
+        vault_config.swap_max_slippage,
+    )?;
+
+    let swap_msg = swap_msg(
+        env.clone().contract.address,
+        swap_operation.pool_id_base,
+        token_in,
+        coin(token_out_min_amount_base.into(), token_out_denom),
+        swap_operation.clone().forced_swap_route_base,
+        dex_router,
+    )?;
+
+    Ok(swap_msg)
 }
 
 pub fn estimate_swap_min_out_amount(
