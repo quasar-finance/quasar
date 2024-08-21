@@ -32,7 +32,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
           restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
       - name: Rust lint
-        run: cargo clippy --workspace -- -D warnings --A deprecated
+        run: cargo lint
         working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
       - name: Rust format check
         run: cargo fmt --all -- --check
