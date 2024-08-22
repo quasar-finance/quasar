@@ -69,7 +69,7 @@ check_lint() {
   then
     echo "Changes in ${target}"
     cd ${REPO_ROOT}/smart-contracts/${target}
-    cargo clippy -- -D warnings
+    cargo clippy --all-targets -- -D warnings
     cd -
   fi
 }
