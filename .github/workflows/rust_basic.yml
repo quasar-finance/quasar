@@ -14,6 +14,10 @@ on:
         default: true
         type: boolean
 
+env:
+  RUSTC_WRAPPER: cachepot
+  CARGO_TARGET_DIR: ~/target
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -23,21 +27,25 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Restore dependencies
+        id: restore-cache
         uses: actions/cache/restore@v4
         with:
           path: |
+            ~/.cache/cachepot
             ~/.cargo
             ~/go
-            smart-contracts/${{ inputs.workspace }}/**/target
-          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
+            ~/target
+          key: ${{ runner.os }}-cache-osmosis-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-cache-osmosis
+      - name: Update PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Rust lint
-        run: cargo lint
-        working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
+        run:  cargo clippy --features test-tube --all-targets -- -D warnings
+        working-directory: smart-contracts/${{ inputs.workspace }}
       - name: Rust format check
         run: cargo fmt --all -- --check
         working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}
-      - name: Run unit-tests
-        if: inputs.unit_tests
+      - if: inputs.unit_tests
+        name: Run unit-tests
         run: cargo unit-test
         working-directory: smart-contracts/${{ inputs.workspace }}/${{ inputs.target }}

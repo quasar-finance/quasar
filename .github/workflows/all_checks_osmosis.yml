@@ -3,6 +3,10 @@ name: Test Tube (osmosis)
 on:
   workflow_call:
     inputs:
+      unittest:
+        required: false
+        default: false
+        type: boolean
       proptest:
         required: false
         default: false
@@ -26,7 +30,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Cleanup runner
-        run: sudo rm -rf /usr/local/share/boost && sudo rm -rf /usr/share/dotnet && sudo rm -rf /usr/local/lib/android && sudo rm -rf /opt/ghc && sudo rm -rf /opt/hostedtoolcache/CodeQL && sudo docker image prune --all --force
+        run: sudo rm -rf /usr/local/share/boost && sudo rm -rf /usr/share/dotnet && sudo rm -rf /usr/local/lib/android && sudo rm -rf /opt/ghc && sudo rm -rf /opt/hostedtoolcache/CodeQL && sudo docker system prune --all --force
       - name: Restore dependencies
         id: restore-cache
         uses: actions/cache/restore@v4
@@ -36,7 +40,7 @@ jobs:
             ~/.cargo
             ~/go
             ~/target
-          key: ${{ runner.os }}-cache-osmosis-${{github.sha}}
+          key: ${{ runner.os }}-cache-osmosis-${{ github.sha }}
           restore-keys: ${{ runner.os }}-cache-osmosis
       - name: Update PATH
         run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
@@ -75,7 +79,7 @@ jobs:
           PROPTEST_CASES: 10
         working-directory: smart-contracts/osmosis/contracts/cl-vault
       - name: Store dependencies
-        if: ${{ (inputs.store_deps) && (steps.restore-cache.outputs.cache-hit == false) }}$
+        if: ${{ (inputs.store_deps == 'true') && (steps.restore-cache.outputs.cache-hit == 'false') }}$
         uses: actions/cache/save@v4
         with:
           path: |
@@ -83,5 +87,5 @@ jobs:
             ~/.cargo
             ~/go
             ~/target
-          key: ${{ runner.os }}-cache-osmosis-${{github.sha}}
+          key: ${{ runner.os }}-cache-osmosis-${{ github.sha }}
 

@@ -24,5 +24,9 @@ jobs:
     uses: ./.github/workflows/all_checks_osmosis.yml
     if: github.event_name == 'push'
     with:
+      unittest: true
       proptest: true
       store_deps: true
+  pre-commit:
+    uses: ./.github/workflows/all_checks_osmosis.yml
+    if: github.event_name == 'pull_request'
