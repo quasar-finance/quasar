@@ -226,6 +226,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     }
     const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
     let old_vault_config: OldVaultConfig = OLD_VAULT_CONFIG.load(deps.storage)?;
+    OLD_VAULT_CONFIG.remove(deps.storage);
 
     VAULT_CONFIG.save(
         deps.storage,
@@ -240,4 +241,66 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 
     let response = Response::new().add_attribute("migrate", "successful");
     Ok(response)
+}
+
+mod tests {
+    use cosmwasm_schema::cw_serde;
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env},
+        Addr, Decimal,
+    };
+    use cw_storage_plus::Item;
+
+    use crate::{
+        contract::migrate,
+        msg::MigrateMsg,
+        state::{VaultConfig, VAULT_CONFIG},
+    };
+
+    #[test]
+    fn test_migrate() {
+        let env = mock_env();
+        let mut deps = mock_dependencies();
+
+        // old state items
+        #[cw_serde]
+        struct OldVaultConfig {
+            pub performance_fee: Decimal,
+            pub treasury: Addr,
+            pub swap_max_slippage: Decimal,
+            pub dex_router: Addr,
+        }
+        const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
+
+        // Mock a previous state value
+        OLD_VAULT_CONFIG
+            .save(
+                &mut deps.storage,
+                &OldVaultConfig {
+                    performance_fee: Decimal::percent(1),
+                    treasury: Addr::unchecked("treasury"),
+                    swap_max_slippage: Decimal::percent(1),
+                    dex_router: Addr::unchecked("dex_router"),
+                },
+            )
+            .unwrap();
+
+        migrate(
+            deps.as_mut(),
+            env,
+            MigrateMsg {
+                swap_admin: Addr::unchecked("swap_admin"),
+            },
+        )
+        .unwrap();
+
+        let vault_config: VaultConfig = VAULT_CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(vault_config.performance_fee, Decimal::percent(1));
+        assert_eq!(vault_config.treasury, Addr::unchecked("treasury"));
+        assert_eq!(vault_config.swap_max_slippage, Decimal::percent(1));
+        assert_eq!(vault_config.dex_router, Addr::unchecked("dex_router"));
+        assert_eq!(vault_config.swap_admin, Addr::unchecked("swap_admin"));
+
+        assert!(matches!(OLD_VAULT_CONFIG.may_load(&deps.storage), Ok(None)));
+    }
 }
