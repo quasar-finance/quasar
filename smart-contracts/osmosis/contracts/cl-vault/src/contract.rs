@@ -262,7 +262,6 @@ mod tests {
         let env = mock_env();
         let mut deps = mock_dependencies();
 
-        // old state items
         #[cw_serde]
         struct OldVaultConfig {
             pub performance_fee: Decimal,
@@ -272,7 +271,6 @@ mod tests {
         }
         const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
 
-        // Mock a previous state value
         OLD_VAULT_CONFIG
             .save(
                 &mut deps.storage,
