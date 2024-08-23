@@ -265,8 +265,7 @@ mod tests {
         let env = mock_env();
         let mut deps = mock_dependencies();
 
-        // VaultConfig
-
+        // VaultConfig mocking
         #[cw_serde]
         struct OldVaultConfig {
             pub performance_fee: Decimal,
@@ -287,8 +286,7 @@ mod tests {
             )
             .unwrap();
 
-        // MigrationStatus
-
+        // MigrationStatus mocking
         #[cw_serde]
         pub enum MigrationStatus {
             Open,
@@ -299,6 +297,7 @@ mod tests {
             .save(&mut deps.storage, &MigrationStatus::Closed)
             .unwrap();
 
+        // Migrate and assert new states
         migrate(
             deps.as_mut(),
             env,
@@ -307,8 +306,6 @@ mod tests {
             },
         )
         .unwrap();
-
-        // Assert migrated states
 
         let vault_config: VaultConfig = VAULT_CONFIG.load(&deps.storage).unwrap();
         assert_eq!(vault_config.performance_fee, Decimal::percent(1));
