@@ -14,9 +14,7 @@ use crate::reply::Replies;
 use crate::state::{VaultConfig, VAULT_CONFIG};
 use crate::vault::{
     admin::execute_admin,
-    autocompound::{
-        execute_autocompound, execute_migration_step, handle_autocompound_reply, handle_merge_reply,
-    },
+    autocompound::{execute_autocompound, handle_autocompound_reply, handle_merge_reply},
     deposit::{execute_any_deposit, execute_exact_deposit, handle_any_deposit_swap_reply},
     distribution::{
         execute_collect_rewards, handle_collect_incentives_reply,
@@ -131,9 +129,6 @@ pub fn execute(
                 crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
-                crate::msg::ExtensionExecuteMsg::MigrationStep { amount_of_users } => {
-                    execute_migration_step(deps, env, amount_of_users)
-                }
             }
         }
     }
@@ -217,6 +212,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    // VaultConfig
     #[cw_serde]
     struct OldVaultConfig {
         pub performance_fee: Decimal,
@@ -227,7 +223,6 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
     let old_vault_config: OldVaultConfig = OLD_VAULT_CONFIG.load(deps.storage)?;
     OLD_VAULT_CONFIG.remove(deps.storage);
-
     VAULT_CONFIG.save(
         deps.storage,
         &VaultConfig {
@@ -238,6 +233,22 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
             swap_admin: msg.swap_admin,
         },
     )?;
+
+    // MigrationStatus
+    #[cw_serde]
+    pub enum MigrationStatus {
+        Open,
+        Closed,
+    }
+    pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
+    let migration_status = MIGRATION_STATUS.load(deps.storage)?;
+    // we want the v1.0.8-skn migration_step to be occurred completely here.
+    if migration_status == MigrationStatus::Open {
+        return Err(ContractError::ParseError {
+            msg: "Migration status should be closed.".to_string(),
+        });
+    }
+    MIGRATION_STATUS.remove(deps.storage);
 
     let response = Response::new().add_attribute("migrate", "successful");
     Ok(response)
@@ -254,6 +265,8 @@ mod tests {
         let env = mock_env();
         let mut deps = mock_dependencies();
 
+        // VaultConfig
+
         #[cw_serde]
         struct OldVaultConfig {
             pub performance_fee: Decimal,
@@ -262,7 +275,6 @@ mod tests {
             pub dex_router: Addr,
         }
         const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
-
         OLD_VAULT_CONFIG
             .save(
                 &mut deps.storage,
@@ -275,6 +287,18 @@ mod tests {
             )
             .unwrap();
 
+        // MigrationStatus
+
+        #[cw_serde]
+        pub enum MigrationStatus {
+            Open,
+            Closed,
+        }
+        pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
+        MIGRATION_STATUS
+            .save(&mut deps.storage, &MigrationStatus::Closed)
+            .unwrap();
+
         migrate(
             deps.as_mut(),
             env,
@@ -284,13 +308,16 @@ mod tests {
         )
         .unwrap();
 
+        // Assert migrated states
+
         let vault_config: VaultConfig = VAULT_CONFIG.load(&deps.storage).unwrap();
         assert_eq!(vault_config.performance_fee, Decimal::percent(1));
         assert_eq!(vault_config.treasury, Addr::unchecked("treasury"));
         assert_eq!(vault_config.swap_max_slippage, Decimal::percent(1));
         assert_eq!(vault_config.dex_router, Addr::unchecked("dex_router"));
         assert_eq!(vault_config.swap_admin, Addr::unchecked("swap_admin"));
-
         assert!(matches!(OLD_VAULT_CONFIG.may_load(&deps.storage), Ok(None)));
+
+        assert!(matches!(MIGRATION_STATUS.may_load(&deps.storage), Ok(None)));
     }
 }

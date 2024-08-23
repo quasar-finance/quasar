@@ -32,13 +32,6 @@ pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");
 pub const VAULT_DENOM: Item<String> = Item::new("vault_denom");
 
 #[cw_serde]
-pub enum MigrationStatus {
-    Open,
-    Closed,
-}
-pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
-
-#[cw_serde]
 pub struct PoolConfig {
     pub pool_id: u64,
     pub token0: String,

@@ -9,7 +9,6 @@ use prost::DecodeError;
 use std::num::{ParseIntError, TryFromIntError};
 use thiserror::Error;
 
-/// AutocompoundingVault errors
 #[allow(missing_docs)]
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -92,12 +91,6 @@ pub enum ContractError {
 
     #[error("Swap operations for non vault funds swap cannot be empty")]
     EmptySwapOperations {},
-
-    #[error("Migration status is closed")]
-    MigrationStatusClosed {},
-
-    #[error("Migration status is open")]
-    MigrationStatusOpen {},
 
     #[error("Vault is not distributing rewards, claiming is needed first")]
     IsNotDistributing {},
