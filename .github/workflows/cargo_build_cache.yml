@@ -15,15 +15,29 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/cachepot
+            ~/.cargo
+            ~/go
+            smart-contracts/${{ inputs.workspace }}/**/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-${{github.sha}}
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
+      - name: Install cachepot
+        run: test -e $HOME/.cargo/bin/cachepot && echo "cachepot found -- skipping install" || cargo install --git https://github.com/paritytech/cachepot
       - name: Rust check
-        run: cargo check
+        run:  cargo check --all-targets --features test-tube
         working-directory: smart-contracts/${{ inputs.workspace }}
+        env:
+          RUSTC_WRAPPER: cachepot
       - name: Store dependencies
         uses: actions/cache/save@v4
         with:
           path: |
+            ~/.cache/cachepot
             ~/.cargo
             ~/go
             smart-contracts/${{ inputs.workspace }}/**/target
-          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-${{github.sha}}
