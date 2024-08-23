@@ -244,18 +244,9 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
 }
 
 mod tests {
-    use cosmwasm_schema::cw_serde;
-    use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
-        Addr, Decimal,
-    };
-    use cw_storage_plus::Item;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
 
-    use crate::{
-        contract::migrate,
-        msg::MigrateMsg,
-        state::{VaultConfig, VAULT_CONFIG},
-    };
+    use super::*;
 
     #[test]
     fn test_migrate() {
