@@ -20,8 +20,7 @@ const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
 
 #[test]
 fn exact_deposit_withdraw_equal() {
-    let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let alice = app
@@ -121,8 +120,7 @@ fn exact_deposit_withdraw_equal() {
 
 #[test]
 fn any_deposit_withdraw_equal() {
-    let (app, contract_address, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     // Create Alice account
@@ -186,7 +184,7 @@ fn any_deposit_withdraw_equal() {
         .iter()
         .zip(&authz_deposit_event.attributes)
     {
-        if attr1.key == "token_in" || attr1.key == "token_out_min" {
+        if attr1.key == "token_in" || attr1.key == "token_out_min_amount" {
             assert_approx_eq!(
                 get_amount_from_denom(&attr1.value),
                 get_amount_from_denom(&attr2.value),

@@ -32,8 +32,7 @@ const SWAP_SUCCESS_QUOTE_BALANCE_OFFSET: usize = 4;
 
 #[test]
 fn move_range_works() {
-    let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let _before_position: PositionResponse = wasm
@@ -120,16 +119,8 @@ fn move_range_works() {
 
 #[test]
 fn move_range_cw_dex_works() {
-    let (
-        app,
-        contract_address,
-        _dex_router_addr,
-        _vault_pool_id,
-        _swap_pools_ids,
-        admin,
-        _deposit_ratio,
-        _deposit_ratio_approx,
-    ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _dex_router_addr, _vault_pool_id, _swap_pools_ids, admin, _) =
+        fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let _before_position: PositionResponse = wasm
@@ -215,16 +206,8 @@ fn move_range_cw_dex_works() {
 
 #[test]
 fn move_range_cw_dex_works_forced_swap_route() {
-    let (
-        app,
-        contract_address,
-        _dex_router_addr,
-        vault_pool_id,
-        _swap_pools_ids,
-        admin,
-        _deposit_ratio,
-        _deposit_ratio_approx,
-    ) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _dex_router_addr, vault_pool_id, _swap_pools_ids, admin, _) =
+        fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let _before_position: PositionResponse = wasm
@@ -317,8 +300,7 @@ fn move_range_cw_dex_works_forced_swap_route() {
 
 #[test]
 fn move_range_single_side_works() {
-    let (app, contract_address, _cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let response = wasm
@@ -456,38 +438,37 @@ so we want to deposit 4280628569 and 3349580
 */
 #[test]
 fn test_swap_math_poc() {
-    let (app, _contract, _cl_pool_id, _admin, _deposit_ratio, _deposit_ratio_approx) =
-        init_test_contract(
-            // TODO: Evaluate using fixture_default()
-            "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
-            &[
-                Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
-                Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
-            ],
-            MsgCreateConcentratedPool {
-                sender: "overwritten".to_string(),
-                denom0: DENOM_BASE.to_string(),  //token0 is uatom
-                denom1: DENOM_QUOTE.to_string(), //token1 is uosmo
-                tick_spacing: 100,
-                spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+    let (app, _contract, _cl_pool_id, _admin, _) = init_test_contract(
+        // TODO: Evaluate using fixture_default()
+        "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+        &[
+            Coin::new(ADMIN_BALANCE_AMOUNT, "uosmo"),
+            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_BASE),
+            Coin::new(ADMIN_BALANCE_AMOUNT, DENOM_QUOTE),
+        ],
+        MsgCreateConcentratedPool {
+            sender: "overwritten".to_string(),
+            denom0: DENOM_BASE.to_string(),  //token0 is uatom
+            denom1: DENOM_QUOTE.to_string(), //token1 is uosmo
+            tick_spacing: 100,
+            spread_factor: Decimal::from_str("0.0001").unwrap().atomics().to_string(),
+        },
+        30500000, // 4500
+        31500000, // 5500
+        vec![
+            v1beta1::Coin {
+                denom: DENOM_BASE.to_string(),
+                amount: "1000000".to_string(),
             },
-            30500000, // 4500
-            31500000, // 5500
-            vec![
-                v1beta1::Coin {
-                    denom: DENOM_BASE.to_string(),
-                    amount: "1000000".to_string(),
-                },
-                v1beta1::Coin {
-                    denom: DENOM_QUOTE.to_string(),
-                    amount: "1000000".to_string(),
-                },
-            ],
-            Uint128::zero(),
-            Uint128::zero(),
-            PERFORMANCE_FEE_DEFAULT,
-        );
+            v1beta1::Coin {
+                denom: DENOM_QUOTE.to_string(),
+                amount: "1000000".to_string(),
+            },
+        ],
+        Uint128::zero(),
+        Uint128::zero(),
+        PERFORMANCE_FEE_DEFAULT,
+    );
     let alice = app
         .init_account(&[
             Coin::new(1_000_000_000_000, "uosmo"),

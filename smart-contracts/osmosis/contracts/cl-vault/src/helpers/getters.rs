@@ -13,8 +13,8 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, QuerierWrapper, Storage, Uint128,
-    Uint256,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, QuerierWrapper, Storage, Timestamp,
+    Uint128, Uint256,
 };
 
 use super::coinlist::CoinList;
@@ -24,7 +24,7 @@ pub fn get_range_admin(deps: Deps) -> Result<Addr, ContractError> {
 }
 
 /// Calculate the total value of two assets in asset0.
-pub fn get_asset0_value(
+pub fn get_value_wrt_asset0(
     storage: &dyn Storage,
     querier: &QuerierWrapper,
     token0: Uint128,
@@ -44,19 +44,19 @@ pub fn get_asset0_value(
 }
 
 pub fn get_twap_price(
-    storage: &dyn Storage,
     querier: &QuerierWrapper,
-    env: &Env,
+    block_time: Timestamp,
     twap_window_seconds: u64,
+    pool_id: u64,
+    token0_denom: String,
+    token1_denom: String,
 ) -> Result<Decimal, ContractError> {
-    let pool_config = POOL_CONFIG.load(storage)?;
-
     let twap_querier = TwapQuerier::new(querier);
-    let start_of_window = env.block.time.minus_seconds(twap_window_seconds);
+    let start_of_window = block_time.minus_seconds(twap_window_seconds);
     let twap_price = twap_querier.arithmetic_twap_to_now(
-        pool_config.pool_id,
-        pool_config.token0,
-        pool_config.token1,
+        pool_id,
+        token0_denom,
+        token1_denom,
         Some(OsmoTimestamp {
             seconds: start_of_window.seconds().try_into()?,
             nanos: 0,

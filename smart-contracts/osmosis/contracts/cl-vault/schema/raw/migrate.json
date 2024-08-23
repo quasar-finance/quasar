@@ -3,10 +3,10 @@
   "title": "MigrateMsg",
   "type": "object",
   "required": [
-    "dex_router"
+    "swap_admin"
   ],
   "properties": {
-    "dex_router": {
+    "swap_admin": {
       "$ref": "#/definitions/Addr"
     }
   },

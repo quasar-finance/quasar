@@ -455,6 +455,14 @@
                   "items": {
                     "$ref": "#/definitions/SwapOperation"
                   }
+                },
+                "twap_window_seconds": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint64",
+                  "minimum": 0.0
                 }
               },
               "additionalProperties": false
@@ -588,12 +596,12 @@
     "SwapOperation": {
       "type": "object",
       "required": [
-        "pool_id_0",
-        "pool_id_1",
+        "pool_id_base",
+        "pool_id_quote",
         "token_in_denom"
       ],
       "properties": {
-        "forced_swap_route_token_0": {
+        "forced_swap_route_base": {
           "type": [
             "array",
             "null"
@@ -602,7 +610,7 @@
             "$ref": "#/definitions/SwapAmountInRoute"
           }
         },
-        "forced_swap_route_token_1": {
+        "forced_swap_route_quote": {
           "type": [
             "array",
             "null"
@@ -611,12 +619,12 @@
             "$ref": "#/definitions/SwapAmountInRoute"
           }
         },
-        "pool_id_0": {
+        "pool_id_base": {
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
         },
-        "pool_id_1": {
+        "pool_id_quote": {
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
@@ -636,6 +644,7 @@
       "required": [
         "dex_router",
         "performance_fee",
+        "swap_admin",
         "swap_max_slippage",
         "treasury"
       ],
@@ -645,6 +654,9 @@
         },
         "performance_fee": {
           "$ref": "#/definitions/Decimal"
+        },
+        "swap_admin": {
+          "$ref": "#/definitions/Addr"
         },
         "swap_max_slippage": {
           "$ref": "#/definitions/Decimal"

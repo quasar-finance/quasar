@@ -26,8 +26,7 @@ use std::str::FromStr;
 
 #[test]
 fn fixture_default_works() {
-    let (app, contract_address, cl_pool_id, admin, _deposit_ratio, _deposit_ratio_approx) =
-        fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
     let cl = ConcentratedLiquidity::new(&app);
     let tf = TokenFactory::new(&app);

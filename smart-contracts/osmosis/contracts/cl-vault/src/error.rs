@@ -1,4 +1,4 @@
-use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN};
+use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
 use cosmwasm_std::{
     Addr, CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
     CoinFromStrError, ConversionOverflowError, Decimal, Decimal256, Decimal256RangeExceeded,
@@ -177,6 +177,14 @@ pub fn assert_admin(storage: &dyn Storage, caller: &Addr) -> Result<(), Contract
 pub fn assert_range_admin(storage: &dyn Storage, sender: &Addr) -> Result<(), ContractError> {
     let admin = RANGE_ADMIN.load(storage)?;
     if admin != sender {
+        return Err(ContractError::Unauthorized {});
+    }
+    Ok(())
+}
+
+pub fn assert_swap_admin(storage: &dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    let vault_config = VAULT_CONFIG.load(storage)?;
+    if vault_config.swap_admin != sender {
         return Err(ContractError::Unauthorized {});
     }
     Ok(())
