@@ -190,7 +190,7 @@ pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, C
         denom: token0.denom.clone(),
         amount: token0
             .amount
-            .checked_add(unused_balance.find_coin(token0.denom).amount)?,
+            .checked_add(unused_balance.find(&token0.denom).amount)?,
     };
 
     let mut token1 = position
@@ -203,7 +203,7 @@ pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, C
         denom: token1.denom.clone(),
         amount: token1
             .amount
-            .checked_add(unused_balance.find_coin(token1.denom).amount)?,
+            .checked_add(unused_balance.find(&token1.denom).amount)?,
     };
 
     Ok(TotalAssetsResponse { token0, token1 })
