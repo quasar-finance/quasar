@@ -7,7 +7,6 @@ use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::MsgCreatePositi
 use crate::helpers::getters::get_unused_pair_balances;
 use crate::msg::{ExecuteMsg, MergePositionMsg};
 use crate::reply::Replies;
-#[allow(deprecated)]
 use crate::state::{Position, POOL_CONFIG, POSITION};
 use crate::vault::{concentrated_liquidity::create_position, merge::MergeResponse};
 use crate::ContractError;

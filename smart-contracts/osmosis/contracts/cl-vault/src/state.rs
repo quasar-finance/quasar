@@ -1,11 +1,8 @@
-use crate::{helpers::coinlist::CoinList, vault::merge::CurrentMergeWithdraw};
+use crate::vault::merge::CurrentMergeWithdraw;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
-
-#[deprecated]
-pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
 
 #[cw_serde]
 pub struct Metadata {
