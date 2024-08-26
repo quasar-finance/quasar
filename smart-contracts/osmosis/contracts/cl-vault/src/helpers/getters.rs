@@ -212,13 +212,10 @@ pub fn get_unused_pair_balances(
     env: &Env,
     pool_config: &PoolConfig,
 ) -> Result<Vec<Coin>, ContractError> {
-    // Get unused balances from the contract. This is the amount of tokens that are not currently in a position.
-    // This amount already includes the withdrawn amounts from previous steps as in this reply those funds already compose the contract balance.
     let unused_balances = get_unused_balances(&deps.querier, env)?;
 
-    // Use the unused balances to get the token0 and token1 amounts that we can use to create a new position
-    let base = unused_balances.find_coin(pool_config.token0.clone());
-    let quote = unused_balances.find_coin(pool_config.token1.clone());
+    let base = unused_balances.find(&pool_config.token0);
+    let quote = unused_balances.find(&pool_config.token1);
 
     Ok(vec![base, quote])
 }
