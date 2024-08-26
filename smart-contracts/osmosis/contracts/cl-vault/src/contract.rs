@@ -1,4 +1,5 @@
 use crate::error::ContractError;
+use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
@@ -38,7 +39,7 @@ use cosmwasm_std::{
     to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
 };
 use cw2::set_contract_version;
-use cw_storage_plus::Item;
+use cw_storage_plus::{Item, Map};
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -250,6 +251,10 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     }
     MIGRATION_STATUS.remove(deps.storage);
 
+    // UserRewards
+    pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
+    USER_REWARDS.clear(deps.storage);
+
     let response = Response::new().add_attribute("migrate", "successful");
     Ok(response)
 }
@@ -297,6 +302,12 @@ mod tests {
             .save(&mut deps.storage, &MigrationStatus::Closed)
             .unwrap();
 
+        // UserRewards mocking
+        pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
+        USER_REWARDS
+            .save(&mut deps.storage, Addr::unchecked("user"), &CoinList::new())
+            .unwrap();
+
         // Migrate and assert new states
         migrate(
             deps.as_mut(),
@@ -316,5 +327,10 @@ mod tests {
         assert!(matches!(OLD_VAULT_CONFIG.may_load(&deps.storage), Ok(None)));
 
         assert!(matches!(MIGRATION_STATUS.may_load(&deps.storage), Ok(None)));
+
+        assert!(matches!(
+            USER_REWARDS.may_load(&deps.storage, Addr::unchecked("user")),
+            Ok(None)
+        ));
     }
 }
