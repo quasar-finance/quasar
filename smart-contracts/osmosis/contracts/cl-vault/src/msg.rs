@@ -54,11 +54,6 @@ pub enum AdminExtensionExecuteMsg {
         /// The metadata updates.
         updates: Metadata,
     },
-    /// Update the dex router address.
-    UpdateDexRouter {
-        /// The new dex router address.
-        address: Option<String>,
-    },
     /// Build tick exponent cache
     BuildTickCache {},
 }

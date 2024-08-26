@@ -3,14 +3,14 @@ use crate::{
     helpers::{
         getters::{
             get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_value_wrt_asset0,
-            DepositInfo,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_pair_balances,
+            get_value_wrt_asset0, DepositInfo,
         },
         msgs::refund_bank_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
     reply::Replies,
-    state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_CONFIG, VAULT_DENOM},
+    state::{CURRENT_SWAP_RECIPIENT, POOL_CONFIG, SHARES, VAULT_CONFIG, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
         swap::{estimate_swap_min_out_amount, swap_msg},
@@ -18,12 +18,10 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    attr, coin, Addr, Coin, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg,
-    SubMsgResult, Uint128, Uint256,
+    attr, coin, Addr, Decimal, DepsMut, Env, Fraction, MessageInfo, Response, SubMsg, SubMsgResult,
+    Uint128, Uint256,
 };
-use osmosis_std::types::osmosis::{
-    poolmanager::v1beta1::MsgSwapExactAmountInResponse, tokenfactory::v1beta1::MsgMint,
-};
+use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
 
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
@@ -69,7 +67,7 @@ pub(crate) fn execute_any_deposit(
         pool_config.clone().token0,
         pool_config.clone().token1,
     )?;
-    let (token_in, out_denom, remainder, price) = if !deposit_info.base_refund.amount.is_zero() {
+    let (token_in, out_denom, price) = if !deposit_info.base_refund.amount.is_zero() {
         let token_in_amount = if pool_details.current_tick > position.upper_tick {
             deposit_info.base_refund.amount
         } else {
@@ -81,15 +79,7 @@ pub(crate) fn execute_any_deposit(
             )?
         };
         let token_in = coin(token_in_amount.into(), pool_config.token0.clone());
-        let remainder = coin(
-            deposit_info
-                .base_refund
-                .amount
-                .checked_sub(token_in.amount)?
-                .into(),
-            pool_config.token0.clone(),
-        );
-        (token_in, pool_config.token1.clone(), remainder, twap_price)
+        (token_in, pool_config.token1.clone(), twap_price)
     } else {
         let token_in_amount = if pool_details.current_tick < position.lower_tick {
             deposit_info.quote_refund.amount
@@ -102,40 +92,21 @@ pub(crate) fn execute_any_deposit(
             )?
         };
         let token_in = coin(token_in_amount.into(), pool_config.token1.clone());
-        let remainder = coin(
-            deposit_info
-                .quote_refund
-                .amount
-                .checked_sub(token_in.amount)?
-                .into(),
-            pool_config.token1.clone(),
-        );
         (
             token_in,
             pool_config.token0.clone(),
-            remainder,
             twap_price.inv().expect("Invalid price"),
         )
     };
-    CURRENT_SWAP_ANY_DEPOSIT.save(
-        deps.storage,
-        &(
-            remainder,
-            recipient.clone(),
-            (deposit_info.base_deposit, deposit_info.quote_deposit),
-        ),
-    )?;
+    CURRENT_SWAP_RECIPIENT.save(deps.storage, &recipient)?;
 
     let token_out_min_amount = estimate_swap_min_out_amount(token_in.amount, price, max_slippage)?;
 
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
     let swap_msg = swap_msg(
-        env.contract.address,
-        pool_config.pool_id,
+        vault_config.dex_router,
         token_in.clone(),
         coin(token_out_min_amount.into(), out_denom.clone()),
         None, // TODO: check this None
-        dex_router,
     )?;
 
     Ok(Response::new()
@@ -154,46 +125,21 @@ pub(crate) fn execute_any_deposit(
 pub fn handle_any_deposit_swap_reply(
     mut deps: DepsMut,
     env: Env,
-    data: SubMsgResult,
+    _data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    // Attempt to directly parse the data to MsgSwapExactAmountInResponse outside of the match
-    let resp: MsgSwapExactAmountInResponse = data.try_into()?;
-
-    let (remainder, recipient, deposit_amount_in_ratio) =
-        CURRENT_SWAP_ANY_DEPOSIT.load(deps.storage)?;
-    CURRENT_SWAP_ANY_DEPOSIT.remove(deps.storage);
+    let recipient = CURRENT_SWAP_RECIPIENT.load(deps.storage)?;
+    CURRENT_SWAP_RECIPIENT.remove(deps.storage);
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let (balance0, balance1): (Uint128, Uint128) = if remainder.denom == pool_config.token0 {
-        (
-            remainder.amount,
-            Uint128::new(resp.token_out_amount.parse()?),
-        )
-    } else {
-        (
-            Uint128::new(resp.token_out_amount.parse()?),
-            remainder.amount,
-        )
-    };
-
-    let coins_to_mint_for = (
-        Coin {
-            denom: pool_config.token0.clone(),
-            amount: balance0 + deposit_amount_in_ratio.0,
-        },
-        Coin {
-            denom: pool_config.token1.clone(),
-            amount: balance1 + deposit_amount_in_ratio.1,
-        },
-    );
+    let balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
 
     execute_deposit(
         &mut deps,
         env,
         recipient,
         DepositInfo {
-            base_deposit: coins_to_mint_for.0.amount,
-            quote_deposit: coins_to_mint_for.1.amount,
+            base_deposit: balances[0].amount,
+            quote_deposit: balances[1].amount,
             base_refund: coin(0u128, pool_config.token0),
             quote_refund: coin(0u128, pool_config.token1),
         },

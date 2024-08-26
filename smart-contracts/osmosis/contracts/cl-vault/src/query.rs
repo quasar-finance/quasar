@@ -1,9 +1,8 @@
 use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_unused_balances;
 use crate::math::tick::verify_tick_exp_cache;
-use crate::state::DEX_ROUTER;
 use crate::state::{
-    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_DENOM,
+    PoolConfig, ADMIN_ADDRESS, METADATA, POOL_CONFIG, POSITION, SHARES, VAULT_CONFIG, VAULT_DENOM,
 };
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
@@ -106,10 +105,10 @@ pub fn query_metadata(deps: Deps) -> Result<MetadataResponse, ContractError> {
 }
 
 pub fn query_dex_router(deps: Deps) -> Result<DexRouterResponse, ContractError> {
-    let dex_router = DEX_ROUTER.load(deps.storage)?;
+    let config = VAULT_CONFIG.load(deps.storage)?;
 
     Ok(DexRouterResponse {
-        dex_router: dex_router.to_string(),
+        dex_router: config.dex_router.to_string(),
     })
 }
 
