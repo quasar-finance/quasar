@@ -1,5 +1,6 @@
 use crate::setup::{
-    fixture_default, get_amount_from_denom, DENOM_BASE, DENOM_QUOTE, PERFORMANCE_FEE_DEFAULT,
+    fixture_default, fixture_dex_router, get_amount_from_denom, DENOM_BASE, DENOM_QUOTE,
+    PERFORMANCE_FEE_DEFAULT,
 };
 
 use cl_vault::{
@@ -20,7 +21,7 @@ const INITIAL_BALANCE_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000_000_000;
 
 #[test]
 fn exact_deposit_withdraw_equal() {
-    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, ..) = fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let alice = app
@@ -120,7 +121,7 @@ fn exact_deposit_withdraw_equal() {
 
 #[test]
 fn any_deposit_withdraw_equal() {
-    let (app, contract_address, _cl_pool_id, _admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, ..) = fixture_default(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     // Create Alice account

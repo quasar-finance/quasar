@@ -78,7 +78,8 @@
           "performance_fee",
           "swap_admin",
           "swap_max_slippage",
-          "treasury"
+          "treasury",
+          "twap_window_seconds"
         ],
         "properties": {
           "dex_router": {
@@ -95,6 +96,11 @@
           },
           "treasury": {
             "$ref": "#/definitions/Addr"
+          },
+          "twap_window_seconds": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           }
         },
         "additionalProperties": false
@@ -727,7 +733,8 @@
           "performance_fee",
           "swap_admin",
           "swap_max_slippage",
-          "treasury"
+          "treasury",
+          "twap_window_seconds"
         ],
         "properties": {
           "dex_router": {
@@ -744,6 +751,11 @@
           },
           "treasury": {
             "$ref": "#/definitions/Addr"
+          },
+          "twap_window_seconds": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           }
         },
         "additionalProperties": false
@@ -1122,11 +1134,17 @@
     "title": "MigrateMsg",
     "type": "object",
     "required": [
-      "swap_admin"
+      "swap_admin",
+      "twap_window_seconds"
     ],
     "properties": {
       "swap_admin": {
         "$ref": "#/definitions/Addr"
+      },
+      "twap_window_seconds": {
+        "type": "integer",
+        "format": "uint64",
+        "minimum": 0.0
       }
     },
     "additionalProperties": false,

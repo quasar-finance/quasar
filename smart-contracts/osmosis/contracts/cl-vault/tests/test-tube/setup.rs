@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
-use cl_vault::{helpers::generic::sort_tokens, msg::InstantiateMsg, state::VaultConfig};
+use cl_vault::{
+    helpers::generic::sort_tokens,
+    msg::{AdminExtensionExecuteMsg, ExtensionExecuteMsg, InstantiateMsg},
+    state::VaultConfig,
+};
 use cosmwasm_std::{coin, Addr, Attribute, Coin, Decimal, Uint128};
 use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
 use osmosis_std::types::{
@@ -416,7 +420,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
             &DexInstantiate {},
             Some(admin.address().as_str()),
             Some("dex-router"),
-            sort_tokens(vec![]).as_ref(),
+            &[],
             &admin,
         )
         .unwrap();
@@ -424,7 +428,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
     // Here we pass only the 3x swap LP pools, not the Vault CL pool id 1
     set_dex_router_paths(
         &app,
-        contract_dex_router.data.address.to_string(),
+        &contract_dex_router.data.address,
         &lp_pools,
         &pools_coins,
         &admin,
@@ -463,6 +467,18 @@ fn init_test_contract_with_dex_router_and_swap_pools(
         )
         .unwrap();
 
+    wasm.execute(
+        &contract_cl.data.address,
+        &cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(
+            ExtensionExecuteMsg::Admin(AdminExtensionExecuteMsg::UpdateDexRouter {
+                address: Some(contract_dex_router.data.address.clone()),
+            }),
+        ),
+        &[],
+        &admin,
+    )
+    .unwrap();
+
     (
         app,
         Addr::unchecked(contract_cl.data.address),
@@ -476,7 +492,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
 
 fn set_dex_router_paths(
     app: &OsmosisTestApp,
-    dex_router: String,
+    dex_router: &str,
     pools: &[u64],
     pools_coins: &[Vec<Coin>],
     admin: &SigningAccount,
@@ -487,14 +503,14 @@ fn set_dex_router_paths(
     // Set Dex Router contract paths
     for (index, pool_id) in pools.iter().enumerate() {
         wasm.execute(
-            &dex_router,
+            dex_router,
             &DexExecuteMsg::SetPath {
                 offer_denom: pools_coins[index][0].denom.to_string(),
                 ask_denom: pools_coins[index][1].denom.to_string(),
                 path: vec![*pool_id],
                 bidirectional: true,
             },
-            vec![].as_ref(),
+            &[],
             admin,
         )
         .unwrap();

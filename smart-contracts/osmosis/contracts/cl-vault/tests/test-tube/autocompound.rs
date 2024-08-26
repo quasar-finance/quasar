@@ -292,16 +292,10 @@ fn test_autocompound_with_rewards_swap_non_vault_funds() {
                 token_in_denom: DENOM_REWARD.to_string(),
                 pool_id_base: swap_pools_ids[1],
                 pool_id_quote: swap_pools_ids[2],
-                forced_swap_route_base: Some(vec![
-                    SwapAmountInRoute {
-                        pool_id: swap_pools_ids[2],
-                        token_out_denom: DENOM_QUOTE.to_string(),
-                    },
-                    SwapAmountInRoute {
-                        pool_id: swap_pools_ids[1],
-                        token_out_denom: DENOM_BASE.to_string(),
-                    },
-                ]),
+                forced_swap_route_base: Some(vec![SwapAmountInRoute {
+                    pool_id: swap_pools_ids[1],
+                    token_out_denom: DENOM_BASE.to_string(),
+                }]),
                 forced_swap_route_quote: Some(vec![SwapAmountInRoute {
                     pool_id: swap_pools_ids[2],
                     token_out_denom: DENOM_QUOTE.to_string(),
