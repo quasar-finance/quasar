@@ -10,7 +10,7 @@ use crate::{
     },
     query::{query_total_assets, query_total_vault_token_supply},
     reply::Replies,
-    state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{CURRENT_SWAP_ANY_DEPOSIT, DEX_ROUTER, POOL_CONFIG, SHARES, VAULT_CONFIG, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
         swap::{estimate_swap_min_out_amount, swap_msg},
@@ -60,10 +60,11 @@ pub(crate) fn execute_any_deposit(
         return execute_deposit(&mut deps, env, recipient, deposit_info);
     }
 
+    let vault_config = VAULT_CONFIG.load(deps.storage)?;
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
-        24u64,
+        vault_config.twap_window_seconds,
         pool_config.pool_id,
         pool_config.clone().token0,
         pool_config.clone().token1,

@@ -232,6 +232,7 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
             swap_max_slippage: old_vault_config.swap_max_slippage,
             dex_router: old_vault_config.dex_router,
             swap_admin: msg.swap_admin,
+            twap_window_seconds: msg.twap_window_seconds,
         },
     )?;
 
@@ -314,6 +315,7 @@ mod tests {
             env,
             MigrateMsg {
                 swap_admin: Addr::unchecked("swap_admin"),
+                twap_window_seconds: 24u64,
             },
         )
         .unwrap();

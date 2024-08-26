@@ -333,6 +333,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
             swap_admin: Addr::unchecked("old_swap_admin"),
+            twap_window_seconds: 0u64,
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -346,6 +347,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("new_dex_router"),
             swap_admin: Addr::unchecked("new_swap_admin"),
+            twap_window_seconds: 24u64,
         };
         let info_admin: MessageInfo = mock_info("admin", &[]);
 
@@ -365,6 +367,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
             swap_admin: Addr::unchecked("old_swap_admin"),
+            twap_window_seconds: 0u64,
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -378,6 +381,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("new_dex_router"),
             swap_admin: Addr::unchecked("new_swap_admin"),
+            twap_window_seconds: 24u64,
         };
         let info_not_admin = mock_info("not_admin", &[]);
 
@@ -397,6 +401,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
             swap_admin: Addr::unchecked("old_swap_admin"),
+            twap_window_seconds: 0u64,
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
@@ -410,6 +415,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("new_dex_router"),
             swap_admin: Addr::unchecked("new_swap_admin"),
+            twap_window_seconds: 24u64,
         };
 
         let info_admin_with_funds = mock_info("admin", &[coin(1, "token")]);
@@ -427,6 +433,7 @@ mod tests {
             swap_max_slippage: Decimal::from_ratio(1u128, 100u128),
             dex_router: Addr::unchecked("old_dex_router"),
             swap_admin: Addr::unchecked("old_swap_admin"),
+            twap_window_seconds: 24u64,
         };
         let mut deps = mock_dependencies();
         ADMIN_ADDRESS.save(deps.as_mut().storage, &admin).unwrap();
