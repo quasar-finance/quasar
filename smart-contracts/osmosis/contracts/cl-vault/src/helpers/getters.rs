@@ -75,7 +75,7 @@ pub struct DepositInfo {
 }
 
 pub fn get_depositable_tokens(
-    deps: &DepsMut,
+    deps: &Deps,
     funds: Vec<Coin>,
     pool_config: &PoolConfig,
 ) -> Result<DepositInfo, ContractError> {
