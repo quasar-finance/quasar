@@ -1,4 +1,4 @@
-use crate::state::{ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
+use crate::state::{PoolConfig, ADMIN_ADDRESS, RANGE_ADMIN, VAULT_CONFIG};
 use cosmwasm_std::{
     Addr, CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError, Coin,
     CoinFromStrError, ConversionOverflowError, Decimal, Decimal256, Decimal256RangeExceeded,
@@ -21,11 +21,11 @@ pub enum ContractError {
     #[error("Pool-id {pool_id} not found")]
     PoolNotFound { pool_id: u64 },
 
-    #[error("Position Not Found")]
+    #[error("Position not found")]
     PositionNotFound,
 
-    #[error("Sent the wrong amount of denoms")]
-    IncorrectAmountFunds,
+    #[error("Incorrect deposit funds")]
+    IncorrectDepositFunds,
 
     #[error("ratio_of_swappable_funds_to_use should be >0 and <=1")]
     InvalidRatioOfSwappableFundsToUse,
@@ -160,9 +160,13 @@ pub enum ContractError {
     TryFromIntError(#[from] TryFromIntError),
 }
 
-pub fn assert_deposits(funds: &[Coin]) -> Result<(), ContractError> {
-    if funds.len() != 2 && funds.len() != 1 {
-        return Err(ContractError::IncorrectAmountFunds);
+pub fn assert_deposits(funds: &[Coin], config: &PoolConfig) -> Result<(), ContractError> {
+    if (funds.len() != 2 && funds.len() != 1)
+        || funds
+            .iter()
+            .any(|deposit| !config.pool_contains_token(&deposit.denom))
+    {
+        return Err(ContractError::IncorrectDepositFunds);
     }
     Ok(())
 }
