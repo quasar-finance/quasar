@@ -268,66 +268,6 @@
         }
       ]
     },
-    "AuthzExtension": {
-      "description": "Extension messages for Authz. This interface basically reexports certain vault functionality but sets recipient forcibly to None",
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "exact_deposit"
-          ],
-          "properties": {
-            "exact_deposit": {
-              "type": "object",
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "any_deposit"
-          ],
-          "properties": {
-            "any_deposit": {
-              "type": "object",
-              "required": [
-                "max_slippage"
-              ],
-              "properties": {
-                "max_slippage": {
-                  "$ref": "#/definitions/Decimal"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "redeem"
-          ],
-          "properties": {
-            "redeem": {
-              "type": "object",
-              "required": [
-                "amount"
-              ],
-              "properties": {
-                "amount": {
-                  "$ref": "#/definitions/Uint128"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "Decimal": {
       "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
       "type": "string"
@@ -344,19 +284,6 @@
           "properties": {
             "admin": {
               "$ref": "#/definitions/AdminExtensionExecuteMsg"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "An interface of certain vault interaction with forced values for authz",
-          "type": "object",
-          "required": [
-            "authz"
-          ],
-          "properties": {
-            "authz": {
-              "$ref": "#/definitions/AuthzExtension"
             }
           },
           "additionalProperties": false

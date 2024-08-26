@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal};
 use cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 
@@ -15,8 +15,6 @@ use crate::state::{Metadata, VaultConfig};
 pub enum ExtensionExecuteMsg {
     /// Execute Admin operations.
     Admin(AdminExtensionExecuteMsg),
-    /// An interface of certain vault interaction with forced values for authz
-    Authz(AuthzExtension),
     /// Rebalance our liquidity range based on an off-chain message
     /// given to us by RANGE_ADMIN
     ModifyRange(ModifyRangeMsg),
@@ -31,15 +29,6 @@ pub enum ExtensionExecuteMsg {
         swap_operations: Vec<SwapOperation>,
         twap_window_seconds: Option<u64>,
     },
-}
-
-/// Extension messages for Authz. This interface basically reexports certain vault functionality
-/// but sets recipient forcibly to None
-#[cw_serde]
-pub enum AuthzExtension {
-    ExactDeposit {},
-    AnyDeposit { max_slippage: Decimal },
-    Redeem { amount: Uint128 },
 }
 
 /// Apollo extension messages define functionality that is part of all apollo
