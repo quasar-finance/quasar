@@ -1,6 +1,6 @@
 use crate::setup::{
-    fixture_default, fixture_dex_router, init_test_contract, ADMIN_BALANCE_AMOUNT, DENOM_BASE,
-    DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+    fixture_dex_router, init_test_contract, ADMIN_BALANCE_AMOUNT, DENOM_BASE, DENOM_QUOTE,
+    MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
 
 use cosmwasm_std::{coin, Coin, Decimal, Uint128};
@@ -32,7 +32,8 @@ const SWAP_SUCCESS_QUOTE_BALANCE_OFFSET: usize = 4;
 
 #[test]
 fn move_range_works() {
-    let (app, contract_address, _cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _dex_router, _cl_pool_id, _pools, admin, ..) =
+        fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let _before_position: PositionResponse = wasm
@@ -88,7 +89,7 @@ fn move_range_works() {
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
-                "1201279ubtc"
+                "1221399ubtc"
             );
         }
     }
@@ -113,13 +114,13 @@ fn move_range_works() {
         .unwrap();
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
-    assert_eq!(pos_base, coin(762164u128, DENOM_BASE));
-    assert_eq!(pos_quote, coin(1201279u128, DENOM_QUOTE));
+    assert_eq!(pos_base, coin(774929u128, DENOM_BASE));
+    assert_eq!(pos_quote, coin(1221399u128, DENOM_QUOTE));
 }
 
 #[test]
 fn move_range_cw_dex_works() {
-    let (app, contract_address, _dex_router_addr, _vault_pool_id, _swap_pools_ids, admin, _) =
+    let (app, contract_address, _dex_router_addr, _vault_pool_id, _swap_pools_ids, admin, ..) =
         fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
@@ -171,7 +172,7 @@ fn move_range_cw_dex_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "1899998uatom"
+                "1989999uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
@@ -200,13 +201,13 @@ fn move_range_cw_dex_works() {
         .unwrap();
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
-    assert_eq!(pos_base, coin(1899998u128, DENOM_BASE));
+    assert_eq!(pos_base, coin(1989999u128, DENOM_BASE));
     assert_eq!(pos_quote, coin(0u128, DENOM_QUOTE));
 }
 
 #[test]
 fn move_range_cw_dex_works_forced_swap_route() {
-    let (app, contract_address, _dex_router_addr, vault_pool_id, _swap_pools_ids, admin, _) =
+    let (app, contract_address, _dex_router_addr, vault_pool_id, _swap_pools_ids, admin, ..) =
         fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
@@ -266,7 +267,7 @@ fn move_range_cw_dex_works_forced_swap_route() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "1899998uatom"
+                "1989999uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
@@ -294,13 +295,14 @@ fn move_range_cw_dex_works_forced_swap_route() {
         .unwrap();
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
-    assert_eq!(pos_base, coin(1899998u128, DENOM_BASE));
+    assert_eq!(pos_base, coin(1989999u128, DENOM_BASE));
     assert_eq!(pos_quote, coin(0u128, DENOM_QUOTE));
 }
 
 #[test]
 fn move_range_single_side_works() {
-    let (app, contract_address, _cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
+    let (app, contract_address, _dex_router_addr, _vault_pool_id, _swap_pools_ids, admin, ..) =
+        fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
     let response = wasm
@@ -343,7 +345,7 @@ fn move_range_single_side_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_BASE_BALANCE_OFFSET].value,
-                "1899998uatom"
+                "1989999uatom"
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
@@ -377,11 +379,11 @@ fn move_range_single_side_works() {
         if let Some(pos) = pos {
             assert_eq!(
                 event.attributes[pos + DO_SWAP_DEPOSIT_TOKEN_IN_OFFSET].value,
-                "1899997uatom"
+                "1989998uatom"
             );
             assert_eq!(
                 event.attributes[pos + DO_SWAP_DEPOSIT_MIN_OUT_OFFSET].value,
-                "1709997"
+                "1790998"
             );
         }
 
@@ -396,7 +398,7 @@ fn move_range_single_side_works() {
             );
             assert_eq!(
                 event.attributes[pos + SWAP_SUCCESS_QUOTE_BALANCE_OFFSET].value,
-                "1709997ubtc"
+                "1970100ubtc"
             );
         }
     }
@@ -422,7 +424,7 @@ fn move_range_single_side_works() {
     let pos_base: Coin = pos.asset0.unwrap().try_into().unwrap();
     let pos_quote: Coin = pos.asset1.unwrap().try_into().unwrap();
     assert_eq!(pos_base, coin(0u128, DENOM_BASE));
-    assert_eq!(pos_quote, coin(1709997u128, DENOM_QUOTE));
+    assert_eq!(pos_quote, coin(1970100u128, DENOM_QUOTE));
 }
 
 /*

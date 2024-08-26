@@ -3,11 +3,17 @@
   "title": "MigrateMsg",
   "type": "object",
   "required": [
-    "swap_admin"
+    "swap_admin",
+    "twap_window_seconds"
   ],
   "properties": {
     "swap_admin": {
       "$ref": "#/definitions/Addr"
+    },
+    "twap_window_seconds": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
     }
   },
   "additionalProperties": false,

@@ -1,5 +1,5 @@
 use crate::setup::{
-    fixture_default, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+    fixture_dex_router, DENOM_BASE, DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
 
 use cl_vault::{
@@ -25,8 +25,9 @@ use osmosis_test_tube::{
 use std::str::FromStr;
 
 #[test]
-fn fixture_default_works() {
-    let (app, contract_address, cl_pool_id, admin, _) = fixture_default(PERFORMANCE_FEE_DEFAULT);
+fn fixture_dex_router_works() {
+    let (app, contract_address, _dex_router, cl_pool_id, _pools, admin, ..) =
+        fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
     let cl = ConcentratedLiquidity::new(&app);
     let tf = TokenFactory::new(&app);
