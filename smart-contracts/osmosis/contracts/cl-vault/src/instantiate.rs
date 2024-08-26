@@ -11,8 +11,8 @@ use osmosis_std::types::osmosis::tokenfactory::v1beta1::{
     MsgCreateDenom, MsgCreateDenomResponse, MsgMint,
 };
 
-use crate::helpers::assert::must_pay_one_or_two;
-use crate::helpers::getters::get_value_wrt_asset0;
+use crate::error::assert_deposits;
+use crate::helpers::getters::{get_unused_pair_balances, get_value_wrt_asset0};
 use crate::math::tick::{build_tick_exp_cache, verify_tick_exp_cache};
 use crate::msg::InstantiateMsg;
 use crate::reply::Replies;
@@ -50,15 +50,13 @@ pub fn handle_instantiate(
             pool_id: msg.pool_id,
         })?
         .try_into()?;
-
-    POOL_CONFIG.save(
-        deps.storage,
-        &PoolConfig {
-            pool_id: pool.id,
-            token0: pool.token0.clone(),
-            token1: pool.token1.clone(),
-        },
-    )?;
+    let pool_config = PoolConfig {
+        pool_id: pool.id,
+        token0: pool.token0.clone(),
+        token1: pool.token1.clone(),
+    };
+    assert_deposits(&info.funds, &pool_config)?;
+    POOL_CONFIG.save(deps.storage, &pool_config)?;
 
     METADATA.save(
         deps.storage,
@@ -79,15 +77,14 @@ pub fn handle_instantiate(
     }
     .into();
 
-    // in order to create the initial position, we need some funds to throw in there, these funds should be seen as burned
-    let (initial0, initial1) = must_pay_one_or_two(&info.funds, (pool.token0, pool.token1))?;
+    let vault_funds = get_unused_pair_balances(&deps, &env, &pool_config)?;
 
     let create_position_msg = create_position(
         deps,
         &env,
         msg.initial_lower_tick,
         msg.initial_upper_tick,
-        vec![initial0, initial1],
+        vault_funds,
         Uint128::zero(),
         Uint128::zero(),
     )?;

@@ -8,7 +8,6 @@ use quasar_types::pool_pair::PoolPair;
 
 use crate::vault::concentrated_liquidity::get_position;
 use crate::{
-    helpers::assert::must_pay_one_or_two,
     math::tick::tick_to_price,
     state::{PoolConfig, POOL_CONFIG, RANGE_ADMIN},
     ContractError,
@@ -77,29 +76,31 @@ pub struct DepositInfo {
 
 pub fn get_depositable_tokens(
     deps: &DepsMut,
-    funds: &[Coin],
+    funds: Vec<Coin>,
     pool_config: &PoolConfig,
 ) -> Result<DepositInfo, ContractError> {
-    let (token0, token1) = must_pay_one_or_two(
-        funds,
-        (pool_config.token0.clone(), pool_config.token1.clone()),
-    )?;
+    let funds_in_pool = get_vault_funds_or_zero(&CoinList::from_coins(funds), pool_config);
 
     let position = get_position(deps.storage, &deps.querier)?;
     let assets = PoolPair::new(
         position.asset0.unwrap_or_default().try_into()?,
         position.asset1.unwrap_or_default().try_into()?,
     );
-    get_deposit_info(&assets, token0, token1)
+    get_deposit_info(&assets, &funds_in_pool)
+}
+
+fn get_vault_funds_or_zero(funds: &CoinList, config: &PoolConfig) -> PoolPair<Coin, Coin> {
+    let base = funds.find(&config.token0);
+    let quote = funds.find(&config.token1);
+    PoolPair::new(base, quote)
 }
 
 fn get_deposit_info(
     assets: &PoolPair<Coin, Coin>,
-    provided_base: Coin,
-    provided_quote: Coin,
+    provided: &PoolPair<Coin, Coin>,
 ) -> Result<DepositInfo, ContractError> {
-    let provided_base_amount: Uint256 = provided_base.amount.into();
-    let provided_quote_amount: Uint256 = provided_quote.amount.into();
+    let provided_base_amount: Uint256 = provided.base.amount.into();
+    let provided_quote_amount: Uint256 = provided.quote.amount.into();
 
     let base_deposit = if assets.quote.amount.is_zero() {
         provided_base_amount
@@ -213,11 +214,9 @@ pub fn get_unused_pair_balances(
     pool_config: &PoolConfig,
 ) -> Result<Vec<Coin>, ContractError> {
     let unused_balances = get_unused_balances(&deps.querier, env)?;
+    let vault_funds = get_vault_funds_or_zero(&unused_balances, pool_config);
 
-    let base = unused_balances.find(&pool_config.token0);
-    let quote = unused_balances.find(&pool_config.token1);
-
-    Ok(vec![base, quote])
+    Ok(vec![vault_funds.base, vault_funds.quote])
 }
 
 #[cfg(test)]
@@ -355,7 +354,8 @@ mod tests {
         let token1 = coin(100_000_000_000_000_000_000_000_000_000, TOKEN1);
 
         let assets = PoolPair::new(token0.clone(), token1.clone());
-        let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
+        let provided = PoolPair::new(token0.clone(), token1.clone());
+        let result = get_deposit_info(&assets, &provided).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -373,7 +373,8 @@ mod tests {
         let token1 = coin(100, TOKEN1);
 
         let assets = PoolPair::new(coin(0, TOKEN0), token1.clone());
-        let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
+        let provided = PoolPair::new(token0.clone(), token1.clone());
+        let result = get_deposit_info(&assets, &provided).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -391,7 +392,8 @@ mod tests {
         let token1 = coin(100, TOKEN1);
 
         let assets = PoolPair::new(token0.clone(), coin(0, TOKEN1));
-        let result = get_deposit_info(&assets, token0.clone(), token1.clone()).unwrap();
+        let provided = PoolPair::new(token0.clone(), token1.clone());
+        let result = get_deposit_info(&assets, &provided).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -410,7 +412,8 @@ mod tests {
 
         let assets = PoolPair::new(token0.clone(), token1.clone());
         let base_deposit = coin(2000, TOKEN0);
-        let result = get_deposit_info(&assets, base_deposit.clone(), coin(5000, TOKEN1)).unwrap();
+        let provided = PoolPair::new(base_deposit.clone(), coin(5000, TOKEN1));
+        let result = get_deposit_info(&assets, &provided).unwrap();
         assert_eq!(
             result,
             DepositInfo {
@@ -429,7 +432,8 @@ mod tests {
 
         let assets = PoolPair::new(token0.clone(), token1.clone());
         let quote_deposit = coin(3000, TOKEN1);
-        let result = get_deposit_info(&assets, coin(2000, TOKEN0), quote_deposit.clone()).unwrap();
+        let provided = PoolPair::new(coin(2000, TOKEN0), quote_deposit.clone());
+        let result = get_deposit_info(&assets, &provided).unwrap();
         assert_eq!(
             result,
             DepositInfo {
