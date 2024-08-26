@@ -416,28 +416,6 @@
           "additionalProperties": false
         },
         {
-          "description": "MigrationStep",
-          "type": "object",
-          "required": [
-            "migration_step"
-          ],
-          "properties": {
-            "migration_step": {
-              "type": "object",
-              "required": [
-                "amount_of_users"
-              ],
-              "properties": {
-                "amount_of_users": {
-                  "$ref": "#/definitions/Uint128"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
           "description": "SwapNonVaultFunds",
           "type": "object",
           "required": [
