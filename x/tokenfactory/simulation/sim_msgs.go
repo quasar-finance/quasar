@@ -4,14 +4,12 @@ package simulation
 import (
 	"errors"
 
-	legacysimulationtype "github.com/cosmos/cosmos-sdk/types/simulation"
-
-	"github.com/osmosis-labs/osmosis/osmoutils"
-	"github.com/quasarlabs/quasarnode/simulation/simtypes"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
-	"github.com/quasarlabs/quasarnode/x/tokenfactory/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	legacysimulationtype "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/osmosis-labs/osmosis/osmoutils"
+	"github.com/quasar-finance/quasar/simulation/simtypes"
+	"github.com/quasar-finance/quasar/x/tokenfactory/keeper"
+	"github.com/quasar-finance/quasar/x/tokenfactory/types"
 )
 
 // RandomMsgCreateDenom creates a random tokenfactory denom that is no greater than 44 alphanumeric characters

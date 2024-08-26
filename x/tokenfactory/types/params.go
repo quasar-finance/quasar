@@ -5,8 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	appparams "github.com/quasarlabs/quasarnode/app/params"
+	appparams "github.com/quasar-finance/quasar/app/params"
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)

@@ -3,45 +3,46 @@ package testutil
 import (
 	"testing"
 
-	tmdb "github.com/cometbft/cometbft-db"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
+	storemetrics "cosmossdk.io/store/metrics"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	stakingKeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
+	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
 	"github.com/golang/mock/gomock"
+	"github.com/quasar-finance/quasar/app"
+	appparams "github.com/quasar-finance/quasar/app/params"
+	"github.com/quasar-finance/quasar/testutil/keeper"
+	"github.com/quasar-finance/quasar/testutil/mock"
+	epochskeeper "github.com/quasar-finance/quasar/x/epochs/keeper"
+	tfkeeper "github.com/quasar-finance/quasar/x/tokenfactory/keeper"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/app"
-	"github.com/quasarlabs/quasarnode/testutil/keeper"
-	"github.com/quasarlabs/quasarnode/testutil/mock"
-	epochskeeper "github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	tfkeeper "github.com/quasarlabs/quasarnode/x/tokenfactory/keeper"
 )
 
 func init() {
 	// Set prefixes
-	accountPubKeyPrefix := app.AccountAddressPrefix + "pub"
-	validatorAddressPrefix := app.AccountAddressPrefix + "valoper"
-	validatorPubKeyPrefix := app.AccountAddressPrefix + "valoperpub"
-	consNodeAddressPrefix := app.AccountAddressPrefix + "valcons"
-	consNodePubKeyPrefix := app.AccountAddressPrefix + "valconspub"
+	accountPubKeyPrefix := appparams.Bech32PrefixAccAddr + "pub"
+	validatorAddressPrefix := appparams.Bech32PrefixAccAddr + "valoper"
+	validatorPubKeyPrefix := appparams.Bech32PrefixAccAddr + "valoperpub"
+	consNodeAddressPrefix := appparams.Bech32PrefixAccAddr + "valcons"
+	consNodePubKeyPrefix := appparams.Bech32PrefixAccAddr + "valconspub"
 
 	// Set and seal config
 	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount(app.AccountAddressPrefix, accountPubKeyPrefix)
+	config.SetBech32PrefixForAccount(appparams.Bech32PrefixAccAddr, accountPubKeyPrefix)
 	config.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	config.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
 	config.Seal()
@@ -61,7 +62,7 @@ func CreateRandomAccounts(numAccts int) []sdk.AccAddress {
 // FundAcc funds target address with specified amount.
 func (ts *TestSetup) FundAcc(t testing.TB, acc sdk.AccAddress, amounts sdk.Coins) {
 	// TODO - implement alternative solution to the simapp.FundAcc
-	err := testutil.FundAccount(ts.Keepers.BankKeeper, ts.Ctx, acc, amounts)
+	err := testutil.FundAccount(ts.Ctx, ts.Keepers.BankKeeper, acc, amounts)
 	require.NoError(t, err)
 }
 
@@ -81,13 +82,13 @@ func (ts *TestSetup) MintCoins(t testing.TB, coins sdk.Coins) {
 func NewTestSetup(t testing.TB, controller ...*gomock.Controller) *TestSetup {
 	// Test setup params
 
-	logger := log.TestingLogger()
+	logger := log.NewTestLogger(t)
 	// Use nop logger if logging becomes too verbose for test output
 	// logger := log.NewNopLogger()
 	logger.Debug("creating test setup")
 
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
+	db := dbm.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, logger)
 	encodingConfig := app.MakeEncodingConfig()

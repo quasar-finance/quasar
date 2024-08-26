@@ -6,17 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/CosmWasm/wasmd/x/wasm/keeper"
-	"github.com/quasarlabs/quasarnode/app"
+	"github.com/quasar-finance/quasar/app"
+	"github.com/stretchr/testify/require"
 )
 
 func CreateTestInput() (*app.TokenApp, sdk.Context) {

@@ -1,11 +1,11 @@
-module github.com/quasarlabs/quasarnode/tests/e2e
+module github.com/quasar-finance/quasar/tests/e2e
 
 go 1.19
 
 require (
 	github.com/CosmWasm/wasmd v0.31.0
-	github.com/cosmos/cosmos-sdk v0.46.10
-	github.com/cosmos/ibc-go/v4 v4.3.0
+	github.com/cosmos/cosmos-sdk v0.50.8
+	github.com/cosmos/ibc-go/v8 v8.3.0
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/gogo/protobuf v1.3.3

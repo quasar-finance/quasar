@@ -2,30 +2,26 @@ package keeper_test
 
 import (
 	"testing"
-
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/quasar-finance/quasar/testutil"
+	"github.com/quasar-finance/quasar/x/epochs"
+	"github.com/quasar-finance/quasar/x/epochs/keeper"
+	"github.com/quasar-finance/quasar/x/epochs/types"
 	"github.com/stretchr/testify/require"
-
-	"github.com/quasarlabs/quasarnode/testutil"
-	"github.com/quasarlabs/quasarnode/x/epochs"
-	"github.com/quasarlabs/quasarnode/x/epochs/keeper"
-	"github.com/quasarlabs/quasarnode/x/epochs/types"
 )
 
 func TestQueryEpochInfos(t *testing.T) {
 	setup := testutil.NewTestSetup(t)
 	ctx, k := setup.Ctx, setup.Keepers.EpochsKeeper
 	epochs.InitGenesis(ctx, k, *types.DefaultGenesis())
-	goCtx := sdk.WrapSDKContext(ctx)
 
 	chainStartTime := ctx.BlockTime()
 
-	querier := keeper.NewQuerier(k)
+	querier := keeper.NewQuerier(*k)
 
 	// Invalid param
-	epochInfosResponse, err := querier.EpochInfos(goCtx, &types.QueryEpochsInfoRequest{})
+	epochInfosResponse, err := querier.EpochInfos(ctx, &types.QueryEpochsInfoRequest{})
 	require.NoError(t, err)
 	require.Len(t, epochInfosResponse.Epochs, 4)
 

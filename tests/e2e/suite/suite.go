@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	connectiontypes "github.com/cosmos/ibc-go/v7/modules/core/03-connection/types"
-	ibctenderminttypes "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/types"
+	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	ibctenderminttypes "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/types"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"

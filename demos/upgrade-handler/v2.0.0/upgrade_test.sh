@@ -3,9 +3,9 @@
 # TODO: Before running this script go to the main branch, execute a "git checkout v0.1.0" and "make install" the binary in order to start from the mainnet version.
 # TODO: Now checkout the upgrade branch and you are able to execute this test script.
 
-# Kill existing quasardv1 processes
-echo ">>> Killing existing quasardv1 processes..."
-pkill quasardv1 || true
+# Kill existing quasarnodedv1 processes
+echo ">>> Killing existing quasarnodedv1 processes..."
+pkill quasarnodedv1 || true
 pkill quasard || true
 
 echo ">>> Killing existing osmosisd processes..."
@@ -39,13 +39,13 @@ sleep 10
 
 # Submit governance proposal for software-upgrade to v2
 echo ">>> Submitting proposal for software-upgrade"
-quasardv1 tx gov submit-proposal software-upgrade "v2" --title "Software Upgrade to v2" --description "This software-upgrade v2." --upgrade-height $UPGRADE_HEIGHT --deposit 1uqsr --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
+quasarnodedv1 tx gov submit-proposal software-upgrade "v2" --title "Software Upgrade to v2" --description "This software-upgrade v2." --upgrade-height $UPGRADE_HEIGHT --deposit 1uqsr --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
 
 echo ">>> Sleeping 10 seconds after submitting proposal"
 sleep 10
 
 echo ">>> Voting yes to proposal"
-quasardv1 tx gov vote 1 yes --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
+quasarnodedv1 tx gov vote 1 yes --from my_treasury --chain-id $CHAIN_ID --keyring-backend test -y
 
 echo ">>> Sleeping 5 seconds after voting proposal"
 sleep 5
@@ -54,7 +54,7 @@ sleep 5
 # Wait for the block height to reach 100, cosmovisor should handle the upgrade
 echo ">>> Waiting for the block height to reach $UPGRADE_HEIGHT"
 while true; do
-  CURRENT_HEIGHT=$(quasardv1 status | jq -r '.SyncInfo.latest_block_height')
+  CURRENT_HEIGHT=$(quasarnodedv1 status | jq -r '.SyncInfo.latest_block_height')
   echo "Current height: "$CURRENT_HEIGHT
   if [ "$CURRENT_HEIGHT" -ge "$UPGRADE_HEIGHT" ]; then
     break
@@ -63,16 +63,16 @@ while true; do
 done
 
 # Check if the upgrade has been successful
-quasardv1 query gov proposal 1 --chain-id $CHAIN_ID --output json
+quasarnodedv1 query gov proposal 1 --chain-id $CHAIN_ID --output json
 
 sleep 10
 
-# Kill existing quasardv1 processes for new version to start
-echo ">>> Killing existing quasardv1 processes..."
-pkill quasardv1 || true
+# Kill existing quasarnodedv1 processes for new version to start
+echo ">>> Killing existing quasarnodedv1 processes..."
+pkill quasarnodedv1 || true
 
 rm quasar.log
-quasard start --home $HOME/.quasarnode  > ./logs/quasar_post_upgrade.log 2>&1 &
+quasarnoded start --home $HOME/.quasarnode  > ./logs/quasar_post_upgrade.log 2>&1 &
 
 sleep 10
 # run ibc send manually and monitor
