@@ -79,7 +79,7 @@ jobs:
           PROPTEST_CASES: 10
         working-directory: smart-contracts/osmosis/contracts/cl-vault
       - name: Store dependencies
-        if: ${{ (inputs.store_deps == 'true') && (steps.restore-cache.outputs.cache-hit == 'false') }}$
+        if: inputs.store_deps && !(steps.restore-cache.outputs.cache-hit == 'false')
         uses: actions/cache/save@v4
         with:
           path: |
