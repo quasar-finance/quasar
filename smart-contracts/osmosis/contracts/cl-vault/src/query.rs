@@ -177,7 +177,7 @@ pub fn query_user_balance(
 pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let unused_balance = get_unused_balances(&deps.querier, &env)?;
+    let unused_balance = get_unused_balances(&deps.querier, &env.contract.address)?;
 
     // add token0 unused balance to what's in the position
     let mut token0 = position

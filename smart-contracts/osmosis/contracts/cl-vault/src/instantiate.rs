@@ -77,7 +77,7 @@ pub fn handle_instantiate(
     }
     .into();
 
-    let vault_funds = get_unused_pair_balances(&deps, &env, &pool_config)?;
+    let vault_funds = get_unused_pair_balances(&deps.as_ref(), &env, &pool_config)?;
 
     let create_position_msg = create_position(
         deps,

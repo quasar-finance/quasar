@@ -33,7 +33,7 @@ pub fn execute_autocompound(
         .ok_or(ContractError::PositionNotFound)?;
 
     let pool = POOL_CONFIG.load(deps.storage)?;
-    let balance = get_unused_pair_balances(&deps, env, &pool)?;
+    let balance = get_unused_pair_balances(&deps.as_ref(), env, &pool)?;
 
     let token0 = balance[0].clone();
     let token1 = balance[1].clone();

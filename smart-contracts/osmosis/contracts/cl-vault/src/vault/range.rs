@@ -116,7 +116,7 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
     let pool_config = POOL_CONFIG.load(deps.storage)?;
     let pool_details = get_cl_pool_info(&deps.querier, pool_config.pool_id)?;
 
-    let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
+    let unused_pair_balances = get_unused_pair_balances(&deps.as_ref(), &env, &pool_config)?;
 
     let sqrt_pu = tick_to_price(modify_range_state.upper_tick)?.sqrt();
     let sqrt_pl = tick_to_price(modify_range_state.lower_tick)?.sqrt();
@@ -251,7 +251,7 @@ pub fn handle_swap_reply(deps: DepsMut, env: Env) -> Result<Response, ContractEr
     let swap_deposit_merge_state = SWAP_DEPOSIT_MERGE_STATE.load(deps.storage)?;
     SWAP_DEPOSIT_MERGE_STATE.remove(deps.storage);
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let unused_pair_balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
+    let unused_pair_balances = get_unused_pair_balances(&deps.as_ref(), &env, &pool_config)?;
 
     let create_position_msg = create_position(
         deps,
