@@ -23,6 +23,7 @@ pub struct VaultConfig {
     pub swap_max_slippage: Decimal,
     pub dex_router: Addr,
     pub swap_admin: Addr,
+    pub twap_window_seconds: u64,
 }
 
 pub const VAULT_CONFIG: Item<VaultConfig> = Item::new("vault_config");

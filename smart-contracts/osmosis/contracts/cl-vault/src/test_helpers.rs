@@ -225,6 +225,7 @@ pub fn mock_deps_with_querier_with_balance(
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
                 dex_router: Addr::unchecked("dex_router"),
                 swap_admin: Addr::unchecked("swap_admin"),
+                twap_window_seconds: 24u64,
             },
         )
         .unwrap();
@@ -320,6 +321,7 @@ pub fn mock_deps_with_querier(
                 swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
                 dex_router: Addr::unchecked("dex_router"),
                 swap_admin: Addr::unchecked("swap_admin"),
+                twap_window_seconds: 24u64,
             },
         )
         .unwrap();

@@ -92,7 +92,7 @@ fn prepare_swap_msg(
     let twap_price = get_twap_price(
         &deps.querier,
         env.block.time,
-        twap_window_seconds.unwrap_or(24u64),
+        twap_window_seconds.unwrap_or(vault_config.twap_window_seconds),
         pool_id,
         token_in.denom.to_string(),
         token_out_denom.to_string(),
