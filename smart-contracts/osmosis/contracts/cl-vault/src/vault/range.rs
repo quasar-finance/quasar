@@ -306,7 +306,7 @@ mod tests {
     use cosmwasm_std::{
         coin,
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
-        Decimal, Decimal256, Uint128, Uint256,
+        Addr, Decimal, Decimal256, Uint128, Uint256,
     };
 
     use crate::{
@@ -314,7 +314,8 @@ mod tests {
         math::tick::build_tick_exp_cache,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN},
         test_helpers::{
-            mock_deps_with_querier, mock_deps_with_querier_with_balance, BASE_DENOM, QUOTE_DENOM,
+            instantiate_contract, mock_deps_with_querier, mock_deps_with_querier_with_balance,
+            BASE_DENOM, POSITION_ID, QUOTE_DENOM,
         },
         vault::range::requires_swap,
     };
@@ -331,15 +332,20 @@ mod tests {
 
     #[test]
     fn test_execute_update_range() {
-        let info = mock_info("addr0000", &[]);
-        let mut deps = mock_deps_with_querier(&info);
-        build_tick_exp_cache(deps.as_mut().storage).unwrap();
-
+        let range_admin = "range_admin".to_string();
+        let mut deps = mock_deps_with_querier();
         let env = mock_env();
+        build_tick_exp_cache(deps.as_mut().storage).unwrap();
+        instantiate_contract(deps.as_mut(), env.clone(), &range_admin);
+        RANGE_ADMIN
+            .save(deps.as_mut().storage, &Addr::unchecked(range_admin.clone()))
+            .unwrap();
+
         let lower_price = Decimal::from_str("100").unwrap();
         let upper_price = Decimal::from_str("100.20").unwrap();
         let max_slippage = Decimal::from_str("0.5").unwrap();
 
+        let info = mock_info(&range_admin, &[]);
         let res = super::execute_update_range(
             deps.as_mut(),
             &env,
@@ -357,7 +363,7 @@ mod tests {
         assert_eq!(res.messages.len(), 1);
         assert_eq!(res.attributes[0].value, "execute");
         assert_eq!(res.attributes[1].value, "update_range_ticks");
-        assert_eq!(res.attributes[2].value, "1");
+        assert_eq!(res.attributes[2].value, POSITION_ID.to_string());
         assert_eq!(res.attributes[3].value, "1000000.1");
     }
 

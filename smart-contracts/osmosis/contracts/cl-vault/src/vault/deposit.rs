@@ -296,53 +296,35 @@ fn execute_deposit(
 mod tests {
     use std::str::FromStr;
 
-    use cosmwasm_std::{testing::mock_env, Addr, BankMsg, Decimal256, Fraction, Uint256};
+    use cosmwasm_std::{
+        testing::{mock_env, mock_info},
+        Addr, BankMsg, Decimal256, Fraction, Uint256,
+    };
 
     use crate::{
         helpers::msgs::refund_bank_msg,
-        state::{Position, POSITION},
-        test_helpers::{mock_deps_with_querier, BASE_DENOM, QUOTE_DENOM},
+        test_helpers::{instantiate_contract, mock_deps_with_querier, BASE_DENOM, QUOTE_DENOM},
     };
 
     use super::*;
 
     #[test]
     fn execute_exact_deposit_works() {
-        let mut deps = mock_deps_with_querier(&MessageInfo {
-            sender: Addr::unchecked("alice"),
-            funds: vec![],
-        });
+        let mut deps = mock_deps_with_querier();
         let env = mock_env();
-        let sender = Addr::unchecked("alice");
-        VAULT_DENOM
-            .save(deps.as_mut().storage, &"money".to_string())
-            .unwrap();
-        POSITION
-            .save(
-                deps.as_mut().storage,
-                &Position {
-                    position_id: 1,
-                    join_time: 0,
-                    claim_after: None,
-                },
-            )
-            .unwrap();
+        let sender = "alice";
 
-        execute_exact_deposit(
-            deps.as_mut(),
-            env,
-            MessageInfo {
-                sender: sender.clone(),
-                funds: vec![coin(100, BASE_DENOM), coin(100, QUOTE_DENOM)],
-            },
-            None,
-        )
-        .unwrap();
+        instantiate_contract(deps.as_mut(), env.clone(), sender);
+
+        let info = mock_info(sender, &[coin(100, BASE_DENOM), coin(100, QUOTE_DENOM)]);
+        execute_exact_deposit(deps.as_mut(), env, info, None).unwrap();
 
         // we currently have 100_000 total_vault_shares outstanding and the equivalent of 1999500token0, the user deposits the equivalent of 199token0, thus shares are
         // 199 * 100000 / 1999500 = 9.95, which we round down. Thus we expect 9 shares in this example
         assert_eq!(
-            SHARES.load(deps.as_ref().storage, sender).unwrap(),
+            SHARES
+                .load(deps.as_ref().storage, Addr::unchecked(sender))
+                .unwrap(),
             Uint128::new(9)
         );
     }

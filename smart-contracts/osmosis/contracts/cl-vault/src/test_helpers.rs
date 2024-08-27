@@ -1,9 +1,10 @@
 use std::marker::PhantomData;
 
-use cosmwasm_std::testing::{BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
+use cosmwasm_std::testing::{mock_info, BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, BankQuery, Binary, Coin, ContractResult as CwContractResult,
-    Decimal, Empty, MessageInfo, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    coin, from_json, to_json_binary, Addr, BankQuery, Binary, Coin,
+    ContractResult as CwContractResult, Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps,
+    Querier, QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
@@ -19,14 +20,19 @@ use osmosis_std::types::{
     },
 };
 
+use crate::contract::instantiate;
 use crate::math::tick::tick_to_price;
+use crate::msg::InstantiateMsg;
 use crate::state::{
     PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
+    VAULT_DENOM,
 };
 
 pub const POOL_ID: u64 = 1;
+pub const POSITION_ID: u64 = 101;
 pub const BASE_DENOM: &str = "base";
 pub const QUOTE_DENOM: &str = "quote";
+pub const TEST_VAULT_DENOM: &str = "uqsr";
 
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
@@ -158,7 +164,6 @@ impl Querier for QuasarQuerier {
                 kind: format!("Unmocked query type: {request:?}"),
             }),
         }
-        // QuerierResult::Ok(ContractResult::Ok(to_json_binary(&"hello").unwrap()))
     }
 }
 
@@ -172,7 +177,7 @@ pub fn mock_deps_with_querier_with_balance(
         querier: QuasarQuerier::new_with_balances(
             FullPositionBreakdown {
                 position: Some(OsmoPosition {
-                    position_id: 1,
+                    position_id: POSITION_ID,
                     address: MOCK_CONTRACT_ADDR.to_string(),
                     pool_id: POOL_ID,
                     lower_tick: 100,
@@ -237,7 +242,7 @@ pub fn mock_deps_with_querier_with_balance(
         .save(
             storage,
             &crate::state::Position {
-                position_id: 1,
+                position_id: POSITION_ID,
                 join_time: 0,
                 claim_after: None,
             },
@@ -247,18 +252,14 @@ pub fn mock_deps_with_querier_with_balance(
     deps
 }
 
-pub fn mock_deps_with_querier(
-    info: &MessageInfo,
-) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-    let position_id = 1;
-
-    let mut deps = OwnedDeps {
+pub fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
+    OwnedDeps {
         storage: MockStorage::default(),
         api: MockApi::default(),
         querier: QuasarQuerier::new(
             FullPositionBreakdown {
                 position: Some(OsmoPosition {
-                    position_id,
+                    position_id: POSITION_ID,
                     address: MOCK_CONTRACT_ADDR.to_string(),
                     pool_id: POOL_ID,
                     lower_tick: 100,
@@ -290,55 +291,45 @@ pub fn mock_deps_with_querier(
             500,
         ),
         custom_query_type: PhantomData,
-    };
+    }
+}
 
-    let storage = &mut deps.storage;
+pub fn get_init_msg(admin: &str) -> InstantiateMsg {
+    InstantiateMsg {
+        admin: admin.to_string(),
+        pool_id: POOL_ID,
+        config: VaultConfig {
+            performance_fee: Decimal::percent(10),
+            treasury: Addr::unchecked(admin),
+            swap_max_slippage: Decimal::percent(95),
+            dex_router: Addr::unchecked(admin),
+            swap_admin: Addr::unchecked(admin),
+            twap_window_seconds: 24u64,
+        },
+        vault_token_subdenom: "utestvault".to_string(),
+        range_admin: admin.to_string(),
+        initial_lower_tick: 1,
+        initial_upper_tick: 100,
+        thesis: "Test thesis".to_string(),
+        name: "Contract".to_string(),
+    }
+}
 
+pub fn instantiate_contract(mut deps: DepsMut, env: Env, admin: &str) {
+    let msg = get_init_msg(admin);
+    let info = mock_info(admin, &[coin(100, BASE_DENOM), coin(100, QUOTE_DENOM)]);
+    assert!(instantiate(deps.branch(), env, info, msg).is_ok());
+    VAULT_DENOM
+        .save(deps.storage, &TEST_VAULT_DENOM.to_string())
+        .unwrap();
     POSITION
         .save(
-            storage,
+            deps.storage,
             &Position {
-                position_id,
+                position_id: POSITION_ID,
                 join_time: 0,
                 claim_after: None,
             },
         )
         .unwrap();
-
-    RANGE_ADMIN.save(storage, &info.sender).unwrap();
-    POOL_CONFIG
-        .save(
-            storage,
-            &PoolConfig {
-                pool_id: POOL_ID,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-        )
-        .unwrap();
-    VAULT_CONFIG
-        .save(
-            storage,
-            &VaultConfig {
-                performance_fee: Decimal::zero(),
-                treasury: Addr::unchecked("treasure"),
-                swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
-                dex_router: Addr::unchecked("dex_router"),
-                swap_admin: Addr::unchecked("swap_admin"),
-                twap_window_seconds: 24u64,
-            },
-        )
-        .unwrap();
-    POSITION
-        .save(
-            storage,
-            &crate::state::Position {
-                position_id: 1,
-                join_time: 0,
-                claim_after: None,
-            },
-        )
-        .unwrap();
-
-    deps
 }
