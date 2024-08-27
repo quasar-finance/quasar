@@ -3,14 +3,14 @@ use crate::{
     helpers::{
         getters::{
             get_depositable_tokens, get_single_sided_deposit_0_to_1_swap_amount,
-            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_pair_balances,
+            get_single_sided_deposit_1_to_0_swap_amount, get_twap_price, get_unused_pair,
             get_value_wrt_asset0, DepositInfo,
         },
         msgs::refund_bank_msg,
     },
     query::{query_total_assets, query_total_vault_token_supply},
     reply::Replies,
-    state::{CURRENT_SWAP_RECIPIENT, POOL_CONFIG, SHARES, VAULT_CONFIG, VAULT_DENOM},
+    state::{CurrentSwap, CURRENT_SWAP_INFO, POOL_CONFIG, SHARES, VAULT_CONFIG, VAULT_DENOM},
     vault::{
         concentrated_liquidity::{get_cl_pool_info, get_position},
         swap::{estimate_swap_min_out_amount, swap_msg},
@@ -22,6 +22,7 @@ use cosmwasm_std::{
     Uint128, Uint256,
 };
 use osmosis_std::types::osmosis::tokenfactory::v1beta1::MsgMint;
+use quasar_types::pool_pair::PoolPair;
 
 pub(crate) fn execute_exact_deposit(
     mut deps: DepsMut,
@@ -98,7 +99,29 @@ pub(crate) fn execute_any_deposit(
             twap_price.inv().expect("Invalid price"),
         )
     };
-    CURRENT_SWAP_RECIPIENT.save(deps.storage, &recipient)?;
+    let unused = get_unused_pair(&deps.as_ref(), &env.contract.address, &pool_config)?;
+    let base_funds = deposit_info
+        .base_deposit
+        .checked_add(deposit_info.base_refund.amount)?;
+    let quote_funds = deposit_info
+        .quote_deposit
+        .checked_add(deposit_info.quote_refund.amount)?;
+    CURRENT_SWAP_INFO.save(
+        deps.storage,
+        &CurrentSwap {
+            recipient,
+            vault_balance: PoolPair::new(
+                coin(
+                    unused.base.amount.checked_sub(base_funds)?.into(),
+                    unused.base.denom,
+                ),
+                coin(
+                    unused.quote.amount.checked_sub(quote_funds)?.into(),
+                    unused.quote.denom,
+                ),
+            ),
+        },
+    )?;
 
     let token_out_min_amount = estimate_swap_min_out_amount(token_in.amount, price, max_slippage)?;
 
@@ -127,19 +150,20 @@ pub fn handle_any_deposit_swap_reply(
     env: Env,
     _data: SubMsgResult,
 ) -> Result<Response, ContractError> {
-    let recipient = CURRENT_SWAP_RECIPIENT.load(deps.storage)?;
-    CURRENT_SWAP_RECIPIENT.remove(deps.storage);
+    let info: CurrentSwap = CURRENT_SWAP_INFO.load(deps.storage)?;
+    CURRENT_SWAP_INFO.remove(deps.storage);
 
     let pool_config = POOL_CONFIG.load(deps.storage)?;
-    let balances = get_unused_pair_balances(&deps, &env, &pool_config)?;
+    let balances = get_unused_pair(&deps.as_ref(), &env.contract.address, &pool_config)?;
+    let user_balances = balances.checked_sub(&info.vault_balance)?;
 
     execute_deposit(
         &mut deps,
         env,
-        recipient,
+        info.recipient,
         DepositInfo {
-            base_deposit: balances[0].amount,
-            quote_deposit: balances[1].amount,
+            base_deposit: user_balances.base.amount,
+            quote_deposit: user_balances.quote.amount,
             base_refund: coin(0u128, pool_config.token0),
             quote_refund: coin(0u128, pool_config.token1),
         },
@@ -194,7 +218,6 @@ fn execute_deposit(
             .try_into()?
     };
 
-    // save the shares in the user map
     SHARES.update(
         deps.storage,
         recipient.clone(),
@@ -243,13 +266,18 @@ mod tests {
     use std::str::FromStr;
 
     use cosmwasm_std::{
-        testing::{mock_env, mock_info},
-        Addr, BankMsg, Decimal256, Fraction, Uint256,
+        testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR},
+        Addr, BankMsg, CosmosMsg, Decimal256, Fraction, Reply, SubMsgResponse, Uint256, WasmMsg,
     };
 
     use crate::{
+        contract::{execute, reply},
         helpers::msgs::refund_bank_msg,
-        test_helpers::{instantiate_contract, mock_deps_with_querier, BASE_DENOM, QUOTE_DENOM},
+        msg::ExecuteMsg,
+        test_helpers::{
+            instantiate_contract, mock_deps_with_querier, mock_deps_with_querier_with_balance,
+            BASE_DENOM, QUOTE_DENOM, TEST_VAULT_DENOM, TEST_VAULT_TOKEN_SUPPLY,
+        },
     };
 
     use super::*;
@@ -348,5 +376,309 @@ mod tests {
                 amount: vec![coin(250, "uatom")],
             }
         )
+    }
+
+    const ADMIN: &str = "admin";
+    const SENDER: &str = "sender";
+
+    #[test]
+    fn exact_deposit_with_single_wrong_denom_fails() {
+        let mut deps = mock_deps_with_querier();
+        let env = mock_env();
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(SENDER, &[coin(1, "other_denom".to_string())]);
+        let err = execute(
+            deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::ExactDeposit { recipient: None },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::IncorrectDepositFunds);
+    }
+
+    #[test]
+    fn exact_deposit_with_more_than_two_assets_fails() {
+        let mut deps = mock_deps_with_querier();
+        let env = mock_env();
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(1, BASE_DENOM.to_string()),
+                coin(1, QUOTE_DENOM.to_string()),
+                coin(1, "other_denom".to_string()),
+            ],
+        );
+        let err = execute(
+            deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::ExactDeposit { recipient: None },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::IncorrectDepositFunds);
+    }
+
+    #[test]
+    fn successful_exact_deposit_mints_fund_tokens_according_to_share_of_assets() {
+        let current_deposit_amount = 100u128;
+        let deposit_amount = 50;
+        let env = mock_env();
+        let fund_shares = 50000u64;
+        let mut deps = mock_deps_with_querier_with_balance(
+            100,
+            100,
+            0,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[
+                    coin(current_deposit_amount + deposit_amount, BASE_DENOM),
+                    coin(current_deposit_amount + deposit_amount, QUOTE_DENOM),
+                    coin(fund_shares.into(), TEST_VAULT_DENOM),
+                ],
+            )],
+        );
+
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(deposit_amount, BASE_DENOM.to_string()),
+                coin(deposit_amount, QUOTE_DENOM),
+            ],
+        );
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::ExactDeposit { recipient: None },
+        )
+        .unwrap();
+        assert_eq!(response.messages.len(), 1);
+
+        let expected_minted_tokens = TEST_VAULT_TOKEN_SUPPLY / 4;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Stargate { type_url: _, value } => {
+                let m: MsgMint = value.try_into().unwrap();
+                assert_eq!(m.sender, env.contract.address.to_string());
+                assert_eq!(
+                    m.amount.as_ref().unwrap().amount,
+                    expected_minted_tokens.to_string()
+                );
+                assert_eq!(
+                    m.amount.as_ref().unwrap().denom,
+                    TEST_VAULT_DENOM.to_string()
+                );
+                assert_eq!(m.mint_to_address, env.contract.address.to_string());
+            }
+            _ => panic!("unreachable"),
+        }
+    }
+
+    #[test]
+    fn any_deposit_with_single_wrong_denom_fails() {
+        let mut deps = mock_deps_with_querier();
+        let env = mock_env();
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(SENDER, &[coin(1, "other_denom".to_string())]);
+        let err = execute(
+            deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::AnyDeposit {
+                amount: Uint128::zero(),
+                asset: String::default(),
+                recipient: None,
+                max_slippage: Decimal::percent(90),
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::IncorrectDepositFunds);
+    }
+
+    #[test]
+    fn any_deposit_with_more_than_two_assets_fails() {
+        let mut deps = mock_deps_with_querier();
+        let env = mock_env();
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(1, BASE_DENOM.to_string()),
+                coin(1, QUOTE_DENOM.to_string()),
+                coin(1, "other_denom".to_string()),
+            ],
+        );
+        let err = execute(
+            deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::AnyDeposit {
+                amount: Uint128::zero(),
+                asset: String::default(),
+                recipient: None,
+                max_slippage: Decimal::percent(90),
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::IncorrectDepositFunds);
+    }
+
+    #[test]
+    fn successful_exact_any_deposit_mints_fund_tokens_according_to_share_of_assets() {
+        let current_deposit_amount = 100u128;
+        let deposit_amount = 50;
+        let env = mock_env();
+        let mut deps = mock_deps_with_querier_with_balance(
+            100,
+            100,
+            0,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[
+                    coin(current_deposit_amount + deposit_amount, BASE_DENOM),
+                    coin(current_deposit_amount + deposit_amount, QUOTE_DENOM),
+                    coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+                ],
+            )],
+        );
+
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(deposit_amount, BASE_DENOM.to_string()),
+                coin(deposit_amount, QUOTE_DENOM),
+            ],
+        );
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::AnyDeposit {
+                amount: Uint128::zero(),
+                asset: String::default(),
+                recipient: None,
+                max_slippage: Decimal::percent(90),
+            },
+        )
+        .unwrap();
+        assert_eq!(response.messages.len(), 1);
+
+        let expected_minted_tokens = TEST_VAULT_TOKEN_SUPPLY / 4;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Stargate { type_url: _, value } => {
+                let m: MsgMint = value.try_into().unwrap();
+                assert_eq!(m.sender, env.contract.address.to_string());
+                assert_eq!(
+                    m.amount.as_ref().unwrap().amount,
+                    expected_minted_tokens.to_string()
+                );
+                assert_eq!(
+                    m.amount.as_ref().unwrap().denom,
+                    TEST_VAULT_DENOM.to_string()
+                );
+                assert_eq!(m.mint_to_address, env.contract.address.to_string());
+            }
+            _ => panic!("unreachable"),
+        }
+    }
+
+    #[test]
+    fn successful_inexact_any_deposit_mints_fund_tokens_according_to_share_of_assets() {
+        let current_deposit_amount = 100u128;
+        let base_deposit_amount = 50;
+        let quote_deposit_amount = 100;
+        let env = mock_env();
+        let mut deps = mock_deps_with_querier_with_balance(
+            100,
+            100,
+            549,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[
+                    coin(current_deposit_amount + base_deposit_amount, BASE_DENOM),
+                    coin(current_deposit_amount + quote_deposit_amount, QUOTE_DENOM),
+                    coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+                ],
+            )],
+        );
+
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(base_deposit_amount, BASE_DENOM.to_string()),
+                coin(quote_deposit_amount, QUOTE_DENOM),
+            ],
+        );
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::AnyDeposit {
+                amount: Uint128::zero(),
+                asset: String::default(),
+                recipient: None,
+                max_slippage: Decimal::percent(90),
+            },
+        )
+        .unwrap();
+        assert_eq!(response.messages.len(), 1);
+
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: _,
+                msg: _,
+                funds,
+            }) => {
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].denom, QUOTE_DENOM);
+                assert_eq!(funds[0].amount, Uint128::from(25u64));
+            }
+            _ => panic!("unreachable"),
+        }
+
+        let response = reply(
+            deps.as_mut(),
+            env.clone(),
+            Reply {
+                id: Replies::AnyDepositSwap.into(),
+                result: SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    data: None,
+                }),
+            },
+        )
+        .unwrap();
+        let expected_minted_tokens = 37_250;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Stargate { type_url: _, value } => {
+                let m: MsgMint = value.try_into().unwrap();
+                assert_eq!(m.sender, env.contract.address.to_string());
+                assert_eq!(
+                    m.amount.as_ref().unwrap().amount,
+                    expected_minted_tokens.to_string()
+                );
+                assert_eq!(
+                    m.amount.as_ref().unwrap().denom,
+                    TEST_VAULT_DENOM.to_string()
+                );
+                assert_eq!(m.mint_to_address, env.contract.address.to_string());
+            }
+            _ => panic!("unreachable"),
+        }
     }
 }
