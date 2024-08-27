@@ -14,3 +14,8 @@ tbd
 ## Ready for review
 
 tbd
+
+## Unplanned work
+In order to balance tracking of our progress and speed of development we use the following rules for unplanned works that gets identified during a sprint:
+* fix takes less than 1h and you address it immediately: no ticket required
+* fix takes more than 1h or you don't address it immediately: create a ticket
