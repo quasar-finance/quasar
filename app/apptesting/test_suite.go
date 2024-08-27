@@ -353,7 +353,7 @@ func (s *KeeperTestHelper) BeginNewBlockWithProposer(proposer sdk.ValAddress) {
 
 	valAddr := valConsAddr
 
-	//TODO: when we add any logic executed over some epochs use below logic
+	//Note : when we add any logic executed over some epochs use below logic
 	//epochIdentifier := s.App.EpochsKeeper.GetEpochInfo(s.Ctx,)
 	//epoch := s.App.EpochsKeeper.GetEpochInfo(s.Ctx, epochIdentifier)
 	newBlockTime := s.Ctx.BlockTime().Add(5 * time.Second)

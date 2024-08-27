@@ -158,12 +158,10 @@ func enrichAutoCliOpts(autoCliOpts autocli.AppOptions, clientCtx client.Context)
 func initCometConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
 
-	// TODO - SDK50 - Can get some ref for the default values from quicksilver
 	// https://github.com/quicksilver-zone/quicksilver/blob/update/sdk47/cmd/quicksilverd/root.go#L137
-
 	// these values put a higher strain on node memory
-	// cfg.P2P.MaxNumInboundPeers = 100
-	// cfg.P2P.MaxNumOutboundPeers = 40
+	cfg.P2P.MaxNumInboundPeers = 40
+	cfg.P2P.MaxNumOutboundPeers = 10
 
 	return cfg
 }
@@ -185,7 +183,6 @@ func initRootCmd(
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		// todo add testnet commands
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(ac.newApp, app.DefaultNodeHome),
 		snapshot.Cmd(ac.newApp),
@@ -203,7 +200,7 @@ func initRootCmd(
 		genutilcli.ValidateGenesisCmd(basicManager),
 		AddGenesisAccountCmd(app.DefaultNodeHome),
 		debugCmd,
-		// config.Cmd(),   TODO - SDK 50. Config support to be added.  https://github.com/neutron-org/neutron/blob/feat/sdk-50/cmd/neutrond/config.go
+		// config.Cmd(),   TODO Slinky : Config support to be added.  https://github.com/neutron-org/neutron/blob/feat/sdk-50/cmd/neutrond/config.go
 	)
 
 	// add server commands

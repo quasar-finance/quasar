@@ -1,0 +1,31 @@
+name: CL Vault (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/cl-vault/**.rs'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/cl_vault_osmosis.yml'
+      - '.github/workflows/rust_basic.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/cl-vault/**.rs'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/cl_vault_osmosis.yml'
+      - '.github/workflows/rust_basic.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: contracts/cl-vault
+      workspace: osmosis

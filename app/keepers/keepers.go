@@ -489,9 +489,6 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 	// set token factory contract keeper
 	appKeepers.TfKeeper.SetContractKeeper(appKeepers.ContractKeeper)
 
-	// TODO - SDK 50
-	// callback := owasm.NewCallbackPlugin(appKeepers.WasmKeeper, appKeepers.QTransferKeeper.GetQTransferAcc())
-
 	tmpBankBaseKeeper := appKeepers.BankKeeper.(bankkeeper.BaseKeeper)
 
 	wasmOpts = append(tfbindings.RegisterCustomPlugins(&tmpBankBaseKeeper, &appKeepers.TfKeeper), wasmOpts...)

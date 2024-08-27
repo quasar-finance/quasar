@@ -5,24 +5,23 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
-      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
-      - '.github/workflows/**.yml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/dex_router_osmosis.yml'
   push:
     branches:
       - main
     paths:
-      - 'smart-contracts/contracts/dex-router-osmosis/Cargo.toml'
-      - 'smart-contracts/contracts/dex-router-osmosis/**.rs'
-      - '.github/workflows/**.yml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/dex_router_osmosis.yml'
   workflow_dispatch:
 
 jobs:
   unit-test:
     uses: ./.github/workflows/rust_basic.yml
     with:
-      target: 'contracts/dex-router-osmosis'
-  test-tube:
-    uses: ./.github/workflows/rust_test_tube.yml
-    with:
-      contract: 'dex-router-osmosis'
+      target: contracts/dex-router-osmosis
+      workspace: osmosis

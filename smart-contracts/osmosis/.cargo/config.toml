@@ -1,0 +1,6 @@
+[alias]
+wasm = "build --release --target wasm32-unknown-unknown"
+schema = "run --example schema"
+lint = "clippy --all-targets -- -D warnings"
+lint-fix = "clippy --all-targets --fix -- -D warnings"
+unit-test = "test --lib"

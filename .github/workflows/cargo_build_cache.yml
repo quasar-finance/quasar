@@ -1,13 +1,14 @@
 name: Store cargo build cache
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'smart-contracts/**.rs'
-      - 'smart-contracts/**.toml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      workspace:
+        required: true
+        type: string
+
+env:
+  CARGO_TARGET_DIR: ~/target
 
 jobs:
   store-build-cache:
@@ -17,15 +18,29 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/cachepot
+            ~/.cargo
+            ~/go
+            ~/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-${{github.sha}}
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.workspace }}
+      - name: Install cachepot
+        run: test -e ~/.cargo/bin/cachepot && echo "cachepot found -- skipping install" || cargo install --git https://github.com/paritytech/cachepot
       - name: Rust check
-        run: cargo check
-        working-directory: smart-contracts
+        run:  cargo check --all-targets --features test-tube
+        working-directory: smart-contracts/${{ inputs.workspace }}
+        env:
+          RUSTC_WRAPPER: cachepot
       - name: Store dependencies
         uses: actions/cache/save@v4
         with:
           path: |
+            ~/.cache/cachepot
             ~/.cargo
             ~/go
-            **/target
-          key: ${{ runner.os }}-cargo-$GITHUB_SHA
-          restore-keys: ${{ runner.os }}-cargo
+            ~/target
+          key: ${{ runner.os }}-cargo-${{ inputs.workspace }}-${{github.sha}}

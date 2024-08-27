@@ -1,0 +1,91 @@
+name: Test Tube (osmosis)
+
+on:
+  workflow_call:
+    inputs:
+      unittest:
+        required: false
+        default: false
+        type: boolean
+      proptest:
+        required: false
+        default: false
+        type: boolean
+      store_deps:
+        required: false
+        default: false
+        type: boolean
+  workflow_dispatch:
+
+env:
+  RUSTC_WRAPPER: cachepot
+  CARGO_TARGET_DIR: ~/target
+
+jobs:
+  test-tube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cleanup runner
+        run: sudo rm -rf /usr/local/share/boost && sudo rm -rf /usr/share/dotnet && sudo rm -rf /usr/local/lib/android && sudo rm -rf /opt/ghc && sudo rm -rf /opt/hostedtoolcache/CodeQL && sudo docker system prune --all --force
+      - name: Restore dependencies
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/cachepot
+            ~/.cargo
+            ~/go
+            ~/target
+          key: ${{ runner.os }}-cache-osmosis-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-cache-osmosis
+      - name: Update PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install cachepot
+        run: test -e $HOME/.cargo/bin/cachepot && echo "cachepot found -- skipping install" || cargo install --git https://github.com/paritytech/cachepot
+        env:
+          RUSTC_WRAPPER: ""
+      - name: Rust lint
+        run:  cargo clippy --features test-tube --all-targets -- -D warnings
+        working-directory: smart-contracts/osmosis
+      - name: Unit tests
+        run:  cargo unit-test
+        working-directory: smart-contracts/osmosis
+      - name: Build merkle-incentives
+        run:  cargo test-tube-build
+        working-directory: smart-contracts/osmosis/contracts/merkle-incentives
+      - name: Test merkle-incentives
+        run:  cargo test-tube
+        working-directory: smart-contracts/osmosis/contracts/merkle-incentives
+      - name: Build dex-router-osmosis
+        run:  cargo test-tube-build
+        working-directory: smart-contracts/osmosis/contracts/dex-router-osmosis
+      - name: Test dex-router-osmosis
+        run:  cargo test-tube
+        working-directory: smart-contracts/osmosis/contracts/dex-router-osmosis
+      - name: Build cl-vault
+        run:  cargo test-tube-build
+        working-directory: smart-contracts/osmosis/contracts/cl-vault
+      - name: Test cl-vault
+        run:  cargo test-tube
+        working-directory: smart-contracts/osmosis/contracts/cl-vault
+      - if: inputs.proptest
+        name: Run prop-test
+        run:  cargo prop-test
+        env:
+          PROPTEST_CASES: 10
+        working-directory: smart-contracts/osmosis/contracts/cl-vault
+      - name: Store dependencies
+        if: inputs.store_deps && !(steps.restore-cache.outputs.cache-hit == 'false')
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/cachepot
+            ~/.cargo
+            ~/go
+            ~/target
+          key: ${{ runner.os }}-cache-osmosis-${{ github.sha }}
+

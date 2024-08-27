@@ -3,8 +3,9 @@
 set -e
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
+DIFF_FILTER=ACMR
 
-CHANGES=$(git diff --name-only origin/main)
+CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
 
 
 if [ -z "$CHANGES" ]
@@ -13,34 +14,88 @@ then
   exit 1
 fi
 
-update_schemas_and_formatting() {
-  local contract=$1
-  if [[ $CHANGES == *contracts/${contract}* ]]
+update_schemas() {
+  local workspace=$1
+  local contract=$2
+  if [[ $CHANGES == *${workspace}/contracts/${contract}/* ]]
   then
     echo "Changes in ${contract} contract"
-    cd ${REPO_ROOT}/smart-contracts/contracts/${contract}
+    cd ${REPO_ROOT}/smart-contracts/${workspace}/contracts/${contract}
 
     # generate schemas
     cargo schema
-    NEW_CHANGES=$(git diff --name-only origin/main)
-    if [[ $NEW_CHANGES == *schema/* ]]
+    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=$DIFF_FILTER)
+    if [[ $NEW_CHANGES == *${workspace}/contracts/${contract}/schema* ]]
     then
       git add schema
     else
       echo "No schema changes for ${contract}."
     fi
+  fi
+}
 
+check_lint() {
+  if [[ $CHANGES == *smart-contracts/osmosis* ]]
+  then
+    cd ${REPO_ROOT}/smart-contracts/osmosis
+    cargo clippy --workspace -- -D warnings
+    cd -
+  fi
+  if [[ $CHANGES == *smart-contracts/quasar* ]]
+  then
+    cd ${REPO_ROOT}/smart-contracts/quasar
+    cargo clippy --workspace -- -D warnings
+    cd -
+  fi
+}
+
+fix_formatting() {
+  local target=$1
+  if [[ $CHANGES == *${target}* ]]
+  then
+    echo "Changes in ${target}"
+    cd ${REPO_ROOT}/smart-contracts/${target}
     # fix formatting
     cargo fmt --all
     cd ${REPO_ROOT}
-    NEW_CHANGES=$(git diff --name-only origin/main --diff-filter=A)
+    NEW_CHANGES=$(git diff --name-only origin/main --cached --diff-filter=$DIFF_FILTER)
     git add $NEW_CHANGES
   fi
 }
 
-update_schemas_and_formatting lst-dex-adapter-osmosis
-update_schemas_and_formatting dex-router-osmosis
-update_schemas_and_formatting token-burner
-update_schemas_and_formatting cl-vault
-update_schemas_and_formatting merkle-incentives
-update_schemas_and_formatting range-middleware
+check_lint() {
+  local target=$1
+  if [[ $CHANGES == *${target}* ]]
+  then
+    echo "Changes in ${target}"
+    cd ${REPO_ROOT}/smart-contracts/${target}
+    cargo clippy --all-targets -- -D warnings
+    cd -
+  fi
+}
+
+update_schemas osmosis lst-dex-adapter-osmosis
+update_schemas osmosis lst-adapter-osmosis
+update_schemas osmosis dex-router-osmosis
+update_schemas osmosis token-burner
+update_schemas osmosis cl-vault
+update_schemas osmosis merkle-incentives
+update_schemas osmosis range-middleware
+fix_formatting osmosis/contracts/lst-dex-adapter-osmosis
+fix_formatting osmosis/contracts/lst-adapter-osmosis
+fix_formatting osmosis/contracts/dex-router-osmosis
+fix_formatting osmosis/contracts/token-burner
+fix_formatting osmosis/contracts/cl-vault
+fix_formatting osmosis/contracts/merkle-incentives
+fix_formatting osmosis/contracts/range-middleware
+fix_formatting osmosis/packages/quasar-types
+fix_formatting quasar/proto-build
+check_lint osmosis/contracts/lst-dex-adapter-osmosis
+check_lint osmosis/contracts/lst-adapter-osmosis
+check_lint osmosis/contracts/dex-router-osmosis
+check_lint osmosis/contracts/token-burner
+check_lint osmosis/contracts/cl-vault
+check_lint osmosis/contracts/merkle-incentives
+check_lint osmosis/contracts/range-middleware
+check_lint osmosis/packages/quasar-types
+check_lint quasar/proto-build
