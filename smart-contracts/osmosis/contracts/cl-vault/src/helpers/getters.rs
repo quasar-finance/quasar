@@ -202,20 +202,30 @@ pub fn get_single_sided_deposit_1_to_0_swap_amount(
     Ok(swap_amount)
 }
 
-pub fn get_unused_balances(querier: &QuerierWrapper, env: &Env) -> Result<CoinList, ContractError> {
+pub fn get_unused_balances(
+    querier: &QuerierWrapper,
+    addr: &Addr,
+) -> Result<CoinList, ContractError> {
     Ok(CoinList::from_coins(
-        querier.query_all_balances(env.contract.address.to_string())?,
+        querier.query_all_balances(addr.to_string())?,
     ))
 }
 
+pub fn get_unused_pair(
+    deps: &Deps,
+    addr: &Addr,
+    pool_config: &PoolConfig,
+) -> Result<PoolPair<Coin, Coin>, ContractError> {
+    let unused_balances = get_unused_balances(&deps.querier, addr)?;
+    Ok(get_vault_funds_or_zero(&unused_balances, pool_config))
+}
+
 pub fn get_unused_pair_balances(
-    deps: &DepsMut,
+    deps: &Deps,
     env: &Env,
     pool_config: &PoolConfig,
 ) -> Result<Vec<Coin>, ContractError> {
-    let unused_balances = get_unused_balances(&deps.querier, env)?;
-    let vault_funds = get_vault_funds_or_zero(&unused_balances, pool_config);
-
+    let vault_funds = get_unused_pair(deps, &env.contract.address, pool_config)?;
     Ok(vec![vault_funds.base, vault_funds.quote])
 }
 
