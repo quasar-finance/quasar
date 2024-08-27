@@ -13,8 +13,8 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{
-    coin, Addr, Coin, Decimal, Decimal256, Deps, DepsMut, Env, QuerierWrapper, Storage, Timestamp,
-    Uint128, Uint256,
+    coin, Addr, Coin, Decimal, Decimal256, Deps, Env, QuerierWrapper, Storage, Timestamp, Uint128,
+    Uint256,
 };
 
 use super::coinlist::CoinList;

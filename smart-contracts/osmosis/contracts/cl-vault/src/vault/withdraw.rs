@@ -159,7 +159,10 @@ fn withdraw_msg(
 
 #[cfg(test)]
 mod tests {
-    use crate::{state::PoolConfig, test_helpers::mock_deps_with_querier_with_balance};
+    use crate::{
+        state::PoolConfig,
+        test_helpers::{mock_deps_with_querier_with_balance, BASE_DENOM, QUOTE_DENOM},
+    };
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info, MOCK_CONTRACT_ADDR},
         Addr, CosmosMsg, SubMsgResponse,
@@ -174,7 +177,7 @@ mod tests {
             &info,
             &[(
                 MOCK_CONTRACT_ADDR,
-                &[coin(2000, "token0"), coin(3000, "token1")],
+                &[coin(2000, BASE_DENOM), coin(3000, QUOTE_DENOM)],
             )],
         );
         let env = mock_env();

@@ -301,7 +301,7 @@ mod tests {
     use crate::{
         helpers::msgs::refund_bank_msg,
         state::{Position, POSITION},
-        test_helpers::mock_deps_with_querier,
+        test_helpers::{mock_deps_with_querier, BASE_DENOM, QUOTE_DENOM},
     };
 
     use super::*;
@@ -333,7 +333,7 @@ mod tests {
             env,
             MessageInfo {
                 sender: sender.clone(),
-                funds: vec![coin(100, "token0"), coin(100, "token1")],
+                funds: vec![coin(100, BASE_DENOM), coin(100, QUOTE_DENOM)],
             },
             None,
         )
