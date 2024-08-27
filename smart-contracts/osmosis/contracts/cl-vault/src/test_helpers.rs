@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 use cosmwasm_std::testing::{mock_info, BankQuerier, MockApi, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
     coin, from_json, to_json_binary, Addr, BankQuery, Binary, Coin,
-    ContractResult as CwContractResult, Decimal, DepsMut, Empty, Env, MessageInfo, OwnedDeps,
-    Querier, QuerierResult, QueryRequest,
+    ContractResult as CwContractResult, Decimal, DepsMut, Empty, Env, OwnedDeps, Querier,
+    QuerierResult, QueryRequest,
 };
 use osmosis_std::types::cosmos::bank::v1beta1::{QuerySupplyOfRequest, QuerySupplyOfResponse};
 use osmosis_std::types::osmosis::concentratedliquidity::v1beta1::Pool;
@@ -23,10 +23,7 @@ use osmosis_std::types::{
 use crate::contract::instantiate;
 use crate::math::tick::tick_to_price;
 use crate::msg::InstantiateMsg;
-use crate::state::{
-    PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
-    VAULT_DENOM,
-};
+use crate::state::{Position, VaultConfig, POSITION, VAULT_DENOM};
 
 pub const POOL_ID: u64 = 1;
 pub const POSITION_ID: u64 = 101;
@@ -168,10 +165,9 @@ impl Querier for QuasarQuerier {
 }
 
 pub fn mock_deps_with_querier_with_balance(
-    info: &MessageInfo,
     balances: &[(&str, &[Coin])],
 ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
-    let mut deps = OwnedDeps {
+    OwnedDeps {
         storage: MockStorage::default(),
         api: MockApi::default(),
         querier: QuasarQuerier::new_with_balances(
@@ -210,46 +206,7 @@ pub fn mock_deps_with_querier_with_balance(
             balances,
         ),
         custom_query_type: PhantomData,
-    };
-
-    let storage = &mut deps.storage;
-
-    RANGE_ADMIN.save(storage, &info.sender).unwrap();
-    POOL_CONFIG
-        .save(
-            storage,
-            &PoolConfig {
-                pool_id: POOL_ID,
-                token0: BASE_DENOM.to_string(),
-                token1: QUOTE_DENOM.to_string(),
-            },
-        )
-        .unwrap();
-    VAULT_CONFIG
-        .save(
-            storage,
-            &VaultConfig {
-                performance_fee: Decimal::zero(),
-                treasury: Addr::unchecked("treasure"),
-                swap_max_slippage: Decimal::from_ratio(1u128, 20u128),
-                dex_router: Addr::unchecked("dex_router"),
-                swap_admin: Addr::unchecked("swap_admin"),
-                twap_window_seconds: 24u64,
-            },
-        )
-        .unwrap();
-    POSITION
-        .save(
-            storage,
-            &crate::state::Position {
-                position_id: POSITION_ID,
-                join_time: 0,
-                claim_after: None,
-            },
-        )
-        .unwrap();
-
-    deps
+    }
 }
 
 pub fn mock_deps_with_querier() -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
