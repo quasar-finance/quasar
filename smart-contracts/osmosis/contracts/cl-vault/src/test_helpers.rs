@@ -24,6 +24,10 @@ use crate::state::{
     PoolConfig, Position, VaultConfig, POOL_CONFIG, POSITION, RANGE_ADMIN, VAULT_CONFIG,
 };
 
+pub const POOL_ID: u64 = 1;
+pub const BASE_DENOM: &str = "base";
+pub const QUOTE_DENOM: &str = "quote";
+
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
     current_tick: i64,
@@ -104,10 +108,10 @@ impl Querier for QuasarQuerier {
                                     address: "idc".to_string(),
                                     incentives_address: "not being used".to_string(),
                                     spread_rewards_address: "not being used".to_string(),
-                                    id: 1,
+                                    id: POOL_ID,
                                     current_tick_liquidity: "100".to_string(),
-                                    token0: "uosmo".to_string(),
-                                    token1: "uion".to_string(),
+                                    token0: BASE_DENOM.to_string(),
+                                    token1: QUOTE_DENOM.to_string(),
                                     current_sqrt_price: "not used".to_string(),
                                     current_tick: self.current_tick,
                                     tick_spacing: 100,
@@ -170,27 +174,27 @@ pub fn mock_deps_with_querier_with_balance(
                 position: Some(OsmoPosition {
                     position_id: 1,
                     address: MOCK_CONTRACT_ADDR.to_string(),
-                    pool_id: 1,
+                    pool_id: POOL_ID,
                     lower_tick: 100,
                     upper_tick: 1000,
                     join_time: None,
                     liquidity: "1000000.1".to_string(),
                 }),
                 asset0: Some(OsmoCoin {
-                    denom: "token0".to_string(),
+                    denom: BASE_DENOM.to_string(),
                     amount: "1000000".to_string(),
                 }),
                 asset1: Some(OsmoCoin {
-                    denom: "token1".to_string(),
+                    denom: QUOTE_DENOM.to_string(),
                     amount: "1000000".to_string(),
                 }),
                 claimable_spread_rewards: vec![
                     OsmoCoin {
-                        denom: "token0".to_string(),
+                        denom: BASE_DENOM.to_string(),
                         amount: "100".to_string(),
                     },
                     OsmoCoin {
-                        denom: "token1".to_string(),
+                        denom: QUOTE_DENOM.to_string(),
                         amount: "100".to_string(),
                     },
                 ],
@@ -210,9 +214,9 @@ pub fn mock_deps_with_querier_with_balance(
         .save(
             storage,
             &PoolConfig {
-                pool_id: 1,
-                token0: "token0".to_string(),
-                token1: "token1".to_string(),
+                pool_id: POOL_ID,
+                token0: BASE_DENOM.to_string(),
+                token1: QUOTE_DENOM.to_string(),
             },
         )
         .unwrap();
@@ -256,27 +260,27 @@ pub fn mock_deps_with_querier(
                 position: Some(OsmoPosition {
                     position_id,
                     address: MOCK_CONTRACT_ADDR.to_string(),
-                    pool_id: 1,
+                    pool_id: POOL_ID,
                     lower_tick: 100,
                     upper_tick: 1000,
                     join_time: None,
                     liquidity: "1000000.1".to_string(),
                 }),
                 asset0: Some(OsmoCoin {
-                    denom: "token0".to_string(),
+                    denom: BASE_DENOM.to_string(),
                     amount: "1000000".to_string(),
                 }),
                 asset1: Some(OsmoCoin {
-                    denom: "token1".to_string(),
+                    denom: QUOTE_DENOM.to_string(),
                     amount: "1000000".to_string(),
                 }),
                 claimable_spread_rewards: vec![
                     OsmoCoin {
-                        denom: "token0".to_string(),
+                        denom: BASE_DENOM.to_string(),
                         amount: "100".to_string(),
                     },
                     OsmoCoin {
-                        denom: "token1".to_string(),
+                        denom: QUOTE_DENOM.to_string(),
                         amount: "100".to_string(),
                     },
                 ],
@@ -306,9 +310,9 @@ pub fn mock_deps_with_querier(
         .save(
             storage,
             &PoolConfig {
-                pool_id: 1,
-                token0: "token0".to_string(),
-                token1: "token1".to_string(),
+                pool_id: POOL_ID,
+                token0: BASE_DENOM.to_string(),
+                token1: QUOTE_DENOM.to_string(),
             },
         )
         .unwrap();

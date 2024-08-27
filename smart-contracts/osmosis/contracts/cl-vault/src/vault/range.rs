@@ -313,7 +313,9 @@ mod tests {
         helpers::getters::get_range_admin,
         math::tick::build_tick_exp_cache,
         state::{MODIFY_RANGE_STATE, RANGE_ADMIN},
-        test_helpers::{mock_deps_with_querier, mock_deps_with_querier_with_balance},
+        test_helpers::{
+            mock_deps_with_querier, mock_deps_with_querier_with_balance, BASE_DENOM, QUOTE_DENOM,
+        },
         vault::range::requires_swap,
     };
 
@@ -368,7 +370,7 @@ mod tests {
             &info,
             &[(
                 MOCK_CONTRACT_ADDR,
-                &[coin(11000, "token0"), coin(11234, "token1")],
+                &[coin(11000, BASE_DENOM), coin(11234, QUOTE_DENOM)],
             )],
         );
 
@@ -399,7 +401,7 @@ mod tests {
                 .find(|a| { a.key == "token1" })
                 .unwrap()
                 .value,
-            "11234token1"
+            format!("11234{}", QUOTE_DENOM)
         ); // 10000 withdrawn + 1234 local balance
     }
 
