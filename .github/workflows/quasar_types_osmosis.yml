@@ -1,0 +1,27 @@
+name: Quasar Types (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/packages/quasar-types/Cargo.toml'
+      - 'smart-contracts/osmosis/packages/quasar-types/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/quasar_types_osmosis.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/packages/quasar-types/Cargo.toml'
+      - 'smart-contracts/osmosis/packages/quasar-types/**.rs'
+      - '.github/workflows/rust_basic.yml'
+      - '.github/workflows/quasar_types_osmosis.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/rust_basic.yml
+    with:
+      target: packages/quasar-types
+      workspace: osmosis

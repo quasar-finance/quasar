@@ -1,0 +1,66 @@
+[workspace]
+resolver = "2"
+
+members = ["contracts/*", "packages/*"]
+
+[workspace.dependencies]
+# CosmWasm
+cosmwasm-std = "1.5.4"
+cosmwasm-schema = "1.5.4"
+cosmwasm-storage = "1.5.2"
+cw-storage-plus = "1.2.0"
+cw-controllers = "1.1.2"
+cw-utils = "1.0.3"
+cw-asset = "3.0"
+cw2 = "1.1.2"
+cw20 = "1.1.2"
+cw20-base = {version = "1.1.2", features = ["library"]}
+cw20-staking = "0.11.1"
+apollo-cw-asset = "0.1.2"
+mars-owner = "2.0.0"
+quasar-std = { path = "../quasar/packages/quasar-std" }
+quasar-types = { path = "packages/quasar-types" }
+dex-router-osmosis = { path = "contracts/dex-router-osmosis", features = ["library"] }
+lst-dex-adapter-osmosis = { path = "contracts/lst-dex-adapter-osmosis", features = ["library"] }
+lst-adapter-osmosis = { path = "contracts/lst-adapter-osmosis", features = ["library"] }
+
+# SDK
+cosmos-sdk-proto = {version = "0.21.1", default-features = false}
+
+# Osmosis
+osmosis-std = "0.25.0"
+osmosis-std-derive = "0.20.1"
+
+# Serialization & Tools
+schemars = "0.8.16"
+serde = { version = "1.0.196", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.113", default-features = false, features = ["alloc"]}
+thiserror = { version = "1.0.56" }
+prost = {version = "0.12.3", default-features = false, features = ["std"]}
+serde-json-wasm = {version = "1.0.1", default-features = false}
+itertools = "0.12.1"
+num_enum = "0.7.2"
+base64 = "0.22.0"
+
+# AbstractSDK
+abstract-app = { version = "0.22.2" }
+abstract-std = { version = "0.22.2" }
+abstract-sdk = { version = "0.22.2" }
+abstract-testing = { version = "0.22.1" }
+abstract-adapter = { version = "0.22.2" }
+abstract-interface = { version = "0.22.0" }
+abstract-client = { version = "0.22.0" }
+abstract-polytone = { version = "1.0.5" }
+abstract-cw-orch-polytone = { version = "2.0.0" }
+cw-orch = { version = "0.23.0" }
+cw-orch-interchain = { version = "0.1.0" }
+clap = { version = "4.3.7" }
+const_format = "0.2.32"
+dotenv = "0.15.0"
+env_logger = "0.11.3"
+ibc-relayer-types = "0.25"
+
+# Testing
+cw-multi-test = "1.2.0"
+osmosis-test-tube = "25.0.0"
+proptest = "1.2.0"

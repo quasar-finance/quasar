@@ -1,0 +1,16 @@
+name: Store cargo build cache (quasar)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/quasar/**.rs'
+      - 'smart-contracts/quasar/**.toml'
+  workflow_dispatch:
+
+jobs:
+  quasar-build-cache:
+    uses: ./.github/workflows/cargo_build_cache.yml
+    with:
+      workspace: quasar

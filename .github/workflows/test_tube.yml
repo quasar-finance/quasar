@@ -1,0 +1,32 @@
+name: Test Tube (osmosis)
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/**/Cargo.toml'
+      - 'smart-contracts/osmosis/**.rs'
+      - '.github/workflows/test_tube.yml'
+      - '.github/workflows/all_checks_osmosis.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'smart-contracts/osmosis/**/Cargo.toml'
+      - 'smart-contracts/osmosis/**.rs'
+      - '.github/workflows/test_tube.yml'
+      - '.github/workflows/all_checks_osmosis.yml'
+  workflow_dispatch:
+
+jobs:
+  post-merge:
+    uses: ./.github/workflows/all_checks_osmosis.yml
+    if: github.event_name == 'push'
+    with:
+      unittest: true
+      proptest: true
+      store_deps: true
+  pre-commit:
+    uses: ./.github/workflows/all_checks_osmosis.yml
+    if: github.event_name == 'pull_request'

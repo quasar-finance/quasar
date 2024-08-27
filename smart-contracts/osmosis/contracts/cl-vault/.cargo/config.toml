@@ -1,0 +1,8 @@
+[alias]
+wasm = "build --release --lib --target wasm32-unknown-unknown"
+unit-test = "test --lib"
+schema = "run --bin schema"
+# test-tube = "test --test * --features test-tube -- --test-threads=1"
+test-tube = "test --test test-tube --features test-tube -- --test-threads=1"
+prop-test = "test --test prop-test --features test-tube -- --test-threads=1 --nocapture"
+test-tube-build = "build --release --lib --target  wasm32-unknown-unknown --target-dir ./test-tube-build"

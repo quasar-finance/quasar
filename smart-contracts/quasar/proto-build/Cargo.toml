@@ -1,0 +1,25 @@
+[package]
+name = "proto-build"
+version = "0.1.0"
+authors = ["Quasar"]
+edition = "2018"
+publish = false
+
+[features]
+# dummy feature, workaround for rust-analyzer not being able to specify features per workspace
+test-tube = []
+
+[dependencies]
+prost = { workspace = true }
+prost-build = { workspace = true }
+prost-types = { workspace = true }
+tonic = { workspace = true }
+tonic-build = { workspace = true }
+regex = { workspace = true }
+walkdir = { workspace = true }
+syn = { workspace = true, features = ["full", "parsing", "extra-traits"] }
+prettyplease = { workspace = true }
+heck = { workspace = true }
+log = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
