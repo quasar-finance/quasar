@@ -372,10 +372,15 @@ mod tests {
         let info = mock_info("addr0000", &[]);
         let env = mock_env();
 
-        let mut deps = mock_deps_with_querier_with_balance(&[(
-            MOCK_CONTRACT_ADDR,
-            &[coin(11000, BASE_DENOM), coin(11234, QUOTE_DENOM)],
-        )]);
+        let mut deps = mock_deps_with_querier_with_balance(
+            100_000,
+            100_000,
+            0,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(11000, BASE_DENOM), coin(11234, QUOTE_DENOM)],
+            )],
+        );
         instantiate_contract(deps.as_mut(), env.clone(), info.sender.as_str());
 
         MODIFY_RANGE_STATE
