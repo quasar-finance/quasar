@@ -175,10 +175,15 @@ mod tests {
     #[test]
     fn execute_withdraw_works_no_rewards() {
         let info = mock_info("bolice", &[]);
-        let mut deps = mock_deps_with_querier_with_balance(&[(
-            MOCK_CONTRACT_ADDR,
-            &[coin(2000, BASE_DENOM), coin(3000, QUOTE_DENOM)],
-        )]);
+        let mut deps = mock_deps_with_querier_with_balance(
+            100_000,
+            100_000,
+            0,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[coin(2000, BASE_DENOM), coin(3000, QUOTE_DENOM)],
+            )],
+        );
         let env = mock_env();
         instantiate_contract(deps.as_mut(), env.clone(), info.sender.as_str());
 

@@ -165,6 +165,9 @@ impl Querier for QuasarQuerier {
 }
 
 pub fn mock_deps_with_querier_with_balance(
+    position_base_amount: u128,
+    position_quote_amount: u128,
+    current_tick: i64,
     balances: &[(&str, &[Coin])],
 ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
     OwnedDeps {
@@ -183,11 +186,11 @@ pub fn mock_deps_with_querier_with_balance(
                 }),
                 asset0: Some(OsmoCoin {
                     denom: BASE_DENOM.to_string(),
-                    amount: "1000000".to_string(),
+                    amount: position_base_amount.to_string(),
                 }),
                 asset1: Some(OsmoCoin {
                     denom: QUOTE_DENOM.to_string(),
-                    amount: "1000000".to_string(),
+                    amount: position_quote_amount.to_string(),
                 }),
                 claimable_spread_rewards: vec![
                     OsmoCoin {
@@ -202,7 +205,7 @@ pub fn mock_deps_with_querier_with_balance(
                 claimable_incentives: vec![],
                 forfeited_incentives: vec![],
             },
-            0,
+            current_tick,
             balances,
         ),
         custom_query_type: PhantomData,
