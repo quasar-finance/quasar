@@ -599,21 +599,26 @@ mod tests {
 
     #[test]
     fn successful_inexact_any_deposit_mints_fund_tokens_according_to_share_of_assets() {
-        let current_deposit_amount = 100u128;
-        let base_deposit_amount = 50;
+        let current_vault_base_balance = 150u128;
+        let current_vault_quote_balance = 100u128;
+        let base_deposit_amount = 150;
         let quote_deposit_amount = 100;
+        let current_price = Decimal::percent(200);
         let env = mock_env();
         let mut deps = mock_deps_with_querier_with_balance(
             100,
-            100,
-            549,
-            100,
-            1000,
+            200,
+            1_000_000,
+            900_000,
+            1_101_000,
             &[(
                 MOCK_CONTRACT_ADDR,
                 &[
-                    coin(current_deposit_amount + base_deposit_amount, BASE_DENOM),
-                    coin(current_deposit_amount + quote_deposit_amount, QUOTE_DENOM),
+                    coin(current_vault_base_balance + base_deposit_amount, BASE_DENOM),
+                    coin(
+                        current_vault_quote_balance + quote_deposit_amount,
+                        QUOTE_DENOM,
+                    ),
                     coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
                 ],
             )],
@@ -642,6 +647,7 @@ mod tests {
         .unwrap();
         assert_eq!(response.messages.len(), 1);
 
+        let expected_swap_amount = 50u128;
         let msg = response.messages[0].msg.clone();
         match msg {
             CosmosMsg::Wasm(WasmMsg::Execute {
@@ -650,11 +656,29 @@ mod tests {
                 funds,
             }) => {
                 assert_eq!(funds.len(), 1);
-                assert_eq!(funds[0].denom, QUOTE_DENOM);
-                assert_eq!(funds[0].amount, Uint128::from(25u64));
+                assert_eq!(funds[0].denom, BASE_DENOM);
+                assert_eq!(funds[0].amount.u128(), expected_swap_amount);
             }
             _ => panic!("unreachable"),
         }
+        let swap_receive_amount: u128 = Uint128::from(expected_swap_amount)
+            .checked_mul_floor(current_price)
+            .unwrap()
+            .into();
+        deps.querier.update_balances(&[(
+            MOCK_CONTRACT_ADDR,
+            &[
+                coin(
+                    current_vault_base_balance + base_deposit_amount - expected_swap_amount,
+                    BASE_DENOM,
+                ),
+                coin(
+                    current_vault_quote_balance + quote_deposit_amount + swap_receive_amount,
+                    QUOTE_DENOM,
+                ),
+                coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+            ],
+        )]);
 
         let response = reply(
             deps.as_mut(),
@@ -668,7 +692,243 @@ mod tests {
             },
         )
         .unwrap();
-        let expected_minted_tokens = 37_250;
+        let expected_minted_tokens = 50_000;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Stargate { type_url: _, value } => {
+                let m: MsgMint = value.try_into().unwrap();
+                assert_eq!(m.sender, env.contract.address.to_string());
+                assert_eq!(
+                    m.amount.as_ref().unwrap().amount,
+                    expected_minted_tokens.to_string()
+                );
+                assert_eq!(
+                    m.amount.as_ref().unwrap().denom,
+                    TEST_VAULT_DENOM.to_string()
+                );
+                assert_eq!(m.mint_to_address, env.contract.address.to_string());
+            }
+            _ => panic!("unreachable"),
+        }
+    }
+
+    #[test]
+    fn successful_inexact_any_deposit_mints_fund_tokens_according_to_share_of_assets_one_sided_position_base_only(
+    ) {
+        let current_vault_base_balance = 100u128;
+        let current_vault_quote_balance = 100u128;
+        let base_deposit_amount = 50;
+        let quote_deposit_amount = 100;
+        let position_base_amount = 100;
+        let current_price = Decimal::percent(200);
+        let env = mock_env();
+        let mut deps = mock_deps_with_querier_with_balance(
+            position_base_amount,
+            0,
+            1_000_000,
+            10_000_000,
+            20_000_000,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[
+                    coin(current_vault_base_balance + base_deposit_amount, BASE_DENOM),
+                    coin(
+                        current_vault_quote_balance + quote_deposit_amount,
+                        QUOTE_DENOM,
+                    ),
+                    coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+                ],
+            )],
+        );
+
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(base_deposit_amount, BASE_DENOM.to_string()),
+                coin(quote_deposit_amount, QUOTE_DENOM),
+            ],
+        );
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::AnyDeposit {
+                amount: Uint128::zero(),
+                asset: String::default(),
+                recipient: None,
+                max_slippage: Decimal::percent(90),
+            },
+        )
+        .unwrap();
+        assert_eq!(response.messages.len(), 1);
+
+        let expected_swap_amount = 100u128;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: _,
+                msg: _,
+                funds,
+            }) => {
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].denom, QUOTE_DENOM);
+                assert_eq!(funds[0].amount, Uint128::from(expected_swap_amount));
+            }
+            _ => panic!("unreachable"),
+        }
+
+        let swap_receive_amount: u128 = Uint128::from(expected_swap_amount)
+            .checked_div_floor(current_price)
+            .unwrap()
+            .into();
+        deps.querier.update_balances(&[(
+            MOCK_CONTRACT_ADDR,
+            &[
+                coin(
+                    current_vault_base_balance + base_deposit_amount + swap_receive_amount,
+                    BASE_DENOM,
+                ),
+                coin(
+                    current_vault_quote_balance + quote_deposit_amount - expected_swap_amount,
+                    QUOTE_DENOM,
+                ),
+                coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+            ],
+        )]);
+
+        let response = reply(
+            deps.as_mut(),
+            env.clone(),
+            Reply {
+                id: Replies::AnyDepositSwap.into(),
+                result: SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    data: None,
+                }),
+            },
+        )
+        .unwrap();
+        let expected_minted_tokens = 40_000;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Stargate { type_url: _, value } => {
+                let m: MsgMint = value.try_into().unwrap();
+                assert_eq!(m.sender, env.contract.address.to_string());
+                assert_eq!(
+                    m.amount.as_ref().unwrap().amount,
+                    expected_minted_tokens.to_string()
+                );
+                assert_eq!(
+                    m.amount.as_ref().unwrap().denom,
+                    TEST_VAULT_DENOM.to_string()
+                );
+                assert_eq!(m.mint_to_address, env.contract.address.to_string());
+            }
+            _ => panic!("unreachable"),
+        }
+    }
+
+    #[test]
+    fn successful_inexact_any_deposit_mints_fund_tokens_according_to_share_of_assets_one_sided_position_quote_only(
+    ) {
+        let current_vault_base_balance = 100u128;
+        let current_vault_quote_balance = 100u128;
+        let base_deposit_amount = 50;
+        let quote_deposit_amount = 100;
+        let position_quote_amount = 100;
+        let current_price = Decimal::percent(200);
+        let env = mock_env();
+        let mut deps = mock_deps_with_querier_with_balance(
+            0,
+            position_quote_amount,
+            1_000_000, // price = 2.0
+            100,
+            1000,
+            &[(
+                MOCK_CONTRACT_ADDR,
+                &[
+                    coin(current_vault_base_balance + base_deposit_amount, BASE_DENOM),
+                    coin(
+                        current_vault_quote_balance + quote_deposit_amount,
+                        QUOTE_DENOM,
+                    ),
+                    coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+                ],
+            )],
+        );
+
+        instantiate_contract(deps.as_mut(), env.clone(), ADMIN);
+
+        let info = mock_info(
+            SENDER,
+            &[
+                coin(base_deposit_amount, BASE_DENOM.to_string()),
+                coin(quote_deposit_amount, QUOTE_DENOM),
+            ],
+        );
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::AnyDeposit {
+                amount: Uint128::zero(),
+                asset: String::default(),
+                recipient: None,
+                max_slippage: Decimal::percent(90),
+            },
+        )
+        .unwrap();
+        assert_eq!(response.messages.len(), 1);
+
+        let expected_swap_amount = 50u128;
+        let msg = response.messages[0].msg.clone();
+        match msg {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: _,
+                msg: _,
+                funds,
+            }) => {
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].denom, BASE_DENOM);
+                assert_eq!(funds[0].amount, Uint128::from(expected_swap_amount));
+            }
+            _ => panic!("unreachable"),
+        }
+
+        let swap_receive_amount: u128 = Uint128::from(expected_swap_amount)
+            .checked_mul_floor(current_price)
+            .unwrap()
+            .into();
+        deps.querier.update_balances(&[(
+            MOCK_CONTRACT_ADDR,
+            &[
+                coin(
+                    current_vault_base_balance + base_deposit_amount - expected_swap_amount,
+                    BASE_DENOM,
+                ),
+                coin(
+                    current_vault_quote_balance + quote_deposit_amount + swap_receive_amount,
+                    QUOTE_DENOM,
+                ),
+                coin(TEST_VAULT_TOKEN_SUPPLY, TEST_VAULT_DENOM),
+            ],
+        )]);
+
+        let response = reply(
+            deps.as_mut(),
+            env.clone(),
+            Reply {
+                id: Replies::AnyDepositSwap.into(),
+                result: SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    data: None,
+                }),
+            },
+        )
+        .unwrap();
+        let expected_minted_tokens = 50_000;
         let msg = response.messages[0].msg.clone();
         match msg {
             CosmosMsg::Stargate { type_url: _, value } => {

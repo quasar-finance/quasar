@@ -60,6 +60,10 @@ impl QuasarQuerier {
             bank: BankQuerier::new(balances),
         }
     }
+
+    pub fn update_balances(&mut self, balances: &[(&str, &[Coin])]) {
+        self.bank = BankQuerier::new(balances);
+    }
 }
 
 impl Querier for QuasarQuerier {
@@ -167,6 +171,51 @@ impl Querier for QuasarQuerier {
     }
 }
 
+fn get_quasar_querier_with_balances(
+    position_base_amount: u128,
+    position_quote_amount: u128,
+    current_tick: i64,
+    position_lower_tick: i64,
+    position_upper_tick: i64,
+    balances: &[(&str, &[Coin])],
+) -> QuasarQuerier {
+    QuasarQuerier::new_with_balances(
+        FullPositionBreakdown {
+            position: Some(OsmoPosition {
+                position_id: POSITION_ID,
+                address: MOCK_CONTRACT_ADDR.to_string(),
+                pool_id: POOL_ID,
+                lower_tick: position_lower_tick,
+                upper_tick: position_upper_tick,
+                join_time: None,
+                liquidity: "1000000.1".to_string(),
+            }),
+            asset0: Some(OsmoCoin {
+                denom: BASE_DENOM.to_string(),
+                amount: position_base_amount.to_string(),
+            }),
+            asset1: Some(OsmoCoin {
+                denom: QUOTE_DENOM.to_string(),
+                amount: position_quote_amount.to_string(),
+            }),
+            claimable_spread_rewards: vec![
+                OsmoCoin {
+                    denom: BASE_DENOM.to_string(),
+                    amount: "100".to_string(),
+                },
+                OsmoCoin {
+                    denom: QUOTE_DENOM.to_string(),
+                    amount: "100".to_string(),
+                },
+            ],
+            claimable_incentives: vec![],
+            forfeited_incentives: vec![],
+        },
+        current_tick,
+        balances,
+    )
+}
+
 pub fn mock_deps_with_querier_with_balance(
     position_base_amount: u128,
     position_quote_amount: u128,
@@ -178,39 +227,12 @@ pub fn mock_deps_with_querier_with_balance(
     OwnedDeps {
         storage: MockStorage::default(),
         api: MockApi::default(),
-        querier: QuasarQuerier::new_with_balances(
-            FullPositionBreakdown {
-                position: Some(OsmoPosition {
-                    position_id: POSITION_ID,
-                    address: MOCK_CONTRACT_ADDR.to_string(),
-                    pool_id: POOL_ID,
-                    lower_tick: position_lower_tick,
-                    upper_tick: position_upper_tick,
-                    join_time: None,
-                    liquidity: "1000000.1".to_string(),
-                }),
-                asset0: Some(OsmoCoin {
-                    denom: BASE_DENOM.to_string(),
-                    amount: position_base_amount.to_string(),
-                }),
-                asset1: Some(OsmoCoin {
-                    denom: QUOTE_DENOM.to_string(),
-                    amount: position_quote_amount.to_string(),
-                }),
-                claimable_spread_rewards: vec![
-                    OsmoCoin {
-                        denom: BASE_DENOM.to_string(),
-                        amount: "100".to_string(),
-                    },
-                    OsmoCoin {
-                        denom: QUOTE_DENOM.to_string(),
-                        amount: "100".to_string(),
-                    },
-                ],
-                claimable_incentives: vec![],
-                forfeited_incentives: vec![],
-            },
+        querier: get_quasar_querier_with_balances(
+            position_base_amount,
+            position_quote_amount,
             current_tick,
+            position_lower_tick,
+            position_upper_tick,
             balances,
         ),
         custom_query_type: PhantomData,
