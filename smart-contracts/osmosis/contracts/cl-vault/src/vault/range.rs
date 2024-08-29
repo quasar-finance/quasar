@@ -374,6 +374,8 @@ mod tests {
             100_000,
             100_000,
             0,
+            100,
+            1000,
             &[(
                 MOCK_CONTRACT_ADDR,
                 &[coin(11000, BASE_DENOM), coin(11234, QUOTE_DENOM)],

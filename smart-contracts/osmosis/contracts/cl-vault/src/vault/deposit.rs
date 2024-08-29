@@ -432,6 +432,8 @@ mod tests {
             100,
             100,
             0,
+            100,
+            1000,
             &[(
                 MOCK_CONTRACT_ADDR,
                 &[
@@ -540,6 +542,8 @@ mod tests {
             100,
             100,
             0,
+            100,
+            1000,
             &[(
                 MOCK_CONTRACT_ADDR,
                 &[
@@ -603,6 +607,8 @@ mod tests {
             100,
             100,
             549,
+            100,
+            1000,
             &[(
                 MOCK_CONTRACT_ADDR,
                 &[

@@ -171,6 +171,8 @@ pub fn mock_deps_with_querier_with_balance(
     position_base_amount: u128,
     position_quote_amount: u128,
     current_tick: i64,
+    position_lower_tick: i64,
+    position_upper_tick: i64,
     balances: &[(&str, &[Coin])],
 ) -> OwnedDeps<MockStorage, MockApi, QuasarQuerier, Empty> {
     OwnedDeps {
@@ -182,8 +184,8 @@ pub fn mock_deps_with_querier_with_balance(
                     position_id: POSITION_ID,
                     address: MOCK_CONTRACT_ADDR.to_string(),
                     pool_id: POOL_ID,
-                    lower_tick: 100,
-                    upper_tick: 1000,
+                    lower_tick: position_lower_tick,
+                    upper_tick: position_upper_tick,
                     join_time: None,
                     liquidity: "1000000.1".to_string(),
                 }),
