@@ -315,13 +315,11 @@ func New(
 
 	anteHandler, err := quasarante.NewAnteHandler(
 		quasarante.HandlerOptions{
-			HandlerOptions: ante.HandlerOptions{
-				AccountKeeper:   app.AccountKeeper,
-				BankKeeper:      app.BankKeeper,
-				FeegrantKeeper:  app.FeeGrantKeeper,
-				SignModeHandler: txConfig.SignModeHandler(),
-				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
-			},
+			AccountKeeper:         app.AccountKeeper,
+			BankKeeper:            app.BankKeeper,
+			FeegrantKeeper:        app.FeeGrantKeeper,
+			SignModeHandler:       txConfig.SignModeHandler(),
+			SigGasConsumer:        ante.DefaultSigVerificationGasConsumer,
 			Codec:                 appCodec,
 			IBCkeeper:             app.IBCKeeper,
 			StakingKeeper:         app.StakingKeeper,
@@ -340,7 +338,6 @@ func New(
 	postHandlerOptions := PostHandlerOptions{
 		AccountKeeper:   app.AccountKeeper,
 		BankKeeper:      app.BankKeeper,
-		FeeGrantKeeper:  app.FeeGrantKeeper,
 		FeeMarketKeeper: app.FeeMarketKeeper,
 	}
 	postHandler, err := NewPostHandler(postHandlerOptions)
