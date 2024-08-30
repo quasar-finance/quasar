@@ -57,14 +57,14 @@ func CreateUpgradeHandler(
 
 		// Set rate-limit params
 		keepers.RatelimitKeeper.SetParams(ctx, ratelimittypes.DefaultParams())
+
 		// Set pfm params
 		err = keepers.PFMRouterKeeper.SetParams(ctx, pfmtypes.DefaultParams())
 		if err != nil {
 			return nil, err
 		}
+
 		// fee market params
-		// TODO: change values from default after discussion
-		ctx.Logger().Info("Setting dynamicfees/feemarket params...")
 		err = setFeeMarketParams(ctx, keepers.FeeMarketKeeper)
 		if err != nil {
 			return nil, err
@@ -77,11 +77,20 @@ func CreateUpgradeHandler(
 
 func setFeeMarketParams(ctx sdk.Context, feemarketKeeper *feemarketkeeper.Keeper) error {
 	feemarketParams := feemarkettypes.DefaultParams()
-	feemarketParams.MinBaseGasPrice = math.LegacyMustNewDecFromStr("0.10000000000000000")
-	feemarketParams.MaxBlockUtilization = uint64(120_000_000)
-	feemarketParams.FeeDenom = appparams.DefaultBondDenom
-	feemarketParams.Enabled = true
+
+	// update params
+	feemarketParams.Alpha = math.LegacyMustNewDecFromStr("0.003000000000000000")
+	feemarketParams.Beta = math.LegacyMustNewDecFromStr("0.980000000000000000")
+	feemarketParams.Delta = math.LegacyMustNewDecFromStr("0.001500000000000000")
 	feemarketParams.DistributeFees = true
+	feemarketParams.Enabled = true
+	feemarketParams.FeeDenom = appparams.DefaultBondDenom
+	feemarketParams.Gamma = math.LegacyMustNewDecFromStr("0.008000000000000000")
+	feemarketParams.MaxBlockUtilization = uint64(120000000)
+	feemarketParams.MaxLearningRate = math.LegacyMustNewDecFromStr("0.125000000000000000")
+	feemarketParams.MinBaseGasPrice = math.LegacyMustNewDecFromStr("0.100000000000000000")
+	feemarketParams.MinLearningRate = math.LegacyMustNewDecFromStr("0.075000000000000000")
+	feemarketParams.Window = uint64(7)
 
 	feemarketState := feemarkettypes.NewState(feemarketParams.Window, feemarketParams.MinBaseGasPrice, feemarketParams.MinLearningRate)
 	err := feemarketKeeper.SetParams(ctx, feemarketParams)
