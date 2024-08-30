@@ -201,6 +201,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let dex_router_item: Item<Addr> = Item::new("dex_router");
+    dex_router_item.remove(deps.storage);
     // VaultConfig
     #[cw_serde]
     struct OldVaultConfig {

@@ -1,10 +1,6 @@
 #![allow(dead_code)]
 
-use cl_vault::{
-    helpers::generic::sort_tokens,
-    msg::{AdminExtensionExecuteMsg, ExtensionExecuteMsg, InstantiateMsg},
-    state::VaultConfig,
-};
+use cl_vault::{helpers::generic::sort_tokens, msg::InstantiateMsg, state::VaultConfig};
 use cosmwasm_std::{coin, Addr, Attribute, Coin, Decimal, Uint128};
 use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
 use osmosis_std::types::{
@@ -466,18 +462,6 @@ fn init_test_contract_with_dex_router_and_swap_pools(
             &admin,
         )
         .unwrap();
-
-    wasm.execute(
-        &contract_cl.data.address,
-        &cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(
-            ExtensionExecuteMsg::Admin(AdminExtensionExecuteMsg::UpdateDexRouter {
-                address: Some(contract_dex_router.data.address.clone()),
-            }),
-        ),
-        &[],
-        &admin,
-    )
-    .unwrap();
 
     (
         app,

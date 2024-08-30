@@ -7,8 +7,8 @@ use crate::{
     math::tick::{price_to_tick, tick_to_price},
     reply::Replies,
     state::{
-        ModifyRangeState, Position, SwapDepositMergeState, DEX_ROUTER, MODIFY_RANGE_STATE,
-        POOL_CONFIG, POSITION, SWAP_DEPOSIT_MERGE_STATE,
+        ModifyRangeState, Position, SwapDepositMergeState, MODIFY_RANGE_STATE, POOL_CONFIG,
+        POSITION, SWAP_DEPOSIT_MERGE_STATE, VAULT_CONFIG,
     },
     vault::{
         concentrated_liquidity::{
@@ -215,14 +215,12 @@ pub fn handle_withdraw_position_reply(deps: DepsMut, env: Env) -> Result<Respons
         let token_out_min_amount =
             estimate_swap_min_out_amount(token_in.amount, price, modify_range_state.max_slippage)?;
 
-        let dex_router = DEX_ROUTER.may_load(deps.storage)?;
+        let vault_config = VAULT_CONFIG.load(deps.storage)?;
         let swap_msg = swap_msg(
-            env.contract.address,
-            pool_config.pool_id,
+            vault_config.dex_router,
             token_in.clone(),
             coin(token_out_min_amount.into(), out_denom.clone()),
-            None, // TODO: check this None
-            dex_router,
+            None,
         )?;
         Ok(response
             .add_submessage(SubMsg::reply_on_success(swap_msg, Replies::Swap.into()))

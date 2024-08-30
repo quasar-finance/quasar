@@ -230,29 +230,6 @@
           "additionalProperties": false
         },
         {
-          "description": "Update the dex router address.",
-          "type": "object",
-          "required": [
-            "update_dex_router"
-          ],
-          "properties": {
-            "update_dex_router": {
-              "type": "object",
-              "properties": {
-                "address": {
-                  "description": "The new dex router address.",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
           "description": "Build tick exponent cache",
           "type": "object",
           "required": [

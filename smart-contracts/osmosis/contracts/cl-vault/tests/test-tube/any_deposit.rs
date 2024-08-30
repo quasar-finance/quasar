@@ -1,6 +1,6 @@
 use crate::setup::{
-    fixture_default, fixture_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE,
-    DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+    fixture_dex_router, ACCOUNTS_INIT_BALANCE, ACCOUNTS_NUM, DENOM_BASE, DENOM_QUOTE,
+    MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
 
 use cl_vault::msg::ExecuteMsg;
@@ -25,8 +25,8 @@ fn test_any_deposit() {
     ];
 
     for (amount_base, amount_quote) in test_cases {
-        let (app, contract_address, vault_pool_id, admin, ..) =
-            fixture_default(PERFORMANCE_FEE_DEFAULT);
+        let (app, contract_address, _dex_router, vault_pool_id, _pools, admin, ..) =
+            fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
 
         do_and_verify_any_deposit(
             app,
