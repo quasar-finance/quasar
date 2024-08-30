@@ -92,10 +92,18 @@ func (s *UpgradeTestSuite) TestUpgrade() {
 	feemarketParams, err := keepers.FeeMarketKeeper.GetParams(ctx)
 	s.Require().NoError(err, "Error getting feemarket params after upgrade")
 	expectedFeeMarketParams := feemarkettypes.DefaultParams()
-	expectedFeeMarketParams.MinBaseGasPrice = math.LegacyMustNewDecFromStr("0.10000000000000000")
-	expectedFeeMarketParams.MaxBlockUtilization = uint64(120000000)
-	expectedFeeMarketParams.FeeDenom = "uqsr"
+	expectedFeeMarketParams.Alpha = math.LegacyMustNewDecFromStr("0.003000000000000000")
+	expectedFeeMarketParams.Beta = math.LegacyMustNewDecFromStr("0.980000000000000000")
+	expectedFeeMarketParams.Delta = math.LegacyMustNewDecFromStr("0.001500000000000000")
 	expectedFeeMarketParams.DistributeFees = true
+	expectedFeeMarketParams.Enabled = true
+	expectedFeeMarketParams.FeeDenom = "uqsr"
+	expectedFeeMarketParams.Gamma = math.LegacyMustNewDecFromStr("0.008000000000000000")
+	expectedFeeMarketParams.MaxBlockUtilization = uint64(120000000)
+	expectedFeeMarketParams.MaxLearningRate = math.LegacyMustNewDecFromStr("0.125000000000000000")
+	expectedFeeMarketParams.MinBaseGasPrice = math.LegacyMustNewDecFromStr("0.100000000000000000")
+	expectedFeeMarketParams.MinLearningRate = math.LegacyMustNewDecFromStr("0.075000000000000000")
+	expectedFeeMarketParams.Window = uint64(7)
 	s.Require().Equal(expectedFeeMarketParams, feemarketParams, "Fee market params do not match expected values after upgrade")
 }
 
