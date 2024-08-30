@@ -1,6 +1,6 @@
 module github.com/quasar-finance/quasar
 
-go 1.22.5
+go 1.22.6
 
 require (
 	cosmossdk.io/api v0.7.5
@@ -34,12 +34,12 @@ require (
 	github.com/golangci/golangci-lint v1.60.2
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/skip-mev/feemarket v1.0.4
+	github.com/skip-mev/feemarket v1.1.0
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240725223205-93522f1f2a9f
-	google.golang.org/grpc v1.64.1
+	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 )
 
