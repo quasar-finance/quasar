@@ -1,6 +1,6 @@
 use crate::setup::{
-    get_event_attributes_by_ty_and_key, init_test_contract, MAX_SLIPPAGE_HIGH,
-    PERFORMANCE_FEE_DEFAULT,
+    get_event_attributes_by_ty_and_key, init_test_contract_with_dex_router_and_swap_pools,
+    MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
 
 use cl_vault::{
@@ -335,8 +335,9 @@ proptest! {
         percentages in get_percentage_list(),
         account_indexes in get_account_index_list()
     ) {
-        let (app, contract_address, _cl_pool_id, admin_account, _) = init_test_contract(
+        let (app, contract_address, _dex_router_address, _cl_pool_id, _pools, admin_account, _) = init_test_contract_with_dex_router_and_swap_pools(
             "./test-tube-build/wasm32-unknown-unknown/release/cl_vault.wasm",
+            "../dex-router-osmosis/test-tube-build/wasm32-unknown-unknown/release/dex_router_osmosis.wasm",
             &[
                 Coin::new(340282366920938463463374607431768211455, "uosmo"),
                 Coin::new(340282366920938463463374607431768211455, DENOM_BASE),
@@ -363,7 +364,8 @@ proptest! {
             ],
             Uint128::zero(),
             Uint128::zero(),
-            PERFORMANCE_FEE_DEFAULT
+            PERFORMANCE_FEE_DEFAULT,
+            false
         );
         let wasm = Wasm::new(&app);
         let cl = ConcentratedLiquidity::new(&app);

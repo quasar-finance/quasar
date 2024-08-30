@@ -3,13 +3,18 @@
 use cl_vault::{helpers::generic::sort_tokens, msg::InstantiateMsg, state::VaultConfig};
 use cosmwasm_std::{coin, Addr, Attribute, Coin, Decimal, Uint128};
 use dex_router_osmosis::msg::{ExecuteMsg as DexExecuteMsg, InstantiateMsg as DexInstantiate};
-use osmosis_std::types::{
-    cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1},
-    cosmwasm::wasm::v1::MsgExecuteContractResponse,
-    osmosis::concentratedliquidity::v1beta1::{
-        CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
+use osmosis_std::{
+    try_proto_to_cosmwasm_coins,
+    types::{
+        cosmos::{bank::v1beta1::QueryBalanceRequest, base::v1beta1},
+        cosmwasm::wasm::v1::MsgExecuteContractResponse,
+        osmosis::{
+            concentratedliquidity::v1beta1::{
+                CreateConcentratedLiquidityPoolsProposal, Pool, PoolRecord, PoolsRequest,
+            },
+            poolmanager::v1beta1::SpotPriceRequest,
+        },
     },
-    osmosis::poolmanager::v1beta1::SpotPriceRequest,
 };
 use osmosis_test_tube::{
     cosmrs::proto::traits::Message,
@@ -119,6 +124,7 @@ pub fn fixture_dex_router(
             Uint128::zero(),
             Uint128::zero(),
             performance_fee,
+            true
         )
 }
 
@@ -257,7 +263,7 @@ pub fn init_test_contract(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn init_test_contract_with_dex_router_and_swap_pools(
+pub fn init_test_contract_with_dex_router_and_swap_pools(
     filename_cl: &str,
     filename_dex: &str,
     admin_balance: &[Coin],
@@ -268,6 +274,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
     token_min_amount0: Uint128,
     token_min_amount1: Uint128,
     performance_fee: u64,
+    use_pool_coins: bool,
 ) -> (
     OsmosisTestApp,
     Addr,
@@ -361,9 +368,11 @@ fn init_test_contract_with_dex_router_and_swap_pools(
     // Create Balancer pools with previous vec of vec of coins
     // TODO: We could be using a mixed set of CL and gAMM pools here
     let mut lp_pools = vec![];
-    for pool_coins in &pools_coins {
-        let lp_pool = gm.create_basic_pool(pool_coins, &admin).unwrap();
-        lp_pools.push(lp_pool.data.pool_id);
+    if use_pool_coins {
+        for pool_coins in &pools_coins {
+            let lp_pool = gm.create_basic_pool(pool_coins, &admin).unwrap();
+            lp_pools.push(lp_pool.data.pool_id);
+        }
     }
 
     // Here we have 4 pools in pools_ids where the index 0 is the cl_pool id
@@ -399,7 +408,7 @@ fn init_test_contract_with_dex_router_and_swap_pools(
 
     let deposit_ratio_base = calculate_deposit_ratio(
         spot_price.spot_price,
-        tokens_provided,
+        tokens_provided.clone(),
         create_position.data.amount0,
         create_position.data.amount1,
         DENOM_BASE.to_string(),
@@ -422,13 +431,23 @@ fn init_test_contract_with_dex_router_and_swap_pools(
         .unwrap();
 
     // Here we pass only the 3x swap LP pools, not the Vault CL pool id 1
-    set_dex_router_paths(
-        &app,
-        &contract_dex_router.data.address,
-        &lp_pools,
-        &pools_coins,
-        &admin,
-    );
+    if use_pool_coins {
+        set_dex_router_paths(
+            &app,
+            &contract_dex_router.data.address,
+            &lp_pools,
+            &pools_coins,
+            &admin,
+        );
+    } else {
+        set_dex_router_paths(
+            &app,
+            &contract_dex_router.data.address,
+            &[vault_pool.id],
+            &[try_proto_to_cosmwasm_coins(tokens_provided).unwrap()],
+            &admin,
+        );
+    }
 
     // Instantiate vault
     let contract_cl = wasm
