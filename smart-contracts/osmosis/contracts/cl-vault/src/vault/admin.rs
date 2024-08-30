@@ -1,8 +1,6 @@
 use crate::error::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
-use crate::state::{
-    Metadata, VaultConfig, ADMIN_ADDRESS, DEX_ROUTER, METADATA, RANGE_ADMIN, VAULT_CONFIG,
-};
+use crate::state::{Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG};
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{Decimal, DepsMut, MessageInfo, Response, StdError};
 use cw_utils::nonpayable;
@@ -24,9 +22,6 @@ pub(crate) fn execute_admin(
         }
         AdminExtensionExecuteMsg::UpdateRangeAdmin { address } => {
             execute_update_range_admin(deps, info, address)
-        }
-        AdminExtensionExecuteMsg::UpdateDexRouter { address } => {
-            execute_update_dex_router(deps, info, address)
         }
         AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
     }
@@ -78,31 +73,6 @@ pub fn execute_update_range_admin(
         .add_attribute("action", "update_range_admin")
         .add_attribute("previous_admin", previous_admin)
         .add_attribute("new_admin", &new_admin))
-}
-
-/// Updates the dex router address
-pub fn execute_update_dex_router(
-    deps: DepsMut,
-    info: MessageInfo,
-    address: Option<String>,
-) -> Result<Response, ContractError> {
-    nonpayable(&info).map_err(|_| ContractError::NonPayable {})?;
-    assert_admin(deps.storage, &info.sender)?;
-
-    match address.clone() {
-        Some(address) => {
-            let new_router = deps.api.addr_validate(&address)?;
-            DEX_ROUTER.save(deps.storage, &new_router.clone())?;
-        }
-        None => {
-            DEX_ROUTER.remove(deps.storage);
-        }
-    }
-
-    Ok(Response::new()
-        .add_attribute("method", "execute")
-        .add_attribute("action", "update_dex_router")
-        .add_attribute("new_router", address.unwrap_or_default().to_string()))
 }
 
 /// Updates the configuration of the contract.

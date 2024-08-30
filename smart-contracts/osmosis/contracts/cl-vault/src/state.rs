@@ -3,6 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal, Decimal256, Uint128};
 use cw_storage_plus::{Deque, Item, Map};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
+use quasar_types::pool_pair::PoolPair;
 
 #[cw_serde]
 pub struct Metadata {
@@ -72,8 +73,13 @@ pub struct CurrentDeposit {
     pub sender: Addr,
 }
 
-pub const CURRENT_SWAP_ANY_DEPOSIT: Item<(Coin, Addr, (Uint128, Uint128))> =
-    Item::new("current_swap_any_deposit");
+#[cw_serde]
+pub struct CurrentSwap {
+    pub recipient: Addr,
+    pub vault_balance: PoolPair<Coin, Coin>,
+}
+
+pub const CURRENT_SWAP_INFO: Item<CurrentSwap> = Item::new("current_swap_recipient");
 
 pub const DEX_ROUTER: Item<Addr> = Item::new("dex_router");
 

@@ -9,7 +9,7 @@ use crate::{
     error::assert_swap_admin,
     helpers::getters::get_twap_price,
     msg::SwapOperation,
-    state::{DEX_ROUTER, POOL_CONFIG, VAULT_CONFIG},
+    state::{POOL_CONFIG, VAULT_CONFIG},
     ContractError,
 };
 
@@ -87,7 +87,6 @@ fn prepare_swap_msg(
     twap_window_seconds: Option<u64>,
 ) -> Result<CosmosMsg, ContractError> {
     let vault_config = VAULT_CONFIG.load(deps.storage)?;
-    let dex_router = DEX_ROUTER.may_load(deps.storage)?;
 
     let twap_price = get_twap_price(
         &deps.querier,
@@ -102,12 +101,10 @@ fn prepare_swap_msg(
         estimate_swap_min_out_amount(token_in.amount, twap_price, vault_config.swap_max_slippage)?;
 
     let swap_msg = swap_msg(
-        env.clone().contract.address,
-        pool_id,
+        vault_config.dex_router,
         token_in,
         coin(token_out_min_amount.into(), token_out_denom),
         forced_swap_route,
-        dex_router,
     )?;
 
     Ok(swap_msg)
@@ -124,42 +121,12 @@ pub fn estimate_swap_min_out_amount(
 }
 
 pub fn swap_msg(
-    sender: Addr,
-    pool_id: u64,
+    dex_router: Addr,
     token_in: Coin,
     min_receive: Coin,
     forced_swap_route: Option<Vec<SwapAmountInRoute>>,
-    dex_router: Option<Addr>,
 ) -> Result<CosmosMsg, ContractError> {
-    if let Some(dex_router) = dex_router {
-        cw_dex_execute_swap_operations_msg(dex_router, forced_swap_route, token_in, min_receive)
-    } else {
-        let pool_route = SwapAmountInRoute {
-            pool_id,
-            token_out_denom: min_receive.denom,
-        };
-        Ok(osmosis_swap_exact_amount_in_msg(
-            sender,
-            pool_route,
-            token_in,
-            min_receive.amount,
-        ))
-    }
-}
-
-fn osmosis_swap_exact_amount_in_msg(
-    sender: Addr,
-    pool_route: SwapAmountInRoute,
-    token_in: Coin,
-    token_out_min_amount: Uint128,
-) -> CosmosMsg {
-    osmosis_std::types::osmosis::poolmanager::v1beta1::MsgSwapExactAmountIn {
-        sender: sender.to_string(),
-        routes: vec![pool_route],
-        token_in: Some(token_in.into()),
-        token_out_min_amount: token_out_min_amount.to_string(),
-    }
-    .into()
+    cw_dex_execute_swap_operations_msg(dex_router, forced_swap_route, token_in, min_receive)
 }
 
 fn cw_dex_execute_swap_operations_msg(

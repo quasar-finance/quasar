@@ -30,6 +30,9 @@ pub const POSITION_ID: u64 = 101;
 pub const BASE_DENOM: &str = "base";
 pub const QUOTE_DENOM: &str = "quote";
 pub const TEST_VAULT_DENOM: &str = "uqsr";
+pub const INSTANTIATE_BASE_DEPOSIT_AMOUNT: u128 = 100;
+pub const INSTANTIATE_QUOTE_DEPOSIT_AMOUNT: u128 = 100;
+pub const TEST_VAULT_TOKEN_SUPPLY: u128 = 100_000;
 
 pub struct QuasarQuerier {
     position: FullPositionBreakdown,
@@ -89,7 +92,7 @@ impl Querier for QuasarQuerier {
                         to_json_binary(&QuerySupplyOfResponse {
                             amount: Some(OsmoCoin {
                                 denom,
-                                amount: 100000.to_string(),
+                                amount: TEST_VAULT_TOKEN_SUPPLY.to_string(),
                             }),
                         })
                         .unwrap(),
@@ -268,8 +271,8 @@ pub fn get_init_msg(admin: &str) -> InstantiateMsg {
         },
         vault_token_subdenom: "utestvault".to_string(),
         range_admin: admin.to_string(),
-        initial_lower_tick: 1,
-        initial_upper_tick: 100,
+        initial_lower_tick: 100,
+        initial_upper_tick: 1000,
         thesis: "Test thesis".to_string(),
         name: "Contract".to_string(),
     }
@@ -277,7 +280,13 @@ pub fn get_init_msg(admin: &str) -> InstantiateMsg {
 
 pub fn instantiate_contract(mut deps: DepsMut, env: Env, admin: &str) {
     let msg = get_init_msg(admin);
-    let info = mock_info(admin, &[coin(100, BASE_DENOM), coin(100, QUOTE_DENOM)]);
+    let info = mock_info(
+        admin,
+        &[
+            coin(INSTANTIATE_BASE_DEPOSIT_AMOUNT, BASE_DENOM),
+            coin(INSTANTIATE_QUOTE_DEPOSIT_AMOUNT, QUOTE_DENOM),
+        ],
+    );
     assert!(instantiate(deps.branch(), env, info, msg).is_ok());
     VAULT_DENOM
         .save(deps.storage, &TEST_VAULT_DENOM.to_string())

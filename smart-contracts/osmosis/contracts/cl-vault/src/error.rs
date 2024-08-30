@@ -6,6 +6,7 @@ use cosmwasm_std::{
 };
 use cw_utils::PaymentError;
 use prost::DecodeError;
+use quasar_types::pool_pair::PoolPairError;
 use std::num::{ParseIntError, TryFromIntError};
 use thiserror::Error;
 
@@ -158,6 +159,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     TryFromIntError(#[from] TryFromIntError),
+
+    #[error("{0}")]
+    PoolPair(#[from] PoolPairError),
 }
 
 pub fn assert_deposits(funds: &[Coin], config: &PoolConfig) -> Result<(), ContractError> {
