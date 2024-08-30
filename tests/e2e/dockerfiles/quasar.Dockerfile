@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 
 # Cosmwasm - Download correct libwasmvm version
-RUN export WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | awk '{print $NF}') && \
+RUN export WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm/v2 | awk '{print $NF}') && \
     wget https://github.com/CosmWasm/wasmvm/releases/download/$WASMVM_VERSION/libwasmvm_muslc.$(uname -m).a \
       -O /lib/libwasmvm_muslc.a && \
     # verify checksum
@@ -35,9 +35,9 @@ RUN export WASMVM_VERSION=$(go list -m github.com/CosmWasm/wasmvm | awk '{print 
 # Copy the remaining files
 COPY . .
 
-# Build quasarnoded binary
+# Build quasard binary
 # force it to use static lib (from above) not standard libgo_cosmwasm.so file
-# then log output of file /quasar/build/quasarnoded
+# then log output of file /quasar/build/quasard
 # then ensure static linking
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
@@ -46,13 +46,13 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
             -tags "netgo,ledger,muslc" \
             -ldflags \
                 "-X github.com/cosmos/cosmos-sdk/version.Name="quasar" \
-                -X github.com/cosmos/cosmos-sdk/version.AppName="quasarnoded" \
+                -X github.com/cosmos/cosmos-sdk/version.AppName="quasard" \
                 -X github.com/cosmos/cosmos-sdk/version.Version=${GIT_VERSION} \
                 -X github.com/cosmos/cosmos-sdk/version.Commit=${GIT_COMMIT} \
                 -X github.com/cosmos/cosmos-sdk/version.BuildTags='netgo,ledger,muslc' \
                 -w -s -linkmode=external -extldflags '-Wl,-z,muldefs -static'" \
             -trimpath \
-    -o build/quasarnoded ./cmd/quasarnoded
+    -o build/quasard ./cmd/quasard
 
 
 # --------------------------------------------------------
@@ -65,7 +65,7 @@ ENV PACKAGES bash
 
 RUN apk add --no-cache $PACKAGES
 
-COPY --from=builder /quasar/build/quasarnoded /bin/quasarnoded
+COPY --from=builder /quasar/build/quasard /bin/quasard
 
 ENV HOME /quasar
 WORKDIR $HOME

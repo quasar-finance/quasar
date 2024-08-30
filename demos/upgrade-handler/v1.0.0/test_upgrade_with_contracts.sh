@@ -7,7 +7,7 @@ cleanup() {
   kill $RLY_PID_1
 }
 
-pkill quasarnoded
+pkill quasard
 pkill osmosisd
 pkill rly
 
@@ -38,7 +38,7 @@ echo "starting go relaying"
 rly start quasar_osmosis --debug-addr "localhost:7598" -p events --time-threshold 300s >>./logs/quasar_osmosis.log 2>&1 &
 RLY_PID_1=$!
 
-quasarnoded status
+quasard status
 osmosisd status
 
 # run pre upgrade actions like pools creation, contract deployments and bonding actions
@@ -68,6 +68,6 @@ fi
 wait
 
 # Run these commands once you have finished with the tests
-#pkill quasarnoded
+#pkill quasard
 #pkill osmosisd
 #pkill rly

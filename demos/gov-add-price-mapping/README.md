@@ -9,26 +9,26 @@ ignite chain serve -c demos/gov-add-price-mapping/config.yml --home run/quasar/h
 `
 4. Submit proposal
 `
-quasarnoded tx gov submit-proposal param-change demos/gov-add-price-mapping/proposal.json --node tcp://localhost:26659 --from alice  --home run/quasar/home --chain-id quasar --output json | jq
+quasard tx gov submit-proposal param-change demos/gov-add-price-mapping/proposal.json --node tcp://localhost:26659 --from alice  --home run/quasar/home --chain-id quasar --output json | jq
 
 `
 5. Query the proposal state.
 `
-quasarnoded q gov proposals --node tcp://localhost:26659  --chain-id quasar  --output json | jq
+quasard q gov proposals --node tcp://localhost:26659  --chain-id quasar  --output json | jq
 `
 
 6. Query the qoracle params and notice value
 `
-quasarnoded q qoracle params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
+quasard q qoracle params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
 
 `
 7. Vote 
 `
-quasarnoded tx gov vote 1 yes --node tcp://localhost:26659 --chain-id quasar --from alice --home run/quasar/home --chain-id quasar --output json | jq
+quasard tx gov vote 1 yes --node tcp://localhost:26659 --chain-id quasar --from alice --home run/quasar/home --chain-id quasar --output json | jq
 
 `
 
 8. Query the qoracle params again after 5 minutes of configured voting period.
 `
-quasarnoded q qoracle params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
+quasard q qoracle params --node tcp://localhost:26659  --chain-id quasar  --output json | jq
 `

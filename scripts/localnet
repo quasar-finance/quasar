@@ -23,7 +23,7 @@ json_pp() {
 gen_config() {
   local n="$1" ; shift
 
-  "${project_dir}/build/quasarnoded" testnet -n "$n" -o "$run_dir"
+  "${project_dir}/build/quasard" testnet -n "$n" -o "$run_dir"
 }
 
 for_all_nodes() {
@@ -48,32 +48,32 @@ run_for_node() {
       local action="$1"
 
       if [ "$action" == "tx" ] ; then
-        "${home_dir}/cosmovisor/current/bin/quasarnoded" --home "$home_dir" --keyring-backend=test --from main "$@"
+        "${home_dir}/cosmovisor/current/bin/quasard" --home "$home_dir" --keyring-backend=test --from main "$@"
       else
-        "${home_dir}/cosmovisor/current/bin/quasarnoded" --home "$home_dir" "$@"
+        "${home_dir}/cosmovisor/current/bin/quasard" --home "$home_dir" "$@"
       fi
     }
 
     start() {
       if ! is_running ; then
         (
-          export DAEMON_NAME="quasarnoded"
+          export DAEMON_NAME="quasard"
           export DAEMON_HOME="$home_dir"
           export DAEMON_RESTART_AFTER_UPGRADE=true
 
-          nohup cosmovisor run start --home "$home_dir" >| "quasarnoded.log" 2>&1 &
-          echo "$!" >| "quasarnoded.pid"
+          nohup cosmovisor run start --home "$home_dir" >| "quasard.log" 2>&1 &
+          echo "$!" >| "quasard.pid"
         )
       fi
     }
 
     stop() {
-      kill "$(cat "quasarnoded.pid" 2> /dev/null)" > /dev/null 2>&1 || true
-      rm -f "quasarnoded.pid"
+      kill "$(cat "quasard.pid" 2> /dev/null)" > /dev/null 2>&1 || true
+      rm -f "quasard.pid"
     }
 
     is_running() {
-      ps -p "$(cat "quasarnoded.pid" 2> /dev/null)" > /dev/null 2>&1
+      ps -p "$(cat "quasard.pid" 2> /dev/null)" > /dev/null 2>&1
     }
 
     status() {
@@ -85,7 +85,7 @@ run_for_node() {
     }
 
     log() {
-      tail -f "quasarnoded.log"
+      tail -f "quasard.log"
     }
 
     "$@"
@@ -120,11 +120,11 @@ install_binary() {
   mkdir -p "${node_dir}/home/cosmovisor/upgrades"
 
   if [ "$name" == "genesis" ] ; then
-    cp "${project_dir}/build/quasarnoded" "${node_dir}/home/cosmovisor/genesis/bin/quasarnoded"
+    cp "${project_dir}/build/quasard" "${node_dir}/home/cosmovisor/genesis/bin/quasard"
     ln -sf "${node_dir}/home/cosmovisor/genesis" "${node_dir}/home/cosmovisor/current"
   else
     mkdir -p "${node_dir}/home/cosmovisor/upgrades/${name}/bin"
-    cp "${project_dir}/build/quasarnoded" "${node_dir}/home/cosmovisor/upgrades/${name}/bin/quasarnoded"
+    cp "${project_dir}/build/quasard" "${node_dir}/home/cosmovisor/upgrades/${name}/bin/quasard"
   fi
 }
 

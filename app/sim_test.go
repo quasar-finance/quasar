@@ -1,0 +1,143 @@
+package app_test
+
+import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"os"
+	"testing"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
+	"cosmossdk.io/store"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/server"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	simulation2 "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/cosmos/cosmos-sdk/x/simulation"
+	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
+	"github.com/quasar-finance/quasar/ante"
+	"github.com/quasar-finance/quasar/app"
+	"github.com/quasar-finance/quasar/app/sim"
+	"github.com/stretchr/testify/require"
+)
+
+// AppChainID hardcoded chainID for simulation
+const AppChainID = "quasar-app"
+
+func init() {
+	sim.GetSimulatorFlags()
+}
+
+// interBlockCacheOpt returns a BaseApp option function that sets the persistent
+// inter-block write-through cache.
+func interBlockCacheOpt() func(*baseapp.BaseApp) {
+	return baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager())
+}
+
+func TestAppStateDeterminism(t *testing.T) {
+	if !sim.FlagEnabledValue {
+		t.Skip("skipping application simulation")
+	}
+
+	// since we can't provide tx fees to SimulateFromSeed(), we must switch off the feemarket
+	ante.UseFeeMarketDecorator = false
+
+	config := sim.NewConfigFromFlags()
+	config.InitialBlockHeight = 1
+	config.ExportParamsPath = ""
+	config.OnOperation = false
+	config.AllInvariants = false
+	config.ChainID = AppChainID
+
+	numSeeds := 3
+	numTimesToRunPerSeed := 5
+
+	// We will be overriding the random seed and just run a single simulation on the provided seed value
+	if config.Seed != simcli.DefaultSeedValue {
+		numSeeds = 1
+	}
+
+	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
+	appOptions := make(simtestutil.AppOptionsMap, 0)
+	appOptions[server.FlagInvCheckPeriod] = sim.FlagPeriodValue
+
+	for i := 0; i < numSeeds; i++ {
+		if config.Seed == simcli.DefaultSeedValue {
+			config.Seed = rand.Int63()
+		}
+
+		fmt.Println("config.Seed: ", config.Seed)
+
+		for j := 0; j < numTimesToRunPerSeed; j++ {
+			var logger log.Logger
+			if sim.FlagVerboseValue {
+				logger = log.NewTestLogger(t)
+			} else {
+				logger = log.NewNopLogger()
+			}
+
+			db := dbm.NewMemDB()
+			dir, err := os.MkdirTemp("", "quasar-simulation")
+			require.NoError(t, err)
+			appOptions[flags.FlagHome] = dir
+			app := app.New(
+				logger,
+				db,
+				nil,
+				true,
+				map[int64]bool{},
+				dir,
+				0,
+				appOptions,
+				emptyWasmOption,
+				interBlockCacheOpt(),
+				baseapp.SetChainID(AppChainID),
+			)
+
+			// NOTE: setting to zero to avoid failing the simulation
+			// due to the minimum staked tokens required to submit a vote
+			ante.SetMinStakedTokens(math.LegacyZeroDec())
+
+			// NOTE: setting to zero to avoid failing the simulation
+			// gaia ante allows only certain proposals to be expedited - the simulation doesn't know about this
+			ante.SetExpeditedProposalsEnabled(false)
+
+			fmt.Printf(
+				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
+				config.Seed, i+1, numSeeds, j+1, numTimesToRunPerSeed,
+			)
+
+			blockedAddresses := app.BlockedModuleAccountAddrs()
+
+			_, _, err = simulation.SimulateFromSeed(
+				t,
+				os.Stdout,
+				app.BaseApp,
+				simtestutil.AppStateFn(app.AppCodec(), app.SimulationManager(), app.ModuleBasics.DefaultGenesis(app.AppCodec())),
+				simulation2.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
+				simtestutil.SimulationOperations(app, app.AppCodec(), config),
+				blockedAddresses,
+				config,
+				app.AppCodec(),
+			)
+			require.NoError(t, err)
+
+			if config.Commit {
+				sim.PrintStats(db)
+			}
+
+			appHash := app.LastCommitID().Hash
+			appHashList[j] = appHash
+
+			if j != 0 {
+				require.Equal(
+					t, string(appHashList[0]), string(appHashList[j]),
+					"non-determinism in seed %d: %d/%d, attempt: %d/%d\n", config.Seed, i+1, numSeeds, j+1, numTimesToRunPerSeed,
+				)
+			}
+		}
+	}
+}

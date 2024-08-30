@@ -12,6 +12,6 @@ cd ..
 echo "Copying ..."
 PWD=$(pwd)
 echo "$PWD"
-cp -r github.com/quasarlabs/quasarnode/* ./
+cp -r github.com/quasar-finance/quasar/* ./
 # rm -rf github.com
 

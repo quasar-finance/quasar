@@ -23,7 +23,7 @@ hermes keys add --chain osmosis --mnemonic-file osmosis_key.txt
 # hermes keys add --chain $BANDCHAIN --mnemonic-file bandchain_key.txt --hd-path "m/44'/494'/0'/0/0"
 
 # Checking balance
-quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
+quasard q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
 osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp://localhost:26679
 
 # Create connections

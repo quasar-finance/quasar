@@ -15,7 +15,7 @@ var (
 				Version:    "local",
 			},
 		},
-		Bin:            "quasarnoded",
+		Bin:            "quasard",
 		Bech32Prefix:   "quasar",
 		CoinType:       "118",
 		Denom:          "uqsr",

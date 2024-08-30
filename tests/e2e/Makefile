@@ -1,8 +1,20 @@
+e2e-help:
+	@echo "e2e subcommands"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make e2e-[command]"
+	@echo ""
+	@echo "Available Commands:"
+	@echo "  test                Run tests in the specified folders serially, if CASES is defined; otherwise, run all."
+	@echo "  test-parallel       Run tests in the specified folders in parallel, if CASES is defined; otherwise, run all."
+
+e2e: e2e-help
+
 # Find all folders inside ./cases, excluding ones that start with an underscore
-TEST_FOLDERS=$(shell find ./cases -mindepth 1 -maxdepth 1 -type d \( -name "[!_]*" \))
+TEST_FOLDERS=$(shell find ./tests/e2e/cases -mindepth 1 -maxdepth 1 -type d \( -name "[!_]*" \))
 
 # Run tests in the specified folders serially, if CASES is defined; otherwise, run all.
-test-e2e:
+e2e-test:
 ifdef CASES
     # Loop through each folder specified in CASES and run the tests
 	@for folder in $(filter $(CASES), $(TEST_FOLDERS)); do \
@@ -18,7 +30,7 @@ else
 endif
 
 # Run tests in the specified folders in parallel, if CASES is defined; otherwise, run all.
-test-e2e-parallel:
+e2e-test-parallel:
 ifdef CASES
 	@for folder in $(filter $(CASES), $(TEST_FOLDERS)); do \
 		echo "\nRunning tests in directory: $$folder"; \

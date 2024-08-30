@@ -6,7 +6,7 @@
 # Kill existing quasarnodedv1 processes
 echo ">>> Killing existing quasarnodedv1 processes..."
 pkill quasarnodedv1 || true
-pkill quasarnoded || true
+pkill quasard || true
 
 echo ">>> Killing existing osmosisd processes..."
 pkill osmosisd || true

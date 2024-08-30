@@ -15,7 +15,7 @@
 1. Update the test script with the necessary details for the new software upgrade proposal, such as title, description,
    and upgrade height.
 2. Run the test script. This will perform the following actions:
-   - Kill existing quasarnoded processes
+   - Kill existing quasard processes
    - Start the local Quasar network using ./quasar_localnet.sh
    - Submit a software upgrade proposal with the specified details
    - Sleep for a short duration to allow for proposal submission

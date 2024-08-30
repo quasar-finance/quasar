@@ -51,11 +51,11 @@ jobs:
       - name: Display go version
         if: env.GIT_DIFF
         run: go version
-      - name: Build quasarnoded
+      - name: Build quasard
         if: env.GIT_DIFF
         run: make build-reproducible-${{ matrix.arch }}
       - uses: actions/upload-artifact@v3
         if: env.GIT_DIFF
         with:
-          name: quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
-          path: build/quasarnoded-${{ matrix.targetos }}-${{ matrix.arch }}
+          name: quasard-${{ matrix.targetos }}-${{ matrix.arch }}
+          path: build/quasard-${{ matrix.targetos }}-${{ matrix.arch }}

@@ -1,9 +1,11 @@
 name: Lint (Go)
 
+# todo remove v3.x beafore merge to main
 on:
   pull_request:
     branches:
       - main
+      - v3.x
     paths-ignore:
       - 'smart-contracts/**'
       - '**.md'
@@ -39,7 +41,7 @@ jobs:
         if: env.GIT_DIFF
         uses: actions/setup-go@v4
         with:
-          go-version: 1.21
+          go-version: 1.22
       - name: Display go version
         if: env.GIT_DIFF
         run: go version

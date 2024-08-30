@@ -61,7 +61,7 @@ x/qtransfer, x/epochs and x/tokenfactory module are utilised from the osmosis x/
 ### Rust
 In order to run test-tube the following dependencies are required:
 * `sudo apt update && sudo apt install -y build-essential pkg-config libssl-dev curl clang libclang-dev`
-* go1.21 ([see here](https://go.dev/doc/install))
+* go1.22 ([see here](https://go.dev/doc/install))
 * libwasmvm ([see here](https://github.com/CosmWasm/wasmvm) -- !Instructions don't cover installation, copy the files to your desired install location or add the subfolder `wasmvm/internal/api` to your library paths) 
 
 ## Git hooks

@@ -93,7 +93,7 @@ Success: Restored key 'testkey3' (osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz) o
 
 ### First pre-check relayer balances in each chain
 ```bash
-quasarnoded q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
+quasard q bank balances quasar143wwmxhsd8nkwu7j8gzpv9ca503g8j55h059ew --node tcp://localhost:26659
 gaiad q bank balances cosmos1lrelhs37akgz2wht0y377uerxjm9fh33ke3ksc  --node tcp://localhost:26669
 osmosisd q bank balances osmo194580p9pyxakf3y3nqqk9hc3w9a7x0yrnv7wcz --node tcp://localhost:26679
 ```
@@ -638,7 +638,7 @@ hermes start
 - Prechecks all account lists 
 ```bash
   gaiad keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/cosmos-hub/
-  quasarnoded keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
+  quasard keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/quasarnode/
   osmosisd keys list --home ~/quasar-demo/quasar/demos/orion-manual-demo/run/home/osmosis/
 ```
 
@@ -648,8 +648,8 @@ hermes start
 gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu  --node tcp://localhost:26669
 gaiad q bank balances cosmos1twes4wv4c28r0x6dnczgda5sm36khlv7ve8m89  --node tcp://localhost:26669
 
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
-quasarnoded q bank balances quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659
+quasard q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+quasard q bank balances quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659
 
 osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
 osmosisd q bank balances osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d --node tcp://localhost:26679
@@ -660,7 +660,7 @@ osmosisd q bank balances osmo1ez43ye5qn3q2zwh8uvswppvducwnkq6wjqc87d --node tcp:
 
 ```
 gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu  --node tcp://localhost:26669
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+quasard q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
 ```
 
 - IBC transfer
@@ -672,14 +672,14 @@ gaiad tx ibc-transfer transfer transfer channel-0 quasar1sqlsc5024sszglyh7pswk5h
 - Post check account balances 
 ```
 gaiad q bank balances cosmos1ppkxa0hxak05tcqq3338k76xqxy2qse96uelcu  --node tcp://localhost:26669
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+quasard q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
 ```
 
 ### IBC token transfer from osmosis to quasar
 - Precheck balances 
 ```
 osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+quasard q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
 ```
 
 - IBC Transfer 
@@ -692,6 +692,6 @@ osmosisd tx ibc-transfer transfer transfer channel-1 quasar1sqlsc5024sszglyh7psw
 
 ```
 osmosisd q bank balances osmo1t8eh66t2w5k67kwurmn5gqhtq6d2ja0vp7jmmq --node tcp://localhost:26679
-quasarnoded q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
+quasard q bank balances quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec  --node tcp://localhost:26659
 ```
  

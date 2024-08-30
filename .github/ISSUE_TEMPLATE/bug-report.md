@@ -16,7 +16,7 @@ v    Please also ensure that this is not a duplicate issue :)
 
 ## Version
 
-<!-- git commit hash, output of `quasarnoded version` -->
+<!-- git commit hash, output of `quasard version` -->
 
 ## Steps to Reproduce
 

@@ -9,14 +9,14 @@ I did a simple experiment to try with gas estimation and payment with other deno
 
 ## Estimate the gas using dry run
 `
-quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.01stake --gas-adjustment 1 --dry-run
+quasard tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.01stake --gas-adjustment 1 --dry-run
 `
 gas estimate: 68607
 
 
 ## With Expected gas fee around 200, --gas-prices 0.001stake --gas-adjustment 1
 `
-quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.001stake --gas-adjustment 1
+quasard tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.001stake --gas-adjustment 1
 `
 -
 - Actual Gas was - 66983
@@ -26,12 +26,12 @@ quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar182
 ## Expected gas fee 2000, --gas-prices 0.01stake --gas-adjustment 1
 
 `
-quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.01stake --gas-adjustment 1 --dry-run
+quasard tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.01stake --gas-adjustment 1 --dry-run
 gas estimate: 68607
 `
 
 `
-quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.01stake --gas-adjustment 1
+quasard tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu  --node tcp://localhost:26659 --from quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec 10uqsr  --home ~/.quasarnode --chain-id quasar --keyring-backend test  --gas-prices 0.01stake --gas-adjustment 1
 `
 
 - Actual Gas was - 66983
@@ -41,7 +41,7 @@ quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar182
 
 ### Determine the expected fee without providing any fee details ; the output will tell you the amount of fees required 
 `
-quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 10uqsr  --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --keyring-backend test 
+quasard tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 10uqsr  --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --keyring-backend test 
 `
 -output 
 `
@@ -65,5 +65,5 @@ txhash: 37759D295A02620E72ED356E0A8F5090140CBD73843F02C886A4731FE9807844
 
 ### Do the same tx using -fees flag ;this time the tx will pass through 
 `
-quasarnoded tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 10uqsr  --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --keyring-backend test  --fees 200stake
+quasard tx bank send quasar1sqlsc5024sszglyh7pswk5hfpc5xtl77gqjwec quasar1828z63g9wp3qwyn4p64adc3ungsv56ux5aacmu 10uqsr  --node tcp://localhost:26659 --from alice --home ~/.quasarnode --chain-id quasar --keyring-backend test  --fees 200stake
 `
