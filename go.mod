@@ -34,7 +34,7 @@ require (
 	github.com/golangci/golangci-lint v1.60.2
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/skip-mev/feemarket v1.1.0
+	github.com/skip-mev/feemarket v1.1.1
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
