@@ -4,6 +4,7 @@ use cosmwasm_std::{
     CoinFromStrError, ConversionOverflowError, Decimal, Decimal256, Decimal256RangeExceeded,
     DecimalRangeExceeded, DivideByZeroError, OverflowError, StdError, Storage, Uint128,
 };
+use cw2::VersionError;
 use cw_utils::PaymentError;
 use prost::DecodeError;
 use quasar_types::pool_pair::PoolPairError;
@@ -162,6 +163,9 @@ pub enum ContractError {
 
     #[error("{0}")]
     PoolPair(#[from] PoolPairError),
+
+    #[error("{0}")]
+    Version(#[from] VersionError),
 }
 
 pub fn assert_deposits(funds: &[Coin], config: &PoolConfig) -> Result<(), ContractError> {
