@@ -22,6 +22,8 @@ local_testnet_run-*nodes/
 *.out
 coverage.txt
 **/Cargo.lock
+package.json
+package-lock.json
 
 containers_homes/
 
