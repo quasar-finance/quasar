@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["contracts/*", "packages/*"]
+members = ["contracts/merkle-incentives", "packages/*"]
 
 [workspace.dependencies]
 # CosmWasm

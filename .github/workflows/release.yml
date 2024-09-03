@@ -1,0 +1,32 @@
+name: Create Release
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install just
+        run: cargo install just
+        working-directory: smart-contracts
+      - name: Generate Cargo.lock
+        run: cargo check
+        working-directory: smart-contracts/osmosis
+      - name: Compile contracts
+        run: just workspace-optimize
+        working-directory: smart-contracts/osmosis
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "smart-contracts/osmosis/artifacts/"
+          artifactErrorsFailBuild: "true"
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-contracts
+          path: smart-contracts/osmosis/artifacts
