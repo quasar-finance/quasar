@@ -2,7 +2,7 @@
 authors = ["LaurensKubat <32776056+LaurensKubat@users.noreply.github.com>"]
 edition = "2021"
 name = "cl-vault"
-version = "0.3.0"
+version = "0.3.1"
 
 exclude = [
   "cl_vault.wasm",

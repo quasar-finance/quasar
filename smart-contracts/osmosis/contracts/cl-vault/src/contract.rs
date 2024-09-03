@@ -201,6 +201,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    cw2::assert_contract_version(deps.storage, CONTRACT_NAME, "0.3.0")?;
+    let previous_version =
+        cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let dex_router_item: Item<Addr> = Item::new("dex_router");
     dex_router_item.remove(deps.storage);
     // VaultConfig
@@ -246,7 +249,10 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
     USER_REWARDS.clear(deps.storage);
 
-    let response = Response::new().add_attribute("migrate", "successful");
+    let response = Response::new()
+        .add_attribute("migrate", "successful")
+        .add_attribute("previous version", previous_version.to_string())
+        .add_attribute("new version", CONTRACT_VERSION);
     Ok(response)
 }
 
@@ -260,6 +266,7 @@ mod tests {
     fn test_migrate() {
         let env = mock_env();
         let mut deps = mock_dependencies();
+        assert!(set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.3.0").is_ok());
 
         // VaultConfig mocking
         #[cw_serde]
@@ -272,7 +279,7 @@ mod tests {
         const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
         OLD_VAULT_CONFIG
             .save(
-                &mut deps.storage,
+                deps.as_mut().storage,
                 &OldVaultConfig {
                     performance_fee: Decimal::percent(1),
                     treasury: Addr::unchecked("treasury"),
@@ -290,13 +297,17 @@ mod tests {
         }
         pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
         MIGRATION_STATUS
-            .save(&mut deps.storage, &MigrationStatus::Closed)
+            .save(deps.as_mut().storage, &MigrationStatus::Closed)
             .unwrap();
 
         // UserRewards mocking
         pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
         USER_REWARDS
-            .save(&mut deps.storage, Addr::unchecked("user"), &CoinList::new())
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("user"),
+                &CoinList::new(),
+            )
             .unwrap();
 
         // Migrate and assert new states
