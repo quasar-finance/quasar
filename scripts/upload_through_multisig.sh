@@ -9,7 +9,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 SIGNED_TXS=$1
-NODE=https://osmosis-rpc.publicnode.com:443
+NODE=https://rpc.osmosis.zone:443
 CHAIN=osmosis-1
 
 osmosisd tx multisign tx.json contract-upload ${SIGNED_TXS} --chain-id ${CHAIN} --node ${NODE} --from contract-upload --output-document tx_ms.json

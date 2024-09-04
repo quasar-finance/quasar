@@ -1,10 +1,15 @@
 #!/bin/bash
 
+if [ "$#" -ne 2 ]; then
+    echo "Usage: bash generate_signed_upload_tx.sh <WASM_FILE> <DEPLOYER>"
+    exit 1
+fi
+
 WASM_FILE=$1
 DEPLOYER=$2
 
 FEES=1000000uosmo
-NODE=https://osmosis-rpc.publicnode.com:443
+NODE=https://rpc.osmosis.zone:443
 MULTISIG=osmo1vxq5h3encfyguulqeh26l8dlw9lavl3e2zw7n8
 CHAIN=osmosis-1
 
