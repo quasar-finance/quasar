@@ -199,7 +199,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    cw2::assert_contract_version(deps.storage, CONTRACT_NAME, "0.3.0")?;
     let previous_version =
         cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let dex_router_item: Item<Addr> = Item::new("dex_router");
