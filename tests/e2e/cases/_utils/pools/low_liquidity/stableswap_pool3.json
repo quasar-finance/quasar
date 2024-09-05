@@ -1,7 +1,0 @@
-{
-    "initial-deposit": "2000000fakestake,2000000uosmo",
-    "swap-fee": "0.01",
-    "exit-fee": "0.00",
-    "future-governor": "168h",
-    "scaling-factors": "1,1"
-}
