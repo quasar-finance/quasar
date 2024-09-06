@@ -33,5 +33,5 @@ The following steps are required to release smart contracts:
     * Collect signed messages from coworkers, when you have enough: `bash scripts/upload_through_multisig.sh "<SIGNED_TX_1> <SIGNED_TX_2>"`
 3. Create proposal to instantiate or migrate contracts on [DAODAO](https://daodao.zone/dao/osmo12ry93err6s2ekg02ekslucwx8n3pxm3y7zxz3l6w8zuhex984k5ss4ltl6/proposals).
 4. After the proposal did receive enough votes, it can be executed.
-5. Please make sure that all instances of a contract are migrated. You can find a list of contracts [here](smart-contracts/CONTRACTS.md).
-6. Update versions and deployment dates in that list.
+5. Please make sure that all instances of a contract are migrated. You can find a list of contracts [here](smart-contracts/contracts.json). The easiest way to propose the migration of all contracts in that list is by adjusting `scripts/propose_cl_vault_migration` and executing `node scripts/propose_cl_vault_migration.js` from the repo root directory. 
+6. Update versions and deployment dates in the list of contracts. This can be done with the help of `scripts/update_cl_vaults.js`.
