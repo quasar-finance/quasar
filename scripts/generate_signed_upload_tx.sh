@@ -17,7 +17,5 @@ NODE=https://rpc.osmosis.zone:443
 MULTISIG_ADDRESS=$(osmosisd keys show ${MULTISIG} | grep address | sed "s/- address: //g")
 CHAIN=osmosis-1
 
-set -e
-
 osmosisd tx wasm store ${WASM_FILE} --from ${MULTISIG} --gas 25000000 --fees ${FEES} --chain-id ${CHAIN} --node ${NODE} --generate-only > tx.json
 osmosisd tx sign tx.json --multisig=${MULTISIG_ADDRESS} --sign-mode amino-json --chain-id ${CHAIN} --node ${NODE} --from ${DEPLOYER} --output-document ${DEPLOYER}-signed-tx.json
