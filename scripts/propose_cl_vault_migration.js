@@ -9,6 +9,9 @@ async function main() {
     };
     let contracts = readFileAsJSON(CONTRACTS);
     const newCodeId = -1 // CHANGE CODE ID;
+    if (newCodeId == -1) {
+        throw new Error('Wrong code id!');
+    }
     var msgs = [];
     for (var contract of contracts) {
         console.log(contract.name);
