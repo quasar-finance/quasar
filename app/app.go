@@ -1,12 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -65,8 +67,19 @@ import (
 	"github.com/quasar-finance/quasar/app/upgrades"
 	v2 "github.com/quasar-finance/quasar/app/upgrades/v2"
 	v3 "github.com/quasar-finance/quasar/app/upgrades/v3"
+	v4 "github.com/quasar-finance/quasar/app/upgrades/v4"
 	"github.com/quasar-finance/quasar/docs"
 	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
+	oraclepreblock "github.com/skip-mev/slinky/abci/preblock/oracle"
+	slinkyproposals "github.com/skip-mev/slinky/abci/proposals"
+	"github.com/skip-mev/slinky/abci/strategies/aggregator"
+	compression "github.com/skip-mev/slinky/abci/strategies/codec"
+	"github.com/skip-mev/slinky/abci/strategies/currencypair"
+	"github.com/skip-mev/slinky/abci/ve"
+	oracleconfig "github.com/skip-mev/slinky/oracle/config"
+	"github.com/skip-mev/slinky/pkg/math/voteweighted"
+	oracleclient "github.com/skip-mev/slinky/service/clients/oracle"
+	servicemetrics "github.com/skip-mev/slinky/service/metrics"
 	"github.com/spf13/cast"
 )
 
@@ -86,7 +99,7 @@ var (
 	// module account permissions
 	maccPerms = ModuleAccountPermissions
 
-	Upgrades = []upgrades.Upgrade{v2.Upgrade, v3.Upgrade}
+	Upgrades = []upgrades.Upgrade{v2.Upgrade, v3.Upgrade, v4.Upgrade}
 )
 
 // overrideWasmVariables overrides the wasm variables to:
@@ -355,6 +368,115 @@ func New(
 
 	app.setupUpgradeHandlers()
 	app.setupUpgradeStoreLoaders()
+
+	// Read general config from app-opts, and construct oracle service.
+	cfg, err := oracleconfig.ReadConfigFromAppOpts(appOpts)
+	if err != nil {
+		panic(err)
+	}
+
+	// If app level instrumentation is enabled, then wrap the oracle service with a metrics client
+	// to get metrics on the oracle service (for ABCI++). This will allow the instrumentation to track
+	// latency in VerifyVoteExtension requests and more.
+	oracleMetrics, err := servicemetrics.NewMetricsFromConfig(cfg, app.ChainID())
+	if err != nil {
+		panic(err)
+	}
+
+	// Create the oracle service.
+	app.OracleClient, err = oracleclient.NewClientFromConfig(
+		cfg,
+		app.Logger().With("client", "oracle"),
+		oracleMetrics,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Connect to the oracle service
+	if err := app.OracleClient.Start(context.Background()); err != nil {
+		app.Logger().Error("failed to start oracle client", "err", err)
+		panic(err)
+	}
+
+	// Create the proposal handler that will be used to fill proposals with
+	// transactions and oracle data.
+	oracleproposalHandler := slinkyproposals.NewProposalHandler(
+		app.Logger(),
+		baseapp.NoOpPrepareProposal(),
+		baseapp.NoOpProcessProposal(),
+		ve.NewDefaultValidateVoteExtensionsFn(app.StakingKeeper),
+		compression.NewCompressionVoteExtensionCodec(
+			compression.NewDefaultVoteExtensionCodec(),
+			compression.NewZLibCompressor(),
+		),
+		compression.NewCompressionExtendedCommitCodec(
+			compression.NewDefaultExtendedCommitCodec(),
+			compression.NewZStdCompressor(),
+		),
+		currencypair.NewDeltaCurrencyPairStrategy(app.OracleKeeper),
+		oracleMetrics,
+	)
+
+	app.SetPrepareProposal(oracleproposalHandler.PrepareProposalHandler())
+	app.SetProcessProposal(oracleproposalHandler.ProcessProposalHandler())
+
+	// Create the aggregation function that will be used to aggregate oracle data
+	// from each validator.
+	aggregatorFn := voteweighted.MedianFromContext(
+		app.Logger(),
+		app.StakingKeeper,
+		voteweighted.DefaultPowerThreshold,
+	)
+	veCodec := compression.NewCompressionVoteExtensionCodec(
+		compression.NewDefaultVoteExtensionCodec(),
+		compression.NewZLibCompressor(),
+	)
+	ecCodec := compression.NewCompressionExtendedCommitCodec(
+		compression.NewDefaultExtendedCommitCodec(),
+		compression.NewZStdCompressor(),
+	)
+
+	// Create the pre-finalize block hook that will be used to apply oracle data
+	// to the state before any transactions are executed (in finalize block).
+	OraclePreBlockHandler := oraclepreblock.NewOraclePreBlockHandler(
+		app.Logger(),
+		aggregatorFn,
+		app.OracleKeeper,
+		oracleMetrics,
+		currencypair.NewDeltaCurrencyPairStrategy(app.OracleKeeper), // IMPORTANT: always construct new currency pair strategy objects when functions require them as arguments.
+		veCodec,
+		ecCodec,
+	)
+	app.OraclePreBlockHandler = OraclePreBlockHandler
+
+	app.SetPreBlocker(OraclePreBlockHandler.WrappedPreBlocker(app.mm))
+
+	// Create the vote extensions handler that will be used to extend and verify
+	// vote extensions (i.e. oracle data).
+	voteExtensionsHandler := ve.NewVoteExtensionHandler(
+		app.Logger(),
+		app.OracleClient,
+		time.Second, // timeout
+		currencypair.NewDeltaCurrencyPairStrategy(app.OracleKeeper), // IMPORTANT: always construct new currency pair strategy objects when functions require them as arguments.
+		veCodec,
+		aggregator.NewOraclePriceApplier(
+			aggregator.NewDefaultVoteAggregator(
+				app.Logger(),
+				aggregatorFn,
+				// we need a separate price strategy here, so that we can optimistically apply the latest prices
+				// and extend our vote based on these prices
+				currencypair.NewDeltaCurrencyPairStrategy(app.OracleKeeper), // IMPORTANT: always construct new currency pair strategy objects when functions require them as arguments.
+			),
+			app.OracleKeeper,
+			veCodec,
+			ecCodec,
+			app.Logger(),
+		),
+		oracleMetrics,
+	)
+	app.SetExtendVoteHandler(voteExtensionsHandler.ExtendVoteHandler())
+	app.SetVerifyVoteExtensionHandler(voteExtensionsHandler.VerifyVoteExtensionHandler())
 
 	// Register snapshot extensions to enable state-sync for wasm.
 	if manager := app.SnapshotManager(); manager != nil {

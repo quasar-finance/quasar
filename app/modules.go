@@ -66,6 +66,10 @@ import (
 	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
 	"github.com/skip-mev/feemarket/x/feemarket"
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
+	"github.com/skip-mev/slinky/x/marketmap"
+	marketmaptypes "github.com/skip-mev/slinky/x/marketmap/types"
+	"github.com/skip-mev/slinky/x/oracle"
+	oracletypes "github.com/skip-mev/slinky/x/oracle/types"
 )
 
 // moduleAccountPermissions defines module account permissions
@@ -96,9 +100,6 @@ var AppModuleBasics = []module.AppModuleBasic{
 	gov.NewAppModuleBasic(
 		[]govclient.ProposalHandler{
 			paramsclient.ProposalHandler,
-			// upgradeclient.LegacyProposalHandler,
-			// ibcclientclient.UpdateClientProposalHandler,
-			// ibcclientclient.UpgradeProposalHandler,
 		},
 	),
 	params.AppModuleBasic{},
@@ -120,6 +121,8 @@ var AppModuleBasics = []module.AppModuleBasic{
 	ibctm.AppModuleBasic{},
 	ibchooks.AppModuleBasic{},
 	ratelimit.AppModuleBasic{},
+	feemarket.AppModuleBasic{},
+	oracle.AppModuleBasic{},
 }
 
 // ModuleBasics defines the module BasicManager that is in charge of setting up basic,
@@ -208,7 +211,8 @@ func appModules(
 		app.TransferModule,
 		app.PFMRouterModule,
 		app.RateLimitModule,
-
+		marketmap.NewAppModule(appCodec, app.MarketmapKeeper),
+		oracle.NewAppModule(appCodec, *app.OracleKeeper),
 		// quasar modules
 		epochsmodule.NewAppModule(*app.EpochsKeeper),
 		tfmodule.NewAppModule(app.TfKeeper, app.AccountKeeper, app.BankKeeper),
@@ -245,6 +249,8 @@ func orderBeginBlockers() []string {
 		wasmtypes.ModuleName,
 		ibcwasmtypes.ModuleName,
 		tftypes.ModuleName,
+		marketmaptypes.ModuleName,
+		oracletypes.ModuleName,
 	}
 }
 
@@ -279,6 +285,8 @@ func orderEndBlockers() []string {
 		tftypes.ModuleName,
 		authztypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		marketmaptypes.ModuleName,
+		oracletypes.ModuleName,
 	}
 }
 
@@ -329,5 +337,7 @@ func orderInitBlockers() []string {
 		tftypes.ModuleName,
 		authztypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		marketmaptypes.ModuleName,
+		oracletypes.ModuleName,
 	}
 }

@@ -85,13 +85,12 @@ import (
 	tftypes "github.com/quasar-finance/quasar/x/tokenfactory/types"
 	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
-)
-
-// Deprecated modules
-const (
-	QTransferModuleKey = "qtransfer"
-	QOracleModuleKey   = "qoracle"
-	QVestingModuleKey  = "qvesting"
+	oraclepreblock "github.com/skip-mev/slinky/abci/preblock/oracle"
+	oracleclient "github.com/skip-mev/slinky/service/clients/oracle"
+	marketmapkeeper "github.com/skip-mev/slinky/x/marketmap/keeper"
+	marketmaptypes "github.com/skip-mev/slinky/x/marketmap/types"
+	oraclekeeper "github.com/skip-mev/slinky/x/oracle/keeper"
+	oracletypes "github.com/skip-mev/slinky/x/oracle/types"
 )
 
 type AppKeepers struct {
@@ -137,6 +136,14 @@ type AppKeepers struct {
 
 	PFMRouterKeeper *packetforwardkeeper.Keeper
 	RatelimitKeeper ratelimitkeeper.Keeper
+
+	//slinky keepers
+	OracleKeeper          *oraclekeeper.Keeper
+	MarketmapKeeper       *marketmapkeeper.Keeper
+	OraclePreBlockHandler *oraclepreblock.PreBlockHandler
+
+	//processed
+	OracleClient oracleclient.OracleClient
 
 	// IBC modules
 	// transfer module
@@ -499,6 +506,23 @@ func (appKeepers *AppKeepers) InitNormalKeepers(
 			Grpc:     wasmkeeper.AcceptListGrpcQuerier(wasmbindings.AcceptedStargateQueries(), bApp.GRPCQueryRouter(), appCodec),
 		})
 
+	appKeepers.MarketmapKeeper = marketmapkeeper.NewKeeper(
+		runtime.NewKVStoreService(appKeepers.keys[marketmaptypes.StoreKey]),
+		appCodec,
+		authtypes.NewModuleAddress(govtypes.ModuleName),
+	)
+
+	oracleKeeper := oraclekeeper.NewKeeper(
+		runtime.NewKVStoreService(appKeepers.keys[oracletypes.StoreKey]),
+		appCodec,
+		appKeepers.MarketmapKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName),
+	)
+
+	appKeepers.OracleKeeper = &oracleKeeper
+
+	appKeepers.MarketmapKeeper.SetHooks(appKeepers.OracleKeeper.Hooks())
+
 	wasmOpts = append(wasmOpts, queryPlugins)
 
 	wasmKeeper := wasmkeeper.NewKeeper(
@@ -635,10 +659,8 @@ func KVStoreKeys() []string {
 		ibchookstypes.StoreKey,
 		ratelimittypes.StoreKey,
 		pfmtypes.StoreKey,
-		//deprecated modules
-		QTransferModuleKey,
-		QOracleModuleKey,
-		QVestingModuleKey,
+		oracletypes.StoreKey,
+		marketmaptypes.StoreKey,
 	}
 }
 
