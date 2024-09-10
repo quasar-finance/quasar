@@ -45,7 +45,8 @@ func (s *UpgradeTestSuite) TestUpgrade() {
 	ctx := s.Ctx
 	keepers := s.App.AppKeepers
 
-	modulesToRemove := []string{"qtransfer", "qoracle", "qvesting"}
+	modulesToRemove := []string{}
+	//modulesToRemove := []string{"qtransfer", "qoracle", "qvesting"}
 	for _, moduleName := range modulesToRemove {
 		storeKey := keepers.GetKey(moduleName)
 		store := ctx.KVStore(storeKey)

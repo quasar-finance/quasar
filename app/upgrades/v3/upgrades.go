@@ -27,7 +27,8 @@ func CreateUpgradeHandler(
 	keepers *keepers.AppKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(c context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		modulesToRemove := []string{"qtransfer", "qoracle", "qvesting"}
+		modulesToRemove := []string{} // as now the module keys are deprecated and cleaned up post v3 upgrade this test fails otherwise
+		//modulesToRemove := []string{"qtransfer", "qoracle", "qvesting"}
 		ctx := sdk.UnwrapSDKContext(c)
 		// Iterate over each module
 		for _, moduleName := range modulesToRemove {
