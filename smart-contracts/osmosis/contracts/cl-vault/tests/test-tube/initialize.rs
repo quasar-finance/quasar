@@ -9,7 +9,6 @@ use cl_vault::{
     query::PoolResponse,
 };
 use cosmwasm_std::{Coin, Decimal};
-use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::{
     cosmos::base::v1beta1,
     osmosis::{
@@ -22,6 +21,7 @@ use osmosis_test_tube::{
     cosmrs::proto::traits::Message, Account, ConcentratedLiquidity, Module, PoolManager,
     TokenFactory, Wasm,
 };
+use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
 use std::str::FromStr;
 
 #[test]

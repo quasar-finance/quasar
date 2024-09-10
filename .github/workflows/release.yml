@@ -1,0 +1,28 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: tests
+        uses: actions/checkout@v3
+      - run: cargo install just
+        working-directory: smart-contracts
+      - run: cargo check
+        working-directory: smart-contracts/osmosis
+      - name: Compile contracts
+        run: just workspace-optimize
+        working-directory: smart-contracts/osmosis
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "smart-contracts/osmosis/artifacts/*.wasm, smart-contracts/osmosis/artifacts/checksums.txt"
+          artifactErrorsFailBuild: "true"
+          generateReleaseNotes: "true"

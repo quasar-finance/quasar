@@ -19,11 +19,11 @@ use cl_vault::query::{
 };
 use cosmwasm_std::assert_approx_eq;
 use cosmwasm_std::{Coin, Uint128};
-use cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
 use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
 use osmosis_std::types::cosmos::base::v1beta1::Coin as OsmoCoin;
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use osmosis_test_tube::{Account, Bank, Module, Wasm};
+use quasar_types::cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension;
 
 const DENOM_REWARD_AMOUNT: u128 = 100_000_000_000;
 const APPROX_EQ_FACTOR: &str = "0.00005";

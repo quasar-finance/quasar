@@ -4,6 +4,10 @@ name = "quasar-types"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["lockup", "force-unlock"]
+lockup = []
+force-unlock = []
 
 [dependencies]
 cosmwasm-std = { workspace = true }
@@ -11,6 +15,7 @@ osmosis-std = { workspace = true }
 osmosis-std-derive = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus ={ workspace = true }
+cw-utils ={ workspace = true }
 schemars ={ workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
