@@ -8,8 +8,8 @@ use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
-use cw_vault_multi_standard::VaultInfoResponse;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
+use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
 
 #[cw_serde]
 pub struct MetadataResponse {
