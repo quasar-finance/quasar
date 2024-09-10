@@ -14,19 +14,15 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// range operations
     RangeMsg(RangeExecuteMsg),
-    /// admin operations
     AdminMsg(AdminExecuteMsg),
 }
 
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// range queries
     #[returns(Empty)]
     RangeQuery(RangeQueryMsg),
-    /// admin queries
     #[returns(Empty)]
     AdminQuery(AdminQueryMsg),
 }
