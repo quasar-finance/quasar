@@ -17,6 +17,8 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 )
 
+const feesDelta float64 = 500000
+
 // TestQuasarGaiaIBCTransfer spins up a quasar and Gaia network, initializes an IBC connection between them,
 // and sends an ICS20 token transfer from quasar->Gaia and then back from Gaia->quasar.
 func TestQuasarGaiaIBCTransfer(t *testing.T) {
@@ -38,8 +40,8 @@ func TestQuasarGaiaIBCTransfer(t *testing.T) {
 			NumFullNodes:  &numFullNodes,
 		},
 		{
-			Name:          "gaia",
-			Version:       "v9.1.0",
+			Name:          "quasar1",
+			ChainConfig:   quasarConfig1,
 			NumValidators: &numVals,
 			NumFullNodes:  &numFullNodes,
 		},
@@ -112,14 +114,14 @@ func TestQuasarGaiaIBCTransfer(t *testing.T) {
 	// Get original account balances
 	quasarOrigBal, err := quasar.GetBalance(ctx, quasarUserAddr, quasar.Config().Denom)
 	require.NoError(t, err)
-	require.Equal(t, genesisWalletAmount, quasarOrigBal.Int64())
+	require.Equal(t, genesisWalletAmount.Int64(), quasarOrigBal.Int64())
 
 	gaiaOrigBal, err := gaia.GetBalance(ctx, gaiaUserAddr, gaia.Config().Denom)
 	require.NoError(t, err)
-	require.Equal(t, genesisWalletAmount, gaiaOrigBal.Int64())
+	require.Equal(t, genesisWalletAmount.Int64(), gaiaOrigBal.Int64())
 
 	// Compose an IBC transfer and send from quasar -> Gaia
-	var transferAmount = math.NewInt(1_000)
+	var transferAmount = math.NewInt(10_000_000)
 	transfer := ibc.WalletAmount{
 		Address: gaiaUserAddr,
 		Denom:   quasar.Config().Denom,
@@ -161,7 +163,8 @@ func TestQuasarGaiaIBCTransfer(t *testing.T) {
 	// Assert that the funds are no longer present in user acc on quasar and are in the user acc on Gaia
 	quasarUpdateBal, err := quasar.GetBalance(ctx, quasarUserAddr, quasar.Config().Denom)
 	require.NoError(t, err)
-	require.Equal(t, quasarOrigBal.Sub(transferAmount), quasarUpdateBal)
+	// delta check if for adjusting fees
+	require.InDeltaf(t, quasarOrigBal.Sub(transferAmount).Int64(), quasarUpdateBal.Int64(), feesDelta, "either fees is way too high or transaction did not go through")
 
 	gaiaUpdateBal, err := gaia.GetBalance(ctx, gaiaUserAddr, quasarIBCDenom)
 	require.NoError(t, err)
@@ -187,7 +190,7 @@ func TestQuasarGaiaIBCTransfer(t *testing.T) {
 	// Assert that the funds are now back on quasar and not on Gaia
 	quasarUpdateBal, err = quasar.GetBalance(ctx, quasarUserAddr, quasar.Config().Denom)
 	require.NoError(t, err)
-	require.Equal(t, quasarOrigBal, quasarUpdateBal)
+	require.InDeltaf(t, quasarOrigBal.Int64(), quasarUpdateBal.Int64(), feesDelta, "either fees is way too high or transaction did not go through")
 
 	gaiaUpdateBal, err = gaia.GetBalance(ctx, gaiaUserAddr, quasarIBCDenom)
 	require.NoError(t, err)

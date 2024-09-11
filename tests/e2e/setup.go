@@ -23,10 +23,10 @@ import (
 var (
 	VotingPeriod     = "15s"
 	MaxDepositPeriod = "10s"
-	Denom            = "uqsr"
+	Denom            = "stake"
 
-	quasarE2ERepo  = "quasar" // using quasar so it picks up from local build
-	quasarMainRepo = "quasar" // using quasar so it picks up from local build
+	quasarE2ERepo  = "quasar:local" // using quasar so it picks up from local build
+	quasarMainRepo = "quasar:local" // using quasar so it picks up from local build
 
 	IBCRelayerImage   = "ghcr.io/cosmos/relayer"
 	IBCRelayerVersion = "main"
@@ -53,10 +53,10 @@ var (
 			Key:   "app_state.gov.params.min_deposit.0.denom",
 			Value: Denom,
 		},
-		{
-			Key:   "app_state.feepay.params.enable_feepay",
-			Value: false,
-		},
+		//{
+		//	Key:   "app_state.feepay.params.enable_feepay",
+		//	Value: false,
+		//},
 	}
 
 	quasarConfig = ibc.ChainConfig{
@@ -68,7 +68,7 @@ var (
 		Bech32Prefix:        "quasar",
 		Denom:               Denom,
 		CoinType:            "118",
-		GasPrices:           fmt.Sprintf("0%s", Denom),
+		GasPrices:           fmt.Sprintf("1.0%s", Denom),
 		GasAdjustment:       2.0,
 		TrustingPeriod:      "112h",
 		NoHostMount:         false,
@@ -76,7 +76,24 @@ var (
 		ModifyGenesis:       cosmos.ModifyGenesis(defaultGenesisKV),
 	}
 
-	genesisWalletAmount = math.NewInt(10_000_000)
+	quasarConfig1 = ibc.ChainConfig{
+		Type:                "cosmos",
+		Name:                "quasar",
+		ChainID:             "quasar-3",
+		Images:              []ibc.DockerImage{quasarImage},
+		Bin:                 "quasard",
+		Bech32Prefix:        "quasar",
+		Denom:               Denom,
+		CoinType:            "118",
+		GasPrices:           fmt.Sprintf("1.0%s", Denom),
+		GasAdjustment:       2.0,
+		TrustingPeriod:      "112h",
+		NoHostMount:         false,
+		ConfigFileOverrides: nil,
+		ModifyGenesis:       cosmos.ModifyGenesis(defaultGenesisKV),
+	}
+
+	genesisWalletAmount = math.NewInt(100_000_000_000)
 )
 
 func init() {
