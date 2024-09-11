@@ -17,7 +17,9 @@ use super::helpers::is_range_submitter_admin;
 #[cw_serde]
 pub enum RangeExecuteMsg {
     /// Submit a range to the range middleware
-    SubmitNewRange { new_range: NewRange },
+    SubmitNewRange {
+        new_range: NewRange,
+    },
     /// Execute a new range
     ExecuteNewRange {
         cl_vault_address: String,
@@ -26,6 +28,9 @@ pub enum RangeExecuteMsg {
         twap_window_seconds: u64,
         forced_swap_route: Option<Vec<SwapAmountInRoute>>,
         claim_after: Option<u64>,
+    },
+    RemoveRange {
+        contract_address: String,
     },
 }
 
@@ -68,7 +73,20 @@ pub fn execute_range_msg(
                 claim_after,
             },
         ),
+        RangeExecuteMsg::RemoveRange { contract_address } => {
+            remove_range(deps, info, contract_address)
+        }
     }
+}
+
+pub fn remove_range(
+    deps: DepsMut,
+    info: MessageInfo,
+    contract_address: String,
+) -> Result<Response, ContractError> {
+    is_range_submitter_admin(deps.storage, &info.sender)?;
+    PENDING_RANGES.remove(deps.storage, deps.api.addr_validate(&contract_address)?);
+    Ok(Response::default())
 }
 
 pub fn submit_new_range(
@@ -162,4 +180,112 @@ pub fn execute_new_range(
         .add_attribute("range_executed", "true")
         .add_attribute("range_executor", info.sender)
         .add_attribute("range_underlying_contract", params.cl_vault_address))
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        Addr, Decimal,
+    };
+
+    use crate::{
+        contract::{execute, instantiate, query},
+        msg::{InstantiateMsg, QueryMsg},
+        range::execute::RangeExecuteMsg,
+        state::{NewRange, PENDING_RANGES},
+        ContractError,
+    };
+
+    const RANGE_SUBMITTER_ADMIN: &str = "range_submitter_admin";
+    const RANGE_EXECUTOR_ADMIN: &str = "range_executor_admin";
+    const TEST_CONTRACT: &str = "test_contract";
+
+    #[test]
+    fn test_unauthorized_user_can_not_remove_range() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("sender", &[]);
+        assert!(instantiate(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            InstantiateMsg {
+                range_executor_admin: RANGE_EXECUTOR_ADMIN.to_string(),
+                range_submitter_admin: RANGE_SUBMITTER_ADMIN.to_string(),
+            }
+        )
+        .is_ok());
+
+        let err = execute(
+            deps.as_mut(),
+            env,
+            info,
+            crate::msg::ExecuteMsg::RangeMsg(RangeExecuteMsg::RemoveRange {
+                contract_address: TEST_CONTRACT.to_string(),
+            }),
+        )
+        .unwrap_err();
+        assert_eq!(err, ContractError::Unauthorized {});
+    }
+
+    #[test]
+    fn test_range_admin_can_remove_range() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("sender", &[]);
+        let _ = instantiate(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            InstantiateMsg {
+                range_executor_admin: RANGE_EXECUTOR_ADMIN.to_string(),
+                range_submitter_admin: RANGE_SUBMITTER_ADMIN.to_string(),
+            },
+        )
+        .unwrap();
+
+        PENDING_RANGES
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked(TEST_CONTRACT),
+                &NewRange {
+                    cl_vault_address: TEST_CONTRACT.to_string(),
+                    lower_price: Decimal::zero(),
+                    upper_price: Decimal::one(),
+                },
+            )
+            .unwrap();
+        assert!(query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::RangeQuery(
+                crate::range::query::RangeQueryMsg::GetQueuedRangeUpdatesForContract {
+                    contract_address: TEST_CONTRACT.to_string()
+                }
+            )
+        )
+        .is_ok());
+
+        let info = mock_info(RANGE_SUBMITTER_ADMIN, &[]);
+        let _ = execute(
+            deps.as_mut(),
+            env.clone(),
+            info,
+            crate::msg::ExecuteMsg::RangeMsg(RangeExecuteMsg::RemoveRange {
+                contract_address: TEST_CONTRACT.to_string(),
+            }),
+        )
+        .unwrap();
+        assert!(query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::RangeQuery(
+                crate::range::query::RangeQueryMsg::GetQueuedRangeUpdatesForContract {
+                    contract_address: TEST_CONTRACT.to_string()
+                }
+            )
+        )
+        .is_err());
+    }
 }
