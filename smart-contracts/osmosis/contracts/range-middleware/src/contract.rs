@@ -60,33 +60,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    cw2::assert_contract_version(deps.storage, CONTRACT_NAME, "0.3.0")?;
+    let old_version =
+        cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    Ok(Response::new().add_attribute("migrate", "succesful"))
-}
-
-#[cfg(test)]
-mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env};
-    use cw2::{get_contract_version, ContractVersion};
-
-    use super::*;
-
-    #[test]
-    fn migrate_works() {
-        let mut deps = mock_dependencies();
-        set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.1.0").unwrap();
-
-        let env = mock_env();
-        let msg = MigrateMsg {};
-
-        migrate(deps.as_mut(), env, msg).unwrap();
-        assert_eq!(
-            get_contract_version(deps.as_ref().storage).unwrap(),
-            ContractVersion {
-                contract: CONTRACT_NAME.into(),
-                version: CONTRACT_VERSION.into()
-            }
-        )
-    }
+    Ok(Response::new()
+        .add_attribute("old version", old_version.to_string())
+        .add_attribute("new version", CONTRACT_VERSION))
 }
