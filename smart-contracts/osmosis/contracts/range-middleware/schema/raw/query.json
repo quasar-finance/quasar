@@ -3,7 +3,6 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "range queries",
       "type": "object",
       "required": [
         "range_query"
@@ -16,7 +15,6 @@
       "additionalProperties": false
     },
     {
-      "description": "admin queries",
       "type": "object",
       "required": [
         "admin_query"

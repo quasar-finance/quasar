@@ -1,6 +1,6 @@
 {
   "contract_name": "range-middleware",
-  "contract_version": "0.3.0",
+  "contract_version": "0.3.1",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -25,7 +25,6 @@
     "title": "ExecuteMsg",
     "oneOf": [
       {
-        "description": "range operations",
         "type": "object",
         "required": [
           "range_msg"
@@ -38,7 +37,6 @@
         "additionalProperties": false
       },
       {
-        "description": "admin operations",
         "type": "object",
         "required": [
           "admin_msg"
@@ -200,6 +198,27 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "remove_range"
+            ],
+            "properties": {
+              "remove_range": {
+                "type": "object",
+                "required": [
+                  "contract_address"
+                ],
+                "properties": {
+                  "contract_address": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
           }
         ]
       },
@@ -227,7 +246,6 @@
     "title": "QueryMsg",
     "oneOf": [
       {
-        "description": "range queries",
         "type": "object",
         "required": [
           "range_query"
@@ -240,7 +258,6 @@
         "additionalProperties": false
       },
       {
-        "description": "admin queries",
         "type": "object",
         "required": [
           "admin_query"

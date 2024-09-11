@@ -60,9 +60,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    cw2::assert_contract_version(deps.storage, CONTRACT_NAME, "0.3.0")?;
+    let old_version =
+        cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    Ok(Response::new().add_attribute("migrate", "succesful"))
+    Ok(Response::new()
+        .add_attribute("old version", old_version.to_string())
+        .add_attribute("new version", CONTRACT_VERSION))
 }
 
 #[cfg(test)]
