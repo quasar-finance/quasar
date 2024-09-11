@@ -1,6 +1,8 @@
 pub mod abstract_sdk;
 pub mod callback;
 pub mod curve;
+pub mod cw_vault_multi_standard;
+pub mod cw_vault_standard;
 pub mod error;
 pub mod ibc;
 pub mod ica;

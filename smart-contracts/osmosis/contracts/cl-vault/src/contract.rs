@@ -5,7 +5,10 @@ use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
     handle_create_denom_reply, handle_instantiate, handle_instantiate_create_position_reply,
 };
-use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, ModifyRangeMsg, QueryMsg};
+use crate::msg::{
+    ClQueryMsg, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, InstantiateMsg, MigrateMsg,
+    ModifyRangeMsg, QueryMsg,
+};
 use crate::query::{
     query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
     query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
@@ -40,6 +43,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{Item, Map};
+use quasar_types::cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -63,32 +67,32 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        cw_vault_multi_standard::VaultStandardExecuteMsg::AnyDeposit {
+        VaultStandardExecuteMsg::AnyDeposit {
             recipient,
             max_slippage,
             .. // asset and amount fields are not used in this implementation, they are for CW20 tokens
         } => execute_any_deposit(deps, env, info, recipient, max_slippage),
-        cw_vault_multi_standard::VaultStandardExecuteMsg::ExactDeposit { recipient } => {
+        VaultStandardExecuteMsg::ExactDeposit { recipient } => {
             execute_exact_deposit(deps, env, info, recipient)
         }
-        cw_vault_multi_standard::VaultStandardExecuteMsg::Redeem { recipient, amount } => {
+        VaultStandardExecuteMsg::Redeem { recipient, amount } => {
             prepend_claim_msg(
                 &env,
                 execute_withdraw(deps, &env, info, recipient, amount.into())?,
             )
         }
-        cw_vault_multi_standard::VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
+        VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {
-                crate::msg::ExtensionExecuteMsg::Admin(admin_msg) => {
+                ExtensionExecuteMsg::Admin(admin_msg) => {
                     execute_admin(deps, info, admin_msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Merge(msg) => {
+                ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
                 }
-                crate::msg::ExtensionExecuteMsg::Autocompound {} => {
+                ExtensionExecuteMsg::Autocompound {} => {
                     prepend_claim_msg(&env, execute_autocompound(deps, &env, info)?)
                 }
-                crate::msg::ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
+                ExtensionExecuteMsg::ModifyRange(ModifyRangeMsg {
                     lower_price,
                     upper_price,
                     max_slippage,
@@ -111,11 +115,11 @@ pub fn execute(
                         claim_after,
                     )?,
                 ),
-                crate::msg::ExtensionExecuteMsg::SwapNonVaultFunds {
+                ExtensionExecuteMsg::SwapNonVaultFunds {
                     swap_operations,
                     twap_window_seconds,
                 } => execute_swap_non_vault_funds(deps, env, info, swap_operations, twap_window_seconds),
-                crate::msg::ExtensionExecuteMsg::CollectRewards {} => {
+                ExtensionExecuteMsg::CollectRewards {} => {
                     execute_collect_rewards(deps, env)
                 }
             }
@@ -126,33 +130,29 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        cw_vault_multi_standard::VaultStandardQueryMsg::VaultStandardInfo {} => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::Info {} => {
-            Ok(to_json_binary(&query_info(deps)?)?)
+        VaultStandardQueryMsg::VaultStandardInfo {} => {
+            todo!()
         }
-        cw_vault_multi_standard::VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::DepositRatio => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::PreviewRedeem { amount: shares } => Ok(
-            to_json_binary(&query_assets_from_shares(deps, env, shares)?)?,
-        ),
-        cw_vault_multi_standard::VaultStandardQueryMsg::TotalAssets {} => {
+        VaultStandardQueryMsg::Info {} => Ok(to_json_binary(&query_info(deps)?)?),
+        VaultStandardQueryMsg::PreviewDeposit { assets: _ } => todo!(),
+        VaultStandardQueryMsg::DepositRatio => todo!(),
+        VaultStandardQueryMsg::PreviewRedeem { amount: shares } => Ok(to_json_binary(
+            &query_assets_from_shares(deps, env, shares)?,
+        )?),
+        VaultStandardQueryMsg::TotalAssets {} => {
             Ok(to_json_binary(&query_total_assets(deps, env)?)?)
         }
-        cw_vault_multi_standard::VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
+        VaultStandardQueryMsg::TotalVaultTokenSupply {} => {
             Ok(to_json_binary(&query_total_vault_token_supply(deps)?)?)
         }
-        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
-        cw_vault_multi_standard::VaultStandardQueryMsg::ConvertToAssets { amount: shares } => Ok(
-            to_json_binary(&query_assets_from_shares(deps, env, shares)?)?,
-        ),
-        cw_vault_multi_standard::VaultStandardQueryMsg::VaultExtension(msg) => match msg {
-            crate::msg::ExtensionQueryMsg::Metadata {} => {
-                Ok(to_json_binary(&query_metadata(deps)?)?)
-            }
-            crate::msg::ExtensionQueryMsg::DexRouter {} => {
-                Ok(to_json_binary(&query_dex_router(deps)?)?)
-            }
-            crate::msg::ExtensionQueryMsg::Balances(msg) => match msg {
+        VaultStandardQueryMsg::ConvertToShares { amount: _ } => todo!(),
+        VaultStandardQueryMsg::ConvertToAssets { amount: shares } => Ok(to_json_binary(
+            &query_assets_from_shares(deps, env, shares)?,
+        )?),
+        VaultStandardQueryMsg::VaultExtension(msg) => match msg {
+            ExtensionQueryMsg::Metadata {} => Ok(to_json_binary(&query_metadata(deps)?)?),
+            ExtensionQueryMsg::DexRouter {} => Ok(to_json_binary(&query_dex_router(deps)?)?),
+            ExtensionQueryMsg::Balances(msg) => match msg {
                 crate::msg::UserBalanceQueryMsg::UserSharesBalance { user } => {
                     Ok(to_json_binary(&query_user_balance(deps, user)?)?)
                 }
@@ -160,18 +160,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                     Ok(to_json_binary(&query_user_assets(deps, env, user)?)?)
                 }
             },
-            crate::msg::ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
-                crate::msg::ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
-                crate::msg::ClQueryMsg::Position {} => Ok(to_json_binary(&query_position(deps)?)?),
-                crate::msg::ClQueryMsg::RangeAdmin {} => {
+            ExtensionQueryMsg::ConcentratedLiquidity(msg) => match msg {
+                ClQueryMsg::Pool {} => Ok(to_json_binary(&query_pool(deps)?)?),
+                ClQueryMsg::Position {} => Ok(to_json_binary(&query_position(deps)?)?),
+                ClQueryMsg::RangeAdmin {} => {
                     let range_admin = get_range_admin(deps)?;
                     Ok(to_json_binary(&RangeAdminResponse {
                         address: range_admin.to_string(),
                     })?)
                 }
-                crate::msg::ClQueryMsg::VerifyTickCache => {
-                    Ok(to_json_binary(&query_verify_tick_cache(deps)?)?)
-                }
+                ClQueryMsg::VerifyTickCache => Ok(to_json_binary(&query_verify_tick_cache(deps)?)?),
             },
         },
     }
@@ -201,6 +199,8 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+    let previous_version =
+        cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let dex_router_item: Item<Addr> = Item::new("dex_router");
     dex_router_item.remove(deps.storage);
     // VaultConfig
@@ -246,7 +246,10 @@ pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, Co
     pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
     USER_REWARDS.clear(deps.storage);
 
-    let response = Response::new().add_attribute("migrate", "successful");
+    let response = Response::new()
+        .add_attribute("migrate", "successful")
+        .add_attribute("previous version", previous_version.to_string())
+        .add_attribute("new version", CONTRACT_VERSION);
     Ok(response)
 }
 
@@ -260,6 +263,7 @@ mod tests {
     fn test_migrate() {
         let env = mock_env();
         let mut deps = mock_dependencies();
+        assert!(set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.3.0").is_ok());
 
         // VaultConfig mocking
         #[cw_serde]
@@ -272,7 +276,7 @@ mod tests {
         const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
         OLD_VAULT_CONFIG
             .save(
-                &mut deps.storage,
+                deps.as_mut().storage,
                 &OldVaultConfig {
                     performance_fee: Decimal::percent(1),
                     treasury: Addr::unchecked("treasury"),
@@ -290,13 +294,17 @@ mod tests {
         }
         pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
         MIGRATION_STATUS
-            .save(&mut deps.storage, &MigrationStatus::Closed)
+            .save(deps.as_mut().storage, &MigrationStatus::Closed)
             .unwrap();
 
         // UserRewards mocking
         pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
         USER_REWARDS
-            .save(&mut deps.storage, Addr::unchecked("user"), &CoinList::new())
+            .save(
+                deps.as_mut().storage,
+                Addr::unchecked("user"),
+                &CoinList::new(),
+            )
             .unwrap();
 
         // Migrate and assert new states

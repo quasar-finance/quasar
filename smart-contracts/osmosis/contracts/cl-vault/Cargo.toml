@@ -2,7 +2,7 @@
 authors = ["LaurensKubat <32776056+LaurensKubat@users.noreply.github.com>"]
 edition = "2021"
 name = "cl-vault"
-version = "0.3.0"
+version = "0.3.1"
 
 exclude = [
   "cl_vault.wasm",
@@ -45,7 +45,6 @@ cw2 = { workspace = true }
 num_enum = { workspace = true }
 apollo-cw-asset = { workspace = true }
 dex-router-osmosis = {workspace = true}
-cw-vault-multi-standard = {git = "https://github.com/quasar-finance/cw-vault-standard", branch ="master", features = ["lockup", "force-unlock"]}
 osmosis-test-tube = { workspace = true, optional = true }
 quasar-types = { workspace = true }
 
