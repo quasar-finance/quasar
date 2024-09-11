@@ -5,16 +5,25 @@ on:
     branches:
       - main
     paths:
-      - 'smart-contracts/osmosis/**/Cargo.toml'
-      - 'smart-contracts/osmosis/**.rs'
+      - 'smart-contracts/osmosis/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/cl-vault/**.rs'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - 'smart-contracts/osmosis/contracts/merkle-incentives/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/merkle-incentives/**.rs'
       - '.github/workflows/test_tube.yml'
       - '.github/workflows/all_checks_osmosis.yml'
   push:
     branches:
       - main
     paths:
-      - 'smart-contracts/osmosis/**/Cargo.toml'
-      - 'smart-contracts/osmosis/**.rs'
+
+      - 'smart-contracts/osmosis/contracts/cl-vault/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/cl-vault/**.rs'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/dex-router-osmosis/**.rs'
+      - 'smart-contracts/osmosis/contracts/merkle-incentives/Cargo.toml'
+      - 'smart-contracts/osmosis/contracts/merkle-incentives/**.rs'
       - '.github/workflows/test_tube.yml'
       - '.github/workflows/all_checks_osmosis.yml'
   workflow_dispatch:
