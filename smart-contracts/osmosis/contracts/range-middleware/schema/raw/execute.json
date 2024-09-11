@@ -3,7 +3,6 @@
   "title": "ExecuteMsg",
   "oneOf": [
     {
-      "description": "range operations",
       "type": "object",
       "required": [
         "range_msg"
@@ -16,7 +15,6 @@
       "additionalProperties": false
     },
     {
-      "description": "admin operations",
       "type": "object",
       "required": [
         "admin_msg"
@@ -172,6 +170,27 @@
                   "type": "integer",
                   "format": "uint64",
                   "minimum": 0.0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "remove_range"
+          ],
+          "properties": {
+            "remove_range": {
+              "type": "object",
+              "required": [
+                "contract_address"
+              ],
+              "properties": {
+                "contract_address": {
+                  "type": "string"
                 }
               },
               "additionalProperties": false
