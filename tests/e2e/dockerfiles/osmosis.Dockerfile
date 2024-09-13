@@ -23,7 +23,7 @@ RUN git lfs install
 RUN git clone https://github.com/osmosis-labs/osmosis.git
 
 # Checkout specific version
-RUN cd osmosis && git checkout v20.0.0
+RUN cd osmosis && git checkout v25.2.1
 
 # Set Work Directory to osmosis
 WORKDIR osmosis
