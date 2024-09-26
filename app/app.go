@@ -66,7 +66,6 @@ import (
 	appParams "github.com/quasar-finance/quasar/app/params"
 	"github.com/quasar-finance/quasar/app/upgrades"
 	v2 "github.com/quasar-finance/quasar/app/upgrades/v2"
-	v3 "github.com/quasar-finance/quasar/app/upgrades/v3"
 	v4 "github.com/quasar-finance/quasar/app/upgrades/v4"
 	"github.com/quasar-finance/quasar/docs"
 	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
@@ -99,7 +98,7 @@ var (
 	// module account permissions
 	maccPerms = ModuleAccountPermissions
 
-	Upgrades = []upgrades.Upgrade{v2.Upgrade, v3.Upgrade, v4.Upgrade}
+	Upgrades = []upgrades.Upgrade{v2.Upgrade, v4.Upgrade}
 )
 
 // overrideWasmVariables overrides the wasm variables to:

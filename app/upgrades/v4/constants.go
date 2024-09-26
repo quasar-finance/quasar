@@ -9,7 +9,7 @@ import (
 
 const (
 	UpgradeName                = "v4"
-	MarketMapAuthorityMultisig = "" //TODO: add
+	MarketMapAuthorityMultisig = "" //TODO: add the multisig that controls datafeeds before upgrade
 	DecimalAdjustment          = 1_000_000_000_000
 )
 

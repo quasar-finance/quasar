@@ -59,7 +59,7 @@ func CreateUpgradeHandler(
 func setMarketMapParams(ctx sdk.Context, marketmapKeeper *marketmapkeeper.Keeper) error {
 	marketmapParams := marketmaptypes.Params{
 		MarketAuthorities: []string{authtypes.NewModuleAddress(govtypes.ModuleName).String()}, //MarketMapAuthorityMultisig},
-		Admin:             authtypes.NewModuleAddress(govtypes.ModuleName).String(),           // TODO: decide admin
+		Admin:             authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	}
 	return marketmapKeeper.SetParams(ctx, marketmapParams)
 }
