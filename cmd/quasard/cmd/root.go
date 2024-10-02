@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/log"
@@ -48,6 +49,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/quasar-finance/quasar/app"
 	appparams "github.com/quasar-finance/quasar/app/params"
+	oracleconfig "github.com/skip-mev/slinky/oracle/config"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -269,11 +271,7 @@ func txCommand(basicManager module.BasicManager) *cobra.Command {
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
 	)
-
-	// NOTE: this must be registered for now so that submit-legacy-proposal
-	// message (e.g. consumer-addition proposal) can be routed to the its handler and processed correctly.
-	basicManager.AddTxCommands(cmd)
-
+	
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
@@ -433,8 +431,8 @@ func initAppConfig() (string, interface{}) {
 
 	type CustomAppConfig struct {
 		serverconfig.Config
-
-		WASM WASMConfig `mapstructure:"wasm"`
+		Oracle oracleconfig.AppConfig `mapstructure:"oracle" json:"oracle"`
+		WASM   WASMConfig             `mapstructure:"wasm"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -454,8 +452,16 @@ func initAppConfig() (string, interface{}) {
 	// In simapp, we set the min gas prices to 0.
 	srvCfg.MinGasPrices = "0uqsr"
 
+	oracleConfig := oracleconfig.AppConfig{
+		Enabled:        true,
+		OracleAddress:  "localhost:8080",
+		ClientTimeout:  time.Second * 2,
+		MetricsEnabled: true,
+	}
+
 	customAppConfig := CustomAppConfig{
 		Config: *srvCfg,
+		Oracle: oracleConfig,
 		WASM: WASMConfig{
 			LruSize:       1,
 			QueryGasLimit: 300000,
