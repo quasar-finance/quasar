@@ -12,7 +12,7 @@ replace (
 
 require (
 	cosmossdk.io/math v1.3.0
-	github.com/CosmWasm/wasmd v0.53.0
+	github.com/CosmWasm/wasmd v0.53.2
 	github.com/cosmos/cosmos-sdk v0.50.9
 	github.com/cosmos/ibc-go/v8 v8.4.0
 	github.com/docker/docker v24.0.9+incompatible
@@ -28,7 +28,7 @@ require (
 	cosmossdk.io/x/feegrant v0.1.1 // indirect
 	cosmossdk.io/x/tx v0.13.4 // indirect
 	cosmossdk.io/x/upgrade v0.1.4 // indirect
-	github.com/CosmWasm/wasmvm/v2 v2.1.2 // indirect
+	github.com/CosmWasm/wasmvm/v2 v2.1.4 // indirect
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect

@@ -229,10 +229,10 @@ github.com/ChainSafe/go-schnorrkel v1.0.0 h1:3aDA67lAykLaG1y3AOjs88dMxC88PgUuHRr
 github.com/ChainSafe/go-schnorrkel v1.0.0/go.mod h1:dpzHYVxLZcp8pjlV+O+UR8K0Hp/z7vcchBSbMBEhCw4=
 github.com/ComposableFi/go-subkey/v2 v2.0.0-tm03420 h1:oknQF/iIhf5lVjbwjsVDzDByupRhga8nhA3NAmwyHDA=
 github.com/ComposableFi/go-subkey/v2 v2.0.0-tm03420/go.mod h1:KYkiMX5AbOlXXYfxkrYPrRPV6EbVUALTQh5ptUOJzu8=
-github.com/CosmWasm/wasmd v0.53.0 h1:kdaoAi20bIb4VCsxw9pRaT2g5PpIp82Wqrr9DRVN9ao=
-github.com/CosmWasm/wasmd v0.53.0/go.mod h1:FJl/aWjdpGof3usAMFQpDe07Rkx77PUzp0cygFMOvtw=
-github.com/CosmWasm/wasmvm/v2 v2.1.2 h1:GkJ5bAsRlLHfIQVg/FY1VHwLyBwlCjAhDea0B8L+e20=
-github.com/CosmWasm/wasmvm/v2 v2.1.2/go.mod h1:bMhLQL4Yp9CzJi9A83aR7VO9wockOsSlZbT4ztOl6bg=
+github.com/CosmWasm/wasmd v0.53.2 h1:c3MQjeQq+r+Zj2rPeW+c9kJmTevuNnZOIkiiCP/3bg4=
+github.com/CosmWasm/wasmd v0.53.2/go.mod h1:gP10E56tuToU5rsZR7vZLBL5ssW2mie6KN/WrQLG7/I=
+github.com/CosmWasm/wasmvm/v2 v2.1.4 h1:7EUVQjBxXHkVjL2AqqXD7hMEe0dmoNn2li9E4PWRAnA=
+github.com/CosmWasm/wasmvm/v2 v2.1.4/go.mod h1:bMhLQL4Yp9CzJi9A83aR7VO9wockOsSlZbT4ztOl6bg=
 github.com/DataDog/datadog-go v3.2.0+incompatible h1:qSG2N4FghB1He/r2mFrWKCaL7dXCilEuNEeAn20fdD4=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
