@@ -8,7 +8,7 @@ require (
 	cosmossdk.io/client/v2 v2.0.0-beta.3
 	cosmossdk.io/core v0.11.1
 	cosmossdk.io/errors v1.0.1
-	cosmossdk.io/log v1.4.1
+	cosmossdk.io/log v1.5.0
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/tools/confix v0.1.2
@@ -46,9 +46,16 @@ require (
 
 require (
 	cosmossdk.io/x/circuit v0.1.1 // indirect
+	github.com/bytedance/sonic v1.12.3 // indirect
+	github.com/bytedance/sonic/loader v0.2.0 // indirect
+	github.com/cloudwego/base64x v0.1.4 // indirect
+	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
+	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
+	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 )
 
 require (
