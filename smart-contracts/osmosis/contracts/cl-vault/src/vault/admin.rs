@@ -1,10 +1,10 @@
 use crate::error::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
 use crate::state::{Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG};
+use crate::vault::withdraw::execute_withdraw;
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint256};
 use cw_utils::nonpayable;
-use crate::vault::withdraw::execute_withdraw;
 
 pub(crate) fn execute_admin(
     deps: DepsMut,
@@ -26,7 +26,9 @@ pub(crate) fn execute_admin(
             execute_update_range_admin(deps, info, address)
         }
         AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
-        AdminExtensionExecuteMsg::AutoWithdraw { users } => execute_auto_claim(deps, &env, info, users),
+        AdminExtensionExecuteMsg::AutoWithdraw { users } => {
+            execute_auto_claim(deps, &env, info, users)
+        }
     }
 }
 
@@ -156,13 +158,15 @@ pub fn execute_auto_claim(
             sender: user_data.0.clone(),
             funds: vec![],
         };
-        let withdraw_response =
-            execute_withdraw(deps.branch(), env, user_info, Some(user_data.0.to_string()), user_data.1)?;
+        let withdraw_response = execute_withdraw(
+            deps.branch(),
+            env,
+            user_info,
+            Some(user_data.0.to_string()),
+            user_data.1,
+        )?;
 
-        let withdraw_messages = withdraw_response
-            .messages
-            .iter()
-            .map(|sm| sm.msg.clone());
+        let withdraw_messages = withdraw_response.messages.iter().map(|sm| sm.msg.clone());
 
         res = res
             .add_messages(withdraw_messages)

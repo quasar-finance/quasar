@@ -75,7 +75,7 @@ pub struct DexRouterResponse {
 
 #[cw_serde]
 pub struct ActiveUsersResponse {
-    pub users: Vec<String>, // List of user addresses only
+    pub users: Vec<String>,         // List of user addresses only
     pub next_token: Option<String>, // Token for the next page
 }
 
@@ -186,31 +186,27 @@ pub fn query_active_users(
     let mut users: Vec<String> = Vec::new();
     let mut start_index = 0;
 
-    // If there's a next_token, parse it to find the starting index
     if let Some(token) = next_token {
-        start_index = token.parse::<usize>().map_err(|_| ContractError::InvalidToken { /* provide necessary fields if any */ })?;
+        start_index = token
+            .parse::<usize>()
+            .map_err(|_| ContractError::InvalidToken {})?;
     }
 
-    // Iterate over the SHARES map to collect user addresses
     for result in SHARES.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        let (addr, _balance) = result.map_err(|e| ContractError::Std(e))?; // Handle the Result properly
-        let user_addr = addr;
+        let (addr, _balance) = result.map_err(ContractError::Std)?;
 
-        // Only add users starting from the start_index
         if start_index > 0 {
             start_index -= 1;
             continue;
         }
 
-        users.push(user_addr.to_string());
+        users.push(addr.to_string());
 
-        // Stop if we reach the limit
         if users.len() as u64 >= limit {
             break;
         }
     }
 
-    // Determine the next token for pagination
     let next_token = if users.len() as u64 == limit {
         Some((start_index + limit as usize).to_string())
     } else {
@@ -286,9 +282,15 @@ mod tests {
         let user3 = Addr::unchecked("user3");
 
         // Insert mock user balances into SHARES
-        SHARES.save(deps.as_mut().storage, user1, &Uint128::new(100)).unwrap();
-        SHARES.save(deps.as_mut().storage, user2, &Uint128::new(200)).unwrap();
-        SHARES.save(deps.as_mut().storage, user3, &Uint128::new(300)).unwrap();
+        SHARES
+            .save(deps.as_mut().storage, user1, &Uint128::new(100))
+            .unwrap();
+        SHARES
+            .save(deps.as_mut().storage, user2, &Uint128::new(200))
+            .unwrap();
+        SHARES
+            .save(deps.as_mut().storage, user3, &Uint128::new(300))
+            .unwrap();
 
         // Test without next_token and limit of 2
         let res = query_active_users(deps.as_ref(), None, 2).unwrap();

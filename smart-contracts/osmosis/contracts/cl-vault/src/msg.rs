@@ -57,9 +57,7 @@ pub enum AdminExtensionExecuteMsg {
     /// Build tick exponent cache
     BuildTickCache {},
     /// Auto claim endpoint
-    AutoWithdraw {
-        users: Vec<(Addr, Uint256)>,
-    }
+    AutoWithdraw { users: Vec<(Addr, Uint256)> },
 }
 
 #[cw_serde]
