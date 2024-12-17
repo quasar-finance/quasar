@@ -173,7 +173,7 @@ pub fn execute_auto_claim(
             .add_attributes(withdraw_response.attributes);
     }
 
-    Ok(Response::new()
+    Ok(res
         .add_attribute("method", "execute")
         .add_attribute("action", "auto_withdraw"))
 }

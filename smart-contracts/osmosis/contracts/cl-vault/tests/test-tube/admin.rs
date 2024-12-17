@@ -111,26 +111,32 @@ fn admin_execute_auto_claim_works() {
         })
         .collect();
 
-    let auto_claim_resp = wasm
+    let _ = wasm
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Admin(
-                AdminExtensionExecuteMsg::AutoWithdraw { users },
+                AdminExtensionExecuteMsg::AutoWithdraw { users: users.clone() },
             )),
             &[],
             &admin,
         )
         .unwrap();
 
-    let has_expected_event = auto_claim_resp.events.iter().any(|event| {
-        event.ty == "wasm"
-            && event
-                .attributes
-                .iter()
-                .any(|attr| attr.key == "action" && attr.value == "auto_withdraw")
-    });
-    assert!(
-        has_expected_event,
-        "Expected event not found in auto_claim_resp"
-    );
+    let updated_query_resp: ActiveUsersResponse = wasm
+        .query(
+            contract_address.as_str(),
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::ActiveUsers {
+                limit: 10,
+                next_token: None,
+            }),
+        )
+        .unwrap();
+
+    for (addr, _) in users.clone() {
+        assert!(
+            updated_query_resp.users.contains(&addr.to_string()),
+            "Expected user {} to be present in the active users list after auto claim",
+            addr
+        );
+    }
 }
