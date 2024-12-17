@@ -9,11 +9,7 @@ use crate::msg::{
     ClQueryMsg, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg, InstantiateMsg, MigrateMsg,
     ModifyRangeMsg, QueryMsg,
 };
-use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
-};
+use crate::query::{query_active_users, query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool, query_position, query_total_assets, query_total_vault_token_supply, query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse};
 use crate::reply::Replies;
 use crate::state::{VaultConfig, VAULT_CONFIG};
 use crate::vault::{
@@ -84,7 +80,7 @@ pub fn execute(
         VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {
                 ExtensionExecuteMsg::Admin(admin_msg) => {
-                    execute_admin(deps, info, admin_msg)
+                    execute_admin(deps, env, info, admin_msg)
                 }
                 ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
@@ -171,6 +167,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 }
                 ClQueryMsg::VerifyTickCache => Ok(to_json_binary(&query_verify_tick_cache(deps)?)?),
             },
+            ExtensionQueryMsg::ActiveUsers {next_token, limit} => Ok(to_json_binary(&query_active_users(deps, next_token, limit)?)?),
         },
     }
 }
