@@ -2,7 +2,7 @@ use crate::setup::{
     fixture_default, fixture_dex_router, ACCOUNTS_INIT_BALANCE, DENOM_BASE,
     DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256};
+use cosmwasm_std::{Coin, Decimal, Uint128, Uint256};
 use cl_vault::{
     msg::{
         AdminExtensionExecuteMsg, ClQueryMsg, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg,
@@ -90,6 +90,7 @@ fn admin_execute_auto_claim_works() {
             .unwrap();
     }
 
+    // Query active users
     let query_resp: ActiveUsersResponse = wasm
         .query(
             contract_address.as_str(),
@@ -99,18 +100,17 @@ fn admin_execute_auto_claim_works() {
             }),
         )
         .unwrap();
-
+    
     assert!(!query_resp.users.is_empty(), "Expected users to be present");
 
-    let users: Vec<(Addr, Uint256)> = query_resp
+    // Prepare users for auto claim
+    let users: Vec<(String, Uint256)> = query_resp
         .users
         .iter()
-        .map(|user| {
-            let addr = Addr::unchecked(user);
-            (addr, Uint256::from(100u128))
-        })
+        .map(|(addr, balance)| (addr.clone(), *balance)) // Keep as (String, Uint256)
         .collect();
 
+    // Execute auto claim
     let _ = wasm
         .execute(
             contract_address.as_str(),
@@ -122,6 +122,7 @@ fn admin_execute_auto_claim_works() {
         )
         .unwrap();
 
+    // Query active users again
     let updated_query_resp: ActiveUsersResponse = wasm
         .query(
             contract_address.as_str(),
@@ -132,11 +133,13 @@ fn admin_execute_auto_claim_works() {
         )
         .unwrap();
 
-    for (addr, _) in users.clone() {
+    for (addr, _) in &users {
+        let user_balance = updated_query_resp.users.iter().find(|(user_addr, _)| user_addr == addr);
         assert!(
-            updated_query_resp.users.contains(&addr.to_string()),
-            "Expected user {} to be present in the active users list after auto claim",
-            addr
+            user_balance.is_some() && user_balance.unwrap().1.is_zero(),
+            "Expected user {} to have a balance of 0 after auto claim, but found {}",
+            addr,
+            user_balance.map(|(_, balance)| balance).unwrap_or(&Uint256::zero())
         );
     }
 }

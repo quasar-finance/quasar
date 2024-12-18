@@ -145,7 +145,7 @@ pub fn execute_auto_claim(
     mut deps: DepsMut,
     env: &Env,
     info: MessageInfo,
-    users: Vec<(Addr, Uint256)>,
+    users: Vec<(String, Uint256)>,
 ) -> Result<Response, ContractError> {
     assert_admin(deps.storage, &info.sender)?;
     let mut res = Response::new();
@@ -155,7 +155,7 @@ pub fn execute_auto_claim(
         deps.api.addr_validate(user_data.0.as_str())?;
 
         let user_info = MessageInfo {
-            sender: user_data.0.clone(),
+            sender: Addr::unchecked(user_data.0.clone()),
             funds: vec![],
         };
         let withdraw_response = execute_withdraw(
