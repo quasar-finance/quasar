@@ -54,18 +54,18 @@ fn admin_execute_auto_claim_works() {
         fixture_dex_router(PERFORMANCE_FEE_DEFAULT);
     let wasm = Wasm::new(&app);
 
-    for _i in 1..10 {
-        let accounts = app
-            .init_accounts(
-                &[
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-                    Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
-                ],
-                2,
-            )
-            .unwrap();
+    let accounts = app
+    .init_accounts(
+        &[
+            Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+            Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+            Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
+        ],
+        10,
+    )
+    .unwrap();
 
+    for i in 0..10 {
         let amount_base = Uint128::new(10000);
         let amount_quote = Uint128::new(10000);
         let mut deposit_coins = vec![];
@@ -81,11 +81,11 @@ fn admin_execute_auto_claim_works() {
                 &ExecuteMsg::AnyDeposit {
                     amount: amount_base,
                     asset: DENOM_BASE.to_string(),
-                    recipient: Some(accounts[0].address()),
+                    recipient: Some(accounts[i].address()),
                     max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                 },
                 &deposit_coins,
-                &accounts[0],
+                &accounts[i],
             )
             .unwrap();
     }
