@@ -7,7 +7,7 @@ use crate::state::{
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128};
+use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128, Uint256};
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
 
@@ -71,6 +71,12 @@ pub struct VerifyTickCacheResponse {
 #[cw_serde]
 pub struct DexRouterResponse {
     pub dex_router: String,
+}
+
+#[cw_serde]
+pub struct ActiveUsersResponse {
+    pub users: Vec<(String, Uint256)>, // List of user addresses only
+    pub next_token: Option<String>, // Token for the next page
 }
 
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
@@ -172,6 +178,44 @@ pub fn query_user_balance(
     Ok(UserSharesBalanceResponse { balance })
 }
 
+pub fn query_active_users(
+    deps: Deps,
+    next_token: Option<String>,
+    limit: u64,
+) -> Result<ActiveUsersResponse, ContractError> {
+    let mut users: Vec<(String, Uint256)> = Vec::new();
+    let mut start_index = 0;
+
+    if let Some(token) = next_token {
+        start_index = token
+            .parse::<usize>()
+            .map_err(|_| ContractError::InvalidToken {})?;
+    }
+
+    for result in SHARES.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
+        let (addr, balance) = result.map_err(ContractError::Std)?;
+
+        if start_index > 0 {
+            start_index -= 1;
+            continue;
+        }
+
+        users.push((addr.to_string(), Uint256::from(balance)));
+
+        if users.len() as u64 >= limit {
+            break;
+        }
+    }
+
+    let next_token = if users.len() as u64 == limit {
+        Some((start_index + limit as usize).to_string())
+    } else {
+        None
+    };
+
+    Ok(ActiveUsersResponse { users, next_token })
+}
+
 /// Vault base assets is the vault assets EXCLUDING any rewards claimable by strategist or users
 pub fn query_total_assets(deps: Deps, env: Env) -> Result<TotalAssetsResponse, ContractError> {
     let position = get_position(deps.storage, &deps.querier)?;
@@ -221,4 +265,46 @@ pub fn query_total_vault_token_supply(
         .parse::<u128>()?
         .into();
     Ok(TotalVaultTokenSupplyResponse { total })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::{testing::mock_dependencies, Addr, Uint128};
+
+    #[test]
+    fn test_query_active_users() {
+        let mut deps = mock_dependencies();
+
+        // Setup mock data in the SHARES map
+        let user1 = Addr::unchecked("user1");
+        let user2 = Addr::unchecked("user2");
+        let user3 = Addr::unchecked("user3");
+
+        // Insert mock user balances into SHARES
+        SHARES
+            .save(deps.as_mut().storage, user1, &Uint128::new(100))
+            .unwrap();
+        SHARES
+            .save(deps.as_mut().storage, user2, &Uint128::new(200))
+            .unwrap();
+        SHARES
+            .save(deps.as_mut().storage, user3, &Uint128::new(300))
+            .unwrap();
+
+        // Test without next_token and limit of 2
+        let res = query_active_users(deps.as_ref(), None, 2).unwrap();
+        assert_eq!(res.users, vec![
+            (String::from("user1"), Uint256::from(100u128)),
+            (String::from("user2"), Uint256::from(200u128)),
+        ]);
+        assert_eq!(res.next_token, Some("2".to_string())); // Expecting next_token for pagination
+
+        // Test with next_token to get the next user
+        let res = query_active_users(deps.as_ref(), Some("2".to_string()), 2).unwrap();
+        assert_eq!(res.users, vec![
+            (String::from("user3"), Uint256::from(300u128)),
+        ]);
+        assert_eq!(res.next_token, None); // No more users, so next_token should be None
+    }
 }
