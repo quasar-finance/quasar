@@ -7,9 +7,10 @@ use crate::state::{
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Coin, Decimal, Deps, Env, Uint128, Uint256};
+use cosmwasm_std::{coin, Addr, Coin, Decimal, Deps, Env, Uint128, Uint256};
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
+use cw_storage_plus::Bound;
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -180,35 +181,52 @@ pub fn query_user_balance(
 
 pub fn query_active_users(
     deps: Deps,
-    next_token: Option<String>,
+    start_bound_exclusive: Option<String>,
     limit: u64,
 ) -> Result<ActiveUsersResponse, ContractError> {
     let mut users: Vec<(String, Uint256)> = Vec::new();
-    let mut start_index = 0;
+    let mut count = 0;
+    let mut last_key: Option<String> = None;
 
-    if let Some(token) = next_token {
-        start_index = token
-            .parse::<usize>()
-            .map_err(|_| ContractError::InvalidToken {})?;
+    // Determine the start and end bounds
+    let start_key = start_bound_exclusive.clone().map(|s| Bound::inclusive(Addr::unchecked(s)));
+
+    // If no bounds are provided, start from the beginning
+    if start_bound_exclusive.clone().is_none(){
+        for result in SHARES.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
+            let (addr, balance) = result.map_err(ContractError::Std)?;
+
+            users.push((addr.to_string(), Uint256::from(balance)));
+
+            count += 1;
+            last_key = Some(addr.to_string());
+
+            if count as u64 >= limit {
+                break;
+            }
+        }
+    } else {
+        count = -1;
+        // If only start_bound is provided
+        for result in SHARES.range(deps.storage, start_key, None, cosmwasm_std::Order::Ascending) {
+            let (addr, balance) = result.map_err(ContractError::Std)?;
+
+            if count>=0 {
+                users.push((addr.to_string(), Uint256::from(balance)));
+            }
+
+            count += 1;
+            last_key = Some(addr.to_string());
+
+        
+            if count as u64 >= limit {
+                break;
+            }
+        }
     }
 
-    for result in SHARES.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-        let (addr, balance) = result.map_err(ContractError::Std)?;
-
-        if start_index > 0 {
-            start_index -= 1;
-            continue;
-        }
-
-        users.push((addr.to_string(), Uint256::from(balance)));
-
-        if users.len() as u64 >= limit {
-            break;
-        }
-    }
-
-    let next_token = if users.len() as u64 == limit {
-        Some((start_index + limit as usize).to_string())
+    let next_token = if count as u64 == limit {
+        last_key
     } else {
         None
     };
@@ -273,38 +291,40 @@ mod tests {
     use cosmwasm_std::{testing::mock_dependencies, Addr, Uint128};
 
     #[test]
-    fn test_query_active_users() {
+    fn test_query_active_users_with_conditions() {
         let mut deps = mock_dependencies();
 
-        // Setup mock data in the SHARES map
-        let user1 = Addr::unchecked("user1");
-        let user2 = Addr::unchecked("user2");
-        let user3 = Addr::unchecked("user3");
+        let users: Vec<Addr> = (1..10)
+            .map(|i| Addr::unchecked(format!("user{}", i)))
+            .collect();
 
-        // Insert mock user balances into SHARES
-        SHARES
-            .save(deps.as_mut().storage, user1, &Uint128::new(100))
-            .unwrap();
-        SHARES
-            .save(deps.as_mut().storage, user2, &Uint128::new(200))
-            .unwrap();
-        SHARES
-            .save(deps.as_mut().storage, user3, &Uint128::new(300))
-            .unwrap();
+        for (i, user) in users.iter().enumerate() {
+            SHARES
+                .save(deps.as_mut().storage, user.clone(), &Uint128::new(((i + 1) * 100) as u128)) // Assigning balances
+                .unwrap();
+        }
 
-        // Test without next_token and limit of 2
-        let res = query_active_users(deps.as_ref(), None, 2).unwrap();
-        assert_eq!(res.users, vec![
-            (String::from("user1"), Uint256::from(100u128)),
-            (String::from("user2"), Uint256::from(200u128)),
-        ]);
-        assert_eq!(res.next_token, Some("2".to_string())); // Expecting next_token for pagination
+        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), None, 5).unwrap();
+        assert_eq!(res.users.len(), 5);
+        assert_eq!(res.users[0].0, "user1");
+        assert_eq!(res.users[1].0, "user2");
+        assert_eq!(res.users[2].0, "user3");
+        assert_eq!(res.users[3].0, "user4");
+        assert_eq!(res.users[4].0, "user5");
+        assert_eq!(res.next_token, Some("user5".to_string())); // Next token should indicate the next start index
 
-        // Test with next_token to get the next user
-        let res = query_active_users(deps.as_ref(), Some("2".to_string()), 2).unwrap();
-        assert_eq!(res.users, vec![
-            (String::from("user3"), Uint256::from(300u128)),
-        ]);
+        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), res.next_token, 5).unwrap();
+        assert_eq!(res.users.len(), 4);
+        assert_eq!(res.users[0].0, "user6");
+        assert_eq!(res.users[1].0, "user7");
+        assert_eq!(res.users[2].0, "user8");
+        assert_eq!(res.users[3].0, "user9");
         assert_eq!(res.next_token, None); // No more users, so next_token should be None
+
+        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), Some("user3".to_string()), 2).unwrap();
+        assert_eq!(res.users.len(), 2);
+        assert_eq!(res.users[0].0, "user4");
+        assert_eq!(res.users[1].0, "user5");
+        assert_eq!(res.next_token, Some("user5".to_string())); // Still more users, so next_token should be user 5
     }
 }

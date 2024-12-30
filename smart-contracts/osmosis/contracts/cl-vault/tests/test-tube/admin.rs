@@ -96,7 +96,7 @@ fn admin_execute_auto_claim_works() {
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::ActiveUsers {
                 limit: 100,
-                next_token: None,
+                start_bound_exclusive: None,
             }),
         )
         .unwrap();
@@ -128,7 +128,7 @@ fn admin_execute_auto_claim_works() {
             contract_address.as_str(),
             &QueryMsg::VaultExtension(ExtensionQueryMsg::ActiveUsers {
                 limit: 10,
-                next_token: None,
+                start_bound_exclusive: None,
             }),
         )
         .unwrap();

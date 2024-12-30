@@ -171,8 +171,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 }
                 ClQueryMsg::VerifyTickCache => Ok(to_json_binary(&query_verify_tick_cache(deps)?)?),
             },
-            ExtensionQueryMsg::ActiveUsers { next_token, limit } => Ok(to_json_binary(
-                &query_active_users(deps, next_token, limit)?,
+            ExtensionQueryMsg::ActiveUsers { start_bound_exclusive, limit } => Ok(to_json_binary(
+                &query_active_users(deps, start_bound_exclusive, limit)?,
             )?),
         },
     }

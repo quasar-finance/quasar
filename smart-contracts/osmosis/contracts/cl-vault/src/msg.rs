@@ -106,8 +106,7 @@ pub enum ExtensionQueryMsg {
     DexRouter {},
     /// Query active users
     ActiveUsers {
-        /// Optional token for pagination
-        next_token: Option<String>,
+        start_bound_exclusive: Option<String>,
         /// Limit for the search
         limit: u64,
     },
