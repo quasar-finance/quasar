@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint128, Uint256};
+use cosmwasm_std::{Addr, Decimal, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use quasar_types::cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
@@ -104,8 +104,8 @@ pub enum ExtensionQueryMsg {
     ConcentratedLiquidity(ClQueryMsg),
     /// Query the DexRouter address
     DexRouter {},
-    /// Query active users
-    ActiveUsers {
+    /// Query users
+    Users {
         start_bound_exclusive: Option<String>,
         /// Limit for the search
         limit: u64,

@@ -7,7 +7,7 @@ use crate::state::{
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Addr, Coin, Decimal, Deps, Env, StdError, Uint128, Uint256};
+use cosmwasm_std::{coin, Addr, Coin, Decimal, Deps, Env, StdError, Uint128};
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
 use cw_storage_plus::Bound;

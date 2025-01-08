@@ -8,6 +8,8 @@ version = "0.1.0"
 default = ["lockup", "force-unlock"]
 lockup = []
 force-unlock = []
+keeper = []
+cw4626 = []
 
 [dependencies]
 cosmwasm-std = { workspace = true }

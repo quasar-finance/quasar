@@ -3,7 +3,7 @@ use crate::math::tick::build_tick_exp_cache;
 use crate::state::{Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG};
 use crate::vault::withdraw::execute_withdraw;
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128, Uint256};
+use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
