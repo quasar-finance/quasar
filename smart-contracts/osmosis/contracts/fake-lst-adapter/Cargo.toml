@@ -22,6 +22,7 @@ required-features = ["protobuf", "protobuf-codegen"]
 [features]
 default = ["export"]
 export = []
+library = []
 
 [dependencies]
 cosmwasm-std = { workspace = true }

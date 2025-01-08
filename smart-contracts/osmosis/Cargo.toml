@@ -2,6 +2,7 @@
 resolver = "2"
 
 members = ["contracts/*", "packages/*"]
+exclude = ["contracts/lst-adapter-osmosis", "conrtacts/fake_lst_adapter", "contracts/lst-dex-adapter-osmosis"]
 
 [workspace.dependencies]
 # CosmWasm
