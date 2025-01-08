@@ -2,7 +2,7 @@ use crate::setup::{
     fixture_default, fixture_dex_router, ACCOUNTS_INIT_BALANCE, DENOM_BASE,
     DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
-use cosmwasm_std::{Coin, Decimal, Uint128, Uint256};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256};
 use cl_vault::{
     msg::{
         AdminExtensionExecuteMsg, ClQueryMsg, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg,
@@ -104,7 +104,7 @@ fn admin_execute_auto_claim_works() {
     assert!(!query_resp.users.is_empty(), "Expected users to be present");
 
     // Prepare users for auto claim
-    let users: Vec<(String, Uint256)> = query_resp
+    let users: Vec<(Addr, Uint128)> = query_resp
         .users
         .iter()
         .map(|(addr, balance)| (addr.clone(), *balance)) // Keep as (String, Uint256)
@@ -115,7 +115,7 @@ fn admin_execute_auto_claim_works() {
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Admin(
-                AdminExtensionExecuteMsg::AutoWithdraw { users: users.clone() },
+                AdminExtensionExecuteMsg::AutoWithdraw { users: users.clone().into_iter().map(|(u, a)| (u.to_string(), a)).collect() },
             )),
             &[],
             &admin,
@@ -139,7 +139,7 @@ fn admin_execute_auto_claim_works() {
             user_balance.is_some() && user_balance.unwrap().1.is_zero(),
             "Expected user {} to have a balance of 0 after auto claim, but found {}",
             addr,
-            user_balance.map(|(_, balance)| balance).unwrap_or(&Uint256::zero())
+            user_balance.map(|(_, balance)| balance).unwrap_or(&Uint128::zero())
         );
     }
 }

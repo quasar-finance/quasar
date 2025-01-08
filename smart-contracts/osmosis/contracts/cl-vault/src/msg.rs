@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal, Uint256};
+use cosmwasm_std::{Addr, Decimal, Uint128, Uint256};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use quasar_types::cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
@@ -57,7 +57,7 @@ pub enum AdminExtensionExecuteMsg {
     /// Build tick exponent cache
     BuildTickCache {},
     /// Auto claim endpoint
-    AutoWithdraw { users: Vec<(String, Uint256)> },
+    AutoWithdraw { users: Vec<(String, Uint128)> },
 }
 
 #[cw_serde]

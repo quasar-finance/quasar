@@ -3,7 +3,7 @@ use crate::math::tick::build_tick_exp_cache;
 use crate::state::{Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG};
 use crate::vault::withdraw::execute_withdraw;
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint256};
+use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128, Uint256};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
@@ -145,7 +145,7 @@ pub fn execute_auto_claim(
     mut deps: DepsMut,
     env: &Env,
     info: MessageInfo,
-    users: Vec<(String, Uint256)>,
+    users: Vec<(String, Uint128)>,
 ) -> Result<Response, ContractError> {
     assert_admin(deps.storage, &info.sender)?;
     let mut res = Response::new();
@@ -163,7 +163,7 @@ pub fn execute_auto_claim(
             env,
             user_info,
             Some(user_data.0.to_string()),
-            user_data.1,
+            user_data.1.into(),
         )?;
 
         let withdraw_messages = withdraw_response.messages.iter().map(|sm| sm.msg.clone());

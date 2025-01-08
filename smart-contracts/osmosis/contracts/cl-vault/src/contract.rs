@@ -172,7 +172,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 ClQueryMsg::VerifyTickCache => Ok(to_json_binary(&query_verify_tick_cache(deps)?)?),
             },
             ExtensionQueryMsg::ActiveUsers { start_bound_exclusive, limit } => Ok(to_json_binary(
-                &query_active_users(deps, start_bound_exclusive, limit)?,
+                &query_active_users(deps, start_bound_exclusive.map(|s| deps.api.addr_validate(s.as_str()).unwrap()), limit)?,
             )?),
         },
     }

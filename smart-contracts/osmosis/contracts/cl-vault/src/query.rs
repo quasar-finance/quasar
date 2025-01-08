@@ -7,7 +7,7 @@ use crate::state::{
 use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Addr, Coin, Decimal, Deps, Env, Uint128, Uint256};
+use cosmwasm_std::{coin, Addr, Coin, Decimal, Deps, Env, StdError, Uint128, Uint256};
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
 use cw_storage_plus::Bound;
@@ -76,8 +76,8 @@ pub struct DexRouterResponse {
 
 #[cw_serde]
 pub struct ActiveUsersResponse {
-    pub users: Vec<(String, Uint256)>, // List of user addresses only
-    pub next_token: Option<String>, // Token for the next page
+    pub users: Vec<(Addr, Uint128)>, // List of user addresses only
+    pub next_token: Option<Addr>, // Token for the next page
 }
 
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
@@ -181,52 +181,16 @@ pub fn query_user_balance(
 
 pub fn query_active_users(
     deps: Deps,
-    start_bound_exclusive: Option<String>,
+    start_bound_exclusive: Option<Addr>,
     limit: u64,
 ) -> Result<ActiveUsersResponse, ContractError> {
-    let mut users: Vec<(String, Uint256)> = Vec::new();
-    let mut count = 0;
-    let mut last_key: Option<String> = None;
+    let start_key = start_bound_exclusive.clone().map(|s| Bound::exclusive(Addr::unchecked(s)));
 
-    // Determine the start and end bounds
-    let start_key = start_bound_exclusive.clone().map(|s| Bound::inclusive(Addr::unchecked(s)));
+    let result_users: Result<Vec<(Addr, Uint128)>, StdError> = SHARES.range(deps.storage, start_key, None, cosmwasm_std::Order::Ascending).take(limit as usize).collect();
+    let users = result_users?;
 
-    // If no bounds are provided, start from the beginning
-    if start_bound_exclusive.clone().is_none(){
-        for result in SHARES.range(deps.storage, None, None, cosmwasm_std::Order::Ascending) {
-            let (addr, balance) = result.map_err(ContractError::Std)?;
-
-            users.push((addr.to_string(), Uint256::from(balance)));
-
-            count += 1;
-            last_key = Some(addr.to_string());
-
-            if count as u64 >= limit {
-                break;
-            }
-        }
-    } else {
-        count = -1;
-        // If only start_bound is provided
-        for result in SHARES.range(deps.storage, start_key, None, cosmwasm_std::Order::Ascending) {
-            let (addr, balance) = result.map_err(ContractError::Std)?;
-
-            if count>=0 {
-                users.push((addr.to_string(), Uint256::from(balance)));
-            }
-
-            count += 1;
-            last_key = Some(addr.to_string());
-
-        
-            if count as u64 >= limit {
-                break;
-            }
-        }
-    }
-
-    let next_token = if count as u64 == limit {
-        last_key
+    let next_token = if users.len() as u64 == limit {
+        Some(users.last().unwrap().0.clone())
     } else {
         None
     };
@@ -311,7 +275,7 @@ mod tests {
         assert_eq!(res.users[2].0, "user3");
         assert_eq!(res.users[3].0, "user4");
         assert_eq!(res.users[4].0, "user5");
-        assert_eq!(res.next_token, Some("user5".to_string())); // Next token should indicate the next start index
+        assert_eq!(res.next_token, Some(Addr::unchecked("user5"))); // Next token should indicate the next start index
 
         let res: ActiveUsersResponse = query_active_users(deps.as_ref(), res.next_token, 5).unwrap();
         assert_eq!(res.users.len(), 4);
@@ -321,10 +285,10 @@ mod tests {
         assert_eq!(res.users[3].0, "user9");
         assert_eq!(res.next_token, None); // No more users, so next_token should be None
 
-        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), Some("user3".to_string()), 2).unwrap();
+        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), Some(Addr::unchecked("user3")), 2).unwrap();
         assert_eq!(res.users.len(), 2);
         assert_eq!(res.users[0].0, "user4");
         assert_eq!(res.users[1].0, "user5");
-        assert_eq!(res.next_token, Some("user5".to_string())); // Still more users, so next_token should be user 5
+        assert_eq!(res.next_token, Some(Addr::unchecked("user5"))); // Still more users, so next_token should be user 5
     }
 }
