@@ -32,8 +32,9 @@ require (
 	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/bits-and-blooms/bitset v1.10.0 // indirect
-	github.com/cockroachdb/pebble v1.1.0 // indirect
+	github.com/bits-and-blooms/bitset v1.13.0 // indirect
+	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect
+	github.com/cockroachdb/pebble v1.1.2 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/cosmos/gogoproto v1.7.0 // indirect
 	github.com/cosmos/ibc-go/modules/capability v1.0.1 // indirect
 	github.com/cosmos/interchain-security/v5 v5.0.0-alpha1.0.20240424193412-7cd900ad2a74 // indirect
+	github.com/crate-crypto/go-ipa v0.0.0-20240223125850-b1e8a79f509c // indirect
 	github.com/crate-crypto/go-kzg-4844 v1.0.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
@@ -48,6 +50,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/emicklei/dot v1.6.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
+	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -73,7 +76,7 @@ require (
 	github.com/shamaton/msgpack/v2 v2.2.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
+	github.com/supranational/blst v0.3.13 // indirect
 	github.com/tidwall/gjson v1.17.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
@@ -122,7 +125,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
-	github.com/cockroachdb/errors v1.11.1 // indirect
+	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cometbft/cometbft v0.38.11 // indirect
@@ -147,7 +150,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/ethereum/go-ethereum v1.14.5 // indirect
+	github.com/ethereum/go-ethereum v1.14.13 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
@@ -185,7 +188,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
-	github.com/holiman/uint256 v1.2.4 // indirect
+	github.com/holiman/uint256 v1.3.1 // indirect
 	github.com/huandu/skiplist v1.2.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
