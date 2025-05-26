@@ -1,8 +1,7 @@
 use crate::setup::{
-    fixture_default, fixture_dex_router, ACCOUNTS_INIT_BALANCE, DENOM_BASE,
-    DENOM_QUOTE, MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
+    fixture_default, fixture_dex_router, ACCOUNTS_INIT_BALANCE, DENOM_BASE, DENOM_QUOTE,
+    MAX_SLIPPAGE_HIGH, PERFORMANCE_FEE_DEFAULT,
 };
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256};
 use cl_vault::{
     msg::{
         AdminExtensionExecuteMsg, ClQueryMsg, ExecuteMsg, ExtensionExecuteMsg, ExtensionQueryMsg,
@@ -10,6 +9,7 @@ use cl_vault::{
     },
     query::{ActiveUsersResponse, VerifyTickCacheResponse},
 };
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256};
 use osmosis_test_tube::{Account, Module, Wasm};
 
 #[test]
@@ -55,15 +55,15 @@ fn admin_execute_auto_claim_works() {
     let wasm = Wasm::new(&app);
 
     let accounts = app
-    .init_accounts(
-        &[
-            Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
-            Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
-            Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
-        ],
-        10,
-    )
-    .unwrap();
+        .init_accounts(
+            &[
+                Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_BASE),
+                Coin::new(ACCOUNTS_INIT_BALANCE, DENOM_QUOTE),
+                Coin::new(ACCOUNTS_INIT_BALANCE, "uosmo"),
+            ],
+            10,
+        )
+        .unwrap();
 
     for i in 0..10 {
         let amount_base = Uint128::new(10000);
@@ -100,7 +100,7 @@ fn admin_execute_auto_claim_works() {
             }),
         )
         .unwrap();
-    
+
     assert!(!query_resp.users.is_empty(), "Expected users to be present");
 
     // Prepare users for auto claim
@@ -115,7 +115,13 @@ fn admin_execute_auto_claim_works() {
         .execute(
             contract_address.as_str(),
             &ExecuteMsg::VaultExtension(ExtensionExecuteMsg::Admin(
-                AdminExtensionExecuteMsg::AutoWithdraw { users: users.clone().into_iter().map(|(u, a)| (u.to_string(), a)).collect() },
+                AdminExtensionExecuteMsg::AutoWithdraw {
+                    users: users
+                        .clone()
+                        .into_iter()
+                        .map(|(u, a)| (u.to_string(), a))
+                        .collect(),
+                },
             )),
             &[],
             &admin,
@@ -134,12 +140,17 @@ fn admin_execute_auto_claim_works() {
         .unwrap();
 
     for (addr, _) in &users {
-        let user_balance = updated_query_resp.users.iter().find(|(user_addr, _)| user_addr == addr);
+        let user_balance = updated_query_resp
+            .users
+            .iter()
+            .find(|(user_addr, _)| user_addr == addr);
         assert!(
             user_balance.is_some() && user_balance.unwrap().1.is_zero(),
             "Expected user {} to have a balance of 0 after auto claim, but found {}",
             addr,
-            user_balance.map(|(_, balance)| balance).unwrap_or(&Uint128::zero())
+            user_balance
+                .map(|(_, balance)| balance)
+                .unwrap_or(&Uint128::zero())
         );
     }
 }

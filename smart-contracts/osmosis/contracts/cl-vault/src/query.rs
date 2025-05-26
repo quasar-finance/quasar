@@ -8,9 +8,9 @@ use crate::vault::concentrated_liquidity::get_position;
 use crate::ContractError;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{coin, Addr, Coin, Decimal, Deps, Env, StdError, Uint128};
+use cw_storage_plus::Bound;
 use osmosis_std::types::cosmos::bank::v1beta1::BankQuerier;
 use quasar_types::cw_vault_multi_standard::VaultInfoResponse;
-use cw_storage_plus::Bound;
 
 #[cw_serde]
 pub struct MetadataResponse {
@@ -77,7 +77,7 @@ pub struct DexRouterResponse {
 #[cw_serde]
 pub struct ActiveUsersResponse {
     pub users: Vec<(Addr, Uint128)>, // List of user addresses only
-    pub next_token: Option<Addr>, // Token for the next page
+    pub next_token: Option<Addr>,    // Token for the next page
 }
 
 pub fn query_verify_tick_cache(deps: Deps) -> Result<VerifyTickCacheResponse, ContractError> {
@@ -184,9 +184,19 @@ pub fn query_active_users(
     start_bound_exclusive: Option<Addr>,
     limit: u64,
 ) -> Result<ActiveUsersResponse, ContractError> {
-    let start_key = start_bound_exclusive.clone().map(|s| Bound::exclusive(Addr::unchecked(s)));
+    let start_key = start_bound_exclusive
+        .clone()
+        .map(|s| Bound::exclusive(Addr::unchecked(s)));
 
-    let result_users: Result<Vec<(Addr, Uint128)>, StdError> = SHARES.range(deps.storage, start_key, None, cosmwasm_std::Order::Ascending).take(limit as usize).collect();
+    let result_users: Result<Vec<(Addr, Uint128)>, StdError> = SHARES
+        .range(
+            deps.storage,
+            start_key,
+            None,
+            cosmwasm_std::Order::Ascending,
+        )
+        .take(limit as usize)
+        .collect();
     let users = result_users?;
 
     let next_token = if users.len() as u64 == limit {
@@ -264,7 +274,11 @@ mod tests {
 
         for (i, user) in users.iter().enumerate() {
             SHARES
-                .save(deps.as_mut().storage, user.clone(), &Uint128::new(((i + 1) * 100) as u128)) // Assigning balances
+                .save(
+                    deps.as_mut().storage,
+                    user.clone(),
+                    &Uint128::new(((i + 1) * 100) as u128),
+                ) // Assigning balances
                 .unwrap();
         }
 
@@ -277,7 +291,8 @@ mod tests {
         assert_eq!(res.users[4].0, "user5");
         assert_eq!(res.next_token, Some(Addr::unchecked("user5"))); // Next token should indicate the next start index
 
-        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), res.next_token, 5).unwrap();
+        let res: ActiveUsersResponse =
+            query_active_users(deps.as_ref(), res.next_token, 5).unwrap();
         assert_eq!(res.users.len(), 4);
         assert_eq!(res.users[0].0, "user6");
         assert_eq!(res.users[1].0, "user7");
@@ -285,7 +300,8 @@ mod tests {
         assert_eq!(res.users[3].0, "user9");
         assert_eq!(res.next_token, None); // No more users, so next_token should be None
 
-        let res: ActiveUsersResponse = query_active_users(deps.as_ref(), Some(Addr::unchecked("user3")), 2).unwrap();
+        let res: ActiveUsersResponse =
+            query_active_users(deps.as_ref(), Some(Addr::unchecked("user3")), 2).unwrap();
         assert_eq!(res.users.len(), 2);
         assert_eq!(res.users[0].0, "user4");
         assert_eq!(res.users[1].0, "user5");
