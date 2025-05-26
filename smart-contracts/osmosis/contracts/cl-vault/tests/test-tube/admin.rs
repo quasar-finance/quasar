@@ -9,7 +9,7 @@ use cl_vault::{
     },
     query::{ActiveUsersResponse, VerifyTickCacheResponse},
 };
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use osmosis_test_tube::{Account, Module, Wasm};
 
 #[test]
@@ -94,7 +94,7 @@ fn admin_execute_auto_claim_works() {
     let query_resp: ActiveUsersResponse = wasm
         .query(
             contract_address.as_str(),
-            &QueryMsg::VaultExtension(ExtensionQueryMsg::ActiveUsers {
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::Users {
                 limit: 100,
                 start_bound_exclusive: None,
             }),
@@ -132,7 +132,7 @@ fn admin_execute_auto_claim_works() {
     let updated_query_resp: ActiveUsersResponse = wasm
         .query(
             contract_address.as_str(),
-            &QueryMsg::VaultExtension(ExtensionQueryMsg::ActiveUsers {
+            &QueryMsg::VaultExtension(ExtensionQueryMsg::Users {
                 limit: 10,
                 start_bound_exclusive: None,
             }),
