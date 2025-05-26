@@ -65,7 +65,7 @@ fn admin_execute_auto_claim_works() {
         )
         .unwrap();
 
-    for i in 0..10 {
+    for account in accounts.iter().take(10) {
         let amount_base = Uint128::new(10000);
         let amount_quote = Uint128::new(10000);
         let mut deposit_coins = vec![];
@@ -81,11 +81,11 @@ fn admin_execute_auto_claim_works() {
                 &ExecuteMsg::AnyDeposit {
                     amount: amount_base,
                     asset: DENOM_BASE.to_string(),
-                    recipient: Some(accounts[i].address()),
+                    recipient: Some(account.address()),
                     max_slippage: Decimal::bps(MAX_SLIPPAGE_HIGH),
                 },
                 &deposit_coins,
-                &accounts[i],
+                account,
             )
             .unwrap();
     }
