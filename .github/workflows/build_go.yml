@@ -31,7 +31,7 @@ jobs:
         targetos: [ linux ]
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Get git diff
         uses: technote-space/get-diff-action@v6.1.2
         with:
@@ -42,7 +42,7 @@ jobs:
             Makefile
             .github/workflows/build.yml
       - name: Setup Golang
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.20.7
         env:
@@ -54,7 +54,7 @@ jobs:
       - name: Build quasard
         if: env.GIT_DIFF
         run: make build-reproducible-${{ matrix.arch }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.GIT_DIFF
         with:
           name: quasard-${{ matrix.targetos }}-${{ matrix.arch }}
