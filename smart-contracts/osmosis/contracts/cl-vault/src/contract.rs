@@ -1,5 +1,4 @@
 use crate::error::ContractError;
-use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
@@ -15,7 +14,6 @@ use crate::query::{
     query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::state::{VaultConfig, VAULT_CONFIG};
 use crate::vault::{
     admin::execute_admin,
     autocompound::{execute_autocompound, handle_autocompound_reply, handle_merge_reply},
@@ -35,14 +33,10 @@ use crate::vault::{
     swap::execute_swap_non_vault_funds,
     withdraw::{execute_withdraw, handle_withdraw_user_reply},
 };
-use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
-use cw_storage_plus::{Item, Map};
 use quasar_types::cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -206,7 +200,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let previous_version =
         cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let response = Response::new()
@@ -226,21 +220,17 @@ mod tests {
     fn test_migrate() {
         let env = mock_env();
         let mut deps = mock_dependencies();
-        
+
         // Set an older version
         assert!(set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.3.0").is_ok());
 
         // Perform migration
-        let result = migrate(
-            deps.as_mut(),
-            env,
-            MigrateMsg {},
-        );
-        
+        let result = migrate(deps.as_mut(), env, MigrateMsg {});
+
         // Assert migration was successful
         assert!(result.is_ok());
         let response = result.unwrap();
-        
+
         // Check response attributes
         assert_eq!(response.attributes.len(), 3);
         assert_eq!(response.attributes[0].key, "migrate");
@@ -249,7 +239,7 @@ mod tests {
         assert_eq!(response.attributes[1].value, "0.3.0");
         assert_eq!(response.attributes[2].key, "new version");
         assert_eq!(response.attributes[2].value, CONTRACT_VERSION);
-        
+
         // Verify contract version was updated
         let version = cw2::get_contract_version(&deps.storage).unwrap();
         assert_eq!(version.contract, CONTRACT_NAME);
