@@ -167,7 +167,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub swap_admin: Addr,
-    pub twap_window_seconds: u64,
-}
+pub struct MigrateMsg {}

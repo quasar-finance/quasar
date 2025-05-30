@@ -209,51 +209,6 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
     let previous_version =
         cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    let dex_router_item: Item<Addr> = Item::new("dex_router");
-    dex_router_item.remove(deps.storage);
-    // VaultConfig
-    #[cw_serde]
-    struct OldVaultConfig {
-        pub performance_fee: Decimal,
-        pub treasury: Addr,
-        pub swap_max_slippage: Decimal,
-        pub dex_router: Addr,
-    }
-    const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
-    let old_vault_config: OldVaultConfig = OLD_VAULT_CONFIG.load(deps.storage)?;
-    OLD_VAULT_CONFIG.remove(deps.storage);
-    VAULT_CONFIG.save(
-        deps.storage,
-        &VaultConfig {
-            performance_fee: old_vault_config.performance_fee,
-            treasury: old_vault_config.treasury,
-            swap_max_slippage: old_vault_config.swap_max_slippage,
-            dex_router: old_vault_config.dex_router,
-            swap_admin: msg.swap_admin,
-            twap_window_seconds: msg.twap_window_seconds,
-        },
-    )?;
-
-    // MigrationStatus
-    #[cw_serde]
-    pub enum MigrationStatus {
-        Open,
-        Closed,
-    }
-    pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
-    let migration_status = MIGRATION_STATUS.load(deps.storage)?;
-    // we want the v1.0.8-skn migration_step to be occurred completely here.
-    if migration_status == MigrationStatus::Open {
-        return Err(ContractError::ParseError {
-            msg: "Migration status should be closed.".to_string(),
-        });
-    }
-    MIGRATION_STATUS.remove(deps.storage);
-
-    // UserRewards
-    pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-    USER_REWARDS.clear(deps.storage);
-
     let response = Response::new()
         .add_attribute("migrate", "successful")
         .add_attribute("previous version", previous_version.to_string())
@@ -271,74 +226,33 @@ mod tests {
     fn test_migrate() {
         let env = mock_env();
         let mut deps = mock_dependencies();
+        
+        // Set an older version
         assert!(set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.3.0").is_ok());
 
-        // VaultConfig mocking
-        #[cw_serde]
-        struct OldVaultConfig {
-            pub performance_fee: Decimal,
-            pub treasury: Addr,
-            pub swap_max_slippage: Decimal,
-            pub dex_router: Addr,
-        }
-        const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::percent(1),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::percent(1),
-                    dex_router: Addr::unchecked("dex_router"),
-                },
-            )
-            .unwrap();
-
-        // MigrationStatus mocking
-        #[cw_serde]
-        pub enum MigrationStatus {
-            Open,
-            Closed,
-        }
-        pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
-        MIGRATION_STATUS
-            .save(deps.as_mut().storage, &MigrationStatus::Closed)
-            .unwrap();
-
-        // UserRewards mocking
-        pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-        USER_REWARDS
-            .save(
-                deps.as_mut().storage,
-                Addr::unchecked("user"),
-                &CoinList::new(),
-            )
-            .unwrap();
-
-        // Migrate and assert new states
-        migrate(
+        // Perform migration
+        let result = migrate(
             deps.as_mut(),
             env,
-            MigrateMsg {
-                swap_admin: Addr::unchecked("swap_admin"),
-                twap_window_seconds: 24u64,
-            },
-        )
-        .unwrap();
-
-        let vault_config: VaultConfig = VAULT_CONFIG.load(&deps.storage).unwrap();
-        assert_eq!(vault_config.performance_fee, Decimal::percent(1));
-        assert_eq!(vault_config.treasury, Addr::unchecked("treasury"));
-        assert_eq!(vault_config.swap_max_slippage, Decimal::percent(1));
-        assert_eq!(vault_config.dex_router, Addr::unchecked("dex_router"));
-        assert_eq!(vault_config.swap_admin, Addr::unchecked("swap_admin"));
-        assert!(matches!(OLD_VAULT_CONFIG.may_load(&deps.storage), Ok(None)));
-
-        assert!(matches!(MIGRATION_STATUS.may_load(&deps.storage), Ok(None)));
-
-        assert!(matches!(
-            USER_REWARDS.may_load(&deps.storage, Addr::unchecked("user")),
-            Ok(None)
-        ));
+            MigrateMsg {},
+        );
+        
+        // Assert migration was successful
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        
+        // Check response attributes
+        assert_eq!(response.attributes.len(), 3);
+        assert_eq!(response.attributes[0].key, "migrate");
+        assert_eq!(response.attributes[0].value, "successful");
+        assert_eq!(response.attributes[1].key, "previous version");
+        assert_eq!(response.attributes[1].value, "0.3.0");
+        assert_eq!(response.attributes[2].key, "new version");
+        assert_eq!(response.attributes[2].value, CONTRACT_VERSION);
+        
+        // Verify contract version was updated
+        let version = cw2::get_contract_version(&deps.storage).unwrap();
+        assert_eq!(version.contract, CONTRACT_NAME);
+        assert_eq!(version.version, CONTRACT_VERSION);
     }
 }
