@@ -1,6 +1,0 @@
-syntax = "proto2";
-
-message Fruit {
-    optional string name = 1;
-    optional float weight = 2;
-}

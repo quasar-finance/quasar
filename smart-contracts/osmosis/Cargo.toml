@@ -21,8 +21,8 @@ mars-owner = "2.0.0"
 quasar-std = { path = "../quasar/packages/quasar-std" }
 quasar-types = { path = "packages/quasar-types" }
 dex-router-osmosis = { path = "contracts/dex-router-osmosis", features = ["library"] }
-lst-dex-adapter-osmosis = { path = "contracts/lst-dex-adapter-osmosis", features = ["library"] }
-lst-adapter-osmosis = { path = "contracts/lst-adapter-osmosis", features = ["library"] }
+# lst-dex-adapter-osmosis = { path = "contracts/lst-dex-adapter-osmosis", features = ["library"] }
+# lst-adapter-osmosis = { path = "contracts/lst-adapter-osmosis", features = ["library"] }
 
 # SDK
 cosmos-sdk-proto = {version = "0.21.1", default-features = false}

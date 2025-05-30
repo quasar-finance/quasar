@@ -1,5 +1,4 @@
 use crate::error::ContractError;
-use crate::helpers::coinlist::CoinList;
 use crate::helpers::getters::get_range_admin;
 use crate::helpers::prepend::prepend_claim_msg;
 use crate::instantiate::{
@@ -10,12 +9,11 @@ use crate::msg::{
     ModifyRangeMsg, QueryMsg,
 };
 use crate::query::{
-    query_assets_from_shares, query_dex_router, query_info, query_metadata, query_pool,
-    query_position, query_total_assets, query_total_vault_token_supply, query_user_assets,
-    query_user_balance, query_verify_tick_cache, RangeAdminResponse,
+    query_active_users, query_assets_from_shares, query_dex_router, query_info, query_metadata,
+    query_pool, query_position, query_total_assets, query_total_vault_token_supply,
+    query_user_assets, query_user_balance, query_verify_tick_cache, RangeAdminResponse,
 };
 use crate::reply::Replies;
-use crate::state::{VaultConfig, VAULT_CONFIG};
 use crate::vault::{
     admin::execute_admin,
     autocompound::{execute_autocompound, handle_autocompound_reply, handle_merge_reply},
@@ -35,14 +33,10 @@ use crate::vault::{
     swap::execute_swap_non_vault_funds,
     withdraw::{execute_withdraw, handle_withdraw_user_reply},
 };
-use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-};
+use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response};
 use cw2::set_contract_version;
-use cw_storage_plus::{Item, Map};
 use quasar_types::cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:cl-vault";
@@ -84,7 +78,7 @@ pub fn execute(
         VaultStandardExecuteMsg::VaultExtension(vault_msg) => {
             match vault_msg {
                 ExtensionExecuteMsg::Admin(admin_msg) => {
-                    execute_admin(deps, info, admin_msg)
+                    execute_admin(deps, env, info, admin_msg)
                 }
                 ExtensionExecuteMsg::Merge(msg) => {
                     execute_merge_position(deps, env, info, msg)
@@ -171,6 +165,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 }
                 ClQueryMsg::VerifyTickCache => Ok(to_json_binary(&query_verify_tick_cache(deps)?)?),
             },
+            ExtensionQueryMsg::Users {
+                start_bound_exclusive,
+                limit,
+            } => Ok(to_json_binary(&query_active_users(
+                deps,
+                start_bound_exclusive.map(|s| deps.api.addr_validate(s.as_str()).unwrap()),
+                limit,
+            )?)?),
         },
     }
 }
@@ -198,54 +200,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let previous_version =
         cw2::ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    let dex_router_item: Item<Addr> = Item::new("dex_router");
-    dex_router_item.remove(deps.storage);
-    // VaultConfig
-    #[cw_serde]
-    struct OldVaultConfig {
-        pub performance_fee: Decimal,
-        pub treasury: Addr,
-        pub swap_max_slippage: Decimal,
-        pub dex_router: Addr,
-    }
-    const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
-    let old_vault_config: OldVaultConfig = OLD_VAULT_CONFIG.load(deps.storage)?;
-    OLD_VAULT_CONFIG.remove(deps.storage);
-    VAULT_CONFIG.save(
-        deps.storage,
-        &VaultConfig {
-            performance_fee: old_vault_config.performance_fee,
-            treasury: old_vault_config.treasury,
-            swap_max_slippage: old_vault_config.swap_max_slippage,
-            dex_router: old_vault_config.dex_router,
-            swap_admin: msg.swap_admin,
-            twap_window_seconds: msg.twap_window_seconds,
-        },
-    )?;
-
-    // MigrationStatus
-    #[cw_serde]
-    pub enum MigrationStatus {
-        Open,
-        Closed,
-    }
-    pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
-    let migration_status = MIGRATION_STATUS.load(deps.storage)?;
-    // we want the v1.0.8-skn migration_step to be occurred completely here.
-    if migration_status == MigrationStatus::Open {
-        return Err(ContractError::ParseError {
-            msg: "Migration status should be closed.".to_string(),
-        });
-    }
-    MIGRATION_STATUS.remove(deps.storage);
-
-    // UserRewards
-    pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-    USER_REWARDS.clear(deps.storage);
-
     let response = Response::new()
         .add_attribute("migrate", "successful")
         .add_attribute("previous version", previous_version.to_string())
@@ -263,74 +220,29 @@ mod tests {
     fn test_migrate() {
         let env = mock_env();
         let mut deps = mock_dependencies();
+
+        // Set an older version
         assert!(set_contract_version(deps.as_mut().storage, CONTRACT_NAME, "0.3.0").is_ok());
 
-        // VaultConfig mocking
-        #[cw_serde]
-        struct OldVaultConfig {
-            pub performance_fee: Decimal,
-            pub treasury: Addr,
-            pub swap_max_slippage: Decimal,
-            pub dex_router: Addr,
-        }
-        const OLD_VAULT_CONFIG: Item<OldVaultConfig> = Item::new("vault_config_v2");
-        OLD_VAULT_CONFIG
-            .save(
-                deps.as_mut().storage,
-                &OldVaultConfig {
-                    performance_fee: Decimal::percent(1),
-                    treasury: Addr::unchecked("treasury"),
-                    swap_max_slippage: Decimal::percent(1),
-                    dex_router: Addr::unchecked("dex_router"),
-                },
-            )
-            .unwrap();
+        // Perform migration
+        let result = migrate(deps.as_mut(), env, MigrateMsg {});
 
-        // MigrationStatus mocking
-        #[cw_serde]
-        pub enum MigrationStatus {
-            Open,
-            Closed,
-        }
-        pub const MIGRATION_STATUS: Item<MigrationStatus> = Item::new("migration_status");
-        MIGRATION_STATUS
-            .save(deps.as_mut().storage, &MigrationStatus::Closed)
-            .unwrap();
+        // Assert migration was successful
+        assert!(result.is_ok());
+        let response = result.unwrap();
 
-        // UserRewards mocking
-        pub const USER_REWARDS: Map<Addr, CoinList> = Map::new("user_rewards");
-        USER_REWARDS
-            .save(
-                deps.as_mut().storage,
-                Addr::unchecked("user"),
-                &CoinList::new(),
-            )
-            .unwrap();
+        // Check response attributes
+        assert_eq!(response.attributes.len(), 3);
+        assert_eq!(response.attributes[0].key, "migrate");
+        assert_eq!(response.attributes[0].value, "successful");
+        assert_eq!(response.attributes[1].key, "previous version");
+        assert_eq!(response.attributes[1].value, "0.3.0");
+        assert_eq!(response.attributes[2].key, "new version");
+        assert_eq!(response.attributes[2].value, CONTRACT_VERSION);
 
-        // Migrate and assert new states
-        migrate(
-            deps.as_mut(),
-            env,
-            MigrateMsg {
-                swap_admin: Addr::unchecked("swap_admin"),
-                twap_window_seconds: 24u64,
-            },
-        )
-        .unwrap();
-
-        let vault_config: VaultConfig = VAULT_CONFIG.load(&deps.storage).unwrap();
-        assert_eq!(vault_config.performance_fee, Decimal::percent(1));
-        assert_eq!(vault_config.treasury, Addr::unchecked("treasury"));
-        assert_eq!(vault_config.swap_max_slippage, Decimal::percent(1));
-        assert_eq!(vault_config.dex_router, Addr::unchecked("dex_router"));
-        assert_eq!(vault_config.swap_admin, Addr::unchecked("swap_admin"));
-        assert!(matches!(OLD_VAULT_CONFIG.may_load(&deps.storage), Ok(None)));
-
-        assert!(matches!(MIGRATION_STATUS.may_load(&deps.storage), Ok(None)));
-
-        assert!(matches!(
-            USER_REWARDS.may_load(&deps.storage, Addr::unchecked("user")),
-            Ok(None)
-        ));
+        // Verify contract version was updated
+        let version = cw2::get_contract_version(&deps.storage).unwrap();
+        assert_eq!(version.contract, CONTRACT_NAME);
+        assert_eq!(version.version, CONTRACT_VERSION);
     }
 }

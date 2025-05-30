@@ -1,12 +1,14 @@
 use crate::error::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
 use crate::state::{Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG};
+use crate::vault::withdraw::execute_withdraw;
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
-use cosmwasm_std::{Decimal, DepsMut, MessageInfo, Response, StdError};
+use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128};
 use cw_utils::nonpayable;
 
 pub(crate) fn execute_admin(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     admin_msg: AdminExtensionExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -24,6 +26,9 @@ pub(crate) fn execute_admin(
             execute_update_range_admin(deps, info, address)
         }
         AdminExtensionExecuteMsg::BuildTickCache {} => execute_build_tick_exp_cache(deps, info),
+        AdminExtensionExecuteMsg::AutoWithdraw { users } => {
+            execute_auto_claim(deps, &env, info, users)
+        }
     }
 }
 
@@ -134,6 +139,43 @@ pub fn execute_build_tick_exp_cache(
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "build_tick_exp_cache"))
+}
+
+pub fn execute_auto_claim(
+    mut deps: DepsMut,
+    env: &Env,
+    info: MessageInfo,
+    users: Vec<(String, Uint128)>,
+) -> Result<Response, ContractError> {
+    assert_admin(deps.storage, &info.sender)?;
+    let mut res = Response::new();
+
+    // Iterate over each address and execute withdraw
+    for user_data in users {
+        deps.api.addr_validate(user_data.0.as_str())?;
+
+        let user_info = MessageInfo {
+            sender: Addr::unchecked(user_data.0.clone()),
+            funds: vec![],
+        };
+        let withdraw_response = execute_withdraw(
+            deps.branch(),
+            env,
+            user_info,
+            Some(user_data.0.to_string()),
+            user_data.1.into(),
+        )?;
+
+        let withdraw_messages = withdraw_response.messages.iter().map(|sm| sm.msg.clone());
+
+        res = res
+            .add_messages(withdraw_messages)
+            .add_attributes(withdraw_response.attributes);
+    }
+
+    Ok(res
+        .add_attribute("method", "execute")
+        .add_attribute("action", "auto_withdraw"))
 }
 
 #[cfg(test)]

@@ -121,6 +121,9 @@ pub enum ContractError {
     #[error("Position claim after period is not expired yet.")]
     ClaimAfterNotExpired {},
 
+    #[error("Invalid token for paginated query")]
+    InvalidToken {},
+
     // Imported errors
     #[error("{0}")]
     PaymentError(#[from] PaymentError),

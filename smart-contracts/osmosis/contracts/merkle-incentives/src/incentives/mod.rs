@@ -93,12 +93,12 @@ impl PartialOrd for CoinVec {
     ///   - If the amount of the coin in `self` is greater than the amount of the corresponding coin in `other`,
     ///     it sets `self_greater` to true.
     /// - If a denomination exists in `other` but not in `self` and the amount is greater than zero, it sets `self_less` to true.
-    /// Finally, based on the flags `self_less` and `self_greater`, it returns the ordering:
+    ///   Finally, based on the flags `self_less` and `self_greater`, it returns the ordering:
     /// - If `self_less` is true and `self_greater` is false, it returns `Less`.
     /// - If `self_less` is false and `self_greater` is true, it returns `Greater`.
     /// - If both flags are false, it returns `Equal`.
     /// - If both flags are true, it returns `None`, indicating incomparability
-    /// nit: This approach needs to be deprecated in future versions
+    ///   nit: This approach needs to be deprecated in future versions
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         // TODO for later : use vec instead of HashMap till the item lists are small.
         let self_map: std::collections::HashMap<_, _> = self
@@ -127,7 +127,7 @@ impl PartialOrd for CoinVec {
         }
 
         for (denom, amount) in &other_map {
-            if self_map.get(denom).is_none() && *amount > &Uint128::zero() {
+            if !self_map.contains_key(denom) && *amount > &Uint128::zero() {
                 self_less = true;
             }
         }

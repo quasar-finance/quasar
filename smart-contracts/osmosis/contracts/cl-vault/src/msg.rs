@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Decimal};
+use cosmwasm_std::{Decimal, Uint128};
 use osmosis_std::types::osmosis::poolmanager::v1beta1::SwapAmountInRoute;
 use quasar_types::cw_vault_multi_standard::{VaultStandardExecuteMsg, VaultStandardQueryMsg};
 
@@ -56,6 +56,8 @@ pub enum AdminExtensionExecuteMsg {
     },
     /// Build tick exponent cache
     BuildTickCache {},
+    /// Auto claim endpoint
+    AutoWithdraw { users: Vec<(String, Uint128)> },
 }
 
 #[cw_serde]
@@ -102,6 +104,12 @@ pub enum ExtensionQueryMsg {
     ConcentratedLiquidity(ClQueryMsg),
     /// Query the DexRouter address
     DexRouter {},
+    /// Query users
+    Users {
+        start_bound_exclusive: Option<String>,
+        /// Limit for the search
+        limit: u64,
+    },
 }
 
 /// Extension query messages for user balance related queries
@@ -159,7 +167,4 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
-pub struct MigrateMsg {
-    pub swap_admin: Addr,
-    pub twap_window_seconds: u64,
-}
+pub struct MigrateMsg {}

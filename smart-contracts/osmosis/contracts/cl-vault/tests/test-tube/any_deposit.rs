@@ -40,7 +40,7 @@ fn test_any_deposit() {
     }
 }
 
-fn do_and_verify_any_deposit(
+pub fn do_and_verify_any_deposit(
     app: OsmosisTestApp,
     contract_address: Addr,
     vault_pool_id: u64,
