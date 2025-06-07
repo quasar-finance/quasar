@@ -9,7 +9,7 @@ require (
 	cosmossdk.io/core v0.11.1
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.5.0
-	cosmossdk.io/math v1.3.0
+	cosmossdk.io/math v1.5.0
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/tools/confix v0.1.2
 	cosmossdk.io/tools/rosetta v0.2.1-0.20230613133644-0a778132a60f
@@ -38,10 +38,10 @@ require (
 	github.com/skip-mev/feemarket v1.1.0
 	github.com/spf13/cast v1.7.0
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/grpc v1.68.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.36.1
 )
 
 require (
@@ -50,6 +50,7 @@ require (
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
+	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
