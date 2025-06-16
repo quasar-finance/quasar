@@ -31,7 +31,7 @@ use crate::vault::{
         handle_withdraw_position_reply,
     },
     swap::execute_swap_non_vault_funds,
-    withdraw::{execute_withdraw, handle_withdraw_user_reply},
+    withdraw::{execute_withdraw, handle_withdraw_reply_with_id, handle_withdraw_user_reply},
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -179,6 +179,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+    // Check if this is a custom withdrawal ID (>= 1000) first
+    if msg.id >= 1000 {
+        return handle_withdraw_reply_with_id(deps, msg.result, msg.id);
+    }
+
     match msg.id.into() {
         Replies::InstantiateCreatePosition => {
             handle_instantiate_create_position_reply(deps, env, msg.result)
@@ -195,7 +200,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
         Replies::CreatePositionMerge => handle_merge_create_position_reply(deps, env, msg.result),
         Replies::Autocompound => handle_autocompound_reply(deps, env, msg.result),
         Replies::AnyDepositSwap => handle_any_deposit_swap_reply(deps, env, msg.result),
-        Replies::Unknown => unimplemented!(),
+        Replies::Unknown => Err(ContractError::UnknownReplyId { id: msg.id }),
     }
 }
 

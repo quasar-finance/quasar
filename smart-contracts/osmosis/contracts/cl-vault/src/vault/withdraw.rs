@@ -10,7 +10,10 @@ use osmosis_std::types::osmosis::{
 use crate::{
     helpers::{generic::sort_tokens, getters::get_unused_balances},
     reply::Replies,
-    state::{CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, POOL_CONFIG, SHARES, VAULT_DENOM},
+    state::{
+        CURRENT_WITHDRAWER, CURRENT_WITHDRAWER_DUST, PENDING_WITHDRAWALS, POOL_CONFIG, SHARES,
+        VAULT_DENOM, WithdrawalInfo,
+    },
     vault::concentrated_liquidity::{get_position, withdraw_from_position},
     ContractError,
 };
@@ -28,6 +31,30 @@ pub fn execute_withdraw(
     info: MessageInfo,
     recipient: Option<String>,
     shares_to_withdraw: Uint256,
+) -> Result<Response, ContractError> {
+    // For regular withdrawals, we still use the old approach
+    execute_withdraw_internal(deps, env, info, recipient, shares_to_withdraw, None)
+}
+
+// Internal function that supports withdrawal IDs for batch operations
+pub fn execute_withdraw_with_id(
+    deps: DepsMut,
+    env: &Env,
+    info: MessageInfo,
+    recipient: Option<String>,
+    shares_to_withdraw: Uint256,
+    withdrawal_id: u64,
+) -> Result<Response, ContractError> {
+    execute_withdraw_internal(deps, env, info, recipient, shares_to_withdraw, Some(withdrawal_id))
+}
+
+fn execute_withdraw_internal(
+    deps: DepsMut,
+    env: &Env,
+    info: MessageInfo,
+    recipient: Option<String>,
+    shares_to_withdraw: Uint256,
+    withdrawal_id: Option<u64>,
 ) -> Result<Response, ContractError> {
     assert!(
         shares_to_withdraw > Uint256::zero(),
@@ -68,7 +95,22 @@ pub fn execute_withdraw(
         .try_into()?;
     // save the new total amount of dust available for other actions
 
-    CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
+    // Save withdrawal info based on whether we have a withdrawal_id
+    if let Some(id) = withdrawal_id {
+        // For batch withdrawals, save to the map
+        PENDING_WITHDRAWALS.save(
+            deps.storage,
+            id,
+            &WithdrawalInfo {
+                recipient: recipient.clone(),
+                dust: (user_dust0, user_dust1),
+            },
+        )?;
+    } else {
+        // For single withdrawals, use the old approach
+        CURRENT_WITHDRAWER_DUST.save(deps.storage, &(user_dust0, user_dust1))?;
+        CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
+    }
 
     let shares_to_withdraw_u128: Uint128 = shares_to_withdraw.try_into()?;
     // burn the shares
@@ -79,8 +121,6 @@ pub fn execute_withdraw(
         burn_from_address: env.contract.address.clone().into_string(),
     }
     .into();
-
-    CURRENT_WITHDRAWER.save(deps.storage, &recipient)?;
 
     // withdraw the user's funds from the position
     let withdraw_msg = withdraw_msg(deps, env, shares_to_withdraw_u128)?;
@@ -94,6 +134,9 @@ pub fn execute_withdraw(
     }
     .into();
 
+    // Use withdrawal_id as the reply ID if provided, otherwise use the standard reply ID
+    let reply_id = withdrawal_id.unwrap_or(Replies::WithdrawUser as u64);
+
     Ok(Response::new()
         .add_attribute("method", "execute")
         .add_attribute("action", "withdraw")
@@ -101,22 +144,52 @@ pub fn execute_withdraw(
         .add_attribute("share_amount", shares_to_withdraw)
         .add_message(collect_rewards_msg)
         .add_message(burn_msg)
-        .add_submessage(SubMsg::reply_on_success(
-            withdraw_msg,
-            Replies::WithdrawUser as u64,
-        )))
+        .add_submessage(SubMsg::reply_on_success(withdraw_msg, reply_id)))
 }
 
 pub fn handle_withdraw_user_reply(
     deps: DepsMut,
     data: SubMsgResult,
 ) -> Result<Response, ContractError> {
+    // This is for backward compatibility with single withdrawals
+    handle_withdraw_reply_internal(deps, data, None)
+}
+
+// New function to handle withdrawal replies with ID
+pub fn handle_withdraw_reply_with_id(
+    deps: DepsMut,
+    data: SubMsgResult,
+    withdrawal_id: u64,
+) -> Result<Response, ContractError> {
+    handle_withdraw_reply_internal(deps, data, Some(withdrawal_id))
+}
+
+fn handle_withdraw_reply_internal(
+    deps: DepsMut,
+    data: SubMsgResult,
+    withdrawal_id: Option<u64>,
+) -> Result<Response, ContractError> {
     // parse the reply and instantiate the funds we want to send
     let response: MsgWithdrawPositionResponse = data.try_into()?;
-    let user = CURRENT_WITHDRAWER.load(deps.storage)?;
     let pool_config = POOL_CONFIG.load(deps.storage)?;
 
-    let (user_dust0, user_dust1) = CURRENT_WITHDRAWER_DUST.load(deps.storage)?;
+    // Get user and dust info based on whether we have a withdrawal_id
+    let (user, user_dust0, user_dust1) = if let Some(id) = withdrawal_id {
+        // For batch withdrawals, load from the map and remove the entry
+        let withdrawal_info = PENDING_WITHDRAWALS.load(deps.storage, id)?;
+        PENDING_WITHDRAWALS.remove(deps.storage, id);
+        (
+            withdrawal_info.recipient,
+            withdrawal_info.dust.0,
+            withdrawal_info.dust.1,
+        )
+    } else {
+        // For single withdrawals, use the old approach
+        let user = CURRENT_WITHDRAWER.load(deps.storage)?;
+        let (dust0, dust1) = CURRENT_WITHDRAWER_DUST.load(deps.storage)?;
+        (user, dust0, dust1)
+    };
+
     let amount0 = Uint128::new(response.amount0.parse()?).checked_add(user_dust0)?;
     let amount1 = Uint128::new(response.amount1.parse()?).checked_add(user_dust1)?;
 

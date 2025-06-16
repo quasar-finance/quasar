@@ -1,7 +1,11 @@
+use crate::debug;
 use crate::error::assert_admin;
 use crate::math::tick::build_tick_exp_cache;
-use crate::state::{Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG};
-use crate::vault::withdraw::execute_withdraw;
+use crate::state::{
+    Metadata, VaultConfig, ADMIN_ADDRESS, METADATA, RANGE_ADMIN, VAULT_CONFIG,
+    WITHDRAWAL_ID_COUNTER,
+};
+use crate::vault::withdraw::execute_withdraw_with_id;
 use crate::{msg::AdminExtensionExecuteMsg, ContractError};
 use cosmwasm_std::{Addr, Decimal, DepsMut, Env, MessageInfo, Response, StdError, Uint128};
 use cw_utils::nonpayable;
@@ -150,6 +154,11 @@ pub fn execute_auto_claim(
     assert_admin(deps.storage, &info.sender)?;
     let mut res = Response::new();
 
+    // Get the starting withdrawal ID
+    let mut withdrawal_id = WITHDRAWAL_ID_COUNTER
+        .may_load(deps.storage)?
+        .unwrap_or(1000); // Start from 1000 to avoid conflicts with standard reply IDs
+
     // Iterate over each address and execute withdraw
     for user_data in users {
         deps.api.addr_validate(user_data.0.as_str())?;
@@ -158,20 +167,29 @@ pub fn execute_auto_claim(
             sender: Addr::unchecked(user_data.0.clone()),
             funds: vec![],
         };
-        let withdraw_response = execute_withdraw(
+        
+        // Use the withdrawal ID for this user
+        let withdraw_response = execute_withdraw_with_id(
             deps.branch(),
             env,
             user_info,
             Some(user_data.0.to_string()),
             user_data.1.into(),
+            withdrawal_id,
         )?;
+        
+        // Add all messages and submessages from the withdrawal response
+        for msg in withdraw_response.messages {
+            res = res.add_submessage(msg);
+        }
+        res = res.add_attributes(withdraw_response.attributes);
 
-        let withdraw_messages = withdraw_response.messages.iter().map(|sm| sm.msg.clone());
-
-        res = res
-            .add_messages(withdraw_messages)
-            .add_attributes(withdraw_response.attributes);
+        // Increment withdrawal ID for next user
+        withdrawal_id += 1;
     }
+
+    // Save the updated withdrawal ID counter
+    WITHDRAWAL_ID_COUNTER.save(deps.storage, &withdrawal_id)?;
 
     Ok(res
         .add_attribute("method", "execute")

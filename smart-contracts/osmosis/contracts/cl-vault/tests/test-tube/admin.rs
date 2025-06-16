@@ -10,7 +10,8 @@ use cl_vault::{
     query::{ActiveUsersResponse, VerifyTickCacheResponse},
 };
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
-use osmosis_test_tube::{Account, Module, Wasm};
+use osmosis_std::types::cosmos::bank::v1beta1::QueryBalanceRequest;
+use osmosis_test_tube::{Account, Bank, Module, Wasm};
 
 #[test]
 fn admin_build_tick_cache_works() {
@@ -110,6 +111,37 @@ fn admin_execute_auto_claim_works() {
         .map(|(addr, balance)| (addr.clone(), *balance)) // Keep as (String, Uint256)
         .collect();
 
+    // Record user token balances before auto withdraw
+    let bank = Bank::new(&app);
+    let user_balances_before: Vec<(Addr, Coin, Coin)> = users
+        .iter()
+        .map(|(addr, _)| {
+            let balance_base_resp = bank
+                .query_balance(&QueryBalanceRequest {
+                    address: addr.to_string(),
+                    denom: DENOM_BASE.to_string(),
+                })
+                .unwrap();
+            let balance_quote_resp = bank
+                .query_balance(&QueryBalanceRequest {
+                    address: addr.to_string(),
+                    denom: DENOM_QUOTE.to_string(),
+                })
+                .unwrap();
+            
+            let balance_base = Coin::new(
+                balance_base_resp.balance.as_ref().map_or(0, |b| b.amount.parse().unwrap_or(0)),
+                DENOM_BASE,
+            );
+            let balance_quote = Coin::new(
+                balance_quote_resp.balance.as_ref().map_or(0, |b| b.amount.parse().unwrap_or(0)),
+                DENOM_QUOTE,
+            );
+            
+            (addr.clone(), balance_base, balance_quote)
+        })
+        .collect();
+
     // Execute auto claim
     let _ = wasm
         .execute(
@@ -128,7 +160,7 @@ fn admin_execute_auto_claim_works() {
         )
         .unwrap();
 
-    // Query active users again
+    // Query active users again to verify shares are zero
     let updated_query_resp: ActiveUsersResponse = wasm
         .query(
             contract_address.as_str(),
@@ -139,18 +171,69 @@ fn admin_execute_auto_claim_works() {
         )
         .unwrap();
 
-    for (addr, _) in &users {
-        let user_balance = updated_query_resp
+    // Verify shares are zeroed and users received their funds
+    for (addr, balance_before_base, balance_before_quote) in &user_balances_before {
+        // Check that shares are zero
+        let user_shares = updated_query_resp
             .users
             .iter()
             .find(|(user_addr, _)| user_addr == addr);
         assert!(
-            user_balance.is_some() && user_balance.unwrap().1.is_zero(),
-            "Expected user {} to have a balance of 0 after auto claim, but found {}",
+            user_shares.is_none() || user_shares.unwrap().1.is_zero(),
+            "Expected user {} to have zero shares after auto withdraw, but found {}",
             addr,
-            user_balance
+            user_shares
                 .map(|(_, balance)| balance)
                 .unwrap_or(&Uint128::zero())
+        );
+
+        // Check that users received their underlying tokens
+        let balance_after_base_resp = bank
+            .query_balance(&QueryBalanceRequest {
+                address: addr.to_string(),
+                denom: DENOM_BASE.to_string(),
+            })
+            .unwrap();
+        let balance_after_quote_resp = bank
+            .query_balance(&QueryBalanceRequest {
+                address: addr.to_string(),
+                denom: DENOM_QUOTE.to_string(),
+            })
+            .unwrap();
+        
+        let balance_after_base = Coin::new(
+            balance_after_base_resp.balance.as_ref().map_or(0, |b| b.amount.parse().unwrap_or(0)),
+            DENOM_BASE,
+        );
+        let balance_after_quote = Coin::new(
+            balance_after_quote_resp.balance.as_ref().map_or(0, |b| b.amount.parse().unwrap_or(0)),
+            DENOM_QUOTE,
+        );
+
+        assert!(
+            balance_after_base.amount > balance_before_base.amount,
+            "User {} should have received base tokens. Before: {}, After: {}",
+            addr,
+            balance_before_base.amount,
+            balance_after_base.amount
+        );
+        assert!(
+            balance_after_quote.amount > balance_before_quote.amount,
+            "User {} should have received quote tokens. Before: {}, After: {}",
+            addr,
+            balance_before_quote.amount,
+            balance_after_quote.amount
+        );
+
+        println!(
+            "User {}: Base tokens {} -> {} (+{}), Quote tokens {} -> {} (+{})",
+            addr,
+            balance_before_base.amount,
+            balance_after_base.amount,
+            balance_after_base.amount.saturating_sub(balance_before_base.amount),
+            balance_before_quote.amount,
+            balance_after_quote.amount,
+            balance_after_quote.amount.saturating_sub(balance_before_quote.amount)
         );
     }
 }
