@@ -24,5 +24,11 @@
     "cosmjs-utils": "^0.1.0",
     "cosmwasm": "^1.1.1",
     "osmojs": "^16.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
   }
 }

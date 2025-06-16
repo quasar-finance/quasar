@@ -1,0 +1,58 @@
+{
+  "extension": {
+    "admin": {
+      "auto_withdraw": {
+        "users": [
+          [
+            "osmo13eyv8ejgwhtd9p4hsvrfjtfjclfusqg06u00sh",
+            "242717305809736942989857177"
+          ],
+          [
+            "osmo1699txsl87agrzxhk9wp2af2gruf5sps9qa3naq",
+            "77223063205251005041234470"
+          ],
+          [
+            "osmo172dgwzn4n3ynxufepwqg0yz6stdsuhctwh8ulz",
+            "26588443354762506086962677"
+          ],
+          [
+            "osmo1926gwa9z8aep52auxyz794l9a9a04cyhwlku3d",
+            "15139057867550701968228"
+          ],
+          [
+            "osmo1dz3el8g85wfgn2jvfqcs422d8wa9h7zu8qu8rw",
+            "24981944340948995019540966"
+          ],
+          [
+            "osmo1egem600k0yg9sdjavlklhzyucvajtv6l0wnzm6",
+            "4999751024094819455340226697"
+          ],
+          [
+            "osmo1k09afxhedzgrkn60rrnpa0u66yv3vz7yd6e34s",
+            "1190515424665311454970299"
+          ],
+          [
+            "osmo1n29qsvz2geuke72fp0ah89vxkdan0078evpv86",
+            "139886519066492688084521"
+          ],
+          [
+            "osmo1rr5yefke6sqsvj7ddxevpzhytqyp60d6wxg5ah",
+            "2906421499187165150901545"
+          ],
+          [
+            "osmo1v6aj98yxlr3sn8g4xy9l7s74cy8hd8eya9qfqq",
+            "127049993070293217240038344"
+          ],
+          [
+            "osmo1y4psr78r93s3x3hsv8f909xz74l9qae4vncsfj",
+            "91495316515947028249657846"
+          ],
+          [
+            "osmo1ym6x2ht9xl6yjkqtqkkudt2ktjzckq0y69rud9",
+            "2573929274422623611622739"
+          ]
+        ]
+      }
+    }
+  }
+}
